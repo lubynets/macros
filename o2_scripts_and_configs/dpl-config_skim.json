@@ -1,7 +1,6 @@
 {
     "internal-dpl-clock": "",
     "internal-dpl-aod-reader": {
-        "aod-file-private": "/lustre/alice/users/lubynets/ao2ds/sim/2024/LHC24e3/0/526641/AOD/001/AO2D.small.root",
         "aod-max-io-rate": "0",
         "time-limit": "0",
         "orbit-offset-enumeration": "0",
@@ -697,14 +696,14 @@
             ],
             "values": [
                 [
-                    "1.75",
-                    "2.0499999999999998",
-                    "0.69999999999999996",
+                    "2.05",
+                    "2.55",
+                    "0.7",
                     "0.02"
                 ],
                 [
-                    "1.75",
-                    "2.0499999999999998",
+                    "2.05",
+                    "2.55",
                     "0.5",
                     "0.02"
                 ]
