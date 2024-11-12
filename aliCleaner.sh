@@ -7,10 +7,15 @@ TEMPDIR=tempdir
 cd slc9_x86-64
 
 for dir in */ ; do
+echo $dir
 cd $dir
-mkdir ../../$TEMPDIR/$dir
+mkdir -p ../../$TEMPDIR/$dir
 for LABEL in ${LABLES_TO_SAVE[@]}; do
 cp -r $LABEL ../../$TEMPDIR/$dir
-cp -r `readlink $LABEL` ../../$TEMPDIR/$dir
+REALNAME=`readlink $LABEL`
+if [ ! -d ../../$TEMPDIR/$dir/$REALNAME ]; then
+cp -r $REALNAME ../../$TEMPDIR/$dir
+fi
 done
+cd ..
 done
