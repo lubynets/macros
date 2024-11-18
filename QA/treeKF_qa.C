@@ -31,21 +31,22 @@ void treeKF_qa(const std::string& fileName, int selectionFlag=1) {
   };
 
   std::vector<Variable> vars {
-    {"Mass",         "fMassInv",           "m_{pK#pi}, GeV/c^{2}",   600, 1.98, 2.58},
-    {"Pt",           "fPt",                "p_{T}, GeV/c",           600, 0,    12  },
-    {"Chi2prim_p",   "fChi2PrimProton",    "#chi^{2}_{prim}{p}",     100, 0,    100 },
-    {"Chi2prim_K",   "fChi2PrimKaon",      "#chi^{2}_{prim}{p}",     100, 0,    100 },
-    {"Chi2prim_pi",  "fChi2PrimPion",      "#chi^{2}_{prim}{p}",     100, 0,    100 },
-    {"Chi2geo_p_pi", "fChi2geoProtonPion", "#chi^{2}_{geo}{p#pi}",   100, 0,    10  },
-    {"Chi2geo_p_K",  "fChi2geoProtonKaon", "#chi^{2}_{geo}{pK}",     100, 0,    10  },
-    {"Chi2geo_K_pi", "fChi2geoPionKaon",   "#chi^{2}_{geo}{K#pi}",   100, 0,    10  },
-    {"DCA_p_pi",     "fDCAProtonPion",     "DCA{p#pi}, cm",          100, 0,    1   },
-    {"DCA_p_K",      "fDCAProtonKaon",     "DCA{pK}, cm",            100, 0,    1   },
-    {"DCA_K_pi",     "fDCAPionKaon",       "DCA{K#pi}, cm",          100, 0,    1   },
-    {"Chi2geo",      "fChi2geo",           "#chi^{2}_{geo}",         100, 0,    10  },
-    {"Chi2topo",     "fChi2topo",          "#chi^{2}_{topo}",        100, 0,    100 },
-    {"L",            "fL",                 "L, cm",                  100, 0,    1   },
-    {"T",            "fT",                 "T, ps",                  400, 0,    10  },
+    {"Mass",         "fMassInv",           "m_{pK#pi}, GeV/c^{2}", 600, 1.98, 2.58},
+    {"Pt",           "fPt",                "p_{T}, GeV/c",         600, 0,    12  },
+    {"Chi2prim_p",   "fChi2PrimProton",    "#chi^{2}_{prim}{p}",   100, 0,    100 },
+    {"Chi2prim_K",   "fChi2PrimKaon",      "#chi^{2}_{prim}{p}",   100, 0,    100 },
+    {"Chi2prim_pi",  "fChi2PrimPion",      "#chi^{2}_{prim}{p}",   100, 0,    100 },
+    {"Chi2geo_p_pi", "fChi2geoProtonPion", "#chi^{2}_{geo}{p#pi}", 100, 0,    10  },
+    {"Chi2geo_p_K",  "fChi2geoProtonKaon", "#chi^{2}_{geo}{pK}",   100, 0,    10  },
+    {"Chi2geo_K_pi", "fChi2geoPionKaon",   "#chi^{2}_{geo}{K#pi}", 100, 0,    10  },
+    {"DCA_p_pi",     "fDCAProtonPion",     "DCA{p#pi}, cm",        100, 0,    1   },
+    {"DCA_p_K",      "fDCAProtonKaon",     "DCA{pK}, cm",          100, 0,    1   },
+    {"DCA_K_pi",     "fDCAPionKaon",       "DCA{K#pi}, cm",        100, 0,    1   },
+    {"Chi2geo",      "fChi2geo",           "#chi^{2}_{geo}",       100, 0,    10  },
+    {"Chi2topo",     "fChi2topo",          "#chi^{2}_{topo}",      100, 0,    100 },
+    {"LdL",          "fLdL",               "L/#Delta L",           100, 0,    10  },
+    {"L",            "fL",                 "L, cm",                100, 0,    1   },
+    {"T",            "fT",                 "T, ps",                400, 0,    10  },
   };
 
   std::vector<std::vector<TH1F*>> hvar;
