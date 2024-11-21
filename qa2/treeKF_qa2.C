@@ -30,6 +30,8 @@ void treeKF_qa2(const std::string& fileName) {
     {"Chi2geo",      false, false},
     {"Chi2topo",     false, false},
     {"LdL",          false, false},
+    {"L",            false, true },
+    {"T",            false, true },
   };
 
   struct SignalSpecies{
@@ -46,9 +48,9 @@ void treeKF_qa2(const std::string& fileName) {
 
   bool is_first_canvas{true};
   for(auto& var : vars) {
-    std::vector<TH1F*> histos;
+    std::vector<TH1D*> histos;
     for(auto& ss : signal_species) {
-      histos.emplace_back(fileIn->Get<TH1F>((ss.name_ + "/h" + var.name_ + "_" + ss.name_).c_str()));
+      histos.emplace_back(fileIn->Get<TH1D>((ss.name_ + "/h" + var.name_ + "_" + ss.name_).c_str()));
       if(histos.back() == nullptr) {
         throw std::runtime_error((ss.name_ + "/h" + var.name_ + "_" + ss.name_ + " is nullptr").c_str());
       }
@@ -60,6 +62,9 @@ void treeKF_qa2(const std::string& fileName) {
     leg->SetBorderSize(0);
     TCanvas cc("cc", "", 1200, 800);
     cc.cd();
+    cc.SetLogx(var.is_log_x_);
+    cc.SetLogy(var.is_log_y_);
+    double maxvalue = 0.;
     for(int iH=0; iH<histos.size(); iH++) {
       histos.at(iH)->UseCurrentStyle();
       histos.at(iH)->Scale(1./histos.at(iH)->GetEntries());
@@ -70,9 +75,13 @@ void treeKF_qa2(const std::string& fileName) {
       else        histos.at(iH)->Draw("same");
       float underflow = histos.at(iH)->GetBinContent(0);
       float overflow = histos.at(iH)->GetBinContent(histos.at(iH)->GetNbinsX());
-      std::cout << underflow << "\t" << overflow << "\n";
+//       std::cout << underflow << "\t" << overflow << "\n";
       leg->AddEntry(histos.at(iH), (signal_species.at(iH).name_ + "; unfl: " + to_string_with_precision(underflow, 2) + "; ovfl: " + to_string_with_precision(overflow, 2)).c_str(), "L");
+      maxvalue = std::max(maxvalue, histos.at(iH)->GetBinContent(histos.at(iH) -> GetMaximumBin()));
     }
+    const double minvalue = var.is_log_y_ ? 0.0001 : 0.;
+    const double maxfactor = var.is_log_y_ ? 2 : 1.1;
+    histos.at(0)->GetYaxis()->SetRangeUser(minvalue, maxfactor*maxvalue);
 
     leg->Draw();
     if(is_first_canvas) cc.Print((fileOutName + "(").c_str(), "pdf");
