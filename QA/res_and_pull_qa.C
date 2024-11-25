@@ -52,12 +52,12 @@ void res_and_pull_qa(const std::string& fileName, int selectionFlag=1) {
   const int nbins = 400;
 
   std::vector<Variable> vars {
-    {"P",  /*KF*/"fP",  /*MC*/"fP",       /*KF*/"fDeltaP",  "p",     "GeV/c", nbins, 0,    12,  nbins, -2, 2,     nbins, -5, 5},
-    {"Pt", /*KF*/"fPt", /*MC*/"fPt",      /*KF*/"fDeltaPt", "p_{T}", "GeV/c", nbins, 0,    12,  nbins, -2, 2,     nbins, -5, 5},
-    {"X",  /*KF*/"fX",  /*MC*/"fDecayX",  /*KF*/"fErrX",    "X",     "cm",    nbins, -0.5, 0.5, nbins, -0.5, 0.5, nbins, -5, 5},
-    {"Y",  /*KF*/"fY",  /*MC*/"fDecayY",  /*KF*/"fErrY",    "Y",     "cm",    nbins, -0.5, 0.5, nbins, -0.5, 0.5, nbins, -5, 5},
-    {"Z",  /*KF*/"fZ",  /*MC*/"fDecayZ",  /*KF*/"fErrZ",    "Z",     "cm",    nbins, -0.5, 0.5, nbins, -0.5, 0.5, nbins, -5, 5},
-    {"T",  /*KF*/"fT",  /*MC*/"fDecayT",  /*KF*/"fDeltaT",  "T",     "ps",    nbins, -1,   5,   nbins, -1, 1,     nbins, -5, 5},
+    {"P",  /*KF*/"fP",  /*MC*/"fP",       /*KF*/"fDeltaP",  "p",     "GeV/c", nbins, 0,    12,  nbins, -2, 2,     nbins, -5,  5},
+    {"Pt", /*KF*/"fPt", /*MC*/"fPt",      /*KF*/"fDeltaPt", "p_{T}", "GeV/c", nbins, 0,    12,  nbins, -2, 2,     nbins, -5,  5},
+    {"X",  /*KF*/"fX",  /*MC*/"fDecayX",  /*KF*/"fErrX",    "X",     "cm",    nbins, -0.5, 0.5, nbins, -0.1, 0.1, nbins, -5,  5},
+    {"Y",  /*KF*/"fY",  /*MC*/"fDecayY",  /*KF*/"fErrY",    "Y",     "cm",    nbins, -0.5, 0.5, nbins, -0.1, 0.1, nbins, -5,  5},
+    {"Z",  /*KF*/"fZ",  /*MC*/"fDecayZ",  /*KF*/"fErrZ",    "Z",     "cm",    nbins, -0.5, 0.5, nbins, -0.1, 0.1, nbins, -5,  5},
+    {"T",  /*KF*/"fT",  /*MC*/"fDecayT",  /*KF*/"fDeltaT",  "T",     "ps",    nbins, -1,   5,   nbins, -3, 3,     nbins, -10, 10},
   };
 
   std::vector<std::vector<TH1D*>> hres;
@@ -81,17 +81,6 @@ void res_and_pull_qa(const std::string& fileName, int selectionFlag=1) {
 
       hpull.at(iVar).at(iSBType)->GetXaxis()->SetTitle(("(" + vars.at(iVar).title_ + "^{rec} - " + vars.at(iVar).title_ + "^{mc}) / #sigma_{" + vars.at(iVar).title_ + "^{rec}}").c_str());
       hpull.at(iVar).at(iSBType)->GetYaxis()->SetTitle("Entries");
-    }
-  }
-
-  fileOut->cd();
-  hSBType->Write();
-  for(int kType=0; kType<kNumberOfTypes; kType++) {
-    CD(fileOut, dirTypes.at(kType));
-    for(int iVar=0; iVar<vars.size(); iVar++) {
-      hres.at(iVar).at(kType)->Write();
-      hcorr.at(iVar).at(kType)->Write();
-      hpull.at(iVar).at(kType)->Write();
     }
   }
 
@@ -120,6 +109,7 @@ void res_and_pull_qa(const std::string& fileName, int selectionFlag=1) {
     const int Nentries = treeKF->GetEntries();
     for(int iEntry=0; iEntry<Nentries; iEntry++) {
       treeKF->GetEntry(iEntry);
+      treeMC->GetEntry(iEntry);
 
       if(is_selected<selectionFlag) continue;
 
@@ -131,6 +121,19 @@ void res_and_pull_qa(const std::string& fileName, int selectionFlag=1) {
         hcorr.at(iVar).at(sb_histotype)->Fill(value_mc.at(iVar), value_rec.at(iVar));
         hpull.at(iVar).at(sb_histotype)->Fill((value_rec.at(iVar) - value_mc.at(iVar)) / value_err.at(iVar));
       }
+    } // iEntry
+  } // GetListOfKeys
+
+  fileOut->cd();
+  hSBType->Write();
+  for(int kType=0; kType<kNumberOfTypes; kType++) {
+    for(int iVar=0; iVar<vars.size(); iVar++) {
+      CD(fileOut, (histTypes.at(0) + "/" + dirTypes.at(kType)).c_str());
+      hres.at(iVar).at(kType)->Write();
+      CD(fileOut, (histTypes.at(1) + "/" + dirTypes.at(kType)).c_str());
+      hcorr.at(iVar).at(kType)->Write();
+      CD(fileOut, (histTypes.at(2) + "/" + dirTypes.at(kType)).c_str());
+      hpull.at(iVar).at(kType)->Write();
     }
   }
 
