@@ -57,6 +57,7 @@ void res_and_pull_qa(const std::string& fileName, int selectionFlag=1) {
     {"X",  /*KF*/"fX",  /*MC*/"fDecayX",  /*KF*/"fErrX",    "X",     "cm",    nbins, -0.5, 0.5, nbins, -0.1, 0.1, nbins, -5,  5},
     {"Y",  /*KF*/"fY",  /*MC*/"fDecayY",  /*KF*/"fErrY",    "Y",     "cm",    nbins, -0.5, 0.5, nbins, -0.1, 0.1, nbins, -5,  5},
     {"Z",  /*KF*/"fZ",  /*MC*/"fDecayZ",  /*KF*/"fErrZ",    "Z",     "cm",    nbins, -0.5, 0.5, nbins, -0.1, 0.1, nbins, -5,  5},
+    {"L",  /*KF*/"fL",  /*MC*/"fDecayL",  /*KF*/"fDeltaL",  "L",     "cm",    nbins, -0.5, 0.5, nbins, -0.1, 0.1, nbins, -5,  5},
     {"T",  /*KF*/"fT",  /*MC*/"fDecayT",  /*KF*/"fDeltaT",  "T",     "ps",    nbins, -1,   5,   nbins, -3, 3,     nbins, -10, 10},
   };
 
