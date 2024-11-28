@@ -14,7 +14,7 @@ HistoQuantities EvaluateHistoQuantities(const TH1* h);
 TPaveText ConverHistoQuantitiesToText(const HistoQuantities& q, float x1, float y1, float x2, float y2);
 
 void res_and_pull_qa2(const std::string& fileName, int prompt_or_nonprompt=1) {
-  gROOT->Macro( "treeKF_qa2.style.cc" );
+  gROOT->Macro( "res_and_pull_qa2.style.cc" );
   if(prompt_or_nonprompt !=1 && prompt_or_nonprompt != 2) {
     throw std::runtime_error("prompt_or_nonprompt must be 1 or 2");
   }
@@ -30,16 +30,19 @@ void res_and_pull_qa2(const std::string& fileName, int prompt_or_nonprompt=1) {
 
   struct Variable {
     std::string name_;
+    bool log_res_;
+    bool log_corr_;
+    bool log_pull_;
   };
 
   std::vector<Variable> vars {
-    {"P" },
-    {"Pt"},
-    {"X" },
-    {"Y" },
-    {"Z" },
-    {"L" },
-    {"T" },
+    {"P",  false, true,  false},
+    {"Pt", false, true,  false},
+    {"X",  false, false, false},
+    {"Y",  false, false, false},
+    {"Z",  false, false, false},
+    {"L",  false, false, false},
+    {"T",  false, false, false},
   };
 
   bool is_first_canvas{true};
@@ -63,6 +66,7 @@ void res_and_pull_qa2(const std::string& fileName, int prompt_or_nonprompt=1) {
     promptnessText.AddText(promptness.c_str());
 
     TCanvas ccRes("ccRes", "ccRes", 1200, 800);
+    ccRes.SetLogy(var.log_res_);
     hres->Draw();
     promptnessText.Draw("same");
     HistoQuantities res_quant = EvaluateHistoQuantities(hres);
@@ -70,10 +74,13 @@ void res_and_pull_qa2(const std::string& fileName, int prompt_or_nonprompt=1) {
     res_quant_text.Draw("same");
 
     TCanvas ccCorr("ccCorr", "ccCorr", 1200, 800);
-    hcorr->Draw();
+    ccCorr.SetLogz(var.log_corr_);
+    hcorr->GetZaxis()->SetTitle("Entries"); // TODO remove later when input will be with a Z-title
+    hcorr->Draw("colz");
     promptnessText.Draw("same");
 
     TCanvas ccPull("ccPull", "ccPull", 1200, 800);
+    ccPull.SetLogy(var.log_pull_);
     hpull->Draw();
     promptnessText.Draw("same");
     HistoQuantities pull_quant = EvaluateHistoQuantities(hpull);
