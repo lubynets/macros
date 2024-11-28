@@ -26,7 +26,7 @@ void res_and_pull_qa(const std::string& fileName, int selectionFlag=1) {
   std::vector<std::string> histTypes{"residual", "corr", "pull"};
 
   TH1D* hSBType = new TH1D("hSBType", "hSBType", 7, -2.5, 4.5);
-  const char* sb_titles[7] = {"", "Impossible", "Background", "Prompt", "Non-prompt", "Wrong swap", ""};
+  const char* sb_titles[7] = {"", "Impossible", "Background", "Prompt", "Non-prompt", "Wrong swap", " "};
   for (int i=1;i<=7;i++) {
     hSBType->GetXaxis()->SetBinLabel(i, sb_titles[i-1]);
   }
@@ -52,13 +52,13 @@ void res_and_pull_qa(const std::string& fileName, int selectionFlag=1) {
   const int nbins = 400;
 
   std::vector<Variable> vars {
-    {"P",  /*KF*/"fP",  /*MC*/"fP",       /*KF*/"fDeltaP",  "p",     "GeV/c", nbins, 0,    12,  nbins, -2, 2,     nbins, -5,  5},
-    {"Pt", /*KF*/"fPt", /*MC*/"fPt",      /*KF*/"fDeltaPt", "p_{T}", "GeV/c", nbins, 0,    12,  nbins, -2, 2,     nbins, -5,  5},
-    {"X",  /*KF*/"fX",  /*MC*/"fDecayX",  /*KF*/"fErrX",    "X",     "cm",    nbins, -0.5, 0.5, nbins, -0.1, 0.1, nbins, -5,  5},
-    {"Y",  /*KF*/"fY",  /*MC*/"fDecayY",  /*KF*/"fErrY",    "Y",     "cm",    nbins, -0.5, 0.5, nbins, -0.1, 0.1, nbins, -5,  5},
-    {"Z",  /*KF*/"fZ",  /*MC*/"fDecayZ",  /*KF*/"fErrZ",    "Z",     "cm",    nbins, -0.5, 0.5, nbins, -0.1, 0.1, nbins, -5,  5},
-    {"L",  /*KF*/"fL",  /*MC*/"fDecayL",  /*KF*/"fDeltaL",  "L",     "cm",    nbins, -0.5, 0.5, nbins, -0.1, 0.1, nbins, -5,  5},
-    {"T",  /*KF*/"fT",  /*MC*/"fDecayT",  /*KF*/"fDeltaT",  "T",     "ps",    nbins, -1,   5,   nbins, -3, 3,     nbins, -10, 10},
+    {"P",  /*KF*/"fP",  /*MC*/"fP",       /*KF*/"fDeltaP",  "p",     "GeV/c", nbins, 0,    12,  nbins, -1, 1,       nbins, -5,  5},
+    {"Pt", /*KF*/"fPt", /*MC*/"fPt",      /*KF*/"fDeltaPt", "p_{T}", "GeV/c", nbins, 0,    12,  nbins, -1, 1,       nbins, -5,  5},
+    {"X",  /*KF*/"fX",  /*MC*/"fDecayX",  /*KF*/"fErrX",    "X",     "cm",    nbins, -0.3, 0.3, nbins, -0.05, 0.05, nbins, -5,  5},
+    {"Y",  /*KF*/"fY",  /*MC*/"fDecayY",  /*KF*/"fErrY",    "Y",     "cm",    nbins, -0.3, 0.3, nbins, -0.05, 0.05, nbins, -5,  5},
+    {"Z",  /*KF*/"fZ",  /*MC*/"fDecayZ",  /*KF*/"fErrZ",    "Z",     "cm",    nbins, -10, 10,   nbins, -0.05, 0.05, nbins, -5,  5},
+    {"L",  /*KF*/"fL",  /*MC*/"fDecayL",  /*KF*/"fDeltaL",  "L",     "cm",    nbins, -0.1, 0.2, nbins, -0.05, 0.05, nbins, -5,  5},
+    {"T",  /*KF*/"fT",  /*MC*/"fDecayT",  /*KF*/"fDeltaT",  "T",     "ps",    nbins, -1,   2,   nbins, -2, 2,       nbins, -10, 10},
   };
 
   std::vector<std::vector<TH1D*>> hres;
