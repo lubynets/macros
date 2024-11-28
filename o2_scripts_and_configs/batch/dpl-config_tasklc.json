@@ -1299,9 +1299,9 @@
     },
     "hf-task-lc": {
         "isVerbose": "false",
-        "selectionFlagLc": "1",
-        "yCandGenMax": "0.5",
-        "yCandRecoMax": "0.80000000000000004",
+        "selectionFlagLc": "0",
+        "yCandGenMax": "0.8",
+        "yCandRecoMax": "0.8",
         "binsPt": {
             "values": [
                 "0",
@@ -1320,8 +1320,16 @@
         "enableTHn": "false",
         "thnConfigAxisPt": {
             "values": [
-                "72",
                 "0",
+                "1",
+                "2",
+                "3",
+                "4",
+                "5",
+                "6",
+                "8",
+                "12",
+                "24",
                 "36"
             ]
         },

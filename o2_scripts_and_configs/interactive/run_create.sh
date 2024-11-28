@@ -18,7 +18,7 @@
 # @author Vít Kučera <vit.kucera@cern.ch>, Inha University
 # @date 2023-10-25
 
-source /data.local1/lubynets/export_tokens.sh
+source /lustre/alice/users/lubynets/.export_tokens.sh
 
 # log file where the terminal output will be saved
 LOGFILE="stdout.log"
@@ -27,23 +27,13 @@ LOGFILE="stdout.log"
 DIR_THIS="$(dirname "$(realpath "$0")")"
 
 # O2 configuration file (in the same directory)
-JSON="$DIR_THIS/dpl-config_tasklc.json"
+JSON="$DIR_THIS/dpl-config_create.json"
 
 # command line options of O2 workflows
-OPTIONS="-b --configuration json://$JSON --aod-memory-rate-limit 2000000000 --shm-segment-size 16000000000 --resources-monitoring 2 --aod-writer-keep dangling"
+OPTIONS="-b --configuration json://$JSON --aod-memory-rate-limit 2000000000 --shm-segment-size 16000000000 --resources-monitoring 2 --aod-parent-access-level 1 --aod-writer-keep dangling"
 
 # execute the mini task workflow and its dependencies
 # shellcheck disable=SC2086 # Ignore unquoted options.
-o2-analysis-hf-task-lc $OPTIONS | \
-o2-analysis-hf-tree-creator-lc-to-p-k-pi $OPTIONS | \
-o2-analysis-centrality-table $OPTIONS | \
-o2-analysis-multiplicity-table $OPTIONS | \
-o2-analysis-hf-candidate-selector-lc $OPTIONS | \
-o2-analysis-pid-tpc $OPTIONS | \
-o2-analysis-pid-tpc-base $OPTIONS | \
-o2-analysis-pid-tof-full $OPTIONS | \
-o2-analysis-pid-tof-base $OPTIONS | \
-o2-analysis-hf-pid-creator $OPTIONS | \
 o2-analysis-hf-candidate-creator-3prong $OPTIONS | \
 o2-analysis-timestamp $OPTIONS | \
 o2-analysis-event-selection $OPTIONS | \
