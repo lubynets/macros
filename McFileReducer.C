@@ -1,6 +1,6 @@
 void McFileReducer() {
-  std::string fileInName = "/lustre/alice/alien/alice/sim/2024/LHC24e3/0/526641/AOD/001/AO2D.root";
-  std::vector<std::string> dataFrameNames{"DF_2261906078830742", "DF_2261906078830870"};
+  std::string fileInName = "/lustre/alice/users/lubynets/ao2ds/data/2022/LHC22o/526641/apass7/0630/o2_ctf_run00526641_orbit0206830848_tf0000000001_epn160/001/AO2D.root";
+  std::vector<std::string> dataFrameNames{"DF_2261906078563584", "DF_2261906078563840"};
   std::string fileOutName = "fileOut.root";
 
   TFile* fileIn = TFile::Open(fileInName.c_str(), "open");
