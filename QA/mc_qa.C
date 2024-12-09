@@ -14,16 +14,16 @@ enum eType : short {
   kNumberOfTypes
 };
 
-void res_and_pull_qa(const std::string& fileName, int selectionFlag=1) {
+void mc_qa(const std::string& fileName, int selectionFlag=1) {
   TFile* fileIn = TFile::Open(fileName.c_str());
   if(fileIn == nullptr) {
     throw std::runtime_error("fileIn == nullptr");
   }
 
-  TFile* fileOut = TFile::Open("res_and_pull_qa.root", "recreate");
+  TFile* fileOut = TFile::Open("mc_qa.root", "recreate");
 
   std::vector<std::string> dirTypes{"prompt", "nonprompt", "impossible"};
-  std::vector<std::string> histTypes{"residual", "corr", "pull"};
+  std::vector<std::string> histTypes{"mc", "rec", "residual", "corr", "pull"};
 
   TH1D* hSBType = new TH1D("hSBType", "hSBType", 7, -2.5, 4.5);
   const char* sb_titles[7] = {"", "Impossible", "Background", "Prompt", "Non-prompt", "Wrong swap", " "};
@@ -56,23 +56,35 @@ void res_and_pull_qa(const std::string& fileName, int selectionFlag=1) {
     {"Pt", /*KF*/"fPt", /*MC*/"fPt",      /*KF*/"fDeltaPt", "p_{T}", "GeV/c", nbins, 0,    12,  nbins, -1, 1,       nbins, -5,  5},
     {"X",  /*KF*/"fX",  /*MC*/"fDecayX",  /*KF*/"fErrX",    "X",     "cm",    nbins, -0.3, 0.3, nbins, -0.05, 0.05, nbins, -5,  5},
     {"Y",  /*KF*/"fY",  /*MC*/"fDecayY",  /*KF*/"fErrY",    "Y",     "cm",    nbins, -0.3, 0.3, nbins, -0.05, 0.05, nbins, -5,  5},
-    {"Z",  /*KF*/"fZ",  /*MC*/"fDecayZ",  /*KF*/"fErrZ",    "Z",     "cm",    nbins, -10, 10,   nbins, -0.05, 0.05, nbins, -5,  5},
+    {"Z",  /*KF*/"fZ",  /*MC*/"fDecayZ",  /*KF*/"fErrZ",    "Z",     "cm",    nbins, -10,  10,  nbins, -0.05, 0.05, nbins, -5,  5},
     {"L",  /*KF*/"fL",  /*MC*/"fDecayL",  /*KF*/"fDeltaL",  "L",     "cm",    nbins, -0.1, 0.2, nbins, -0.05, 0.05, nbins, -5,  5},
     {"T",  /*KF*/"fT",  /*MC*/"fDecayT",  /*KF*/"fDeltaT",  "T",     "ps",    nbins, -1,   2,   nbins, -2, 2,       nbins, -10, 10},
   };
 
+  std::vector<std::vector<TH1D*>> hmc; // only those mc which are matched to rec, i.e. were reconstructed
+  std::vector<std::vector<TH1D*>> hrec;
   std::vector<std::vector<TH1D*>> hres;
   std::vector<std::vector<TH2D*>> hcorr;
   std::vector<std::vector<TH1D*>> hpull;
+  Vector2DResize(hmc, vars.size(), kNumberOfTypes);
+  Vector2DResize(hrec, vars.size(), kNumberOfTypes);
   Vector2DResize(hres, vars.size(), kNumberOfTypes);
   Vector2DResize(hcorr, vars.size(), kNumberOfTypes);
   Vector2DResize(hpull, vars.size(), kNumberOfTypes);
 
   for(int iVar=0; iVar<vars.size(); iVar++) {
     for(int iSBType=0; iSBType<kNumberOfTypes; iSBType++) {
+      hmc.at(iVar).at(iSBType) = new TH1D(("hMc_" + vars.at(iVar).name_ + "_" + dirTypes.at(iSBType)).c_str(), ("hMc_" + vars.at(iVar).name_).c_str(), vars.at(iVar).nbins_plain_, vars.at(iVar).xlow_plain_, vars.at(iVar).xup_plain_);
+      hrec.at(iVar).at(iSBType) = new TH1D(("hRec_" + vars.at(iVar).name_ + "_" + dirTypes.at(iSBType)).c_str(), ("hRec_" + vars.at(iVar).name_).c_str(), vars.at(iVar).nbins_plain_, vars.at(iVar).xlow_plain_, vars.at(iVar).xup_plain_);
       hres.at(iVar).at(iSBType) = new TH1D(("hRes_" + vars.at(iVar).name_ + "_" + dirTypes.at(iSBType)).c_str(), ("hRes_" + vars.at(iVar).name_).c_str(), vars.at(iVar).nbins_res_, vars.at(iVar).xlow_res_, vars.at(iVar).xup_res_);
       hcorr.at(iVar).at(iSBType) = new TH2D(("hCorr_" + vars.at(iVar).name_ + "_" + dirTypes.at(iSBType)).c_str(), ("hCorr_" + vars.at(iVar).name_).c_str(), vars.at(iVar).nbins_plain_, vars.at(iVar).xlow_plain_, vars.at(iVar).xup_plain_, vars.at(iVar).nbins_plain_, vars.at(iVar).xlow_plain_, vars.at(iVar).xup_plain_);
       hpull.at(iVar).at(iSBType) = new TH1D(("hPull_" + vars.at(iVar).name_ + "_" + dirTypes.at(iSBType)).c_str(), ("hPull_" + vars.at(iVar).name_).c_str(), vars.at(iVar).nbins_pull_, vars.at(iVar).xlow_pull_, vars.at(iVar).xup_pull_);
+
+      hmc.at(iVar).at(iSBType)->GetXaxis()->SetTitle((vars.at(iVar).title_ + "^{mc}, " + vars.at(iVar).unit_).c_str());
+      hmc.at(iVar).at(iSBType)->GetYaxis()->SetTitle("Entries");
+
+      hrec.at(iVar).at(iSBType)->GetXaxis()->SetTitle((vars.at(iVar).title_ + "^{rec}, " + vars.at(iVar).unit_).c_str());
+      hrec.at(iVar).at(iSBType)->GetYaxis()->SetTitle("Entries");
 
       hres.at(iVar).at(iSBType)->GetXaxis()->SetTitle((vars.at(iVar).title_ + "^{rec} - " + vars.at(iVar).title_ + "^{mc}, " + vars.at(iVar).unit_).c_str());
       hres.at(iVar).at(iSBType)->GetYaxis()->SetTitle("Entries");
@@ -118,6 +130,8 @@ void res_and_pull_qa(const std::string& fileName, int selectionFlag=1) {
       const int sb_histotype = SB_Statys2Type(sb_status);
 
       for(int iVar=0; iVar<vars.size(); iVar++) {
+        hmc.at(iVar).at(sb_histotype)->Fill(value_mc.at(iVar));
+        hrec.at(iVar).at(sb_histotype)->Fill(value_rec.at(iVar));
         hres.at(iVar).at(sb_histotype)->Fill(value_rec.at(iVar) - value_mc.at(iVar));
         hcorr.at(iVar).at(sb_histotype)->Fill(value_mc.at(iVar), value_rec.at(iVar));
         hpull.at(iVar).at(sb_histotype)->Fill((value_rec.at(iVar) - value_mc.at(iVar)) / value_err.at(iVar));
@@ -130,10 +144,14 @@ void res_and_pull_qa(const std::string& fileName, int selectionFlag=1) {
   for(int kType=0; kType<kNumberOfTypes; kType++) {
     for(int iVar=0; iVar<vars.size(); iVar++) {
       CD(fileOut, (histTypes.at(0) + "/" + dirTypes.at(kType)).c_str());
-      hres.at(iVar).at(kType)->Write();
+      hmc.at(iVar).at(kType)->Write();
       CD(fileOut, (histTypes.at(1) + "/" + dirTypes.at(kType)).c_str());
-      hcorr.at(iVar).at(kType)->Write();
+      hrec.at(iVar).at(kType)->Write();
       CD(fileOut, (histTypes.at(2) + "/" + dirTypes.at(kType)).c_str());
+      hres.at(iVar).at(kType)->Write();
+      CD(fileOut, (histTypes.at(3) + "/" + dirTypes.at(kType)).c_str());
+      hcorr.at(iVar).at(kType)->Write();
+      CD(fileOut, (histTypes.at(4) + "/" + dirTypes.at(kType)).c_str());
       hpull.at(iVar).at(kType)->Write();
     }
   }
