@@ -91,6 +91,7 @@ void mc_qa(const std::string& fileName, int selectionFlag=1) {
 
       hcorr.at(iVar).at(iSBType)->GetXaxis()->SetTitle((vars.at(iVar).title_ + "^{mc}, " + vars.at(iVar).unit_).c_str());
       hcorr.at(iVar).at(iSBType)->GetYaxis()->SetTitle((vars.at(iVar).title_ + "^{rec}, " + vars.at(iVar).unit_).c_str());
+      hcorr.at(iVar).at(iSBType)->GetZaxis()->SetTitle("Entries");
 
       hpull.at(iVar).at(iSBType)->GetXaxis()->SetTitle(("(" + vars.at(iVar).title_ + "^{rec} - " + vars.at(iVar).title_ + "^{mc}) / #sigma_{" + vars.at(iVar).title_ + "^{rec}}").c_str());
       hpull.at(iVar).at(iSBType)->GetYaxis()->SetTitle("Entries");
