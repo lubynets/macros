@@ -1,7 +1,7 @@
 {
     "internal-dpl-clock": "",
     "internal-dpl-aod-reader": {
-        "aod-file-private": "/lustre/alice/users/lubynets/ao2ds/data/2022/LHC22o/526641/apass7/0630/o2_ctf_run00526641_orbit0206830848_tf0000000001_epn160/001/AO2D.root",
+        "aod-file-private": "/lustre/alice/users/lubynets/ao2ds/sim/2024/LHC24e3/0/526641/AOD/001/AO2D.small.root",
         "aod-max-io-rate": "0",
         "time-limit": "0",
         "orbit-offset-enumeration": "0",

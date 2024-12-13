@@ -35,6 +35,8 @@ OPTIONS="-b --configuration json://$JSON --aod-memory-rate-limit 2000000000 --sh
 # execute the mini task workflow and its dependencies
 # shellcheck disable=SC2086 # Ignore unquoted options.
 o2-analysis-hf-track-index-skim-creator $OPTIONS | \
+o2-analysis-pid-tpc-base $OPTIONS | \
+o2-analysis-pid-tpc $OPTIONS | \
 o2-analysis-timestamp $OPTIONS | \
 o2-analysis-trackselection $OPTIONS | \
 o2-analysis-track-propagation $OPTIONS | \

@@ -1,7 +1,7 @@
 {
     "internal-dpl-clock": "",
     "internal-dpl-aod-reader": {
-        "aod-file-private": "\/lustre\/alice\/users\/lubynets\/ao2ds\/sim\/2024\/LHC24e3\/0\/526641\/AOD\/001\/AnalysisResults_skimmed.root",
+        "aod-file-private": "/lustre/alice/users/lubynets/ao2ds/data/2022/LHC22o/526641/apass7/0630/o2_ctf_run00526641_orbit0206830848_tf0000000001_epn160/001/AO2D.skimmed.root",
         "aod-max-io-rate": "0",
         "time-limit": "0",
         "orbit-offset-enumeration": "0",
@@ -94,8 +94,8 @@
         },
         "processStandard": "false",
         "processStandardWithPID": "false",
-        "processCovarianceMc": "true",
-        "processCovariance": "false",
+        "processCovarianceMc": "false",
+        "processCovariance": "true",
         "processCovarianceWithPID": "false"
     },
     "bc-selection-task": {
@@ -862,7 +862,7 @@
     "hf-candidate-creator-3prong-expressions": {
         "isVerbose": "false",
         "rejectBackground": "false",
-        "processMc": "true",
+        "processMc": "false",
         "processMcCentFT0C": "false",
         "processMcCentFT0M": "false"
     },
@@ -1257,18 +1257,18 @@
         "selectionFlagLc": "0",
         "fillCandidateLiteTable": "false",
         "fillCollIdTable": "false",
-        "fillCandidateMcTable": "true",
+        "fillCandidateMcTable": "false",
         "keepOnlySignalMc": "false",
         "keepOnlyBkg": "false",
         "downSampleBkgFactor": "1",
         "downSampleBkgPtMax": "100",
         "processMcNoCentralityWithDCAFitterN": "false",
         "processMcWithCentralityWithDCAFitterN": "false",
-        "processMcNoCentralityWithKFParticle": "true",
+        "processMcNoCentralityWithKFParticle": "false",
         "processMcWithCentralityWithKFParticle": "false",
         "processDataNoCentralityWithDCAFitterN": "false",
         "processDataWithCentralityWithDCAFitterN": "false",
-        "processDataNoCentralityWithKFParticle": "false",
+        "processDataNoCentralityWithKFParticle": "true",
         "processDataWithCentralityWithKFParticle": "false"
     },
     "hf-task-lc": {
