@@ -1,7 +1,7 @@
 {
     "internal-dpl-clock": "",
     "internal-dpl-aod-reader": {
-        "aod-file-private": "\/lustre\/alice\/users\/lubynets\/ao2ds\/sim\/2024\/LHC24e3\/0\/526641\/AOD\/001\/AnalysisResults_skimmed.root",
+        "aod-file-private": "\/lustre\/alice\/users\/lubynets\/ao2ds\/sim\/2024\/LHC24e3\/0\/526641\/AOD\/001\/AnalysisResults_skimmed.small.root",
         "aod-max-io-rate": "0",
         "time-limit": "0",
         "orbit-offset-enumeration": "0",
@@ -203,12 +203,16 @@
                 "FT0MultZeqs",
                 "FDDMultZeqs",
                 "PVMultZeqs",
-                "MultMCExtras"
+                "MultMCExtras",
+                "MFTMults"
             ],
             "labels_cols": [
                 "Enable"
             ],
             "values": [
+                [
+                    "-1"
+                ],
                 [
                     "-1"
                 ],
