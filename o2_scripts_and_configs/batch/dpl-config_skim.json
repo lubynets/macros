@@ -131,10 +131,10 @@
         "compatibilityIU": "false",
         "itsMatching": "0",
         "dcaSetup": "0",
-        "ptMin": "0.100000001",
+        "ptMin": "-1",
         "ptMax": "1e+10",
-        "etaMin": "-0.800000012",
-        "etaMax": "0.800000012"
+        "etaMin": "-100",
+        "etaMax": "100"
     },
     "track-to-collision-association": {
         "nSigmaForTimeCompat": "4",
@@ -698,14 +698,14 @@
                 [
                     "2.05",
                     "2.55",
-                    "0.7",
-                    "0.02"
+                    "-1",
+                    "-1"
                 ],
                 [
                     "2.05",
                     "2.55",
-                    "0.5",
-                    "0.02"
+                    "-1",
+                    "-1"
                 ]
             ]
         },
