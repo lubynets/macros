@@ -13,8 +13,8 @@ struct HistoQuantities {
 HistoQuantities EvaluateHistoQuantities(const TH1* h);
 TPaveText ConverHistoQuantitiesToText(const HistoQuantities& q, float x1, float y1, float x2, float y2);
 
-void res_and_pull_qa2(const std::string& fileName, int prompt_or_nonprompt=1) {
-  gROOT->Macro( "res_and_pull_qa2.style.cc" );
+void mc_qa2(const std::string& fileName, int prompt_or_nonprompt=1) {
+  gROOT->Macro( "mc_qa2.style.cc" );
   if(prompt_or_nonprompt !=1 && prompt_or_nonprompt != 2) {
     throw std::runtime_error("prompt_or_nonprompt must be 1 or 2");
   }
@@ -26,28 +26,33 @@ void res_and_pull_qa2(const std::string& fileName, int prompt_or_nonprompt=1) {
     throw std::runtime_error("fileIn == nullptr");
   }
 
-  std::string fileOutName = "res_and_pull_qa2";
+  std::string fileOutName = "mc_qa2";
 
   struct Variable {
     std::string name_;
+    bool log_mc_;
+    bool log_rec_;
     bool log_res_;
     bool log_corr_;
     bool log_pull_;
   };
 
   std::vector<Variable> vars {
-    {"P",  false, true,  false},
-    {"Pt", false, true,  false},
-    {"X",  false, false, false},
-    {"Y",  false, false, false},
-    {"Z",  false, false, false},
-    {"L",  false, false, false},
-    {"T",  false, false, false},
+//  name   logmc  logrec logres logcorr logpull
+    {"P",  false, false, false, true,  false},
+    {"Pt", false, false, false, true,  false},
+    {"X",  false, false, false, false, false},
+    {"Y",  false, false, false, false, false},
+    {"Z",  false, false, false, false, false},
+    {"L",  false, false, false, false, false},
+    {"T",  false, false, false, false, false},
   };
 
   bool is_first_canvas{true};
   std::string printing_bracket = "(";
   for(auto& var : vars) {
+    TH1D* hmc = fileIn->Get<TH1D>(("mc/" + promptness + "/hMc_" + var.name_ + "_" + promptness).c_str());
+    TH1D* hrec = fileIn->Get<TH1D>(("rec/" + promptness + "/hRec_" + var.name_ + "_" + promptness).c_str());
     TH1D* hres = fileIn->Get<TH1D>(("residual/" + promptness + "/hRes_" + var.name_ + "_" + promptness).c_str());
     TH2D* hcorr = fileIn->Get<TH2D>(("corr/" + promptness + "/hCorr_" + var.name_ + "_" + promptness).c_str());
     TH1D* hpull = fileIn->Get<TH1D>(("pull/" + promptness + "/hPull_" + var.name_ + "_" + promptness).c_str());
@@ -55,27 +60,57 @@ void res_and_pull_qa2(const std::string& fileName, int prompt_or_nonprompt=1) {
       throw std::runtime_error("hres == nullptr || hcorr == nullptr || hpull == nullptr");
     }
 
+    hmc->UseCurrentStyle();
+    hrec->UseCurrentStyle();
     hres->UseCurrentStyle();
     hcorr->UseCurrentStyle();
     hpull->UseCurrentStyle();
 
-    TPaveText promptnessText(0.14, 0.86, 0.27, 0.90, "brNDC");
+    TPaveText promptnessText(0.74, 0.86, 0.87, 0.90, "brNDC");
     promptnessText.SetFillColor(0);
     promptnessText.SetTextSize(0.03);
-    promptnessText.SetTextFont(22);
+    promptnessText.SetTextFont(62);
     promptnessText.AddText(promptness.c_str());
+
+    TCanvas ccMc("ccMc", "ccMc", 1200, 800);
+    ccMc.SetLogy(var.log_mc_);
+    hmc->Draw();
+    promptnessText.Draw("same");
+    TPaveText disclaimer_mc(0.74, 0.78, 0.87, 0.84, "brNDC");
+    disclaimer_mc.SetFillColor(0);
+    disclaimer_mc.SetTextSize(0.02);
+    disclaimer_mc.SetTextFont(62);
+    disclaimer_mc.AddText("MC matched with reco only");
+    disclaimer_mc.Draw("same");
+    HistoQuantities mc_quant = EvaluateHistoQuantities(hmc);
+    TPaveText mc_quant_text = ConverHistoQuantitiesToText(mc_quant, 0.74, 0.6, 0.87, 0.7);
+    mc_quant_text.Draw("same");
+
+    TCanvas ccRec("ccRec", "ccRec", 1200, 800);
+    ccRec.SetLogy(var.log_rec_);
+    hrec->Draw();
+    promptnessText.Draw("same");
+    TPaveText disclaimer_rec(0.74, 0.78, 0.87, 0.84, "brNDC");
+    disclaimer_rec.SetFillColor(0);
+    disclaimer_rec.SetTextSize(0.02);
+    disclaimer_rec.SetTextFont(62);
+    disclaimer_rec.AddText("Rec matched to MC-true only");
+    disclaimer_rec.Draw("same");
+    HistoQuantities rec_quant = EvaluateHistoQuantities(hrec);
+    TPaveText rec_quant_text = ConverHistoQuantitiesToText(rec_quant, 0.74, 0.6, 0.87, 0.7);
+    rec_quant_text.Draw("same");
 
     TCanvas ccRes("ccRes", "ccRes", 1200, 800);
     ccRes.SetLogy(var.log_res_);
     hres->Draw();
     promptnessText.Draw("same");
     HistoQuantities res_quant = EvaluateHistoQuantities(hres);
-    TPaveText res_quant_text = ConverHistoQuantitiesToText(res_quant, 0.14, 0.6, 0.27, 0.7);
+    TPaveText res_quant_text = ConverHistoQuantitiesToText(res_quant, 0.74, 0.6, 0.87, 0.7);
     res_quant_text.Draw("same");
 
     TCanvas ccCorr("ccCorr", "ccCorr", 1200, 800);
+    ccCorr.SetRightMargin(0.16);
     ccCorr.SetLogz(var.log_corr_);
-    hcorr->GetZaxis()->SetTitle("Entries"); // TODO remove later when input will be with a Z-title
     hcorr->Draw("colz");
     promptnessText.Draw("same");
 
@@ -84,11 +119,13 @@ void res_and_pull_qa2(const std::string& fileName, int prompt_or_nonprompt=1) {
     hpull->Draw();
     promptnessText.Draw("same");
     HistoQuantities pull_quant = EvaluateHistoQuantities(hpull);
-    TPaveText pull_quant_text = ConverHistoQuantitiesToText(pull_quant, 0.14, 0.6, 0.27, 0.7);
+    TPaveText pull_quant_text = ConverHistoQuantitiesToText(pull_quant, 0.74, 0.6, 0.87, 0.7);
     pull_quant_text.Draw("same");
 
     if(is_first_canvas) printing_bracket = "(";
     else                printing_bracket = "";
+    ccMc.Print((fileOutName + "_mc.pdf" + printing_bracket).c_str(), "pdf");
+    ccRec.Print((fileOutName + "_rec.pdf" + printing_bracket).c_str(), "pdf");
     ccRes.Print((fileOutName + "_res.pdf" + printing_bracket).c_str(), "pdf");
     ccCorr.Print((fileOutName + "_corr.pdf" + printing_bracket).c_str(), "pdf");
     ccPull.Print((fileOutName + "_pull.pdf" + printing_bracket).c_str(), "pdf");
@@ -97,6 +134,8 @@ void res_and_pull_qa2(const std::string& fileName, int prompt_or_nonprompt=1) {
 
   printing_bracket = "]";
   TCanvas emptycanvas("emptycanvas", "", 1200, 800);
+  emptycanvas.Print((fileOutName + "_mc.pdf" + printing_bracket).c_str(), "pdf");
+  emptycanvas.Print((fileOutName + "_rec.pdf" + printing_bracket).c_str(), "pdf");
   emptycanvas.Print((fileOutName + "_res.pdf" + printing_bracket).c_str(), "pdf");
   emptycanvas.Print((fileOutName + "_corr.pdf" + printing_bracket).c_str(), "pdf");
   emptycanvas.Print((fileOutName + "_pull.pdf" + printing_bracket).c_str(), "pdf");
@@ -127,12 +166,12 @@ TPaveText ConverHistoQuantitiesToText(const HistoQuantities& q, float x1, float 
   TPaveText text(x1, y1, x2, y2, "brNDC");
   text.SetFillColor(0);
   text.SetTextSize(0.03);
-  text.SetTextFont(22);
+  text.SetTextFont(62);
 
   text.AddText(("underflow = " + to_string_with_precision(q.underflow_*100, 2) + "%").c_str());
   text.AddText(("overflow = " + to_string_with_precision(q.overflow_*100, 2) + "%").c_str());
-  text.AddText(("#mu = " + to_string_with_precision(q.mean_, 3) + " #pm " + to_string_with_precision(q.mean_err_, 3)).c_str());
-  text.AddText(("#sigma = " + to_string_with_precision(q.stddev_, 3) + " #pm " + to_string_with_precision(q.stddev_err_, 3)).c_str());
+  text.AddText(("#mu = " + to_string_with_precision(q.mean_, 3) + " #pm " + to_string_with_precision(q.mean_err_, 3) + " (stat.)").c_str());
+  text.AddText(("#sigma = " + to_string_with_precision(q.stddev_, 3) + " #pm " + to_string_with_precision(q.stddev_err_, 3) + " (stat.)").c_str());
 
   return text;
 }
