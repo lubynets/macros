@@ -14,7 +14,7 @@ enum eType : short {
   kNumberOfTypes
 };
 
-void mc_qa(const std::string& fileName, int selectionFlag=1) {
+void mc_qa(const std::string& fileName, int selectionFlag=0) {
   TFile* fileIn = TFile::Open(fileName.c_str());
   if(fileIn == nullptr) {
     throw std::runtime_error("fileIn == nullptr");
@@ -34,6 +34,7 @@ void mc_qa(const std::string& fileName, int selectionFlag=1) {
   struct Variable {
     std::string name_;
     std::string name_in_tree_rec_;
+    bool rec_from_kf_;
     std::string name_in_tree_mc_;
     std::string name_in_tree_error_;
     std::string title_;
@@ -52,17 +53,20 @@ void mc_qa(const std::string& fileName, int selectionFlag=1) {
   const int nbins = 400;
 
   std::vector<Variable> vars {
-    {"P",  /*KF*/"fP",  /*MC*/"fP",       /*KF*/"fDeltaP",  "p",     "GeV/c", nbins, 0,    12,  nbins, -1, 1,       nbins, -5,  5},
-    {"Pt", /*KF*/"fPt", /*MC*/"fPt",      /*KF*/"fDeltaPt", "p_{T}", "GeV/c", nbins, 0,    12,  nbins, -1, 1,       nbins, -5,  5},
-    {"X",  /*KF*/"fX",  /*MC*/"fDecayX",  /*KF*/"fErrX",    "X",     "cm",    nbins, -0.3, 0.3, nbins, -0.05, 0.05, nbins, -5,  5},
-    {"Y",  /*KF*/"fY",  /*MC*/"fDecayY",  /*KF*/"fErrY",    "Y",     "cm",    nbins, -0.3, 0.3, nbins, -0.05, 0.05, nbins, -5,  5},
-    {"Z",  /*KF*/"fZ",  /*MC*/"fDecayZ",  /*KF*/"fErrZ",    "Z",     "cm",    nbins, -10,  10,  nbins, -0.05, 0.05, nbins, -5,  5},
-    {"L",  /*KF*/"fL",  /*MC*/"fDecayL",  /*KF*/"fDeltaL",  "L",     "cm",    nbins, -0.1, 0.2, nbins, -0.05, 0.05, nbins, -5,  5},
-    {"T",  /*KF*/"fT",  /*MC*/"fDecayT",  /*KF*/"fDeltaT",  "T",     "ps",    nbins, -1,   2,   nbins, -2, 2,       nbins, -10, 10},
+    {"P",   /*KF*/"fP",    true,  /*MC*/"fP",       /*KF*/"fDeltaP",  "p",      "GeV/c", nbins, 0,    12,  nbins, -1, 1,       nbins, -5,  5 },
+    {"Pt",  /*KF*/"fPt",   true,  /*MC*/"fPt",      /*KF*/"fDeltaPt", "p_{T}",  "GeV/c", nbins, 0,    12,  nbins, -1, 1,       nbins, -5,  5 },
+    {"Xsv", /*KF*/"fX",    true,  /*MC*/"fDecayX",  /*KF*/"fErrX",    "X_{SV}", "cm",    nbins, -0.3, 0.3, nbins, -0.05, 0.05, nbins, -5,  5 },
+    {"Ysv", /*KF*/"fY",    true,  /*MC*/"fDecayY",  /*KF*/"fErrY",    "Y_{SV}", "cm",    nbins, -0.3, 0.3, nbins, -0.05, 0.05, nbins, -5,  5 },
+    {"Zsv", /*KF*/"fZ",    true,  /*MC*/"fDecayZ",  /*KF*/"fErrZ",    "Z_{SV}", "cm",    nbins, -20,  20,  nbins, -0.05, 0.05, nbins, -5,  5 },
+    {"Xpv", /*Li*/"fPosX", false, /*MC*/"fEventX",  /*KF*/"fErrPVX",  "X_{PV}", "cm",    nbins, -0.3, 0.3, nbins, -0.05, 0.05, nbins, -5,  5 },
+    {"Ypv", /*Li*/"fPosY", false, /*MC*/"fEventY",  /*KF*/"fErrPVY",  "Y_{PV}", "cm",    nbins, -0.3, 0.3, nbins, -0.05, 0.05, nbins, -5,  5 },
+    {"Zpv", /*Li*/"fPosZ", false, /*MC*/"fEventZ",  /*KF*/"fErrPVZ",  "Z_{PV}", "cm",    nbins, -20,  20,  nbins, -0.05, 0.05, nbins, -5,  5 },
+    {"L",   /*KF*/"fL",    true,  /*MC*/"fDecayL",  /*KF*/"fDeltaL",  "L",      "cm",    nbins, -0.1, 0.2, nbins, -0.05, 0.05, nbins, -5,  5 },
+    {"T",   /*KF*/"fT",    true,  /*MC*/"fDecayT",  /*KF*/"fDeltaT",  "T",      "ps",    nbins, -1,   2,   nbins, -2, 2,       nbins, -10, 10},
   };
 
-  std::vector<std::vector<TH1D*>> hmc; // only those mc which are matched to rec, i.e. were reconstructed
-  std::vector<std::vector<TH1D*>> hrec;
+  std::vector<std::vector<TH1D*>> hmc;  // only those mc which are matched to rec, i.e. were reconstructed
+  std::vector<std::vector<TH1D*>> hrec; // only those rec which are matched to mc, i.e. correspond to signal
   std::vector<std::vector<TH1D*>> hres;
   std::vector<std::vector<TH2D*>> hcorr;
   std::vector<std::vector<TH1D*>> hpull;
@@ -110,18 +114,24 @@ void mc_qa(const std::string& fileName, int selectionFlag=1) {
     const std::string dirname = k->GetName();
     if(dirname == "parentFiles") continue;
 
+    TTree* treeLite = fileIn->Get<TTree>((dirname + "/O2hfcandlclite").c_str());
     TTree* treeKF = fileIn->Get<TTree>((dirname + "/O2hfcandlckf").c_str());
     TTree* treeMC = fileIn->Get<TTree>((dirname + "/O2hfcandlcmc").c_str());
     treeKF->SetBranchAddress("fSigBgStatus", &sb_status);
     treeKF->SetBranchAddress("fIsSelected", &is_selected);
     for(int iVar=0; iVar<vars.size(); iVar++) {
-      treeKF->SetBranchAddress(vars.at(iVar).name_in_tree_rec_.c_str(), &value_rec.at(iVar));
+      auto treeRec = vars.at(iVar).rec_from_kf_ ? treeKF : treeLite;
+      treeRec->SetBranchAddress(vars.at(iVar).name_in_tree_rec_.c_str(), &value_rec.at(iVar));
       treeKF->SetBranchAddress(vars.at(iVar).name_in_tree_error_.c_str(), &value_err.at(iVar));
       treeMC->SetBranchAddress(vars.at(iVar).name_in_tree_mc_.c_str(), &value_mc.at(iVar));
     }
 
     const int Nentries = treeKF->GetEntries();
+
+    std::cout << dirname << ", Nentries = " << Nentries << "\n";
+
     for(int iEntry=0; iEntry<Nentries; iEntry++) {
+      treeLite->GetEntry(iEntry);
       treeKF->GetEntry(iEntry);
       treeMC->GetEntry(iEntry);
 
