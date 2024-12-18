@@ -6,6 +6,7 @@ enum eType : short {
   kBackground,
   kWrongSwap,
   kImpossible,
+  kData,
   kNumberOfTypes
 };
 
@@ -18,9 +19,13 @@ void treeKF_qa(const std::string& fileName, int selectionFlag=1) {
 
   TFile* fileOut = TFile::Open("treeKF_qa.root", "recreate");
 
-  std::vector<std::string> dirTypes{"prompt", "nonprompt", "background", "wrongswap", "impossible"};
+  std::vector<std::string> dirTypes{"prompt", "nonprompt", "background", "wrongswap", "impossible", "data"};
 
-  TH1D* hSBType = new TH1D("hSBType", "hSBType", 10, -2.5, 7.5);
+  TH1D* hSBType = new TH1D("hSBType", "hSBType", 8, -2.5, 5.5);
+  const char* sb_titles[8] = {"", "Impossible", "Background", "Prompt", "Non-prompt", "Wrong swap", "Data", ""};
+  for (int i=1;i<=8;i++) {
+    hSBType->GetXaxis()->SetBinLabel(i,sb_titles[i-1]);
+  }
 
   struct Variable {
     std::string name_;
@@ -87,7 +92,7 @@ void treeKF_qa(const std::string& fileName, int selectionFlag=1) {
 
       if(is_selected<selectionFlag) continue;
 
-      hSBType->Fill(sb_status);
+      hSBType->Fill(sb_status == -999 ? 4 : sb_status);
       const int sb_histotype = SB_Statys2Type(sb_status);
 
       for(int iVar=0; iVar<vars.size(); iVar++) {
@@ -114,6 +119,7 @@ int SB_Statys2Type(int status) {
   else if (status == 1) return kPrompt;
   else if (status == 2) return kNonPrompt;
   else if (status == 3) return kWrongSwap;
+  else if (status == -999) return kData;
   else return kImpossible;
 }
 
