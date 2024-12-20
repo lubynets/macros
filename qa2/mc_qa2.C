@@ -39,13 +39,19 @@ void mc_qa2(const std::string& fileName, int prompt_or_nonprompt=1) {
 
   std::vector<Variable> vars {
 //  name   logmc  logrec logres logcorr logpull
-    {"P",  false, false, false, true,  false},
-    {"Pt", false, false, false, true,  false},
-    {"X",  false, false, false, false, false},
-    {"Y",  false, false, false, false, false},
-    {"Z",  false, false, false, false, false},
-    {"L",  false, false, false, false, false},
-    {"T",  false, false, false, false, false},
+    {"P",   false, false, false, true, false},
+    {"Pt",  false, false, false, true, false},
+    {"X",   false, false, false, true, false},
+    {"Y",   false, false, false, true, false},
+    {"Z",   false, false, false, true, false},
+    {"Xsv", false, false, false, true, false},
+    {"Ysv", false, false, false, true, false},
+    {"Zsv", false, false, false, true, false},
+    {"Xpv", false, false, false, true, false},
+    {"Ypv", false, false, false, true, false},
+    {"Zpv", false, false, false, true, false},
+    {"L",   false, true, true, true, true},
+    {"T",   false, true, true, true, true},
   };
 
   bool is_first_canvas{true};
@@ -153,7 +159,7 @@ HistoQuantities EvaluateHistoQuantities(const TH1* h) {
   HistoQuantities result;
   const float integral = h->GetEntries();
   result.underflow_ = h->GetBinContent(0) / integral;
-  result.overflow_ = h->GetBinContent(h->GetNbinsX()) / integral;
+  result.overflow_ = h->GetBinContent(h->GetNbinsX()+1) / integral;
   result.mean_ = h->GetMean();
   result.mean_err_ = h->GetMeanError();
   result.stddev_ = h->GetStdDev();
