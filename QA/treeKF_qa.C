@@ -30,6 +30,8 @@ void treeKF_qa(const std::string& fileName, int selectionFlag=1) {
   struct Variable {
     std::string name_;
     std::string name_in_tree_;
+    bool is_from_kf_;
+    bool is_float_;
     std::string xaxis_title_;
     int nbins_;
     float xlow_;
@@ -37,22 +39,23 @@ void treeKF_qa(const std::string& fileName, int selectionFlag=1) {
   };
 
   std::vector<Variable> vars {
-    {"Mass",         "fMassInv",           "m_{pK#pi}, GeV/c^{2}", 600, 1.98, 2.58},
-    {"Pt",           "fPt",                "p_{T}, GeV/c",         600, 0,    12  },
-    {"Chi2prim_p",   "fChi2PrimProton",    "#chi^{2}_{prim}{p}",   100, 0,    60  },
-    {"Chi2prim_K",   "fChi2PrimKaon",      "#chi^{2}_{prim}{K}",   100, 0,    60  },
-    {"Chi2prim_pi",  "fChi2PrimPion",      "#chi^{2}_{prim}{#pi}", 100, 0,    60  },
-    {"Chi2geo_p_pi", "fChi2geoProtonPion", "#chi^{2}_{geo}{p#pi}", 100, 0,    4   },
-    {"Chi2geo_p_K",  "fChi2geoProtonKaon", "#chi^{2}_{geo}{pK}",   100, 0,    4   },
-    {"Chi2geo_K_pi", "fChi2geoPionKaon",   "#chi^{2}_{geo}{K#pi}", 100, 0,    4   },
-    {"DCA_p_pi",     "fDCAProtonPion",     "DCA{p#pi}, cm",        100, 0,    0.1 },
-    {"DCA_p_K",      "fDCAProtonKaon",     "DCA{pK}, cm",          100, 0,    0.1 },
-    {"DCA_K_pi",     "fDCAPionKaon",       "DCA{K#pi}, cm",        100, 0,    0.1 },
-    {"Chi2geo",      "fChi2geo",           "#chi^{2}_{geo}",       100, 0,    10  },
-    {"Chi2topo",     "fChi2topo",          "#chi^{2}_{topo}",      100, 0,    20  },
-    {"LdL",          "fLdL",               "L/#Delta L",           100, 0,    10  },
-    {"L",            "fL",                 "L, cm",                100, 0,    0.5 },
-    {"T",            "fT",                 "T, ps",                400, 0,    5   },
+    {"Mass",         "fMassInv",               true,  true,  "m_{pK#pi}, GeV/c^{2}", 600, 1.98, 2.58},
+    {"Pt",           "fPt",                    true,  true,  "p_{T}, GeV/c",         600, 0,    12  },
+    {"Chi2prim_p",   "fChi2PrimProton",        true,  true,  "#chi^{2}_{prim}{p}",   100, 0,    60  },
+    {"Chi2prim_K",   "fChi2PrimKaon",          true,  true,  "#chi^{2}_{prim}{K}",   100, 0,    60  },
+    {"Chi2prim_pi",  "fChi2PrimPion",          true,  true,  "#chi^{2}_{prim}{#pi}", 100, 0,    60  },
+    {"Chi2geo_p_pi", "fChi2geoProtonPion",     true,  true,  "#chi^{2}_{geo}{p#pi}", 100, 0,    4   },
+    {"Chi2geo_p_K",  "fChi2geoProtonKaon",     true,  true,  "#chi^{2}_{geo}{pK}",   100, 0,    4   },
+    {"Chi2geo_K_pi", "fChi2geoPionKaon",       true,  true,  "#chi^{2}_{geo}{K#pi}", 100, 0,    4   },
+    {"DCA_p_pi",     "fDCAProtonPion",         true,  true,  "DCA{p#pi}, cm",        100, 0,    0.1 },
+    {"DCA_p_K",      "fDCAProtonKaon",         true,  true,  "DCA{pK}, cm",          100, 0,    0.1 },
+    {"DCA_K_pi",     "fDCAPionKaon",           true,  true,  "DCA{K#pi}, cm",        100, 0,    0.1 },
+    {"Chi2geo",      "fChi2geo",               true,  true,  "#chi^{2}_{geo}",       100, 0,    10  },
+    {"Chi2topo",     "fChi2topo",              true,  true,  "#chi^{2}_{topo}",      100, 0,    20  },
+    {"LdL",          "fLdL",                   true,  true,  "L/#Delta L",           100, 0,    10  },
+    {"L",            "fL",                     true,  true,  "L, cm",                100, 0,    0.5 },
+    {"T",            "fT",                     true,  true,  "T, ps",                400, 0,    5   },
+    {"nPCPV",        "fNProngsContributorsPV", false, false, "nPCPV",                6,   -1  , 5   },
   };
 
   std::vector<std::vector<TH1D*>> hvar;
@@ -69,8 +72,10 @@ void treeKF_qa(const std::string& fileName, int selectionFlag=1) {
     }
   }
 
-  std::vector<float> value;
-  value.resize(vars.size());
+  std::vector<float> value_float;
+  std::vector<uint8_t> value_int;
+  value_float.resize(vars.size());
+  value_int.resize(vars.size());
   int sb_status, is_selected;
 
   auto lok = fileIn->GetListOfKeys();
@@ -80,15 +85,19 @@ void treeKF_qa(const std::string& fileName, int selectionFlag=1) {
     if(dirname == "parentFiles") continue;
 
     TTree* treeKF = fileIn->Get<TTree>((dirname + "/O2hfcandlckf").c_str());
+    TTree* treeLite = fileIn->Get<TTree>((dirname + "/O2hfcandlclite").c_str());
     treeKF->SetBranchAddress("fSigBgStatus", &sb_status);
     treeKF->SetBranchAddress("fIsSelected", &is_selected);
     for(int iVar=0; iVar<vars.size(); iVar++) {
-      treeKF->SetBranchAddress(vars.at(iVar).name_in_tree_.c_str(), &value.at(iVar));
+      auto treeRec = vars.at(iVar).is_from_kf_ ? treeKF : treeLite;
+      if(vars.at(iVar).is_float_) treeRec->SetBranchAddress(vars.at(iVar).name_in_tree_.c_str(), &value_float.at(iVar));
+      else                        treeRec->SetBranchAddress(vars.at(iVar).name_in_tree_.c_str(), &value_int.at(iVar));
     }
 
     const int Nentries = treeKF->GetEntries();
     for(int iEntry=0; iEntry<Nentries; iEntry++) {
       treeKF->GetEntry(iEntry);
+      treeLite->GetEntry(iEntry);
 
       if(is_selected<selectionFlag) continue;
 
@@ -96,7 +105,8 @@ void treeKF_qa(const std::string& fileName, int selectionFlag=1) {
       const int sb_histotype = SB_Statys2Type(sb_status);
 
       for(int iVar=0; iVar<vars.size(); iVar++) {
-        hvar.at(iVar).at(sb_histotype)->Fill(value.at(iVar));
+        auto value = vars.at(iVar).is_float_ ? value_float.at(iVar) : static_cast<int>(value_int.at(iVar));
+        hvar.at(iVar).at(sb_histotype)->Fill(value);
       }
     }
   }
