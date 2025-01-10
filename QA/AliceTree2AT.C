@@ -1,4 +1,4 @@
-void AliceTree2AT(const std::string& fileName, int selectionFlag=1, bool isMC=true) {
+void AliceTree2AT(const std::string& fileName, bool isMC=true) {
   TFile* fileIn = TFile::Open(fileName.c_str());
   if(fileIn == nullptr) {
     throw std::runtime_error("fileIn == nullptr");
@@ -42,13 +42,15 @@ void AliceTree2AT(const std::string& fileName, int selectionFlag=1, bool isMC=tr
       const std::string fieldType = leave->ClassName();
       if (fieldType == "TLeafF") {
         branch_config.AddField<float>((prefix + fieldName).c_str());
-        candidateMapFloats.emplace_back(std::make_pair(branch_config.GetFieldId((prefix + fieldName).c_str()), fieldName));
+        mapF.emplace_back(std::make_pair(branch_config.GetFieldId((prefix + fieldName).c_str()), fieldName));
       } else if (fieldType == "TLeafI") {
         branch_config.AddField<int>((prefix + fieldName).c_str());
-        candidateMapInts.emplace_back(std::make_pair(branch_config.GetFieldId((prefix + fieldName).c_str()), fieldName));
+        mapI.emplace_back(std::make_pair(branch_config.GetFieldId((prefix + fieldName).c_str()), fieldName));
       }
     }
   };
+
+  int sb_status_field_id;
 
   auto lok = fileIn->GetListOfKeys();
   for(const auto& k : *lok) {
@@ -68,6 +70,8 @@ void AliceTree2AT(const std::string& fileName, int selectionFlag=1, bool isMC=tr
       CreateConfiguration(treeLite, "Lite_", CandidatesConfig, candidateMapFloats, candidateMapInts);
       candValuesF.resize(candidateMapFloats.size());
       candValuesI.resize(candidateMapInts.size());
+      sb_status_field_id = std::find_if(candidateMapInts.begin(), candidateMapInts.end(),
+                                        [](const std::pair<int, std::string>& p) { return p.second == "fSigBgStatus"; })->first;
       config_.AddBranchConfig(CandidatesConfig);
       candidates_ = new AnalysisTree::Particles(CandidatesConfig.GetId());
       tree_->Branch((CandidatesConfig.GetName() + ".").c_str(), "AnalysisTree::Particles", &candidates_);
@@ -80,7 +84,7 @@ void AliceTree2AT(const std::string& fileName, int selectionFlag=1, bool isMC=tr
         tree_->Branch((SimulatedConfig.GetName() + ".").c_str(), "AnalysisTree::Particles", &simulated_);
         cand2sim_ = new AnalysisTree::Matching(CandidatesConfig.GetId(), SimulatedConfig.GetId());
         config_.AddMatch(cand2sim_);
-        tree_->Branch((CandidatesConfig.GetName() + "2" + SimulatedConfig.GetName() + ".").c_str(), "AnalysisTree::Particles", &cand2sim_);
+        tree_->Branch((CandidatesConfig.GetName() + "2" + SimulatedConfig.GetName() + ".").c_str(), "AnalysisTree::Matching", &cand2sim_);
       }
       isConfigInitialized = true;
     }
@@ -88,7 +92,7 @@ void AliceTree2AT(const std::string& fileName, int selectionFlag=1, bool isMC=tr
     candidates_->ClearChannels();
     if(isMC) {
       simulated_->ClearChannels();
-      cand2sim_->ClearChannels();
+      cand2sim_->Clear();
     }
 
     for(int iV=0; iV<candValuesF.size(); iV++) {
@@ -100,11 +104,9 @@ void AliceTree2AT(const std::string& fileName, int selectionFlag=1, bool isMC=tr
       else                treeLite->SetBranchAddress(candidateMapInts.at(iV).second.c_str(), &candValuesI.at(iV));
     }
     if(isMC) {
-      for(int iV=0; iV<simValuesF.size(); iV++) {
-        treeMC->SetBranchAddress(simulatedMapFloats.at(iV).second.c_str(), &simValuesF.at(iV));
-      }
-      for(int iV=0; iV<simValuesI.size(); iV++) {
-        treeMC->SetBranchAddress(simulatedMapFloats.at(iV).second.c_str(), &simValuesI.at(iV));
+      for(int iV=0; iV<std::max(candValuesF.size(), candValuesI.size()); iV++) {
+        if(iV<simValuesF.size()) treeMC->SetBranchAddress(simulatedMapFloats.at(iV).second.c_str(), &simValuesF.at(iV));
+        if(iV<simValuesI.size()) treeMC->SetBranchAddress(simulatedMapInts.at(iV).second.c_str(), &simValuesI.at(iV));
       }
     }
 
@@ -118,8 +120,22 @@ void AliceTree2AT(const std::string& fileName, int selectionFlag=1, bool isMC=tr
       treeLite->GetEntry(iEntry);
       if(isMC) treeMC->GetEntry(iEntry);
 
+      auto& candidate = candidates_->AddChannel(config_.GetBranchConfig(candidates_->GetId()));
 
+      for(int iV=0; iV<std::max(candValuesF.size(), candValuesI.size()); iV++) {
+        if(iV<candValuesF.size()) candidate.SetField(candValuesF.at(iV), candidateMapFloats.at(iV).first);
+        if(iV<candValuesI.size()) candidate.SetField(candValuesI.at(iV), candidateMapInts.at(iV).first);
+      }
 
+      if(isMC && candValuesI.at(sb_status_field_id) > 0) {
+        auto& simulated = simulated_->AddChannel(config_.GetBranchConfig(simulated_->GetId()));
+
+        for(int iV=0; iV<std::max(simValuesF.size(), simValuesI.size()); iV++) {
+          if(iV<simValuesF.size()) simulated.SetField(simValuesF.at(iV), simulatedMapFloats.at(iV).first);
+          if(iV<simValuesI.size()) simulated.SetField(simValuesI.at(iV), simulatedMapInts.at(iV).first);
+        }
+        cand2sim_->AddMatch(candidate.GetId(), simulated.GetId());
+      }
     }
     tree_->Fill();
   }
