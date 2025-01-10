@@ -25,15 +25,15 @@ void AliceTree2AT(const std::string& fileName, bool isMC=true) {
 
   AnalysisTree::Matching* cand2sim_{nullptr};
 
-  TFile* fileOut = TFile::Open("AnalysisTree.root", "recreate");
+  TFile* out_file_ = new TFile("AnalysisTree.root", "recreate");
 
   TTree* tree_{nullptr};
 
   auto CreateConfiguration = [&] (TTree* t,
-                                                 std::string prefix,
-                                                 AnalysisTree::BranchConfig& branch_config,
-                                                 std::vector<std::pair<int, std::string>>& mapF,
-                                                 std::vector<std::pair<int, std::string>>& mapI) {
+                                  std::string prefix,
+                                  AnalysisTree::BranchConfig& branch_config,
+                                  std::vector<std::pair<int, std::string>>& mapF,
+                                  std::vector<std::pair<int, std::string>>& mapI) {
     auto lol = t->GetListOfLeaves();
     const int nLeaves = lol->GetEntries();
     for(int iLeave=0; iLeave<nLeaves; iLeave++) {
@@ -140,10 +140,10 @@ void AliceTree2AT(const std::string& fileName, bool isMC=true) {
     tree_->Fill();
   }
 
-  TFile* out_file_ = new TFile("AnalysisTree.root", "recreate");
   out_file_->cd();
-
   config_.Write("Configuration");
   tree_->Write();
   out_file_->Close();
+
+  fileIn->Close();
 }
