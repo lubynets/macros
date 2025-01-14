@@ -128,7 +128,7 @@ void AliceTree2AT(const std::string& fileName, bool isMC=true, int maxEntries=-1
       auto& candidate = candidates_->AddChannel(config_.GetBranchConfig(candidates_->GetId()));
       SetFieldsFIC(candidateMap, candidate, candValues);
 
-      if(isMC && (candValues.at(sb_status_field_id).int_ == 0 || candValues.at(sb_status_field_id).int_ == 1)) {
+      if(isMC && (candValues.at(sb_status_field_id).int_ == 1 || candValues.at(sb_status_field_id).int_ == 2)) {
 
         auto& simulated = simulated_->AddChannel(config_.GetBranchConfig(simulated_->GetId()));
         SetFieldsFIC(simulatedMap, simulated, simValues);
