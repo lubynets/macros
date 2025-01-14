@@ -11,7 +11,7 @@ struct FicCarrier {
 };
 
 
-void AliceTree2AT(const std::string& fileName, bool isMC=true, int nEntries=-1) {
+void AliceTree2AT(const std::string& fileName, bool isMC=true, int maxEntries=-1) {
   TFile* fileIn = TFile::Open(fileName.c_str());
   if(fileIn == nullptr) {
     throw std::runtime_error("fileIn == nullptr");
@@ -122,7 +122,7 @@ void AliceTree2AT(const std::string& fileName, bool isMC=true, int nEntries=-1) 
     }
 
     for(int iEntry=0; iEntry<nEntries; iEntry++) {
-      if(nEntries > 0 && iGlobalEntry >= nEntries) break;
+      if(maxEntries > 0 && iGlobalEntry >= maxEntries) break;
       treeKF->GetEntry(iEntry);
       treeLite->GetEntry(iEntry);
       if(isMC) treeMC->GetEntry(iEntry);
