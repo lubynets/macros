@@ -12,18 +12,13 @@ void tree_qa(const std::string& filelist){
   auto* task = new QA::Task;
   task->SetOutputFileName("tree_qa.root");
 
-  struct DataType {
-    std::string name_;
-    SimpleCut cut_;
-  };
-
-  std::vector<DataType> datatypes {
-    {"background", EqualsCut("Candidates.KF_fSigBgStatus", 0)},
-    {"prompt",     EqualsCut("Candidates.KF_fSigBgStatus", 1)},
-    {"nonprompt",  EqualsCut("Candidates.KF_fSigBgStatus", 2)},
-    {"wrongswap",  EqualsCut("Candidates.KF_fSigBgStatus", 3)},
-    {"data",       EqualsCut("Candidates.KF_fSigBgStatus", -999)},
-    {"impossible", SimpleCut({"Candidates.KF_fSigBgStatus"}, [](std::vector<double> par){ return par[0] != 0 && par[0] != 1 && par[0] != 2 && par[0] != 3 && par[0] != -999; })},
+  std::vector<SimpleCut> datatypes {
+    EqualsCut("Candidates.KF_fSigBgStatus", 0,    "background"),
+    EqualsCut("Candidates.KF_fSigBgStatus", 1,    "prompt"),
+    EqualsCut("Candidates.KF_fSigBgStatus", 2,    "nonprompt"),
+    EqualsCut("Candidates.KF_fSigBgStatus", 3,    "wrongswap"),
+    EqualsCut("Candidates.KF_fSigBgStatus", -999, "data"),
+    SimpleCut({"Candidates.KF_fSigBgStatus"}, [](std::vector<double> par){ return par[0] != 0 && par[0] != 1 && par[0] != 2 && par[0] != 3 && par[0] != -999; }, "impossible"),
   };
 
 //   SimpleCut simpleCutSelected = RangeCut("Candidates.KF_fIsSelected", 0.9, 1.1);
@@ -57,9 +52,9 @@ void tree_qa(const std::string& filelist){
   };
 
   for(auto& dt : datatypes) {
-    Cuts* cut = new Cuts(dt.name_, {simpleCutSelected, dt.cut_});
+    Cuts* cut = new Cuts(dt.GetTitle(), {simpleCutSelected, dt});
     for(auto& var : vars) {
-      task->AddH1((var.name_ + "_" + dt.name_).c_str(), {var.xaxis_title_, Variable::FromString(("Candidates." + var.name_in_tree_).c_str()), var.xaxis_}, cut);
+      task->AddH1((var.name_ + "_" + dt.GetTitle()).c_str(), {var.xaxis_title_, Variable::FromString(("Candidates." + var.name_in_tree_).c_str()), var.xaxis_}, cut);
     }
   }
 
