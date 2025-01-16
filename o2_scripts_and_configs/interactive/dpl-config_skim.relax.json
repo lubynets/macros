@@ -1,6 +1,7 @@
 {
     "internal-dpl-clock": "",
     "internal-dpl-aod-reader": {
+        "aod-file-private": "/lustre/alice/users/lubynets/ao2ds/sim/2024/LHC24e3/0/526641/AOD/001/AO2D.small.root",
         "aod-max-io-rate": "0",
         "time-limit": "0",
         "orbit-offset-enumeration": "0",
@@ -17,20 +18,6 @@
         "orbit-reset-path": "CTP\/Calib\/OrbitReset",
         "ccdb-url": "http:\/\/alice-ccdb.cern.ch",
         "isRun2MC": "-1"
-    },
-    "bc-selection-task": {
-        "triggerBcShift": "999",
-        "ITSROFrameStartBorderMargin": "-1",
-        "ITSROFrameEndBorderMargin": "-1",
-        "TimeFrameStartBorderMargin": "-1",
-        "TimeFrameEndBorderMargin": "-1",
-        "checkRunDurationLimits": "false",
-        "processRun2": "false",
-        "processRun3": "true"
-    },
-    "tracks-extra-v002-converter": {
-        "processV000ToV002": "false",
-        "processV001ToV002": "true"
     },
     "track-propagation": {
         "lutPath": "GLO/Param/MatLUT",
@@ -109,23 +96,6 @@
         "processCovariance": "1",
         "processStandardWithPID": "0"
     },
-    "event-selection-task": {
-        "muonSelection": "0",
-        "maxDiffZvtxFT0vsPV": "1",
-        "isMC": "1",
-        "confSigmaBCforHighPtTracks": "4",
-        "TimeIntervalForOccupancyCalculationMin": "-40",
-        "TimeIntervalForOccupancyCalculationMax": "100",
-        "TimeRangeVetoOnCollStandard": "10",
-        "TimeRangeVetoOnCollNarrow": "2",
-        "FT0CamplPerCollCutVetoOnCollInTimeRange": "8000",
-        "EpsilonDistanceForVzDependentVetoTPC": "2.5",
-        "FT0CamplPerCollCutVetoOnCollInROF": "5000",
-        "EpsilonVzDiffVetoInROF": "0.300000012",
-        "UseWeightsForOccupancyEstimator": "true",
-        "processRun2": "false",
-        "processRun3": "true"
-    },
     "hf-track-index-skim-creator-tag-sel-collisions": {
         "hfEvSel.centralityMin": "0",
         "triggerClassName": "kINT7",
@@ -156,13 +126,13 @@
     "track-selection": {
         "ptMax": "1e+10",
         "produceTable": "1",
-        "etaMin": "-0.8",
+        "etaMin": "-999",
         "isRun3": "1",
         "itsMatching": "1",
-        "etaMax": "0.8",
+        "etaMax": "999",
         "compatibilityIU": "0",
         "dcaSetup": "0",
-        "ptMin": "0.1",
+        "ptMin": "-999",
         "produceFBextendedTable": "-1"
     },
     "track-to-collision-association": {
@@ -190,39 +160,39 @@
         "values": [
             [
             0,
-            10,
+            100,
             0,
-            100
+            1000
             ],
             [
             0,
-            10,
+            100,
             0,
-            100
+            1000
             ],
             [
             0,
-            10,
+            100,
             0,
-            100
+            1000
             ],
             [
             0,
-            10,
+            100,
             0,
-            100
+            1000
             ],
             [
             0,
-            10,
+            100,
             0,
-            100
+            1000
             ],
             [
             0,
-            10,
+            100,
             0,
-            100
+            1000
             ]
         ]
         },
@@ -241,7 +211,7 @@
         "processProtonPidTpcAndTof": "0",
         "ccdbPathGrp": "GLO/GRP/GRP",
         "etaMaxTrackBachLfCasc": "1.1",
-        "doPvRefit": "1",
+        "doPvRefit": "0",
         "useIsGlobalTrackWoDCA": "1",
         "axisPvRefitDeltaY": {
         "values": [
@@ -257,8 +227,8 @@
             0.5
         ]
         },
-        "ptMinTrack3Prong": "0.3",
-        "etaMinTrack3Prong": "-0.8",
+        "ptMinTrack3Prong": "0",
+        "etaMinTrack3Prong": "-9.99",
         "useIsQualityTrackITSForSoftPion": "0",
         "ccdbUrl": "http://alice-ccdb.cern.ch",
         "doCutQuality": "1",
@@ -396,7 +366,7 @@
         "processProtonPidTof": "0",
         "etaMinTrack2Prong": "-0.8",
         "tpcNClsFoundMin": "70",
-        "etaMaxTrack3Prong": "0.8",
+        "etaMaxTrack3Prong": "9.99",
         "cutsTrackBachLfCasc": {
         "values": [
             [
@@ -513,16 +483,16 @@
         "cutsLcToPKPi": {
         "values": [
             [
-            2.1,
-            2.55,
-            0.7,
+            2,
+            2.6,
+            -1,
             0
             ],
             [
             2,
             2.6,
-            0.85,
-            0.01
+            -1,
+            0
             ]
         ]
         },
@@ -687,7 +657,7 @@
             ]
         ]
         },
-        "process2And3ProngsWithPvRefit": "1",
+        "process2And3ProngsWithPvRefit": "0",
         "cutsD0ToPiK": {
         "values": [
             [
