@@ -5,9 +5,9 @@ struct IndexMap {
 };
 
 struct FicCarrier {
-  float float_;
-  int int_;
-  char char_;
+  float float_{-999.f};
+  int int_{-999};
+  char char_{static_cast<char>(-999)};
 };
 
 void SetAddressFIC(TBranch* branch, const IndexMap& imap, FicCarrier& ficc);
@@ -78,8 +78,9 @@ void AliceTree2AT(const std::string& fileName, bool isMC=true, int maxEntries=-1
       kfLiteSepar = candidateMap.size();
       CreateConfiguration(treeLite, "Lite_", CandidatesConfig, candidateMap);
       candValues.resize(candidateMap.size());
-      sb_status_field_id = std::find_if(candidateMap.begin(), candidateMap.end(),
-                                        [](const IndexMap& p) { return p.name_ == "fSigBgStatus"; })->index_;
+      sb_status_field_id = std::distance(candidateMap.begin(),
+                                         std::find_if(candidateMap.begin(), candidateMap.end(),
+                                                      [](const IndexMap& p) { return p.name_ == "fSigBgStatus"; }));
       config_.AddBranchConfig(CandidatesConfig);
       candidates_ = new AnalysisTree::Particles(CandidatesConfig.GetId());
       tree_->Branch((CandidatesConfig.GetName() + ".").c_str(), "AnalysisTree::Particles", &candidates_);
