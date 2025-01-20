@@ -14,7 +14,7 @@ HistoQuantities EvaluateHistoQuantities(const TH1* h);
 TPaveText ConverHistoQuantitiesToText(const HistoQuantities& q, float x1, float y1, float x2, float y2);
 
 void mc_qa2(const std::string& fileName, int prompt_or_nonprompt=1) {
-  gROOT->Macro( "mc_qa2.style.cc" );
+  gROOT->Macro( "/home/oleksii/alidir/working/mc_qa2.style.cc" );
   if(prompt_or_nonprompt !=1 && prompt_or_nonprompt != 2) {
     throw std::runtime_error("prompt_or_nonprompt must be 1 or 2");
   }
@@ -30,6 +30,7 @@ void mc_qa2(const std::string& fileName, int prompt_or_nonprompt=1) {
 
   struct Variable {
     std::string name_;
+    std::string prefix_;
     bool log_mc_;
     bool log_rec_;
     bool log_res_;
@@ -38,32 +39,29 @@ void mc_qa2(const std::string& fileName, int prompt_or_nonprompt=1) {
   };
 
   std::vector<Variable> vars {
-//  name   logmc  logrec logres logcorr logpull
-    {"P",   false, false, false, true, false},
-    {"Pt",  false, false, false, true, false},
-    {"X",   false, false, false, true, false},
-    {"Y",   false, false, false, true, false},
-    {"Z",   false, false, false, true, false},
-    {"Xsv", false, false, false, true, false},
-    {"Ysv", false, false, false, true, false},
-    {"Zsv", false, false, false, true, false},
-    {"Xpv", false, false, false, true, false},
-    {"Ypv", false, false, false, true, false},
-    {"Zpv", false, false, false, true, false},
-    {"L",   false, true, true, true, true},
-    {"T",   false, true, true, true, true},
+//  name   prefix    logmc  logrec logres logcorr logpull
+    {"P",   "KF_",   false, false, false, true, false},
+    {"Pt",  "KF_",   false, false, false, true, false},
+    {"Xsv", "KF_",   false, false, false, true, false},
+    {"Ysv", "KF_",   false, false, false, true, false},
+    {"Zsv", "KF_",   false, false, false, true, false},
+    {"Xpv", "Lite_", false, false, false, true, false},
+    {"Ypv", "Lite_", false, false, false, true, false},
+    {"Zpv", "Lite_", false, false, false, true, false},
+    {"L",   "KF_",   false, true,  true,  true, true},
+    {"T",   "KF_",   false, true,  true,  true, true},
   };
 
   bool is_first_canvas{true};
   std::string printing_bracket = "(";
   for(auto& var : vars) {
-    TH1D* hmc = fileIn->Get<TH1D>(("mc/" + promptness + "/hMc_" + var.name_ + "_" + promptness).c_str());
-    TH1D* hrec = fileIn->Get<TH1D>(("rec/" + promptness + "/hRec_" + var.name_ + "_" + promptness).c_str());
-    TH1D* hres = fileIn->Get<TH1D>(("residual/" + promptness + "/hRes_" + var.name_ + "_" + promptness).c_str());
-    TH2D* hcorr = fileIn->Get<TH2D>(("corr/" + promptness + "/hCorr_" + var.name_ + "_" + promptness).c_str());
-    TH1D* hpull = fileIn->Get<TH1D>(("pull/" + promptness + "/hPull_" + var.name_ + "_" + promptness).c_str());
-    if(hres == nullptr || hcorr == nullptr || hpull == nullptr) {
-      throw std::runtime_error("hres == nullptr || hcorr == nullptr || hpull == nullptr");
+    TH1D* hmc = fileIn->Get<TH1D>(("Simulated_" + promptness + "_total/mc_" + var.name_).c_str());
+    TH1D* hrec = fileIn->Get<TH1D>(("Candidates_" + promptness + "_total/rec_" + var.name_).c_str());
+    TH1D* hres = fileIn->Get<TH1D>(("Candidates_Simulated_"  + promptness + "_total/res_" + var.name_).c_str());
+    TH2D* hcorr = fileIn->Get<TH2D>(("Candidates_Simulated_"  + promptness + "_total/corr_" + var.name_).c_str());
+    TH1D* hpull = fileIn->Get<TH1D>(("Candidates_Simulated_"  + promptness + "_total/pull_" + var.name_).c_str());
+    if(hmc == nullptr || hrec == nullptr || hres == nullptr || hcorr == nullptr || hpull == nullptr) {
+      throw std::runtime_error(("hmc == nullptr || hrec == nullptr || hres == nullptr || hcorr == nullptr || hpull == nullptr for " + var.name_).c_str());
     }
 
     hmc->UseCurrentStyle();
