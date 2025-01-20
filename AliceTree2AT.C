@@ -73,6 +73,7 @@ void AliceTree2AT(const std::string& fileName, bool isMC=true, int maxEntries=-1
 
     if(!isConfigInitialized) {
       tree_ = new TTree("aTree", "Analysis Tree");
+      tree_->SetAutoSave(0);
 
       CreateConfiguration(treeKF, "KF_", CandidatesConfig, candidateMap);
       kfLiteSepar = candidateMap.size();
