@@ -14,7 +14,10 @@ HistoQuantities EvaluateHistoQuantities(const TH1* h);
 TPaveText ConverHistoQuantitiesToText(const HistoQuantities& q, float x1, float y1, float x2, float y2);
 
 void mc_qa2(const std::string& fileName, int prompt_or_nonprompt=1) {
-  gROOT->Macro( "/home/oleksii/alidir/working/mc_qa2.style.cc" );
+  TString currentMacroPath = __FILE__;
+  TString directory = currentMacroPath(0, currentMacroPath.Last('/'));
+  gROOT->Macro( directory + "/mc_qa2.style.cc" );
+
   if(prompt_or_nonprompt !=1 && prompt_or_nonprompt != 2) {
     throw std::runtime_error("prompt_or_nonprompt must be 1 or 2");
   }
@@ -30,7 +33,6 @@ void mc_qa2(const std::string& fileName, int prompt_or_nonprompt=1) {
 
   struct Variable {
     std::string name_;
-    std::string prefix_;
     bool log_mc_;
     bool log_rec_;
     bool log_res_;
@@ -39,17 +41,18 @@ void mc_qa2(const std::string& fileName, int prompt_or_nonprompt=1) {
   };
 
   std::vector<Variable> vars {
-//  name   prefix    logmc  logrec logres logcorr logpull
-    {"P",   "KF_",   false, false, false, true, false},
-    {"Pt",  "KF_",   false, false, false, true, false},
-    {"Xsv", "KF_",   false, false, false, true, false},
-    {"Ysv", "KF_",   false, false, false, true, false},
-    {"Zsv", "KF_",   false, false, false, true, false},
-    {"Xpv", "Lite_", false, false, false, true, false},
-    {"Ypv", "Lite_", false, false, false, true, false},
-    {"Zpv", "Lite_", false, false, false, true, false},
-    {"L",   "KF_",   false, true,  true,  true, true},
-    {"T",   "KF_",   false, true,  true,  true, true},
+//  name    logmc  logrec logres logcorr logpull
+    {"P",   false, false, false, true, false},
+    {"Pt",  false, false, false, true, false},
+    {"Xsv", false, false, false, true, false},
+    {"Ysv", false, false, false, true, false},
+    {"Zsv", false, false, false, true, false},
+    {"Xpv", false, false, false, true, false},
+    {"Ypv", false, false, false, true, false},
+    {"Zpv", false, false, false, true, false},
+    {"L",   false, true,  true,  true, true},
+    {"Lpyth",   false, true,  true,  true, true},
+    {"T",   false, true,  true,  true, true},
   };
 
   bool is_first_canvas{true};
