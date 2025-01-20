@@ -1,7 +1,8 @@
 {
     "internal-dpl-clock": "",
     "internal-dpl-aod-reader": {
-        "aod-file-private": "\/lustre\/alice\/users\/lubynets\/ao2ds\/sim\/2024\/LHC24e3\/0\/526641\/AOD\/001\/AnalysisResults_skimmed.small.root",
+        "#aod-file-private": "/lustre/alice/users/lubynets/ao2ds/sim/2024/LHC24e3/0/526641/AOD/001/AnalysisResults_skimmed.root",
+        "aod-file-private": "/lustre/alice/users/lubynets/skim/outputs/mc/default/AnalysisResults_trees.1.root",
         "aod-max-io-rate": "0",
         "time-limit": "0",
         "orbit-offset-enumeration": "0",
@@ -20,6 +21,10 @@
         "orbit-reset-path": "CTP\/Calib\/OrbitReset",
         "ccdb-url": "http:\/\/alice-ccdb.cern.ch",
         "isRun2MC": "-1"
+    },
+    "tracks-extra-v002-converter": {
+        "processV000ToV002": "false",
+        "processV001ToV002": "true"
     },
     "track-propagation": {
         "ccdb-url": "http:\/\/alice-ccdb.cern.ch",
@@ -847,18 +852,19 @@
             "bcMarginForSoftwareTrigger": "100",
             "ccdbPathSoftwareTrigger": "Users\/m\/mpuccio\/EventFiltering\/OTS\/"
         },
-        "processPvRefitWithDCAFitterN": "false",
-        "processNoPvRefitWithDCAFitterN": "false",
-        "processPvRefitWithKFParticle": "false",
-        "processNoPvRefitWithKFParticle": "true",
-        "processPvRefitWithDCAFitterNCentFT0C": "false",
-        "processNoPvRefitWithDCAFitterNCentFT0C": "false",
-        "processPvRefitWithKFParticleCentFT0C": "false",
-        "processNoPvRefitWithKFParticleCentFT0C": "false",
-        "processPvRefitWithDCAFitterNCentFT0M": "false",
-        "processNoPvRefitWithDCAFitterNCentFT0M": "false",
-        "processPvRefitWithKFParticleCentFT0M": "false",
-        "processNoPvRefitWithKFParticleCentFT0M": "false",
+        "#processPvRefitWithDCAFitterN": "false",
+        "#processNoPvRefitWithDCAFitterN": "true",
+        "#processPvRefitWithKFParticle": "false",
+        "#processNoPvRefitWithKFParticle": "false",
+        "#processPvRefitWithDCAFitterNCentFT0C": "false",
+        "#processNoPvRefitWithDCAFitterNCentFT0C": "false",
+        "#processPvRefitWithKFParticleCentFT0C": "false",
+        "#processNoPvRefitWithKFParticleCentFT0C": "false",
+        "#processPvRefitWithDCAFitterNCentFT0M": "false",
+        "#processNoPvRefitWithDCAFitterNCentFT0M": "false",
+        "#processPvRefitWithKFParticleCentFT0M": "false",
+        "#processNoPvRefitWithKFParticleCentFT0M": "false",
+        "processNoPvRefit": "true",
         "processCollisions": "true",
         "processCollisionsCentFT0C": "false",
         "processCollisionsCentFT0M": "false"
@@ -1252,10 +1258,11 @@
         },
         "timestampCCDB": "-1",
         "loadModelsFromCCDB": "false",
-        "processNoBayesPidWithDCAFitterN": "false",
-        "processBayesPidWithDCAFitterN": "false",
-        "processNoBayesPidWithKFParticle": "true",
-        "processBayesPidWithKFParticle": "false"
+        "#processNoBayesPidWithDCAFitterN": "true",
+        "#processBayesPidWithDCAFitterN": "false",
+        "#processNoBayesPidWithKFParticle": "false",
+        "#processBayesPidWithKFParticle": "false",
+        "processNoBayesPid": "true"
     },
     "hf-tree-creator-lc-to-p-k-pi": {
         "selectionFlagLc": "0",
@@ -1266,14 +1273,16 @@
         "keepOnlyBkg": "false",
         "downSampleBkgFactor": "1",
         "downSampleBkgPtMax": "100",
-        "processMcNoCentralityWithDCAFitterN": "false",
-        "processMcWithCentralityWithDCAFitterN": "false",
-        "processMcNoCentralityWithKFParticle": "true",
-        "processMcWithCentralityWithKFParticle": "false",
-        "processDataNoCentralityWithDCAFitterN": "false",
-        "processDataWithCentralityWithDCAFitterN": "false",
-        "processDataNoCentralityWithKFParticle": "false",
-        "processDataWithCentralityWithKFParticle": "false"
+        "#processMcNoCentralityWithDCAFitterN": "true",
+        "#processMcWithCentralityWithDCAFitterN": "false",
+        "#processMcNoCentralityWithKFParticle": "false",
+        "#processMcWithCentralityWithKFParticle": "false",
+        "#processDataNoCentralityWithDCAFitterN": "false",
+        "#processDataWithCentralityWithDCAFitterN": "false",
+        "#processDataNoCentralityWithKFParticle": "false",
+        "#processDataWithCentralityWithKFParticle": "false",
+        "processMcNoCentrality": "true",
+        "processDataWithCentrality": "false"
     },
     "hf-task-lc": {
         "isVerbose": "false",
@@ -1366,6 +1375,7 @@
                 "5"
             ]
         },
+        "fillTHn": "true",
         "processDataStd": "false",
         "processDataStdWithFT0C": "false",
         "processDataStdWithFT0M": "false",

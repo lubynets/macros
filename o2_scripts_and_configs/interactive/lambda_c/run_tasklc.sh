@@ -18,6 +18,8 @@
 # @author Vít Kučera <vit.kucera@cern.ch>, Inha University
 # @date 2023-10-25
 
+START_TIME=$SECONDS
+
 source /lustre/alice/users/lubynets/.export_tokens.sh
 
 # log file where the terminal output will be saved
@@ -28,13 +30,16 @@ DIR_THIS="$(dirname "$(realpath "$0")")"
 
 # O2 configuration file (in the same directory)
 JSON="$DIR_THIS/dpl-config_tasklc.json"
+# JSON="$DIR_THIS/dpl-config_tasklc_data.json"
 
 # command line options of O2 workflows
-OPTIONS="-b --configuration json://$JSON --aod-memory-rate-limit 2000000000 --shm-segment-size 16000000000 --resources-monitoring 2 --aod-parent-access-level 1 --aod-writer-keep AOD/HFCAND3PBASE/0,AOD/HFCAND3PMCGEN/0,AOD/HFCAND3PMCREC/0,AOD/HFSELLC/0,DYN/HFCAND3PEXT/0,AOD/HFCANDLCFULL/0,AOD/HFCANDLCLITE/0,AOD/HFCOLLIDLCLITE/0,AOD/HFCANDLCFULLEV/0,AOD/HFCANDLCFULLP/0,AOD/HFCAND3PKF/0,AOD/HFCANDLCKF/0,AOD/HFCANDLCMC/0"
+# OPTIONS="-b --configuration json://$JSON --aod-memory-rate-limit 2000000000 --shm-segment-size 16000000000 --resources-monitoring 2 --aod-parent-access-level 1 --aod-writer-keep AOD/HFCAND3PBASE/0,AOD/HFCAND3PMCGEN/0,AOD/HFCAND3PMCREC/0,AOD/HFSELLC/0,DYN/HFCAND3PEXT/0,AOD/HFCANDLCFULL/0,AOD/HFCANDLCLITE/0,AOD/HFCOLLIDLCLITE/0,AOD/HFCANDLCFULLEV/0,AOD/HFCANDLCFULLP/0,AOD/HFCAND3PKF/0,AOD/HFCANDLCKF/0,AOD/HFCANDLCMC/0"
+
+OPTIONS="-b --configuration json://$JSON --aod-memory-rate-limit 2000000000 --shm-segment-size 16000000000 --resources-monitoring 2 --aod-parent-access-level 1 --aod-writer-keep AOD/HFCANDLCLITE/0,AOD/HFCANDLCKF/0,AOD/HFCANDLCMC/0"
 #
 # execute the mini task workflow and its dependencies
 # shellcheck disable=SC2086 # Ignore unquoted options.
-# o2-analysis-hf-task-lc $OPTIONS | \
+o2-analysis-hf-task-lc $OPTIONS | \
 o2-analysis-hf-tree-creator-lc-to-p-k-pi $OPTIONS | \
 o2-analysis-multiplicity-table $OPTIONS | \
 o2-analysis-centrality-table $OPTIONS | \
@@ -48,6 +53,7 @@ o2-analysis-hf-candidate-creator-3prong $OPTIONS | \
 o2-analysis-timestamp $OPTIONS | \
 o2-analysis-event-selection $OPTIONS | \
 o2-analysis-mccollision-converter $OPTIONS | \
+o2-analysis-tracks-extra-v002-converter $OPTIONS | \
 o2-analysis-track-propagation $OPTIONS \
 > "$LOGFILE" 2>&1
 
@@ -56,6 +62,7 @@ o2-analysis-track-propagation $OPTIONS \
 
 # report status
 rc=$?
+FINISH_TIME=$SECONDS
 if [ $rc -eq 0 ]; then
   echo "No problems!"
 else
@@ -63,3 +70,4 @@ else
   echo "Check the log file $LOGFILE"
   exit $rc
 fi
+echo "elapsed time " $(($(($FINISH_TIME-$START_TIME))/60)) "m " $(($(($FINISH_TIME-$START_TIME))%60)) "s"

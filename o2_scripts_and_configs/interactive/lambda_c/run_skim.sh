@@ -27,10 +27,11 @@ LOGFILE="stdout.log"
 DIR_THIS="$(dirname "$(realpath "$0")")"
 
 # O2 configuration file (in the same directory)
-JSON="$DIR_THIS/dpl-config_skim.json"
+JSON="$DIR_THIS/dpl-config_skim.lhc22.apass7.json"
 
 # command line options of O2 workflows
-OPTIONS="-b --configuration json://$JSON --aod-memory-rate-limit 2000000000 --shm-segment-size 16000000000 --resources-monitoring 2 --aod-writer-keep AOD/HF3PRONG/1"
+OPTIONS="-b --configuration json://$JSON --aod-memory-rate-limit 2000000000 --shm-segment-size 16000000000 --resources-monitoring 2 --aod-writer-keep AOD/HF2PRONG/1,AOD/HF3PRONG/1"
+# OPTIONS="-b --configuration json://$JSON --aod-memory-rate-limit 2000000000 --shm-segment-size 16000000000 --resources-monitoring 2 --aod-writer-keep AOD/HF2PRONG/1,AOD/HF3PRONG/1,AOD/HFPVREFIT2PRONG/0,AOD/HFPVREFIT3PRONG/0"
 
 # execute the mini task workflow and its dependencies
 # shellcheck disable=SC2086 # Ignore unquoted options.
@@ -40,6 +41,8 @@ o2-analysis-pid-tpc $OPTIONS | \
 o2-analysis-timestamp $OPTIONS | \
 o2-analysis-trackselection $OPTIONS | \
 o2-analysis-track-propagation $OPTIONS | \
+o2-analysis-event-selection $OPTIONS | \
+o2-analysis-tracks-extra-v002-converter $OPTIONS | \
 o2-analysis-track-to-collision-associator $OPTIONS \
 > "$LOGFILE" 2>&1
 
