@@ -1,7 +1,9 @@
 template<typename T>
 std::string to_string_with_precision(const T a_value, const int n = 6);
 
-std::vector<std::pair<std::string, std::string>> FindCuts(const TFile* fileIn, const std::string& name_start);
+std::vector<std::pair<std::string, std::string>> FindCuts(const TFile* fileIn, std::string name_start);
+
+bool stofCompare(std::pair<std::string, std::string> a, std::pair<std::string, std::string> b);
 
 struct HistoQuantities {
   float underflow_{-999.f};
@@ -13,7 +15,7 @@ struct HistoQuantities {
 };
 
 HistoQuantities EvaluateHistoQuantities(const TH1* h);
-TPaveText ConverHistoQuantitiesToText(const HistoQuantities& q, float x1, float y1, float x2, float y2);
+TPaveText ConvertHistoQuantitiesToText(const HistoQuantities& q, float x1, float y1, float x2, float y2);
 
 void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt=1) {
   TString currentMacroPath = __FILE__;
@@ -43,7 +45,7 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt=1) {
   };
 
   std::vector<Variable> vars {
-//  name                logres logpull
+//  name    cutname  title          unit
     {"P",   "psim",  "p^{mc}",     "GeV/c", false, false},
     {"Pt",  "pTsim", "p_{T}^{mc}", "GeV/c", false, false},
     {"Xsv", "psim",  "p^{mc}",     "GeV/c", false, false},
@@ -53,51 +55,85 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt=1) {
     {"T",   "tsim",  "T^{mc}",     "ps",    true,  true},
   };
 
-  bool is_first_canvas{true};
-  std::string printing_bracket = "(";
   for(auto& var : vars) {
-    TH1D* hres = fileIn->Get<TH1D>(("Candidates_Simulated_"  + promptness + "_total/res_" + var.name_).c_str());
-    TH1D* hpull = fileIn->Get<TH1D>(("Candidates_Simulated_"  + promptness + "_total/pull_" + var.name_).c_str());
-    if(hmc == nullptr || hrec == nullptr || hres == nullptr || hcorr == nullptr || hpull == nullptr) {
-      throw std::runtime_error(("hmc == nullptr || hrec == nullptr || hres == nullptr || hcorr == nullptr || hpull == nullptr for " + var.name_).c_str());
-    }
+    bool is_first_canvas{true};
+    std::string printing_bracket = "(";
 
-    hres->UseCurrentStyle();
-    hpull->UseCurrentStyle();
+    auto cutsVar = FindCuts(fileIn, "Candidates_Simulated_"  + promptness + "_" + var.cut_name_);
 
-    TPaveText promptnessText(0.74, 0.86, 0.87, 0.90, "brNDC");
-    promptnessText.SetFillColor(0);
-    promptnessText.SetTextSize(0.03);
-    promptnessText.SetTextFont(62);
-    promptnessText.AddText(promptness.c_str());
+    TGraphMultiErrors grResMu(cutsVar.size(), 2);
+    grResMu.SetTitle("");
+    grResMu.GetXaxis()->SetTitle((var.cut_title_ + ", " + var.cut_unit_).c_str());
+    grResMu.SetMarkerStyle(kFullSquare);
+    grResMu.SetMarkerSize(1.6);
+    grResMu.SetMarkerColor(kBlue);
+    grResMu.SetLineWidth(3);
+    grResMu.SetLineColor(kBlue);
 
-    TCanvas ccRes("ccRes", "ccRes", 1200, 800);
-    ccRes.SetLogy(var.log_res_);
-    hres->Draw();
-    promptnessText.Draw("same");
-    HistoQuantities res_quant = EvaluateHistoQuantities(hres);
-    TPaveText res_quant_text = ConverHistoQuantitiesToText(res_quant, 0.74, 0.6, 0.87, 0.7);
-    res_quant_text.Draw("same");
+    int iPoint{0};
+    for(auto& cV : cutsVar) {
+      TH1D* hRes = fileIn->Get<TH1D>(("Candidates_Simulated_"  + promptness + "_"  + var.cut_name_ + "_"  + cV.first + "_"  + cV.second + "/res_"  + var.name_ + "_"  + var.cut_name_ + "_"  + cV.first + "_"  + cV.second).c_str());
+      TH1D* hPull = fileIn->Get<TH1D>(("Candidates_Simulated_"  + promptness + "_"  + var.cut_name_ + "_"  + cV.first + "_"  + cV.second + "/res_"  + var.name_ + "_"  + var.cut_name_ + "_"  + cV.first + "_"  + cV.second).c_str());
+      if(hRes == nullptr || hPull == nullptr) {
+        throw std::runtime_error("hhRes == nullptr || hPull == nullptr for " + var.name_ + "; " + var.cut_name_ + "; " + cV.first + "; "  + cV.second);
+      }
 
-    TCanvas ccPull("ccPull", "ccPull", 1200, 800);
-    ccPull.SetLogy(var.log_pull_);
-    hpull->Draw();
-    promptnessText.Draw("same");
-    HistoQuantities pull_quant = EvaluateHistoQuantities(hpull);
-    TPaveText pull_quant_text = ConverHistoQuantitiesToText(pull_quant, 0.74, 0.6, 0.87, 0.7);
-    pull_quant_text.Draw("same");
+      hRes->UseCurrentStyle();
+      hPull->UseCurrentStyle();
 
-    if(is_first_canvas) printing_bracket = "(";
-    else                printing_bracket = "";
-    ccRes.Print((fileOutName + "_res.pdf" + printing_bracket).c_str(), "pdf");
-    ccPull.Print((fileOutName + "_pull.pdf" + printing_bracket).c_str(), "pdf");
-    is_first_canvas = false;
-  }
+      if(is_first_canvas) {
+        grResMu.GetYaxis()->SetTitle(("#mu_{" + static_cast<std::string>(hRes->GetXaxis()->GetTitle()) + "}").c_str());
+      }
 
-  printing_bracket = "]";
-  TCanvas emptycanvas("emptycanvas", "", 1200, 800);
-  emptycanvas.Print((fileOutName + "_res.pdf" + printing_bracket).c_str(), "pdf");
-  emptycanvas.Print((fileOutName + "_pull.pdf" + printing_bracket).c_str(), "pdf");
+      TPaveText generalText(0.74, 0.82, 0.87, 0.90, "brNDC");
+      generalText.SetFillColor(0);
+      generalText.SetTextSize(0.03);
+      generalText.SetTextFont(62);
+      generalText.AddText(promptness.c_str());
+      generalText.AddText((cV.first + " < " + var.cut_title_ + " < " + cV.second + " " + var.cut_unit_).c_str());
+
+      TCanvas ccRes("ccRes", "ccRes", 1200, 800);
+      ccRes.SetLogy(var.log_res_);
+      hRes->Draw();
+      generalText.Draw("same");
+      HistoQuantities res_quant = EvaluateHistoQuantities(hRes);
+      TPaveText res_quant_text = ConvertHistoQuantitiesToText(res_quant, 0.74, 0.6, 0.87, 0.7);
+      res_quant_text.Draw("same");
+
+      const float X = (atof(cV.first.c_str()) + atof(cV.second.c_str())) / 2;
+      grResMu.SetPoint(iPoint, X, res_quant.mean_);
+      const float eX = /*(atof(cV.second.c_str()) - atof(cV.first.c_str())) / 1*/0;
+      grResMu.SetPointEX(iPoint, eX, eX);
+      grResMu.SetPointEY(iPoint, 0, res_quant.mean_err_, res_quant.mean_err_);
+      grResMu.SetPointEY(iPoint, 1, res_quant.stddev_, res_quant.stddev_);
+
+      TCanvas ccPull("ccPull", "ccPull", 1200, 800);
+      ccPull.SetLogy(var.log_pull_);
+      hPull->Draw();
+      generalText.Draw("same");
+      HistoQuantities pull_quant = EvaluateHistoQuantities(hPull);
+      TPaveText pull_quant_text = ConvertHistoQuantitiesToText(pull_quant, 0.74, 0.6, 0.87, 0.7);
+      pull_quant_text.Draw("same");
+
+      if(is_first_canvas) printing_bracket = "(";
+      else                printing_bracket = "";
+      ccRes.Print((fileOutName + "_" + var.name_ + "_res.pdf" + printing_bracket).c_str(), "pdf");
+      ccPull.Print((fileOutName + "_" + var.name_ + "_pull.pdf" + printing_bracket).c_str(), "pdf");
+      is_first_canvas = false;
+      ++iPoint;
+    } // cutsVar
+
+    TCanvas ccResMu("ccResMu", "ccResMu", 1200, 800);
+    grResMu.Draw("AP; []");
+    ccResMu.Print((fileOutName + "_" + var.name_ + "_res.pdf" + printing_bracket).c_str(), "pdf");
+
+    printing_bracket = "]";
+    TCanvas emptycanvas("emptycanvas", "", 1200, 800);
+    emptycanvas.Print((fileOutName + "_" + var.name_ + "_res.pdf" + printing_bracket).c_str(), "pdf");
+    emptycanvas.Print((fileOutName + "_" + var.name_ + "_pull.pdf" + printing_bracket).c_str(), "pdf");
+  } // vars
+
+  fileIn->Close();
 }
 
 template<typename T>
@@ -121,7 +157,7 @@ HistoQuantities EvaluateHistoQuantities(const TH1* h) {
   return result;
 }
 
-TPaveText ConverHistoQuantitiesToText(const HistoQuantities& q, float x1, float y1, float x2, float y2) {
+TPaveText ConvertHistoQuantitiesToText(const HistoQuantities& q, float x1, float y1, float x2, float y2) {
   TPaveText text(x1, y1, x2, y2, "brNDC");
   text.SetFillColor(0);
   text.SetTextSize(0.03);
@@ -135,12 +171,34 @@ TPaveText ConverHistoQuantitiesToText(const HistoQuantities& q, float x1, float 
   return text;
 }
 
-std::vector<std::pair<std::string, std::string>> FindCuts(const TFile* fileIn, const std::string& name_start) {
+std::vector<std::pair<std::string, std::string>> FindCuts(const TFile* fileIn, std::string name_start) {
+  if(name_start.back() != '_') name_start.push_back('_');
   std::vector<std::pair<std::string, std::string>> result;
 
   auto lok = fileIn->GetListOfKeys();
   const int nDirs = lok->GetEntries();
   for(int iDir=0; iDir<nDirs; iDir++) {
     const std::string dirName = lok->At(iDir)->GetName();
+    if(dirName.substr(0, name_start.size()) != name_start) continue;
+    std::pair<std::string, std::string> cutPair;
+    bool isFirstCutRead{false};
+    for(int iChar=name_start.size(); iChar<dirName.size(); iChar++) {
+      char letter = dirName.at(iChar);
+      if(letter != '_') {
+        if(!isFirstCutRead) cutPair.first.push_back(letter);
+        else                cutPair.second.push_back(letter);
+      } else {
+        isFirstCutRead = true;
+      }
+    }
+    result.emplace_back(cutPair);
   }
+
+  std::sort(result.begin(), result.end(), stofCompare);
+
+  return result;
+}
+
+bool stofCompare(std::pair<std::string, std::string> a, std::pair<std::string, std::string> b) {
+  return atof(a.first.c_str()) < atof(b.first.c_str());
 }
