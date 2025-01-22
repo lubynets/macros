@@ -51,8 +51,8 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt=1) {
     {"Xsv", "psim",  "p^{mc}",     "GeV/c", false, false},
     {"Ysv", "psim",  "p^{mc}",     "GeV/c", false, false},
     {"Zsv", "psim",  "p^{mc}",     "GeV/c", false, false},
-    {"L",   "lsim",  "L^{mc}",     "cm",    true,  true},
-    {"T",   "tsim",  "T^{mc}",     "ps",    true,  true},
+    {"L",   "lsim",  "L^{mc}",     "cm",    false, false},
+    {"T",   "tsim",  "T^{mc}",     "ps",    false, false},
   };
 
   for(auto& var : vars) {
@@ -62,18 +62,24 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt=1) {
     auto cutsVar = FindCuts(fileIn, "Candidates_Simulated_"  + promptness + "_" + var.cut_name_);
 
     TGraphMultiErrors grResMu(cutsVar.size(), 2);
-    grResMu.SetTitle("");
-    grResMu.GetXaxis()->SetTitle((var.cut_title_ + ", " + var.cut_unit_).c_str());
-    grResMu.SetMarkerStyle(kFullSquare);
-    grResMu.SetMarkerSize(1.6);
-    grResMu.SetMarkerColor(kBlue);
-    grResMu.SetLineWidth(3);
-    grResMu.SetLineColor(kBlue);
+    TGraphMultiErrors grResStdDev(cutsVar.size(), 1);
+    TGraphMultiErrors grPullMu(cutsVar.size(), 2);
+    TGraphMultiErrors grPullStdDev(cutsVar.size(), 1);
+    std::vector<TGraph*> graphs{&grResMu, &grResStdDev, &grPullMu, &grPullStdDev};
+    for(auto& g : graphs) {
+      g->SetTitle("");
+      g->GetXaxis()->SetTitle((var.cut_title_ + ", " + var.cut_unit_).c_str());
+      g->SetMarkerStyle(kFullSquare);
+      g->SetMarkerSize(1.6);
+      g->SetMarkerColor(kBlue);
+      g->SetLineWidth(3);
+      g->SetLineColor(kBlue);
+    }
 
     int iPoint{0};
     for(auto& cV : cutsVar) {
       TH1D* hRes = fileIn->Get<TH1D>(("Candidates_Simulated_"  + promptness + "_"  + var.cut_name_ + "_"  + cV.first + "_"  + cV.second + "/res_"  + var.name_ + "_"  + var.cut_name_ + "_"  + cV.first + "_"  + cV.second).c_str());
-      TH1D* hPull = fileIn->Get<TH1D>(("Candidates_Simulated_"  + promptness + "_"  + var.cut_name_ + "_"  + cV.first + "_"  + cV.second + "/res_"  + var.name_ + "_"  + var.cut_name_ + "_"  + cV.first + "_"  + cV.second).c_str());
+      TH1D* hPull = fileIn->Get<TH1D>(("Candidates_Simulated_"  + promptness + "_"  + var.cut_name_ + "_"  + cV.first + "_"  + cV.second + "/pull_"  + var.name_ + "_"  + var.cut_name_ + "_"  + cV.first + "_"  + cV.second).c_str());
       if(hRes == nullptr || hPull == nullptr) {
         throw std::runtime_error("hhRes == nullptr || hPull == nullptr for " + var.name_ + "; " + var.cut_name_ + "; " + cV.first + "; "  + cV.second);
       }
@@ -82,7 +88,10 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt=1) {
       hPull->UseCurrentStyle();
 
       if(is_first_canvas) {
-        grResMu.GetYaxis()->SetTitle(("#mu_{" + static_cast<std::string>(hRes->GetXaxis()->GetTitle()) + "}").c_str());
+        grResMu.GetYaxis()->SetTitle("Residual mean");
+        grResStdDev.GetYaxis()->SetTitle("Residual width");
+        grPullMu.GetYaxis()->SetTitle("Pull mean");
+        grPullStdDev.GetYaxis()->SetTitle("Pull width");
       }
 
       TPaveText generalText(0.74, 0.82, 0.87, 0.90, "brNDC");
@@ -101,11 +110,16 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt=1) {
       res_quant_text.Draw("same");
 
       const float X = (atof(cV.first.c_str()) + atof(cV.second.c_str())) / 2;
-      grResMu.SetPoint(iPoint, X, res_quant.mean_);
       const float eX = /*(atof(cV.second.c_str()) - atof(cV.first.c_str())) / 1*/0;
+
+      grResMu.SetPoint(iPoint, X, res_quant.mean_);
       grResMu.SetPointEX(iPoint, eX, eX);
       grResMu.SetPointEY(iPoint, 0, res_quant.mean_err_, res_quant.mean_err_);
       grResMu.SetPointEY(iPoint, 1, res_quant.stddev_, res_quant.stddev_);
+
+      grResStdDev.SetPoint(iPoint, X, res_quant.stddev_);
+      grResStdDev.SetPointEX(iPoint, eX, eX);
+      grResStdDev.SetPointEY(iPoint, 0, res_quant.stddev_err_, res_quant.stddev_err_);
 
       TCanvas ccPull("ccPull", "ccPull", 1200, 800);
       ccPull.SetLogy(var.log_pull_);
@@ -114,6 +128,15 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt=1) {
       HistoQuantities pull_quant = EvaluateHistoQuantities(hPull);
       TPaveText pull_quant_text = ConvertHistoQuantitiesToText(pull_quant, 0.74, 0.6, 0.87, 0.7);
       pull_quant_text.Draw("same");
+
+      grPullMu.SetPoint(iPoint, X, pull_quant.mean_);
+      grPullMu.SetPointEX(iPoint, eX, eX);
+      grPullMu.SetPointEY(iPoint, 0, pull_quant.mean_err_, pull_quant.mean_err_);
+      grPullMu.SetPointEY(iPoint, 1, pull_quant.stddev_, pull_quant.stddev_);
+
+      grPullStdDev.SetPoint(iPoint, X, pull_quant.stddev_);
+      grPullStdDev.SetPointEX(iPoint, eX, eX);
+      grPullStdDev.SetPointEY(iPoint, 0, pull_quant.stddev_err_, pull_quant.stddev_err_);
 
       if(is_first_canvas) printing_bracket = "(";
       else                printing_bracket = "";
@@ -126,6 +149,18 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt=1) {
     TCanvas ccResMu("ccResMu", "ccResMu", 1200, 800);
     grResMu.Draw("AP; []");
     ccResMu.Print((fileOutName + "_" + var.name_ + "_res.pdf" + printing_bracket).c_str(), "pdf");
+
+    TCanvas ccResStdDev("ccResStdDev", "ccResStdDev", 1200, 800);
+    grResStdDev.Draw("AP");
+    ccResStdDev.Print((fileOutName + "_" + var.name_ + "_res.pdf" + printing_bracket).c_str(), "pdf");
+
+    TCanvas ccPullMu("ccPullMu", "ccPullMu", 1200, 800);
+    grPullMu.Draw("AP; []");
+    ccPullMu.Print((fileOutName + "_" + var.name_ + "_pull.pdf" + printing_bracket).c_str(), "pdf");
+
+    TCanvas ccPullStdDev("ccPullStdDev", "ccPullStdDev", 1200, 800);
+    grPullStdDev.Draw("AP");
+    ccPullStdDev.Print((fileOutName + "_" + var.name_ + "_pull.pdf" + printing_bracket).c_str(), "pdf");
 
     printing_bracket = "]";
     TCanvas emptycanvas("emptycanvas", "", 1200, 800);
