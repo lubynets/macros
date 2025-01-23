@@ -19,7 +19,7 @@ struct HistoQuantities {
 HistoQuantities EvaluateHistoQuantities(const TH1* h);
 TPaveText ConvertHistoQuantitiesToText(const HistoQuantities& q, float x1, float y1, float x2, float y2);
 
-void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt=1) {
+void mc_qa2diff(const std::string& fileName, bool is_draw_distr_width_for_means=true, int prompt_or_nonprompt=1) {
   TString currentMacroPath = __FILE__;
   TString directory = currentMacroPath(0, currentMacroPath.Last('/'));
   gROOT->Macro( directory + "/mc_qa2.style.cc" );
@@ -57,91 +57,88 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt=1) {
     {"T",   "tsim",  "T^{mc}",     "ps",    false, false},
   };
 
+  struct ResPull{
+    std::string name_;
+    std::string prefix_;
+    bool is_draw_oneline_on_stddev_;
+  };
+
+  std::vector<ResPull> resPulls {
+    {"Residual", "res",  false},
+    {"Pull",     "pull", true}
+  };
+
   for(auto& var : vars) {
     bool is_first_canvas{true};
     std::string printing_bracket = "(";
 
     auto cutsVar = FindCuts(fileIn, "Candidates_Simulated_"  + promptness + "_" + var.cut_name_);
 
-    TGraphMultiErrors grResMu(cutsVar.size(), 2);
-    TGraphMultiErrors grResStdDev(cutsVar.size(), 1);
-    TGraphMultiErrors grPullMu(cutsVar.size(), 2);
-    TGraphMultiErrors grPullStdDev(cutsVar.size(), 1);
-    grResMu.GetYaxis()->SetTitle("Residual mean");
-    grResStdDev.GetYaxis()->SetTitle("Residual width");
-    grPullMu.GetYaxis()->SetTitle("Pull mean");
-    grPullStdDev.GetYaxis()->SetTitle("Pull width");
-    std::vector<TGraph*> graphs{&grResMu, &grResStdDev, &grPullMu, &grPullStdDev};
-    for(auto& g : graphs) {
-      g->SetTitle("");
-      g->GetXaxis()->SetTitle((var.cut_title_ + ", " + var.cut_unit_).c_str());
-      g->SetMarkerStyle(kFullSquare);
-      g->SetMarkerSize(1.6);
-      g->SetMarkerColor(kBlue);
-      g->SetLineWidth(3);
-      g->SetLineColor(kBlue);
-      g->SetFillColorAlpha(kBlue, 0.3);
+    std::vector<TGraphMultiErrors*> grMu;
+    std::vector<TGraphErrors*> grSigma;
+    grMu.resize(resPulls.size());
+    grSigma.resize(resPulls.size());
+    for(int iRP=0; iRP<resPulls.size(); iRP++) {
+      grMu.at(iRP) = new TGraphMultiErrors(cutsVar.size(), 2);
+      grSigma.at(iRP) = new TGraphErrors(cutsVar.size());
+      for(auto& g : (std::vector<TGraph*>){grMu.at(iRP), grSigma.at(iRP)}) {
+        g->SetTitle("");
+        g->GetXaxis()->SetTitle((var.cut_title_ + ", " + var.cut_unit_).c_str());
+        g->SetMarkerStyle(kFullSquare);
+        g->SetMarkerSize(2);
+        g->SetMarkerColor(kBlue);
+        g->SetLineWidth(3);
+        g->SetLineColor(kBlue);
+        g->SetFillColorAlpha(kBlue, 0.3);
+      }
     }
+
+    TPaveText generalText(0.74, 0.82, 0.87, 0.90, "brNDC");
+    generalText.SetFillColor(0);
+    generalText.SetTextSize(0.03);
+    generalText.SetTextFont(62);
+    generalText.AddText(promptness.c_str());
 
     int iPoint{0};
     for(auto& cV : cutsVar) {
-      TH1D* hRes = fileIn->Get<TH1D>(("Candidates_Simulated_"  + promptness + "_"  + var.cut_name_ + "_"  + cV.first + "_"  + cV.second + "/res_"  + var.name_ + "_"  + var.cut_name_ + "_"  + cV.first + "_"  + cV.second).c_str());
-      TH1D* hPull = fileIn->Get<TH1D>(("Candidates_Simulated_"  + promptness + "_"  + var.cut_name_ + "_"  + cV.first + "_"  + cV.second + "/pull_"  + var.name_ + "_"  + var.cut_name_ + "_"  + cV.first + "_"  + cV.second).c_str());
-      if(hRes == nullptr || hPull == nullptr) {
-        throw std::runtime_error("hhRes == nullptr || hPull == nullptr for " + var.name_ + "; " + var.cut_name_ + "; " + cV.first + "; "  + cV.second);
-      }
+      TPaveText cutText = generalText;
+      cutText.AddText((cV.first + " < " + var.cut_title_ + " < " + cV.second + " " + var.cut_unit_).c_str());
+      const float grX = (atof(cV.first.c_str()) + atof(cV.second.c_str())) / 2;
+      const float grEX = -(atof(cutsVar.at(0).second.c_str()) - atof(cutsVar.at(0).first.c_str())) / 15;
 
-      hRes->UseCurrentStyle();
-      hPull->UseCurrentStyle();
+      for(int iRP=0; iRP<resPulls.size(); iRP++) {
+        TH1D* hIn = fileIn->Get<TH1D>(("Candidates_Simulated_"  + promptness + "_"  + var.cut_name_ + "_"  + cV.first + "_"  + cV.second + "/" +  resPulls.at(iRP).prefix_ + "_"  + var.name_ + "_"  + var.cut_name_ + "_"  + cV.first + "_"  + cV.second).c_str());
+        if(hIn == nullptr) {
+          throw std::runtime_error("hIn == nullptr for " + var.name_ + "; " + var.cut_name_ + "; " + cV.first + "; "  + cV.second + "; " + resPulls.at(iRP).prefix_);
+        }
 
-      TPaveText generalText(0.74, 0.82, 0.87, 0.90, "brNDC");
-      generalText.SetFillColor(0);
-      generalText.SetTextSize(0.03);
-      generalText.SetTextFont(62);
-      generalText.AddText(promptness.c_str());
-      generalText.AddText((cV.first + " < " + var.cut_title_ + " < " + cV.second + " " + var.cut_unit_).c_str());
+        if(is_first_canvas && iPoint==0) {
+          grMu.at(iRP)->GetYaxis()->SetTitle((resPulls.at(iRP).name_ + " mean of " + hIn->GetXaxis()->GetTitle()).c_str());
+          grSigma.at(iRP)->GetYaxis()->SetTitle((resPulls.at(iRP).name_ + " width of " + hIn->GetXaxis()->GetTitle()).c_str());
+        }
 
-      TCanvas ccRes("ccRes", "ccRes", 1200, 800);
-      ccRes.SetLogy(var.log_res_);
-      hRes->Draw();
-      generalText.Draw("same");
-      HistoQuantities res_quant = EvaluateHistoQuantities(hRes);
-      TPaveText res_quant_text = ConvertHistoQuantitiesToText(res_quant, 0.74, 0.6, 0.87, 0.7);
-      res_quant_text.Draw("same");
+        hIn->UseCurrentStyle();
 
-      const float X = (atof(cV.first.c_str()) + atof(cV.second.c_str())) / 2;
-      const float eX = -(atof(cutsVar.at(0).second.c_str()) - atof(cutsVar.at(0).first.c_str())) / 15;
+        TCanvas cc(("cc" + resPulls.at(iRP).prefix_).c_str(), ("cc" + resPulls.at(iRP).prefix_).c_str(), 1200, 800);
+        cc.SetLogy(var.log_res_);
+        hIn->Draw();
+        cutText.Draw("same");
+        HistoQuantities quant = EvaluateHistoQuantities(hIn);
+        TPaveText quant_text = ConvertHistoQuantitiesToText(quant, 0.74, 0.6, 0.87, 0.7);
+        quant_text.Draw("same");
 
-      grResMu.SetPoint(iPoint, X, res_quant.mean_);
-      grResMu.SetPointEX(iPoint, eX, eX);
-      grResMu.SetPointEY(iPoint, 0, res_quant.mean_err_, res_quant.mean_err_);
-      grResMu.SetPointEY(iPoint, 1, res_quant.stddev_, res_quant.stddev_);
+        grMu.at(iRP)->SetPoint(iPoint, grX, quant.mean_);
+        grMu.at(iRP)->SetPointEX(iPoint, grEX, grEX);
+        grMu.at(iRP)->SetPointEY(iPoint, 0, quant.mean_err_, quant.mean_err_);
+        if(is_draw_distr_width_for_means) grMu.at(iRP)->SetPointEY(iPoint, 1, quant.stddev_, quant.stddev_);
 
-      grResStdDev.SetPoint(iPoint, X, res_quant.stddev_);
-      grResStdDev.SetPointEX(iPoint, eX, eX);
-      grResStdDev.SetPointEY(iPoint, 0, res_quant.stddev_err_, res_quant.stddev_err_);
+        grSigma.at(iRP)->SetPoint(iPoint, grX, quant.stddev_);
+        grSigma.at(iRP)->SetPointError(iPoint, 0, quant.stddev_err_);
 
-      TCanvas ccPull("ccPull", "ccPull", 1200, 800);
-      ccPull.SetLogy(var.log_pull_);
-      hPull->Draw();
-      generalText.Draw("same");
-      HistoQuantities pull_quant = EvaluateHistoQuantities(hPull);
-      TPaveText pull_quant_text = ConvertHistoQuantitiesToText(pull_quant, 0.74, 0.6, 0.87, 0.7);
-      pull_quant_text.Draw("same");
-
-      grPullMu.SetPoint(iPoint, X, pull_quant.mean_);
-      grPullMu.SetPointEX(iPoint, eX, eX);
-      grPullMu.SetPointEY(iPoint, 0, pull_quant.mean_err_, pull_quant.mean_err_);
-      grPullMu.SetPointEY(iPoint, 1, pull_quant.stddev_, pull_quant.stddev_);
-
-      grPullStdDev.SetPoint(iPoint, X, pull_quant.stddev_);
-      grPullStdDev.SetPointEX(iPoint, eX, eX);
-      grPullStdDev.SetPointEY(iPoint, 0, pull_quant.stddev_err_, pull_quant.stddev_err_);
-
-      if(is_first_canvas) printing_bracket = "(";
-      else                printing_bracket = "";
-      ccRes.Print((fileOutName + "_" + var.name_ + "_res.pdf" + printing_bracket).c_str(), "pdf");
-      ccPull.Print((fileOutName + "_" + var.name_ + "_pull.pdf" + printing_bracket).c_str(), "pdf");
+        if(is_first_canvas) printing_bracket = "(";
+        else                printing_bracket = "";
+        cc.Print((fileOutName + "_" + var.name_ + "_" +  resPulls.at(iRP).prefix_ + ".pdf" + printing_bracket).c_str(), "pdf");
+      } // resPulls
       is_first_canvas = false;
       ++iPoint;
     } // cutsVar
@@ -152,29 +149,33 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt=1) {
     oneLine.SetParameter(0, 1);
     SetLineDrawParameters({&zeroLine, &oneLine});
 
-    TCanvas ccResMu("ccResMu", "ccResMu", 1200, 800);
-    grResMu.Draw("AP; 2");
-    zeroLine.Draw("L same");
-    ccResMu.Print((fileOutName + "_" + var.name_ + "_res.pdf" + printing_bracket).c_str(), "pdf");
-
-    TCanvas ccResStdDev("ccResStdDev", "ccResStdDev", 1200, 800);
-    grResStdDev.Draw("AP");
-    ccResStdDev.Print((fileOutName + "_" + var.name_ + "_res.pdf" + printing_bracket).c_str(), "pdf");
-
-    TCanvas ccPullMu("ccPullMu", "ccPullMu", 1200, 800);
-    grPullMu.Draw("AP; 2");
-    zeroLine.Draw("L same");
-    ccPullMu.Print((fileOutName + "_" + var.name_ + "_pull.pdf" + printing_bracket).c_str(), "pdf");
-
-    TCanvas ccPullStdDev("ccPullStdDev", "ccPullStdDev", 1200, 800);
-    grPullStdDev.Draw("AP");
-    oneLine.Draw("L same");
-    ccPullStdDev.Print((fileOutName + "_" + var.name_ + "_pull.pdf" + printing_bracket).c_str(), "pdf");
-
-    printing_bracket = "]";
     TCanvas emptycanvas("emptycanvas", "", 1200, 800);
-    emptycanvas.Print((fileOutName + "_" + var.name_ + "_res.pdf" + printing_bracket).c_str(), "pdf");
-    emptycanvas.Print((fileOutName + "_" + var.name_ + "_pull.pdf" + printing_bracket).c_str(), "pdf");
+    for(int iRP=0; iRP<resPulls.size(); iRP++) {
+      TLegend legMu(0.14, is_draw_distr_width_for_means ? 0.72 : 0.80, 0.27, 0.90);
+      legMu.AddEntry(grMu.at(0), "stat. error", "E");
+      if(is_draw_distr_width_for_means) {
+        auto entry = legMu.AddEntry("", "distrib. width", "F");
+        entry->SetFillColorAlpha(grMu.at(0)->GetFillColor(), 0.3);
+        entry->SetLineColor(kWhite);
+        entry->SetFillStyle(1000);
+      }
+      TLegend legSigma(0.14, 0.80, 0.27, 0.90);
+      legSigma.AddEntry(grMu.at(0), "stat. error", "E");
+
+      TCanvas ccMu(("cc" +  resPulls.at(iRP).prefix_ + "Mu").c_str(), ("cc" +  resPulls.at(iRP).prefix_ + "Mu").c_str(), 1200, 800);
+      grMu.at(iRP)->Draw("AP; 2");
+      zeroLine.Draw("L same");
+      legMu.Draw("same");
+      ccMu.Print((fileOutName + "_" + var.name_ + "_" +  resPulls.at(iRP).prefix_ + ".pdf").c_str(), "pdf");
+
+      TCanvas ccSigma(("cc" +  resPulls.at(iRP).prefix_ + "Sigma").c_str(), ("cc" +  resPulls.at(iRP).prefix_ + "Sigma").c_str(), 1200, 800);
+      grSigma.at(iRP)->Draw("AP");
+      if(resPulls.at(iRP).is_draw_oneline_on_stddev_) oneLine.Draw("L same");
+      legSigma.Draw("same");
+      ccSigma.Print((fileOutName + "_" + var.name_ + "_" +  resPulls.at(iRP).prefix_ + ".pdf").c_str(), "pdf");
+
+      emptycanvas.Print((fileOutName + "_" + var.name_ + "_" +  resPulls.at(iRP).prefix_ + ".pdf]").c_str(), "pdf");
+    } // resPulls
   } // vars
 
   fileIn->Close();
