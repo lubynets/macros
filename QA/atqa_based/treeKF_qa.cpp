@@ -28,8 +28,10 @@ void treeKF_qa(const std::string& filelist){
 //     SimpleCut({"Candidates.KF_fSigBgStatus"}, [](std::vector<double> par){ return par[0] != 0 && par[0] != 1 && par[0] != 2 && par[0] != 3 && par[0] != -999; }, "impossible"),
   };
 
-  SimpleCut simpleCutSelected = RangeCut("Candidates.KF_fIsSelected", 0.9, 1.1);
-//   SimpleCut simpleCutSelected = RangeCut("Candidates.KF_fIsSelected", -0.1, 1.1);
+  std::vector<SimpleCut> dcaFitterSelections {
+    RangeCut("Candidates.KF_fIsSelected", 0.9, 1.1, "isDcaFSel"),
+    RangeCut("Candidates.KF_fIsSelected", -0.1, 1.1, "noDcaFSel"),
+  };
 
   struct Quantity {
     std::string name_;
@@ -79,20 +81,22 @@ void treeKF_qa(const std::string& filelist){
   };
 
   for(auto& dt : datatypes) {
-    std::vector<SimpleCut> allCuts = topoSelectionCuts;
-    allCuts.emplace_back(simpleCutSelected);
-    allCuts.emplace_back(dt);
+    for(auto& dcaSel : dcaFitterSelections) {
+      std::vector<SimpleCut> allCuts = topoSelectionCuts;
+      allCuts.emplace_back(dt);
+      allCuts.emplace_back(dcaSel);
 
-    Cuts* cutsTotal = new Cuts(dt.GetTitle() + "_total", allCuts);
+      Cuts* cutsTotal = new Cuts(dt.GetTitle() + "_" + dcaSel.GetTitle() + "_total", allCuts);
 
-    for(auto& var : vars) {
-      task->AddH1(var.name_ + "_" + dt.GetTitle(), {var.xaxis_title_, Variable::FromString("Candidates." + var.name_in_tree_), var.xaxis_}, cutsTotal);
-      for(auto& slc : var.slice_cuts_) {
-        std::vector<SimpleCut> allCutsSlice = allCuts;
-        allCutsSlice.emplace_back(slc);
-        Cuts* cutSlice = new Cuts(dt.GetTitle() + "_" + slc.GetTitle(), allCutsSlice);
+      for(auto& var : vars) {
+        task->AddH1(var.name_ + "_" + dt.GetTitle() + "_" + dcaSel.GetTitle(), {var.xaxis_title_, Variable::FromString("Candidates." + var.name_in_tree_), var.xaxis_}, cutsTotal);
+        for(auto& slc : var.slice_cuts_) {
+          std::vector<SimpleCut> allCutsSlice = allCuts;
+          allCutsSlice.emplace_back(slc);
+          Cuts* cutSlice = new Cuts(dt.GetTitle() + "_" + dcaSel.GetTitle() + "_" + slc.GetTitle(), allCutsSlice);
 
-        task->AddH1(var.name_ + "_" + dt.GetTitle() + "_" + slc.GetTitle(), {var.xaxis_title_, Variable::FromString("Candidates." + var.name_in_tree_), var.xaxis_}, cutSlice);
+          task->AddH1(var.name_ + "_" + dt.GetTitle() + "_" + dcaSel.GetTitle() + "_" + slc.GetTitle(), {var.xaxis_title_, Variable::FromString("Candidates." + var.name_in_tree_), var.xaxis_}, cutSlice);
+        }
       }
     }
   }
