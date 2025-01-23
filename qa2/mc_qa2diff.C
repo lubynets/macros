@@ -5,6 +5,8 @@ std::vector<std::pair<std::string, std::string>> FindCuts(const TFile* fileIn, s
 
 bool stofCompare(std::pair<std::string, std::string> a, std::pair<std::string, std::string> b);
 
+void SetLineDrawParameters(std::vector<TF1*> fs, int lineWidth=1, int lineStyle=7, Color_t lineColor=kBlack);
+
 struct HistoQuantities {
   float underflow_{-999.f};
   float overflow_{-999.f};
@@ -65,6 +67,10 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt=1) {
     TGraphMultiErrors grResStdDev(cutsVar.size(), 1);
     TGraphMultiErrors grPullMu(cutsVar.size(), 2);
     TGraphMultiErrors grPullStdDev(cutsVar.size(), 1);
+    grResMu.GetYaxis()->SetTitle("Residual mean");
+    grResStdDev.GetYaxis()->SetTitle("Residual width");
+    grPullMu.GetYaxis()->SetTitle("Pull mean");
+    grPullStdDev.GetYaxis()->SetTitle("Pull width");
     std::vector<TGraph*> graphs{&grResMu, &grResStdDev, &grPullMu, &grPullStdDev};
     for(auto& g : graphs) {
       g->SetTitle("");
@@ -74,6 +80,7 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt=1) {
       g->SetMarkerColor(kBlue);
       g->SetLineWidth(3);
       g->SetLineColor(kBlue);
+      g->SetFillColorAlpha(kBlue, 0.3);
     }
 
     int iPoint{0};
@@ -86,13 +93,6 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt=1) {
 
       hRes->UseCurrentStyle();
       hPull->UseCurrentStyle();
-
-      if(is_first_canvas) {
-        grResMu.GetYaxis()->SetTitle("Residual mean");
-        grResStdDev.GetYaxis()->SetTitle("Residual width");
-        grPullMu.GetYaxis()->SetTitle("Pull mean");
-        grPullStdDev.GetYaxis()->SetTitle("Pull width");
-      }
 
       TPaveText generalText(0.74, 0.82, 0.87, 0.90, "brNDC");
       generalText.SetFillColor(0);
@@ -110,7 +110,7 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt=1) {
       res_quant_text.Draw("same");
 
       const float X = (atof(cV.first.c_str()) + atof(cV.second.c_str())) / 2;
-      const float eX = /*(atof(cV.second.c_str()) - atof(cV.first.c_str())) / 1*/0;
+      const float eX = -(atof(cutsVar.at(0).second.c_str()) - atof(cutsVar.at(0).first.c_str())) / 15;
 
       grResMu.SetPoint(iPoint, X, res_quant.mean_);
       grResMu.SetPointEX(iPoint, eX, eX);
@@ -146,8 +146,15 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt=1) {
       ++iPoint;
     } // cutsVar
 
+    TF1 zeroLine("zeroLine", "[0]", -99, 99);
+    TF1 oneLine("oneLine", "[0]", -99, 99);
+    zeroLine.SetParameter(0, 0);
+    oneLine.SetParameter(0, 1);
+    SetLineDrawParameters({&zeroLine, &oneLine});
+
     TCanvas ccResMu("ccResMu", "ccResMu", 1200, 800);
-    grResMu.Draw("AP; []");
+    grResMu.Draw("AP; 2");
+    zeroLine.Draw("L same");
     ccResMu.Print((fileOutName + "_" + var.name_ + "_res.pdf" + printing_bracket).c_str(), "pdf");
 
     TCanvas ccResStdDev("ccResStdDev", "ccResStdDev", 1200, 800);
@@ -155,11 +162,13 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt=1) {
     ccResStdDev.Print((fileOutName + "_" + var.name_ + "_res.pdf" + printing_bracket).c_str(), "pdf");
 
     TCanvas ccPullMu("ccPullMu", "ccPullMu", 1200, 800);
-    grPullMu.Draw("AP; []");
+    grPullMu.Draw("AP; 2");
+    zeroLine.Draw("L same");
     ccPullMu.Print((fileOutName + "_" + var.name_ + "_pull.pdf" + printing_bracket).c_str(), "pdf");
 
     TCanvas ccPullStdDev("ccPullStdDev", "ccPullStdDev", 1200, 800);
     grPullStdDev.Draw("AP");
+    oneLine.Draw("L same");
     ccPullStdDev.Print((fileOutName + "_" + var.name_ + "_pull.pdf" + printing_bracket).c_str(), "pdf");
 
     printing_bracket = "]";
@@ -236,4 +245,12 @@ std::vector<std::pair<std::string, std::string>> FindCuts(const TFile* fileIn, s
 
 bool stofCompare(std::pair<std::string, std::string> a, std::pair<std::string, std::string> b) {
   return atof(a.first.c_str()) < atof(b.first.c_str());
+}
+
+void SetLineDrawParameters(std::vector<TF1*> fs, int lineWidth, int lineStyle, Color_t lineColor) {
+  for(auto& f : fs) {
+    f->SetLineWidth(lineWidth);
+    f->SetLineStyle(lineStyle);
+    f->SetLineColor(lineColor);
+  }
 }
