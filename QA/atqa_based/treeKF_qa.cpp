@@ -12,7 +12,8 @@ std::string to_string_with_precision(const T a_value, const int n);
 std::vector<SimpleCut> CreateSliceCuts(const std::vector<float>& ranges, const std::string& cutNamePrefix, const std::string& branchFieldName);
 
 void treeKF_qa(const std::string& filelist){
-  const float HugeValue = 1e9;
+  constexpr float HugeValue = 1e9;
+  constexpr float UndefValueFloat = -999.f;
 
   auto* man = TaskManager::GetInstance();
 
@@ -20,12 +21,12 @@ void treeKF_qa(const std::string& filelist){
   task->SetOutputFileName("treeKF_qa.root");
 
   std::vector<SimpleCut> datatypes {
-//     EqualsCut("Candidates.KF_fSigBgStatus", 0,    "background"),
-//     EqualsCut("Candidates.KF_fSigBgStatus", 1,    "prompt"),
-//     EqualsCut("Candidates.KF_fSigBgStatus", 2,    "nonprompt"),
-//     EqualsCut("Candidates.KF_fSigBgStatus", 3,    "wrongswap"),
+    EqualsCut("Candidates.KF_fSigBgStatus", 0,    "background"),
+    EqualsCut("Candidates.KF_fSigBgStatus", 1,    "prompt"),
+    EqualsCut("Candidates.KF_fSigBgStatus", 2,    "nonprompt"),
+    EqualsCut("Candidates.KF_fSigBgStatus", 3,    "wrongswap"),
     EqualsCut("Candidates.KF_fSigBgStatus", -999, "data"),
-//     SimpleCut({"Candidates.KF_fSigBgStatus"}, [](std::vector<double> par){ return par[0] != 0 && par[0] != 1 && par[0] != 2 && par[0] != 3 && par[0] != -999; }, "impossible"),
+    SimpleCut({"Candidates.KF_fSigBgStatus"}, [](std::vector<double> par){ return par[0] != 0 && par[0] != 1 && par[0] != 2 && par[0] != 3 && par[0] != -999; }, "impossible"),
   };
 
   std::vector<SimpleCut> dcaFitterSelections {
@@ -65,6 +66,42 @@ void treeKF_qa(const std::string& filelist){
     {"nPCPV",        "Lite_fNProngsContributorsPV", "nPCPV",                {6,   -1  , 5   }, {}    },
   };
 
+  enum eProngSpecies : int {
+    kProton = 0,
+    kKaon,
+    kPion,
+    nProngSpecies
+  };
+
+  enum ePidDetectors : int {
+    kTpc = 0,
+    kTof,
+    kTpcTof,
+    nPidDetectors
+  };
+
+  std::vector<std::vector<Variable>> varPid;
+  varPid.resize(nPidDetectors);
+  for(auto& vP : varPid) {
+    vP.resize(nProngSpecies);
+  }
+
+  std::vector<std::string> PidDetectors{"Tpc", "Tof", "TpcTof"};
+  std::vector<std::string> ProngSpecies{"p", "K", "#pi"};
+
+  for(int iDet=0; iDet<nPidDetectors; iDet++) {
+    varPid.at(iDet).at(kProton) = Variable("nSig" + PidDetectors.at(iDet) + "Pr",
+                                           {{"Candidates", "Lite_fNSig" + PidDetectors.at(iDet) + "Pr0"}, {"Candidates", "Lite_fNSig" + PidDetectors.at(iDet) + "Pr2"}, {"Candidates", "Lite_fCandidateSelFlag"}},
+                                           []( std::vector<double>& var ) { return var.at(2)==1 ? var.at(0) : var.at(2)==2 ? var.at(1) : UndefValueFloat; });
+
+    varPid.at(iDet).at(kPion) = Variable("nSig" + PidDetectors.at(iDet) + "Pi",
+                                         {{"Candidates", "Lite_fNSig" + PidDetectors.at(iDet) + "Pi0"}, {"Candidates", "Lite_fNSig" + PidDetectors.at(iDet) + "Pi2"}, {"Candidates", "Lite_fCandidateSelFlag"}},
+                                         []( std::vector<double>& var ) { return var.at(2)==1 ? var.at(1) : var.at(2)==2 ? var.at(0) : UndefValueFloat; });
+
+    varPid.at(iDet).at(kKaon) = Variable::FromString("Candidates.Lite_fNSig" + PidDetectors.at(iDet) + "Ka1");
+    varPid.at(iDet).at(kKaon).SetName("nSig" + PidDetectors.at(iDet) + "Ka");
+  }
+
   std::vector<SimpleCut> topoSelectionCuts{
     RangeCut("Candidates.KF_fChi2PrimProton",    5,          HugeValue),
     RangeCut("Candidates.KF_fChi2PrimKaon",      5,          HugeValue),
@@ -96,10 +133,15 @@ void treeKF_qa(const std::string& filelist){
           Cuts* cutSlice = new Cuts(dt.GetTitle() + "_" + dcaSel.GetTitle() + "_" + slc.GetTitle(), allCutsSlice);
 
           task->AddH1(var.name_ + "_" + dt.GetTitle() + "_" + dcaSel.GetTitle() + "_" + slc.GetTitle(), {var.xaxis_title_, Variable::FromString("Candidates." + var.name_in_tree_), var.xaxis_}, cutSlice);
-        }
-      }
-    }
-  }
+        } // var.slice_cuts_
+      } // vars
+      for(int iDet=0; iDet<nPidDetectors; iDet++) {
+        for(int iPs=0; iPs<nProngSpecies; iPs++) {
+          task->AddH1(varPid.at(iDet).at(iPs).GetName() + "_" + dt.GetTitle() + "_" + dcaSel.GetTitle(), {"#sigma_{" + PidDetectors.at(iDet) + "} {" + ProngSpecies.at(iPs) + "}", varPid.at(iDet).at(iPs), {400, -20, 20}}, cutsTotal);
+        } // nProngSpecies
+      } // nPidDetectors
+    } // dcaFitterSelections
+  } // datatypes
 
   man->AddTask(task);
   man->Init({filelist}, {"aTree"});
