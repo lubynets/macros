@@ -2,7 +2,9 @@ template<typename T>
 std::string to_string_with_precision(const T a_value, const int n = 6);
 
 void treeKF_qa2(const std::string& fileName) {
-  gROOT->Macro( "treeKF_qa2.style.cc" );
+  TString currentMacroPath = __FILE__;
+  TString directory = currentMacroPath(0, currentMacroPath.Last('/'));
+  gROOT->Macro( directory + "/treeKF_qa2.style.cc" );
 
   TFile* fileIn = TFile::Open(fileName.c_str());
   if(fileIn == nullptr) {
@@ -41,9 +43,10 @@ void treeKF_qa2(const std::string& fileName) {
 
   std::vector<SignalSpecies> signal_species {
     {"prompt",     kRed},
-    {"nonprompt",  kBlue},
-    {"background", kGreen+2},
-    {"wrongswap",  0},
+//     {"nonprompt",  kBlue},
+//     {"background", kGreen+2},
+//     {"wrongswap",  kBlack},
+//     {"data",       kBlue},
   };
 
   bool is_first_canvas{true};
@@ -55,8 +58,6 @@ void treeKF_qa2(const std::string& fileName) {
         throw std::runtime_error((ss.name_ + "/h" + var.name_ + "_" + ss.name_ + " is nullptr").c_str());
       }
     }
-    histos.at(2)->Add(histos.at(3)); // merge wrongswap to background
-    histos.pop_back();
 
     TLegend* leg = new TLegend(0.76, 0.8, 0.96, 0.92);
     leg->SetBorderSize(0);

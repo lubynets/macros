@@ -51,7 +51,6 @@ void mc_qa2(const std::string& fileName, int prompt_or_nonprompt=1) {
     {"Ypv", false, false, false, true, false},
     {"Zpv", false, false, false, true, false},
     {"L",   false, true,  true,  true, true},
-    {"Lpyth",   false, true,  true,  true, true},
     {"T",   false, true,  true,  true, true},
   };
 

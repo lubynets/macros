@@ -47,7 +47,7 @@ void mc_qa2diff(const std::string& fileName, bool is_draw_distr_width_for_means=
   };
 
   std::vector<Variable> vars {
-//  name    cutname  title          unit
+//  name    cutname  title          unit    logres logpull
     {"P",   "psim",  "p^{mc}",     "GeV/c", false, false},
     {"Pt",  "pTsim", "p_{T}^{mc}", "GeV/c", false, false},
     {"Xsv", "psim",  "p^{mc}",     "GeV/c", false, false},
@@ -143,8 +143,10 @@ void mc_qa2diff(const std::string& fileName, bool is_draw_distr_width_for_means=
       ++iPoint;
     } // cutsVar
 
-    TF1 zeroLine("zeroLine", "[0]", -99, 99);
-    TF1 oneLine("oneLine", "[0]", -99, 99);
+    const float xlo = grMu.at(0)->GetPointX(0);
+    const float xhi = grMu.at(0)->GetPointX(grMu.at(0)->GetN()-1);
+    TF1 zeroLine("zeroLine", "[0]", xlo, xhi);
+    TF1 oneLine("oneLine", "[0]", xlo, xhi);
     zeroLine.SetParameter(0, 0);
     oneLine.SetParameter(0, 1);
     SetLineDrawParameters({&zeroLine, &oneLine});
@@ -182,7 +184,7 @@ void mc_qa2diff(const std::string& fileName, bool is_draw_distr_width_for_means=
 }
 
 template<typename T>
-  std::string to_string_with_precision(const T a_value, const int n) {
+std::string to_string_with_precision(const T a_value, const int n) {
   std::ostringstream out;
   out.precision(n);
   out << std::fixed << a_value;
@@ -240,6 +242,10 @@ std::vector<std::pair<std::string, std::string>> FindCuts(const TFile* fileIn, s
   }
 
   std::sort(result.begin(), result.end(), stofCompare);
+
+  if(result.size() == 0) {
+    throw std::runtime_error("FindCuts(): " + name_start + " cuts are not present");
+  }
 
   return result;
 }
