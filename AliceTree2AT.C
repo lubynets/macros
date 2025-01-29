@@ -12,13 +12,9 @@ struct FicCarrier {
 
 void SetAddressFIC(TBranch* branch, const IndexMap& imap, FicCarrier& ficc);
 void SetFieldsFIC(const std::vector<IndexMap>& imap, AnalysisTree::Particle& particle, const std::vector<FicCarrier>& ficc);
+std::vector<std::string> GetDFNames(const std::string& fileName);
 
 void AliceTree2AT(const std::string& fileName, bool isMC=true, int maxEntries=-1) {
-  TFile* fileIn = TFile::Open(fileName.c_str());
-  if(fileIn == nullptr) {
-    throw std::runtime_error("fileIn == nullptr");
-  }
-
   bool isConfigInitialized{false};
   AnalysisTree::Configuration config_;
 
@@ -37,7 +33,8 @@ void AliceTree2AT(const std::string& fileName, bool isMC=true, int maxEntries=-1
 
   TFile* out_file_ = new TFile("AnalysisTree.root", "recreate");
 
-  TTree* tree_{nullptr};
+  TTree* tree_ = new TTree("aTree", "Analysis Tree");
+  tree_->SetAutoSave(0);
 
   auto CreateConfiguration = [&] (TTree* t,
                                   std::string prefix,
@@ -62,19 +59,17 @@ void AliceTree2AT(const std::string& fileName, bool isMC=true, int maxEntries=-1
   int sb_status_field_id;
   int iGlobalEntry{0};
 
-  auto lok = fileIn->GetListOfKeys();
-  for(const auto& k : *lok) {
-    const std::string dirname = k->GetName();
-    if(dirname == "parentFiles") continue;
+  auto dirNames = GetDFNames(fileName);
+  std::cout << "dirNames.size() = " << dirNames.size() << "\n";
+
+  for(auto& dirname : dirNames) {
+    TFile* fileIn = TFile::Open(fileName.c_str(), "read");
 
     TTree* treeKF = fileIn->Get<TTree>((dirname + "/O2hfcandlckf").c_str());
     TTree* treeLite = fileIn->Get<TTree>((dirname + "/O2hfcandlclite").c_str());
     TTree* treeMC = isMC ? fileIn->Get<TTree>((dirname + "/O2hfcandlcmc").c_str()) : nullptr;
 
     if(!isConfigInitialized) {
-      tree_ = new TTree("aTree", "Analysis Tree");
-      tree_->SetAutoSave(0);
-
       CreateConfiguration(treeKF, "KF_", CandidatesConfig, candidateMap);
       kfLiteSepar = candidateMap.size();
       CreateConfiguration(treeLite, "Lite_", CandidatesConfig, candidateMap);
@@ -140,14 +135,13 @@ void AliceTree2AT(const std::string& fileName, bool isMC=true, int maxEntries=-1
       ++iGlobalEntry;
     }
     tree_->Fill();
+    fileIn->Close();
   }
 
   out_file_->cd();
   config_.Write("Configuration");
   tree_->Write();
   out_file_->Close();
-
-  fileIn->Close();
 }
 
 void SetAddressFIC(TBranch* branch, const IndexMap& imap, FicCarrier& ficc) {
@@ -162,4 +156,22 @@ void SetFieldsFIC(const std::vector<IndexMap>& imap, AnalysisTree::Particle& par
     else if(imap.at(iV).field_type_ == "TLeafI") particle.SetField(ficc.at(iV).int_, imap.at(iV).index_);
     else if(imap.at(iV).field_type_ == "TLeafB") particle.SetField(static_cast<int>(ficc.at(iV).char_), imap.at(iV).index_);
   }
+}
+
+std::vector<std::string> GetDFNames(const std::string& fileName) {
+  TFile* fileIn = TFile::Open(fileName.c_str(), "read");
+  if(fileIn == nullptr) {
+    throw std::runtime_error("fileIn == nullptr");
+  }
+
+  std::vector<std::string> result;
+  auto lok = fileIn->GetListOfKeys();
+  for(const auto& k : *lok) {
+    const std::string dirname = k->GetName();
+    if(dirname == "parentFiles") continue;
+    result.emplace_back(dirname);
+  }
+  fileIn->Close();
+
+  return result;
 }
