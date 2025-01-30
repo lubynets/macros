@@ -7,6 +7,8 @@ bool stofCompare(std::pair<std::string, std::string> a, std::pair<std::string, s
 
 void SetLineDrawParameters(std::vector<TF1*> fs, int lineWidth=1, int lineStyle=7, Color_t lineColor=kBlack);
 
+void CustomizeGraphYRange(TGraphMultiErrors* graph);
+
 struct HistoQuantities {
   float underflow_{-999.f};
   float overflow_{-999.f};
@@ -153,27 +155,32 @@ void mc_qa2diff(const std::string& fileName, bool is_draw_distr_width_for_means=
 
     TCanvas emptycanvas("emptycanvas", "", 1200, 800);
     for(int iRP=0; iRP<resPulls.size(); iRP++) {
-      TLegend legMu(0.14, is_draw_distr_width_for_means ? 0.72 : 0.80, 0.27, 0.90);
-      legMu.AddEntry(grMu.at(0), "stat. error", "E");
-      if(is_draw_distr_width_for_means) {
-        auto entry = legMu.AddEntry("", "distrib. width", "F");
-        entry->SetFillColorAlpha(grMu.at(0)->GetFillColor(), 0.3);
-        entry->SetLineColor(kWhite);
-        entry->SetFillStyle(1000);
-      }
-      TLegend legSigma(0.14, 0.80, 0.27, 0.90);
-      legSigma.AddEntry(grMu.at(0), "stat. error", "E");
+      TLegend legStat(0.24, 0.83, 0.37, 0.90);
+      TLegend legBoth(0.24, 0.71, 0.37, 0.90);
+      legStat.AddEntry(grMu.at(0), "stat. error", "E");
+      legBoth.AddEntry(grMu.at(0), "stat. error", "E");
+      auto entry = legBoth.AddEntry("", "distrib. width", "F");
+      entry->SetFillColorAlpha(grMu.at(0)->GetFillColor(), 0.3);
+      entry->SetLineColor(kWhite);
+      entry->SetFillStyle(1000);
 
-      TCanvas ccMu(("cc" +  resPulls.at(iRP).prefix_ + "Mu").c_str(), ("cc" +  resPulls.at(iRP).prefix_ + "Mu").c_str(), 1200, 800);
+      TCanvas ccMuStat(("cc" +  resPulls.at(iRP).prefix_ + "Mu").c_str(), ("cc" +  resPulls.at(iRP).prefix_ + "Mu").c_str(), 1200, 800);
       grMu.at(iRP)->Draw("AP; 2");
       zeroLine.Draw("L same");
-      legMu.Draw("same");
-      ccMu.Print((fileOutName + "_" + var.name_ + "_" +  resPulls.at(iRP).prefix_ + ".pdf").c_str(), "pdf");
+      legBoth.Draw("same");
+      ccMuStat.Print((fileOutName + "_" + var.name_ + "_" +  resPulls.at(iRP).prefix_ + ".pdf").c_str(), "pdf");
+
+      TCanvas ccMuWidth(("cc" +  resPulls.at(iRP).prefix_ + "Mu").c_str(), ("cc" +  resPulls.at(iRP).prefix_ + "Mu").c_str(), 1200, 800);
+      grMu.at(iRP)->Draw("AP; X");
+      CustomizeGraphYRange(grMu.at(iRP));
+      zeroLine.Draw("L same");
+      legStat.Draw("same");
+      ccMuWidth.Print((fileOutName + "_" + var.name_ + "_" +  resPulls.at(iRP).prefix_ + ".pdf").c_str(), "pdf");
 
       TCanvas ccSigma(("cc" +  resPulls.at(iRP).prefix_ + "Sigma").c_str(), ("cc" +  resPulls.at(iRP).prefix_ + "Sigma").c_str(), 1200, 800);
       grSigma.at(iRP)->Draw("AP");
       if(resPulls.at(iRP).is_draw_oneline_on_stddev_) oneLine.Draw("L same");
-      legSigma.Draw("same");
+      legStat.Draw("same");
       ccSigma.Print((fileOutName + "_" + var.name_ + "_" +  resPulls.at(iRP).prefix_ + ".pdf").c_str(), "pdf");
 
       emptycanvas.Print((fileOutName + "_" + var.name_ + "_" +  resPulls.at(iRP).prefix_ + ".pdf]").c_str(), "pdf");
@@ -260,4 +267,24 @@ void SetLineDrawParameters(std::vector<TF1*> fs, int lineWidth, int lineStyle, C
     f->SetLineStyle(lineStyle);
     f->SetLineColor(lineColor);
   }
+}
+
+void CustomizeGraphYRange(TGraphMultiErrors* graph) {
+  const int nPoints = graph->GetN();
+  float min = 1e9;
+  float max = -1e9;
+
+  for(int iPoint=0; iPoint<nPoints; iPoint++) {
+    const float up = graph->GetPointY(iPoint) + graph->GetErrorY(iPoint, 0);//only 1-st error is needed
+    const float lo = graph->GetPointY(iPoint) - graph->GetErrorY(iPoint, 0);//only 1-st error is needed
+
+    min = std::min(min, lo);
+    max = std::max(max, up);
+  }
+
+  const float diff = max-min;
+  max += diff/10;
+  min -= diff/10;
+
+  graph->GetYaxis()->SetRangeUser(min, max);
 }

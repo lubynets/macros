@@ -3,8 +3,8 @@
 //
 {
 gStyle->SetCanvasPreferGL(true);
-gStyle->SetPadLeftMargin(0.10);
-gStyle->SetPadRightMargin(0.02);
+gStyle->SetPadLeftMargin(0.14);
+gStyle->SetPadRightMargin(0.01);
 gStyle->SetPadBottomMargin(0.12);
 gStyle->SetPadTopMargin(0.07);
 gStyle->SetLegendBorderSize(0);
@@ -27,7 +27,7 @@ gStyle->SetLabelOffset(0.01, "Y");
 gStyle->SetLabelOffset(0.01, "Z");
 
 gStyle->SetTitleOffset(1.0, "X");
-gStyle->SetTitleOffset(0.95, "Y");
+gStyle->SetTitleOffset(1.46, "Y");
 gStyle->SetTitleOffset(1.15, "Z");
 
 gStyle->SetNdivisions(206, "xyz");

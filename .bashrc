@@ -68,18 +68,15 @@ alias virgo3='ssh -Y virgo3.hpc.gsi.de'
 alias virgo0552='ssh lxbk0552'
 alias virgo1130='ssh lxbk1130'
 alias virgo1131='ssh lxbk1131'
+alias virgo1132='ssh lxbk1132'
+alias virgo1133='ssh lxbk1133'
 alias singunohome='singularity shell -B /data.local1 -B /lustre --no-home /lustre/alice/singularity/singularity_o2dev_alma9.sif'
-alias ssbs='cd; source start-scratch-build-session.sh'
-alias aBo2p='aliBuild build O2Physics'
-alias aBo2='aliBuild build O2'
+alias ssbs='cd; source .start-scratch-build-session.sh'
+alias abbo2o='aliBuild build O2Physics'
 alias aeo2p='cd /scratch/alice/lubynets/alice; alienv enter O2Physics/latest ninja/latest --shellrc'
 alias sscratch='source /lustre/alice/containers/start-scratch-build-session.sh'
 alias o2dep='$O2PHYSICS_ROOT/share/scripts/find_dependencies.py -t'
-# alias virgo='virgodebian10'
-# alias virgodebian10='ssh -Y virgo-debian10.hpc.gsi.de'
-# alias virgocentos7='ssh -Y virgo-centos7.hpc.gsi.de'
 alias nano="/lustre/cbm/users/lubynets/soft/nano/install/bin/nano"
-# alias mntlustre='sshfs vae22.hpc.gsi.de:/lustre/cbm/users/lubynets/ /u/lubynets/Mount/Lustre'
 alias mntlustre='sshfs virgo-centos7.hpc.gsi.de:/lustre/cbm/users/lubynets/ /u/lubynets/Mount/Lustre'
 alias cmake='/lustre/cbm/users/lubynets/soft/CMake/install_3.21/bin/cmake'
 alias lucbm='cd /lustre/cbm/users/lubynets'
@@ -114,7 +111,6 @@ alias rmlw='rm -rf log/ workdir/'
 alias rmwl='rm -rf log/ workdir/'
 alias qnanalysisconfig='source /lustre/cbm/users/lubynets/soft/QnAnalysis/install/bin/QnAnalysisConfig.sh'
 
-# alias alice='/cvmfs/alice.cern.ch/bin/alienv enter AliPhysics::vAN-20201201_ROOT6-1'
 alias checkspace='lfs quota -h -u $USER /lustre/cbm/users/$USER/'
 alias countfiles='/lustre/cbm/users/lubynets/.counter_script.sh'
 alias dirssize='du -sh -- *'
@@ -127,29 +123,29 @@ alias rl='rootl'
 alias rlq='rootlq'
 
 sast () {
-	if [ ! -d "/lustre" ]; then
-		echo "You're outside Virgo & Lustre"
-	else
-		nodename=$(uname -n)
-		if [[ $nodename == "lxbk1132" || $nodename == "lxbk1133" ]]; then
-			echo "You're at Virgo vae23, not suited for alice software"
-		else
-			if [ ! -d "/.singularity.d" ]; then
-			echo "You're outside singularity container"
-			echo "You're outside ALICE environment"
-			else
-				echo "You're inside singularity container"
-				AON=$(type -p alien-token-info)
-				if [ -z $AON ]; then
-					echo "You're outside ALICE environment"
-				else
-					echo "You're inside ALICE environment"
-				fi
-			fi
-		fi
-	fi
+  if [ ! -d "/lustre" ]; then
+    echo "You're outside Virgo & Lustre"
+  else
+    nodename=$(uname -n)
+    if [[ $nodename == "lxbk1132" || $nodename == "lxbk1133" ]]; then
+      echo "You're at Virgo vae23, not suited for alice software"
+    else
+      if [ ! -d "/.singularity.d" ]; then
+      echo "You're outside singularity container"
+      echo "You're outside ALICE environment"
+      else
+        echo "You're inside singularity container"
+        AON=$(type -p alien-token-info)
+        if [ -z $AON ]; then
+          echo "You're outside ALICE environment"
+        else
+          echo "You're inside ALICE environment"
+        fi
+      fi
+    fi
+  fi
 }
 
 sqdet () {
-	sacct -j $1 -o JobID,User,JobName,Partition,MaxVMSize,MaxRSS,State
+  sacct -j $1 -o JobID,User,JobName,Partition,MaxVMSize,MaxRSS,State
 }
