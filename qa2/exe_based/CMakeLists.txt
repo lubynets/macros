@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION 3.10)
 SET(EXECUTABLES
     mc_qa2diff
     treeKF_qa2
+    mc_qa2
+    treeKF_qa2diff
 )
 
 # Project name

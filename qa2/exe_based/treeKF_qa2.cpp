@@ -9,6 +9,8 @@
 #include <iostream>
 #include <vector>
 
+using namespace Helper;
+
 void treeKF_qa2(const std::string& fileName) {
   TString currentMacroPath = __FILE__;
   TString directory = currentMacroPath(0, currentMacroPath.Last('/'));
@@ -28,6 +30,7 @@ void treeKF_qa2(const std::string& fileName) {
   };
 
   std::vector<Variable> vars {
+    {"Mass",         false, false},
     {"Chi2prim_p",   false, false},
     {"Chi2prim_K",   false, false},
     {"Chi2prim_pi",  false, false},
@@ -64,10 +67,10 @@ void treeKF_qa2(const std::string& fileName) {
   for(auto& var : vars) {
     std::vector<TH1D*> histos;
     for(auto& ss : signal_species) {
-      const std::string histoName = "Candidates_"+ ss.name_ + "_" + statusDcaFSel + "_total/" + var.name_ + "_" + ss.name_ + "_" + statusDcaFSel;
+      const std::string histoName = "Candidates_" + ss.name_ + "_" + statusDcaFSel + "_total/" + var.name_ + "_" + ss.name_ + "_" + statusDcaFSel;
       histos.emplace_back(fileIn->Get<TH1D>(histoName.c_str()));
       if(histos.back() == nullptr) {
-        throw std::runtime_error(histoName.c_str());
+        throw std::runtime_error(histoName);
       }
     }
 
@@ -88,7 +91,7 @@ void treeKF_qa2(const std::string& fileName) {
       else        histos.at(iH)->Draw("same");
       float underflow = histos.at(iH)->GetBinContent(0);
       float overflow = histos.at(iH)->GetBinContent(histos.at(iH)->GetNbinsX()+1);
-      leg->AddEntry(histos.at(iH), (signal_species.at(iH).name_ + "; unfl: " + Helper::to_string_with_precision(underflow, 2) + "; ovfl: " + Helper::to_string_with_precision(overflow, 2)).c_str(), "L");
+      leg->AddEntry(histos.at(iH), (signal_species.at(iH).name_ + "; unfl: " + to_string_with_precision(underflow, 2) + "; ovfl: " + to_string_with_precision(overflow, 2)).c_str(), "L");
       maxvalue = std::max(maxvalue, histos.at(iH)->GetBinContent(histos.at(iH) -> GetMaximumBin()));
     } // histos
     const double minvalue = var.is_log_y_ ? 0.0001 : 0.;

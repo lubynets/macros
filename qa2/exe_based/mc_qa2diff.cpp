@@ -13,21 +13,7 @@
 
 #include <vector>
 
-struct HistoQuantities {
-    float underflow_{-999.f};
-    float overflow_{-999.f};
-    float mean_{-999.f};
-    float mean_err_{-999.f};
-    float stddev_{-999.f};
-    float stddev_err_{-999.f};
-};
-
-std::vector<std::pair<std::string, std::string>> FindCuts(const TFile* fileIn, std::string name_start);
-bool stofCompare(std::pair<std::string, std::string> a, std::pair<std::string, std::string> b);
-void SetLineDrawParameters(std::vector<TF1*> fs, int lineWidth=1, int lineStyle=7, Color_t lineColor=kBlack);
-void CustomizeGraphYRange(TGraphMultiErrors* graph);
-HistoQuantities EvaluateHistoQuantities(const TH1* h);
-TPaveText ConvertHistoQuantitiesToText(const HistoQuantities& q, float x1, float y1, float x2, float y2);
+using namespace Helper;
 
 void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt) {
   TString currentMacroPath = __FILE__;
@@ -117,7 +103,9 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt) {
       const float grEX = -(atof(cutsVar.at(0).second.c_str()) - atof(cutsVar.at(0).first.c_str())) / 15;
 
       for(int iRP=0; iRP<resPulls.size(); iRP++) {
-        TH1D* hIn = fileIn->Get<TH1D>(("Candidates_Simulated_"  + promptness + "_"  + var.cut_name_ + "_"  + cV.first + "_"  + cV.second + "/" +  resPulls.at(iRP).prefix_ + "_"  + var.name_ + "_"  + var.cut_name_ + "_"  + cV.first + "_"  + cV.second).c_str());
+        const std::string cutName = var.cut_name_ + "_"  + cV.first + "_"  + cV.second;
+        const std::string histoName = "Candidates_Simulated_" + promptness + "_"  + cutName + "/" +  resPulls.at(iRP).prefix_ + "_"  + var.name_ + "_"  + cutName;
+        TH1D* hIn = fileIn->Get<TH1D>(histoName.c_str());
         if(hIn == nullptr) {
           throw std::runtime_error("hIn == nullptr for " + var.name_ + "; " + var.cut_name_ + "; " + cV.first + "; "  + cV.second + "; " + resPulls.at(iRP).prefix_);
         }
@@ -153,13 +141,9 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt) {
       ++iPoint;
     } // cutsVar
 
-    const float xlo = grMu.at(0)->GetPointX(0);
-    const float xhi = grMu.at(0)->GetPointX(grMu.at(0)->GetN()-1);
-    TF1 zeroLine("zeroLine", "[0]", xlo, xhi);
-    TF1 oneLine("oneLine", "[0]", xlo, xhi);
-    zeroLine.SetParameter(0, 0);
-    oneLine.SetParameter(0, 1);
-    SetLineDrawParameters({&zeroLine, &oneLine});
+    auto zeroLine = HorizontalLine4Graph(0, grMu.at(0));
+    auto oneLine = HorizontalLine4Graph(1, grMu.at(0));
+    SetLineDrawParameters({zeroLine, oneLine});
 
     TCanvas emptycanvas("emptycanvas", "", 1200, 800);
     for(int iRP=0; iRP<resPulls.size(); iRP++) {
@@ -174,20 +158,20 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt) {
 
       TCanvas ccMuStat(("cc" +  resPulls.at(iRP).prefix_ + "Mu").c_str(), ("cc" +  resPulls.at(iRP).prefix_ + "Mu").c_str(), 1200, 800);
       grMu.at(iRP)->Draw("AP; 2");
-      zeroLine.Draw("L same");
+      zeroLine->Draw("L same");
       legBoth.Draw("same");
       ccMuStat.Print((fileOutName + "_" + var.name_ + "_" +  resPulls.at(iRP).prefix_ + ".pdf").c_str(), "pdf");
 
       TCanvas ccMuWidth(("cc" +  resPulls.at(iRP).prefix_ + "Mu").c_str(), ("cc" +  resPulls.at(iRP).prefix_ + "Mu").c_str(), 1200, 800);
       grMu.at(iRP)->Draw("AP; X");
       CustomizeGraphYRange(grMu.at(iRP));
-      zeroLine.Draw("L same");
+      zeroLine->Draw("L same");
       legStat.Draw("same");
       ccMuWidth.Print((fileOutName + "_" + var.name_ + "_" +  resPulls.at(iRP).prefix_ + ".pdf").c_str(), "pdf");
 
       TCanvas ccSigma(("cc" +  resPulls.at(iRP).prefix_ + "Sigma").c_str(), ("cc" +  resPulls.at(iRP).prefix_ + "Sigma").c_str(), 1200, 800);
       grSigma.at(iRP)->Draw("AP");
-      if(resPulls.at(iRP).is_draw_oneline_on_stddev_) oneLine.Draw("L same");
+      if(resPulls.at(iRP).is_draw_oneline_on_stddev_) oneLine->Draw("L same");
       legStat.Draw("same");
       ccSigma.Print((fileOutName + "_" + var.name_ + "_" +  resPulls.at(iRP).prefix_ + ".pdf").c_str(), "pdf");
 
@@ -211,95 +195,4 @@ int main(int argc, char* argv[]) {
   mc_qa2diff(fileName, prompt_or_nonprompt);
 
   return 0;
-}
-
-HistoQuantities EvaluateHistoQuantities(const TH1* h) {
-  HistoQuantities result;
-  const float integral = h->GetEntries();
-  result.underflow_ = h->GetBinContent(0) / integral;
-  result.overflow_ = h->GetBinContent(h->GetNbinsX()+1) / integral;
-  result.mean_ = h->GetMean();
-  result.mean_err_ = h->GetMeanError();
-  result.stddev_ = h->GetStdDev();
-  result.stddev_err_ = h->GetStdDevError();
-
-  return result;
-}
-
-TPaveText ConvertHistoQuantitiesToText(const HistoQuantities& q, float x1, float y1, float x2, float y2) {
-  TPaveText text(x1, y1, x2, y2, "brNDC");
-  text.SetFillColor(0);
-  text.SetTextSize(0.03);
-  text.SetTextFont(62);
-
-  text.AddText(("underflow = " + Helper::to_string_with_precision(q.underflow_*100, 2) + "%").c_str());
-  text.AddText(("overflow = " + Helper::to_string_with_precision(q.overflow_*100, 2) + "%").c_str());
-  text.AddText(("#mu = " + Helper::to_string_with_precision(q.mean_, 3) + " #pm " + Helper::to_string_with_precision(q.mean_err_, 3) + " (stat.)").c_str());
-  text.AddText(("#sigma = " + Helper::to_string_with_precision(q.stddev_, 3) + " #pm " + Helper::to_string_with_precision(q.stddev_err_, 3) + " (stat.)").c_str());
-
-  return text;
-}
-
-std::vector<std::pair<std::string, std::string>> FindCuts(const TFile* fileIn, std::string name_start) {
-  if(name_start.back() != '_') name_start.push_back('_');
-  std::vector<std::pair<std::string, std::string>> result;
-
-  auto lok = fileIn->GetListOfKeys();
-  const int nDirs = lok->GetEntries();
-  for(int iDir=0; iDir<nDirs; iDir++) {
-    const std::string dirName = lok->At(iDir)->GetName();
-    if(dirName.substr(0, name_start.size()) != name_start) continue;
-    std::pair<std::string, std::string> cutPair;
-    bool isFirstCutRead{false};
-    for(int iChar=name_start.size(); iChar<dirName.size(); iChar++) {
-      char letter = dirName.at(iChar);
-      if(letter != '_') {
-        if(!isFirstCutRead) cutPair.first.push_back(letter);
-        else                cutPair.second.push_back(letter);
-      } else {
-        isFirstCutRead = true;
-      }
-    }
-    result.emplace_back(cutPair);
-  }
-
-  std::sort(result.begin(), result.end(), stofCompare);
-
-  if(result.size() == 0) {
-    throw std::runtime_error("FindCuts(): " + name_start + " cuts are not present");
-  }
-
-  return result;
-}
-
-bool stofCompare(std::pair<std::string, std::string> a, std::pair<std::string, std::string> b) {
-  return atof(a.first.c_str()) < atof(b.first.c_str());
-}
-
-void SetLineDrawParameters(std::vector<TF1*> fs, int lineWidth, int lineStyle, Color_t lineColor) {
-  for(auto& f : fs) {
-    f->SetLineWidth(lineWidth);
-    f->SetLineStyle(lineStyle);
-    f->SetLineColor(lineColor);
-  }
-}
-
-void CustomizeGraphYRange(TGraphMultiErrors* graph) {
-  const int nPoints = graph->GetN();
-  float min = 1e9;
-  float max = -1e9;
-
-  for(int iPoint=0; iPoint<nPoints; iPoint++) {
-    const float up = graph->GetPointY(iPoint) + graph->GetErrorY(iPoint, 0);//only 1-st error is needed
-    const float lo = graph->GetPointY(iPoint) - graph->GetErrorY(iPoint, 0);//only 1-st error is needed
-
-    min = std::min(min, lo);
-    max = std::max(max, up);
-  }
-
-  const float diff = max-min;
-  max += diff/10;
-  min -= diff/10;
-
-  graph->GetYaxis()->SetRangeUser(min, max);
 }
