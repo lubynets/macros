@@ -2,6 +2,7 @@
 // Created by oleksii on 31.01.25.
 //
 
+#include "Fitter.hpp"
 #include "Helper.hpp"
 
 #include <TCanvas.h>
@@ -16,7 +17,7 @@
 
 using namespace Helper;
 
-void treeKF_qa2diff(const std::string& fileName, int prompt_or_nonprompt) {
+void treeKF_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool isSaveRoot) {
   TString currentMacroPath = __FILE__;
   TString directory = currentMacroPath(0, currentMacroPath.Last('/'));
   gROOT->Macro( directory + "/treeKF_qa2.style.cc" );
@@ -31,7 +32,7 @@ void treeKF_qa2diff(const std::string& fileName, int prompt_or_nonprompt) {
   const std::string statusDcaFSel = "isDcaFSel";
 //  const std::string statusDcaFSel = "noDcaFSel";
 
-  std::string fileOutName = "treeKF_qa2diff";
+  const std::string fileOutName = "treeKF_qa2diff";
 
   struct Variable {
     std::string name_;
@@ -48,6 +49,9 @@ void treeKF_qa2diff(const std::string& fileName, int prompt_or_nonprompt) {
   for(auto& var : vars) {
     bool is_first_canvas{true};
     std::string printing_bracket = "(";
+    const std::string currentFileOutName = fileOutName + "_" + var.name_;
+    TFile* fileOut{nullptr};
+    if(isSaveRoot) fileOut = TFile::Open((currentFileOutName + ".root").c_str(), "recreate");
 
     auto cutsVar = FindCuts(fileIn, "Candidates_" + promptness + "_" + statusDcaFSel + "_" + var.cut_name_);
 
@@ -112,7 +116,7 @@ void treeKF_qa2diff(const std::string& fileName, int prompt_or_nonprompt) {
 
       if(is_first_canvas) printing_bracket = "(";
       else                printing_bracket = "";
-      cc.Print((fileOutName + "_" + var.name_ + ".pdf" + printing_bracket).c_str(), "pdf");
+      cc.Print((currentFileOutName + ".pdf" + printing_bracket).c_str(), "pdf");
       is_first_canvas = false;
       ++iPoint;
     } // cutsVar
@@ -135,35 +139,39 @@ void treeKF_qa2diff(const std::string& fileName, int prompt_or_nonprompt) {
     CustomizeGraphYRange(grMu, 2, trueMassLine);
     trueMassLine->Draw("L same");
     legBoth.Draw("same");
-    ccMuStat.Print((fileOutName + "_" + var.name_ +".pdf").c_str(), "pdf");
+    ccMuStat.Print((currentFileOutName +".pdf").c_str(), "pdf");
+    if(isSaveRoot) grMu->Write("mu");
 
     TCanvas ccMuWidth("ccMuWidth", "ccMuWidth", 1200, 800);
     grMu->Draw("AP; X");
     CustomizeGraphYRange(grMu, 1, trueMassLine);
     trueMassLine->Draw("L same");
     legStat.Draw("same");
-    ccMuWidth.Print((fileOutName + "_" + var.name_ +".pdf").c_str(), "pdf");
+    ccMuWidth.Print((currentFileOutName +".pdf").c_str(), "pdf");
 
     TCanvas ccSigma("ccSigma", "ccSigma", 1200, 800);
     grSigma->Draw("AP");
     legStat.Draw("same");
-    ccSigma.Print((fileOutName + "_" + var.name_ +".pdf").c_str(), "pdf");
+    ccSigma.Print((currentFileOutName +".pdf").c_str(), "pdf");
+    if(isSaveRoot) grSigma->Write("sigma");
 
-    emptycanvas.Print((fileOutName + "_" + var.name_ +".pdf]").c_str(), "pdf");
+    emptycanvas.Print((currentFileOutName +".pdf]").c_str(), "pdf");
+    if(isSaveRoot) fileOut->Close();
   } // vars
 }
 
 int main(int argc, char* argv[]) {
   if (argc < 2) {
     std::cout << "Error! Please use " << std::endl;
-    std::cout << " ./treeKF_qa2diff fileName (prompt_or_nonprompt)" << std::endl;
+    std::cout << " ./treeKF_qa2diff fileName (prompt_or_nonprompt isSaveRoot)" << std::endl;
     exit(EXIT_FAILURE);
   }
 
   const std::string fileName = argv[1];
   const int prompt_or_nonprompt = argc>2 ? atoi(argv[2]) : 1;
+  const bool isSaveRoot = argc >= 4 && strcmp(argv[3], "true") == 0;
 
-  treeKF_qa2diff(fileName, prompt_or_nonprompt);
+  treeKF_qa2diff(fileName, prompt_or_nonprompt, isSaveRoot);
 
   return 0;
 }

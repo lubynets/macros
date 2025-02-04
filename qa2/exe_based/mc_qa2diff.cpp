@@ -15,7 +15,7 @@
 
 using namespace Helper;
 
-void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt) {
+void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool isSaveRoot) {
   TString currentMacroPath = __FILE__;
   TString directory = currentMacroPath(0, currentMacroPath.Last('/'));
   gROOT->Macro( directory + "/mc_qa2.style.cc" );
@@ -31,7 +31,7 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt) {
     throw std::runtime_error("fileIn == nullptr");
   }
 
-  std::string fileOutName = "mc_qa2diff";
+  const std::string fileOutName = "mc_qa2diff";
 
   struct Variable {
     std::string name_;
@@ -103,6 +103,7 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt) {
       const float grEX = -(atof(cutsVar.at(0).second.c_str()) - atof(cutsVar.at(0).first.c_str())) / 15;
 
       for(int iRP=0; iRP<resPulls.size(); iRP++) {
+        const std::string currentFileOutName = fileOutName + "_" + var.name_ + "_" +  resPulls.at(iRP).prefix_;
         const std::string cutName = var.cut_name_ + "_"  + cV.first + "_"  + cV.second;
         const std::string histoName = "Candidates_Simulated_" + promptness + "_"  + cutName + "/" +  resPulls.at(iRP).prefix_ + "_"  + var.name_ + "_"  + cutName;
         TH1D* hIn = fileIn->Get<TH1D>(histoName.c_str());
@@ -135,7 +136,7 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt) {
 
         if(is_first_canvas) printing_bracket = "(";
         else                printing_bracket = "";
-        cc.Print((fileOutName + "_" + var.name_ + "_" +  resPulls.at(iRP).prefix_ + ".pdf" + printing_bracket).c_str(), "pdf");
+        cc.Print((currentFileOutName + ".pdf" + printing_bracket).c_str(), "pdf");
       } // resPulls
       is_first_canvas = false;
       ++iPoint;
@@ -147,6 +148,10 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt) {
 
     TCanvas emptycanvas("emptycanvas", "", 1200, 800);
     for(int iRP=0; iRP<resPulls.size(); iRP++) {
+      const std::string currentFileOutName = fileOutName + "_" + var.name_ + "_" +  resPulls.at(iRP).prefix_;
+      TFile* fileOut{nullptr};
+      if(isSaveRoot) fileOut = TFile::Open((currentFileOutName + ".root").c_str(), "recreate");
+
       TLegend legStat(0.24, 0.83, 0.37, 0.90);
       TLegend legBoth(0.24, 0.71, 0.37, 0.90);
       legStat.AddEntry(grMu.at(0), "stat. error", "E");
@@ -160,22 +165,25 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt) {
       grMu.at(iRP)->Draw("AP; 2");
       zeroLine->Draw("L same");
       legBoth.Draw("same");
-      ccMuStat.Print((fileOutName + "_" + var.name_ + "_" +  resPulls.at(iRP).prefix_ + ".pdf").c_str(), "pdf");
+      ccMuStat.Print((currentFileOutName + ".pdf").c_str(), "pdf");
+      if(isSaveRoot) grMu.at(iRP)->Write("mu");
 
       TCanvas ccMuWidth(("cc" +  resPulls.at(iRP).prefix_ + "Mu").c_str(), ("cc" +  resPulls.at(iRP).prefix_ + "Mu").c_str(), 1200, 800);
       grMu.at(iRP)->Draw("AP; X");
       CustomizeGraphYRange(grMu.at(iRP));
       zeroLine->Draw("L same");
       legStat.Draw("same");
-      ccMuWidth.Print((fileOutName + "_" + var.name_ + "_" +  resPulls.at(iRP).prefix_ + ".pdf").c_str(), "pdf");
+      ccMuWidth.Print((currentFileOutName + ".pdf").c_str(), "pdf");
 
       TCanvas ccSigma(("cc" +  resPulls.at(iRP).prefix_ + "Sigma").c_str(), ("cc" +  resPulls.at(iRP).prefix_ + "Sigma").c_str(), 1200, 800);
       grSigma.at(iRP)->Draw("AP");
       if(resPulls.at(iRP).is_draw_oneline_on_stddev_) oneLine->Draw("L same");
       legStat.Draw("same");
-      ccSigma.Print((fileOutName + "_" + var.name_ + "_" +  resPulls.at(iRP).prefix_ + ".pdf").c_str(), "pdf");
+      ccSigma.Print((currentFileOutName + ".pdf").c_str(), "pdf");
+      if(isSaveRoot) grSigma.at(iRP)->Write("sigma");
 
-      emptycanvas.Print((fileOutName + "_" + var.name_ + "_" +  resPulls.at(iRP).prefix_ + ".pdf]").c_str(), "pdf");
+      emptycanvas.Print((currentFileOutName + ".pdf]").c_str(), "pdf");
+      if(isSaveRoot) fileOut->Close();
     } // resPulls
   } // vars
 
@@ -185,14 +193,15 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt) {
 int main(int argc, char* argv[]) {
   if (argc < 2) {
     std::cout << "Error! Please use " << std::endl;
-    std::cout << " ./mc_qa2diff fileName (prompt_or_nonprompt)" << std::endl;
+    std::cout << " ./mc_qa2diff fileName (prompt_or_nonprompt isSaveRoot)" << std::endl;
     exit(EXIT_FAILURE);
   }
 
   const std::string fileName = argv[1];
   const int prompt_or_nonprompt = argc>2 ? atoi(argv[2]) : 1;
+  const bool isSaveRoot = argc >= 4 && strcmp(argv[3], "true") == 0;
 
-  mc_qa2diff(fileName, prompt_or_nonprompt);
+  mc_qa2diff(fileName, prompt_or_nonprompt, isSaveRoot);
 
   return 0;
 }
