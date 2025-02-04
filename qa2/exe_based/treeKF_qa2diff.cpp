@@ -2,18 +2,16 @@
 // Created by oleksii on 31.01.25.
 //
 
-#include "Fitter.hpp"
 #include "Helper.hpp"
 
 #include <TCanvas.h>
 #include <TGraphMultiErrors.h>
 #include <TGraphErrors.h>
+#include <TLegend.h>
 #include <TLegendEntry.h>
 #include <TROOT.h>
 
 #include <iostream>
-#include <TF1.h>
-#include <TLegend.h>
 
 using namespace Helper;
 
