@@ -108,8 +108,9 @@ void treeKF_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool i
       ShapeFitter shFtr(hIn);
       shFtr.SetExpectedMu(massLambdaC);
       shFtr.SetExpectedSigma(quant.stddev_);
-      shFtr.Fit("DoubleGaus");
-      TPaveText fit_text = shFtr.FitParametersToText(0.30, 0.79, 0.45, 0.89);
+      shFtr.Fit("DSCB");
+      TPaveText fit_text = shFtr.FitParametersToText(0.20, 0.90-0.05*shFtr.GetPeakFunc()->GetNpar(), 0.45, 0.90);
+      fit_text.Draw("same");
 
       grMu->SetPoint(iPoint, grX, quant.mean_);
       grMu->SetPointEX(iPoint, grEX, grEX);
@@ -126,7 +127,7 @@ void treeKF_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool i
       ++iPoint;
     } // cutsVar
 
-    auto trueMassLine = HorizontalLine4Graph(2.28646, grMu);
+    auto trueMassLine = HorizontalLine4Graph(massLambdaC, grMu);
     SetLineDrawParameters({trueMassLine});
 
     TCanvas emptycanvas("emptycanvas", "", 1200, 800);

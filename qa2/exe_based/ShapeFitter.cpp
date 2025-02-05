@@ -23,9 +23,6 @@ void ShapeFitter::FitPeak(TH1D* h, const std::string& peakFunc) {
   else                         throw std::runtime_error("ShapeFitter::FitPeak(): peakFunc must be one of the available");
   peak_fit_->SetNpx(1000);
 
-  std::cout << "peak_fit_->GetName() = " << peak_fit_->GetName() << "\n";
-  std::cout << "peak_fit_->GetTitle() = " << peak_fit_->GetTitle() << "\n";
-
   h->Fit(peak_fit_, "R");
   chi2_peak_ = peak_fit_->GetChisquare() / peak_fit_->GetNDF();
 }
@@ -39,57 +36,61 @@ TPaveText ShapeFitter::FitParametersToText(float x1, float y1, float x2, float y
   const int nPar = peak_fit_->GetNpar();
   for(int iPar=0; iPar<nPar; iPar++) {
     ptpar.AddText((static_cast<std::string>(peak_fit_->GetParName(iPar)) + " = " +
-                  to_string_with_precision(peak_fit_->GetParameter(iPar), 2) + " #pm " +
-                  to_string_with_precision(peak_fit_->GetParError(iPar), 2)).c_str());
+                  to_string_with_significant_figures(peak_fit_->GetParameter(iPar), 3) + " #pm " +
+                  to_string_with_significant_figures(peak_fit_->GetParError(iPar), 3)).c_str());
   }
+
+  return ptpar;
 }
 
 void ShapeFitter::DefinePeakGaus(TH1D* histo, double left, double right) {
-  const int Npar = 4;
-  peak_fit_ = new TF1("peak_fit", Gaus, left, right, Npar);
-  peak_fit_->SetParameter(0, histo->Interpolate(expected_mu_));
-  peak_fit_->FixParameter(1, expected_mu_);
-  peak_fit_->SetParameter(2, 0);
-  peak_fit_->SetParameter(3, expected_sigma_);
-  peak_fit_->SetParLimits(0, 0, 10 * histo->Interpolate(expected_mu_));
-  peak_fit_->SetParLimits(2, -5*expected_sigma_, 5*expected_sigma_);
-  peak_fit_->SetParLimits(3, 0, 5*expected_sigma_);
+  peak_fit_ = new TF1("peak_fit", Gaus::Shape, left, right, Gaus::nPars);
+  peak_fit_->SetParameter(Gaus::kFactor, histo->Interpolate(expected_mu_));
+  peak_fit_->FixParameter(Gaus::kShift, expected_mu_);
+  peak_fit_->SetParameter(Gaus::kMu, 0);
+  peak_fit_->SetParameter(Gaus::kSigma, expected_sigma_);
+  peak_fit_->SetParLimits(Gaus::kFactor, 0, 10 * histo->Interpolate(expected_mu_));
+  peak_fit_->SetParLimits(Gaus::kMu, -5*expected_sigma_, 5*expected_sigma_);
+  peak_fit_->SetParLimits(Gaus::kSigma, 0, 5*expected_sigma_);
   peak_fit_->SetParNames("Height", "#mu_{ref}", "#mu - #mu_{ref}", "#sigma");
+  peak_fit_->SetTitle("Gaus");
 }
 
 void ShapeFitter::DefinePeakDoubleGaus(TH1D* histo, double left, double right) {
-  const int Npar = 6;
-  peak_fit_ = new TF1("peak_fit", DoubleGaus, left, right, Npar);
-  peak_fit_->SetParameter(0, histo->Interpolate(expected_mu_) / 2);
-  peak_fit_->SetParameter(1, histo->Interpolate(expected_mu_) / 2);
-  peak_fit_->FixParameter(2, expected_mu_);
-  peak_fit_->SetParameter(3, 0);
-  peak_fit_->SetParameter(4, 0.5*expected_sigma_);
-  peak_fit_->SetParameter(5, 2*expected_sigma_);
-  peak_fit_->SetParLimits(0, 0, 10 * histo->Interpolate(expected_mu_));
-  peak_fit_->SetParLimits(1, 0, 10 * histo->Interpolate(expected_mu_));
-  peak_fit_->SetParLimits(3, -5*expected_sigma_, 5*expected_sigma_);
-  peak_fit_->SetParLimits(4, 0, 5*expected_sigma_);
-  peak_fit_->SetParLimits(5, 0, 5*expected_sigma_);
+  peak_fit_ = new TF1("peak_fit", DoubleGaus::Shape, left, right, DoubleGaus::nPars);
+  peak_fit_->SetParameter(DoubleGaus::kFactor1, histo->Interpolate(expected_mu_) / 2);
+  peak_fit_->SetParameter(DoubleGaus::kFactor2, histo->Interpolate(expected_mu_) / 2);
+  peak_fit_->FixParameter(DoubleGaus::kShift, expected_mu_);
+  peak_fit_->SetParameter(DoubleGaus::kMu, 0);
+  peak_fit_->SetParameter(DoubleGaus::kSigma1, 0.5*expected_sigma_);
+  peak_fit_->SetParameter(DoubleGaus::kSigma2, 2*expected_sigma_);
+  peak_fit_->SetParLimits(DoubleGaus::kFactor1, 0, 10 * histo->Interpolate(expected_mu_));
+  peak_fit_->SetParLimits(DoubleGaus::kFactor2, 0, 10 * histo->Interpolate(expected_mu_));
+  peak_fit_->SetParLimits(DoubleGaus::kMu, -5*expected_sigma_, 5*expected_sigma_);
+  peak_fit_->SetParLimits(DoubleGaus::kSigma1, 0, 5*expected_sigma_);
+  peak_fit_->SetParLimits(DoubleGaus::kSigma2, 0, 5*expected_sigma_);
   peak_fit_->SetParNames("Height1", "Height2", "#mu_{ref}", "#mu - #mu_{ref}", "#sigma_{1}", "#sigma_{2}");
+  peak_fit_->SetTitle("DoubleGaus");
 }
 
 void ShapeFitter::DefinePeakDSCB(TH1D* histo, float left, float right) {
-  const int Npar = 8;
-  peak_fit_ = new TF1("sgnl_fit", DoubleSidedCrystalBall, left, right, Npar);
-  peak_fit_->SetParameter(0, histo->Interpolate(expected_mu_));
-  peak_fit_->FixParameter(1, expected_mu_);
-  peak_fit_->SetParameter(2, 0);
-  peak_fit_->SetParameter(3, expected_sigma_);
-  peak_fit_->SetParameter(4, 1.);
-  peak_fit_->SetParameter(5, 1.);
-  peak_fit_->SetParameter(6, 1.);
-  peak_fit_->SetParameter(7, 1.);
-  peak_fit_->SetParLimits(0, 0, 10 * histo->Interpolate(expected_mu_));
-  peak_fit_->SetParLimits(4, 0, 100);
-  peak_fit_->SetParLimits(5, -5, 5);
-  peak_fit_->SetParLimits(6, 0, 100);
-  peak_fit_->SetParLimits(7, -5, 5);
-  peak_fit_->SetParNames("Height1", "#mu_{ref}", "#mu - #mu_{ref}", "#sigma", "a_{1}", "log_{10}n_{1}", "a_{2}", "log_{10}n_{2}");
+  peak_fit_ = new TF1("sgnl_fit", DoubleSidedCrystalBall::Shape, left, right, DoubleSidedCrystalBall::nPars);
+  peak_fit_->SetParameter(DoubleSidedCrystalBall::kFactor, histo->Interpolate(expected_mu_));
+  peak_fit_->FixParameter(DoubleSidedCrystalBall::kShift, expected_mu_);
+  peak_fit_->SetParameter(DoubleSidedCrystalBall::kMu, 0);
+  peak_fit_->SetParameter(DoubleSidedCrystalBall::kSigma, expected_sigma_);
+  peak_fit_->SetParameter(DoubleSidedCrystalBall::kA1, 1.);
+  peak_fit_->SetParameter(DoubleSidedCrystalBall::kN1, 1.);
+  peak_fit_->SetParameter(DoubleSidedCrystalBall::kA2, 1.);
+  peak_fit_->SetParameter(DoubleSidedCrystalBall::kN2, 1.);
+  peak_fit_->SetParLimits(DoubleSidedCrystalBall::kFactor, 0, 10 * histo->Interpolate(expected_mu_));
+  peak_fit_->SetParLimits(DoubleSidedCrystalBall::kMu, -5*expected_sigma_, 5*expected_sigma_);
+  peak_fit_->SetParLimits(DoubleSidedCrystalBall::kSigma, 0, 5*expected_sigma_);
+  peak_fit_->SetParLimits(DoubleSidedCrystalBall::kA1, 0, 100);
+  peak_fit_->SetParLimits(DoubleSidedCrystalBall::kN1, -5, 5);
+  peak_fit_->SetParLimits(DoubleSidedCrystalBall::kA2, 0, 100);
+  peak_fit_->SetParLimits(DoubleSidedCrystalBall::kN2, -5, 5);
+  peak_fit_->SetParNames("Height", "#mu_{ref}", "#mu - #mu_{ref}", "#sigma", "a_{1}", "log_{10}n_{1}", "a_{2}", "log_{10}n_{2}");
+  peak_fit_->SetTitle("DSCB");
 }
 
