@@ -43,9 +43,6 @@ void AliceTree2AT(const std::string& fileName, bool isMC, int maxEntries) {
 
   AnalysisTree::Matching* cand2sim_{nullptr};
 
-  TTree* tree_ = new TTree("aTree", "Analysis Tree");
-  tree_->SetAutoSave(0);
-
   auto CreateConfiguration = [&] (TTree* t,
                                  std::string prefix,
                                  AnalysisTree::BranchConfig& branch_config,
@@ -73,6 +70,8 @@ void AliceTree2AT(const std::string& fileName, bool isMC, int maxEntries) {
   std::cout << "dirNames.size() = " << dirNames.size() << "\n";
 
   TFile* out_file_ = new TFile("AnalysisTree.root", "recreate");
+  TTree* tree_ = new TTree("aTree", "Analysis Tree");
+  tree_->SetAutoSave(0);
 
   for(auto& dirname : dirNames) {
     TFile* fileIn = TFile::Open(fileName.c_str(), "read");
