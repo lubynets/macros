@@ -39,6 +39,9 @@ inline TF1* HorizontalLine4Graph(float level, TGraph* graph);
 template<typename T>
 inline  std::string to_string_with_precision(const T a_value, const int n = 2);
 
+template<typename T>
+std::string to_string_with_significant_figures(const T a_value, const int n=2);
+
 //======================================================================================================================
 
 template<typename T>
@@ -48,6 +51,32 @@ std::string to_string_with_precision(const T a_value, const int n) {
   out << std::fixed << a_value;
   return out.str();
 }
+
+template<typename T> // TODO test this function, seems work not properly
+std::string to_string_with_significant_figures(const T a_value, const int n) {
+  if (a_value == 0) {
+    return "0";  // Special case for zero, return "0" regardless of significant figures
+  }
+
+  std::ostringstream out;
+  out.precision(n);              // Set the precision to the number of significant figures
+  out << std::scientific << std::fixed << a_value;  // Use scientific and fixed format
+
+  // Now format the result so that it's returned as a string in regular form
+  std::string result = out.str();
+
+  // Remove trailing zeros and the scientific part if possible
+  size_t pos = result.find('.');
+  if (pos != std::string::npos) {
+    result.erase(result.find_last_not_of('0') + 1, std::string::npos);  // Remove trailing zeros
+    if (result.back() == '.') {
+      result.pop_back();  // Remove the decimal point if it is the last character
+    }
+  }
+
+  return result;
+}
+
 
 struct HistoQuantities {
   float underflow_{-999.f};

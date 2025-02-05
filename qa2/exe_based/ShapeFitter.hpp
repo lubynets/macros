@@ -11,10 +11,11 @@
 
 class ShapeFitter {
  public:
-  explicit ShapeFitter(TH1D* histo) { histo_in_ = histo; };
+  explicit ShapeFitter(TH1D* histo) { histo_in_ = histo; }
   virtual ~ShapeFitter() = default;
 
-  double GetPeakChi2() const { return chi2_peak_; };
+  const TF1* const GetPeakFunc() const { return peak_fit_; }
+  double GetPeakChi2() const { return chi2_peak_; }
 
   void SetExpectedMu(float value) { expected_mu_ = value; }
   void SetExpectedSigma(float value) { expected_sigma_ = value; }
