@@ -3,6 +3,7 @@
 //
 
 #include "Helper.hpp"
+#include "ShapeFitter.hpp"
 
 #include <TCanvas.h>
 #include <TGraphMultiErrors.h>
@@ -103,6 +104,12 @@ void treeKF_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool i
       HistoQuantities quant = EvaluateHistoQuantities(hIn);
       TPaveText quant_text = ConvertHistoQuantitiesToText(quant, 0.74, 0.6, 0.87, 0.7);
       quant_text.Draw("same");
+
+      ShapeFitter shFtr(hIn);
+      shFtr.SetExpectedMu(massLambdaC);
+      shFtr.SetExpectedSigma(quant.stddev_);
+      shFtr.Fit("DoubleGaus");
+      TPaveText fit_text = shFtr.FitParametersToText(0.30, 0.79, 0.45, 0.89);
 
       grMu->SetPoint(iPoint, grX, quant.mean_);
       grMu->SetPointEX(iPoint, grEX, grEX);

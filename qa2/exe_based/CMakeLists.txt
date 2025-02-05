@@ -15,7 +15,7 @@ SET(SOURCES
 )
 
 string(REPLACE ".cpp" ".hpp" HEADERS "${SOURCES}")
-list(APPEND HEADERS "Helper.hpp")
+list(APPEND HEADERS "Helper.hpp" "Shapes.hpp")
 
 # Specify the C++ standard
 set(CMAKE_CXX_STANDARD 17)
@@ -35,7 +35,7 @@ ROOT_GENERATE_DICTIONARY( G__Qa2 ${HEADERS}
     -I ${CMAKE_SOURCE_DIR}
 )
 
-add_library(Qa2 SHARED ${SOURCES} G__Qa2.cxx )
+add_library(Qa2 SHARED ${SOURCES} G__Qa2.cxx)
 target_link_libraries(Qa2 PRIVATE ${ROOT_LIBRARIES})
 
 install(TARGETS Qa2 EXPORT Qa2Targets

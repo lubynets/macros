@@ -18,24 +18,26 @@
 
 namespace Helper {
 
+constexpr double massLambdaC{2.28646};
+
 struct HistoQuantities;
 
-std::vector<std::pair<std::string, std::string>> FindCuts(const TFile* fileIn, std::string name_start);
+inline std::vector<std::pair<std::string, std::string>> FindCuts(const TFile* fileIn, std::string name_start);
 
-bool stofCompare(std::pair<std::string, std::string> a, std::pair<std::string, std::string> b);
+inline bool stofCompare(std::pair<std::string, std::string> a, std::pair<std::string, std::string> b);
 
-HistoQuantities EvaluateHistoQuantities(const TH1* h);
+inline HistoQuantities EvaluateHistoQuantities(const TH1* h);
 
-TPaveText ConvertHistoQuantitiesToText(const HistoQuantities& q, float x1, float y1, float x2, float y2);
+inline TPaveText ConvertHistoQuantitiesToText(const HistoQuantities& q, float x1, float y1, float x2, float y2);
 
-void CustomizeGraphYRange(TGraphMultiErrors* graph, int ne = 1, TF1* f = nullptr);
+inline void CustomizeGraphYRange(TGraphMultiErrors* graph, int ne = 1, TF1* f = nullptr);
 
-void SetLineDrawParameters(std::vector<TF1*> fs, int lineWidth = 1, int lineStyle = 7, Color_t lineColor = kBlack);
+inline void SetLineDrawParameters(std::vector<TF1*> fs, int lineWidth = 1, int lineStyle = 7, Color_t lineColor = kBlack);
 
-TF1* HorizontalLine4Graph(float level, TGraph* graph);
+inline TF1* HorizontalLine4Graph(float level, TGraph* graph);
 
 template<typename T>
-std::string to_string_with_precision(const T a_value, const int n = 2);
+inline  std::string to_string_with_precision(const T a_value, const int n = 2);
 
 //======================================================================================================================
 

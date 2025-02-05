@@ -1,4 +1,5 @@
 #include "Helper.hpp"
+#include "ShapeFitter.hpp"
 
 #include <TCanvas.h>
 #include <TFile.h>
