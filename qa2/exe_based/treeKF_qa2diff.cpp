@@ -16,7 +16,7 @@
 
 using namespace Helper;
 
-void treeKF_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool isSaveRoot) {
+void treeKF_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool isDoFit, bool isSaveRoot) {
   TString currentMacroPath = __FILE__;
   TString directory = currentMacroPath(0, currentMacroPath.Last('/'));
   gROOT->Macro( directory + "/treeKF_qa2.style.cc" );
@@ -105,12 +105,14 @@ void treeKF_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool i
       TPaveText quant_text = ConvertHistoQuantitiesToText(quant, 0.74, 0.6, 0.87, 0.7);
       quant_text.Draw("same");
 
-      ShapeFitter shFtr(hIn);
-      shFtr.SetExpectedMu(massLambdaC);
-      shFtr.SetExpectedSigma(quant.stddev_);
-      shFtr.Fit("DSCB");
-      TPaveText fit_text = shFtr.FitParametersToText(0.20, 0.90-0.05*shFtr.GetPeakFunc()->GetNpar(), 0.45, 0.90);
-      fit_text.Draw("same");
+      if(isDoFit) {
+        ShapeFitter shFtr(hIn);
+        shFtr.SetExpectedMu(massLambdaC);
+        shFtr.SetExpectedSigma(quant.stddev_);
+        shFtr.Fit("DSCB");
+        TPaveText* fit_text = shFtr.FitParametersToText(0.20, 0.90 - 0.05 * shFtr.GetPeakFunc()->GetNpar(), 0.45, 0.90);
+        fit_text->Draw("same");
+      }
 
       grMu->SetPoint(iPoint, grX, quant.mean_);
       grMu->SetPointEX(iPoint, grEX, grEX);
@@ -169,15 +171,16 @@ void treeKF_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool i
 int main(int argc, char* argv[]) {
   if (argc < 2) {
     std::cout << "Error! Please use " << std::endl;
-    std::cout << " ./treeKF_qa2diff fileName (prompt_or_nonprompt isSaveRoot)" << std::endl;
+    std::cout << " ./treeKF_qa2diff fileName (prompt_or_nonprompt isDoFit isSaveRoot)" << std::endl;
     exit(EXIT_FAILURE);
   }
 
   const std::string fileName = argv[1];
   const int prompt_or_nonprompt = argc>2 ? atoi(argv[2]) : 1;
-  const bool isSaveRoot = argc >= 4 && strcmp(argv[3], "true") == 0;
+  const bool isDoFit = argc < 4 || strcmp(argv[3], "true") == 0;
+  const bool isSaveRoot = argc >= 5 && strcmp(argv[4], "false") == 0;
 
-  treeKF_qa2diff(fileName, prompt_or_nonprompt, isSaveRoot);
+  treeKF_qa2diff(fileName, prompt_or_nonprompt, isDoFit, isSaveRoot);
 
   return 0;
 }

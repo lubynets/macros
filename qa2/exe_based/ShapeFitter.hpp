@@ -22,7 +22,7 @@ class ShapeFitter {
 
   void Fit(const std::string& peakFunc = "Gaus");
 
-  TPaveText FitParametersToText(float x1, float y1, float x2, float y2) const;
+  TPaveText* FitParametersToText(float x1, float y1, float x2, float y2) const;
 
  private:
   void FitPeak(TH1D* h, const std::string& peakFunc);

@@ -16,7 +16,7 @@
 
 using namespace Helper;
 
-void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool isSaveRoot) {
+void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool isDoFit, bool isSaveRoot) {
   TString currentMacroPath = __FILE__;
   TString directory = currentMacroPath(0, currentMacroPath.Last('/'));
   gROOT->Macro( directory + "/mc_qa2.style.cc" );
@@ -127,6 +127,15 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool isSav
         TPaveText quant_text = ConvertHistoQuantitiesToText(quant, 0.74, 0.6, 0.87, 0.7);
         quant_text.Draw("same");
 
+        if(isDoFit) {
+          ShapeFitter shFtr(hIn);
+          shFtr.SetExpectedMu(0);
+          shFtr.SetExpectedSigma(quant.stddev_);
+          shFtr.Fit("DoubleGaus");
+          TPaveText* fit_text = shFtr.FitParametersToText(0.20, 0.90 - 0.05 * shFtr.GetPeakFunc()->GetNpar(), 0.45, 0.90);
+          fit_text->Draw("same");
+        }
+
         grMu.at(iRP)->SetPoint(iPoint, grX, quant.mean_);
         grMu.at(iRP)->SetPointEX(iPoint, grEX, grEX);
         grMu.at(iRP)->SetPointEY(iPoint, 0, quant.mean_err_, quant.mean_err_);
@@ -194,15 +203,16 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool isSav
 int main(int argc, char* argv[]) {
   if (argc < 2) {
     std::cout << "Error! Please use " << std::endl;
-    std::cout << " ./mc_qa2diff fileName (prompt_or_nonprompt isSaveRoot)" << std::endl;
+    std::cout << " ./mc_qa2diff fileName (prompt_or_nonprompt isDoFit isSaveRoot)" << std::endl;
     exit(EXIT_FAILURE);
   }
 
   const std::string fileName = argv[1];
   const int prompt_or_nonprompt = argc>2 ? atoi(argv[2]) : 1;
-  const bool isSaveRoot = argc >= 4 && strcmp(argv[3], "true") == 0;
+  const bool isDoFit = argc < 4 || strcmp(argv[3], "true") == 0;
+  const bool isSaveRoot = argc >= 5 && strcmp(argv[4], "false") == 0;
 
-  mc_qa2diff(fileName, prompt_or_nonprompt, isSaveRoot);
+  mc_qa2diff(fileName, prompt_or_nonprompt, isDoFit, isSaveRoot);
 
   return 0;
 }

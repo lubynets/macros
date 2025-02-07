@@ -37,10 +37,13 @@ inline void SetLineDrawParameters(std::vector<TF1*> fs, int lineWidth = 1, int l
 inline TF1* HorizontalLine4Graph(float level, TGraph* graph);
 
 template<typename T>
-inline  std::string to_string_with_precision(const T a_value, const int n = 2);
+inline std::string to_string_with_precision(T a_value, int n = 2);
 
 template<typename T>
-std::string to_string_with_significant_figures(const T a_value, const int n=2);
+inline std::string to_string_with_significant_figures(T a_value, int n=2);
+
+template<typename T>
+inline void RemoveEdgeLabelFromAxis(T* obj, const std::string& axisletter);
 
 //======================================================================================================================
 
@@ -52,31 +55,18 @@ std::string to_string_with_precision(const T a_value, const int n) {
   return out.str();
 }
 
-template<typename T> // TODO test this function, seems work not properly
+template<typename T>
 std::string to_string_with_significant_figures(const T a_value, const int n) {
-  if (a_value == 0) {
-    return "0";  // Special case for zero, return "0" regardless of significant figures
-  }
+  if(a_value == 0) return "0";
 
-  std::ostringstream out;
-  out.precision(n);              // Set the precision to the number of significant figures
-  out << std::scientific << std::fixed << a_value;  // Use scientific and fixed format
-
-  // Now format the result so that it's returned as a string in regular form
-  std::string result = out.str();
-
-  // Remove trailing zeros and the scientific part if possible
-  size_t pos = result.find('.');
-  if (pos != std::string::npos) {
-    result.erase(result.find_last_not_of('0') + 1, std::string::npos);  // Remove trailing zeros
-    if (result.back() == '.') {
-      result.pop_back();  // Remove the decimal point if it is the last character
-    }
-  }
-
-  return result;
+  const double dMag = std::log10(std::abs(a_value)); // scale of the a_value (e.g 1.* for 1.2345, 2.* for 12.345 etc)
+  const int iMag = static_cast<int>(dMag-n+1 > 0 ? dMag-n+1 : dMag-n);
+  const T shifted_value = a_value/std::pow(10, iMag); // shift decimal point to have all required digits to l.h.s. from it
+  const T rounded_value = static_cast<T>(std::round(shifted_value)); // get rid of r.h.s. from decimal point
+  const T reshifted_value = rounded_value*std::pow(10, iMag); // return decimal point to its original place
+  const int precision = iMag < 0 ? -iMag : 0; // determine how many digits after decimal point one needs
+  return to_string_with_precision(reshifted_value, precision);
 }
-
 
 struct HistoQuantities {
   float underflow_{-999.f};
@@ -199,6 +189,33 @@ TF1* HorizontalLine4Graph(float level, TGraph* graph) {
   horizLine->SetParameter(0, level);
 
   return horizLine;
+}
+
+template<typename T>
+void RemoveEdgeLabelFromAxis(T* obj, const std::string& edge, const std::string& axisletter) {
+  if(axisletter != "x" && axisletter != "y") {
+    throw std::runtime_error("Helper::RemoveEdgeLabelFromAxis(): axisletter must be x or y");
+  }
+  if(edge != "first" && edge != "last") {
+    throw std::runtime_error("Helper::RemoveEdgeLabelFromAxis(): edge must be first or last");
+  }
+  TAxis* axis = axisletter == "x" ? obj->GetXaxis() : obj->GetYaxis();
+
+  if(axis->IsVariableBinSize()) {
+    auto* array = new TArrayD(*axis->GetXbins());
+    if(edge == "first") {
+      array->SetAt(array->At(0) + 1e-5, 0);
+    } else {
+      array->SetAt(array->At(array->GetSize()-1) - 1e-5, array->GetSize()-1);
+    }
+    axis->Set(axis->GetNbins(), array->GetArray());
+  } else {
+    if(edge == "first") {
+      axis->Set(axis->GetNbins(), axis->GetXmin() + 1e-5, axis->GetXmax());
+    } else {
+      axis->Set(axis->GetNbins(), axis->GetXmin(), axis->GetXmax() - 1e-5);
+    }
+  }
 }
 }
 #endif //QA2_HELPER_HPP

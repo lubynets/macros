@@ -27,15 +27,16 @@ void ShapeFitter::FitPeak(TH1D* h, const std::string& peakFunc) {
   chi2_peak_ = peak_fit_->GetChisquare() / peak_fit_->GetNDF();
 }
 
-TPaveText ShapeFitter::FitParametersToText(float x1, float y1, float x2, float y2) const {
-  TPaveText ptpar(x1, y1, x2, y2, "brNDC");
-  ptpar.SetFillColor(0);
-  ptpar.SetTextSize(0.025);
-  ptpar.SetTextFont(22);
-  ptpar.AddText(("#chi^{2}/_{ndf} (peak) = " + to_string_with_precision(chi2_peak_, 2)).c_str());
+TPaveText* ShapeFitter::FitParametersToText(float x1, float y1, float x2, float y2) const {
+  auto* ptpar = new TPaveText(x1, y1, x2, y2, "brNDC");
+  ptpar->SetFillColor(0);
+  ptpar->SetTextSize(0.025);
+  ptpar->SetTextFont(22);
+  ptpar->AddText(peak_fit_->GetTitle());
+  ptpar->AddText(("#chi^{2}/ndf (peak) = " + to_string_with_precision(chi2_peak_, 2)).c_str());
   const int nPar = peak_fit_->GetNpar();
   for(int iPar=0; iPar<nPar; iPar++) {
-    ptpar.AddText((static_cast<std::string>(peak_fit_->GetParName(iPar)) + " = " +
+    ptpar->AddText((static_cast<std::string>(peak_fit_->GetParName(iPar)) + " = " +
                   to_string_with_significant_figures(peak_fit_->GetParameter(iPar), 3) + " #pm " +
                   to_string_with_significant_figures(peak_fit_->GetParError(iPar), 3)).c_str());
   }
