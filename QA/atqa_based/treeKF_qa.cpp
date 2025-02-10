@@ -26,18 +26,18 @@ std::vector<SimpleCut> dcaFitterSelections {
 };
 
 std::vector<SimpleCut> topoSelectionCuts{
-  RangeCut("Candidates.KF_fChi2PrimProton",    5,          HugeNumber),
-  RangeCut("Candidates.KF_fChi2PrimKaon",      5,          HugeNumber),
-  RangeCut("Candidates.KF_fChi2PrimPion",      5,          HugeNumber),
-  RangeCut("Candidates.KF_fChi2geoPionKaon",   -HugeNumber, 3        ),
-  RangeCut("Candidates.KF_fChi2geoProtonKaon", -HugeNumber, 3        ),
-  RangeCut("Candidates.KF_fChi2geoProtonPion", -HugeNumber, 3        ),
-  RangeCut("Candidates.KF_fDCAPionKaon",       -HugeNumber, 0.01     ),
-  RangeCut("Candidates.KF_fDCAProtonKaon",     -HugeNumber, 0.01     ),
-  RangeCut("Candidates.KF_fDCAProtonPion",     -HugeNumber, 0.01     ),
-  RangeCut("Candidates.KF_fChi2geo",           -HugeNumber, 3        ),
-  RangeCut("Candidates.KF_fChi2topo",          -HugeNumber, 5        ),
-  RangeCut("Candidates.KF_fLdL",               3,          HugeNumber),
+//   RangeCut("Candidates.KF_fChi2PrimProton",        5,          HugeNumber),
+//   RangeCut("Candidates.KF_fChi2PrimKaon",          5,          HugeNumber),
+//   RangeCut("Candidates.KF_fChi2PrimPion",          5,          HugeNumber),
+//   RangeCut("Candidates.KF_fChi2GeoPionKaon",       -HugeNumber, 3        ),
+//   RangeCut("Candidates.KF_fChi2GeoProtonKaon",     -HugeNumber, 3        ),
+//   RangeCut("Candidates.KF_fChi2GeoProtonPion",     -HugeNumber, 3        ),
+//   RangeCut("Candidates.KF_fDcaPionKaon",           -HugeNumber, 0.01     ),
+//   RangeCut("Candidates.KF_fDcaProtonKaon",         -HugeNumber, 0.01     ),
+//   RangeCut("Candidates.KF_fDcaProtonPion",         -HugeNumber, 0.01     ),
+//   RangeCut("Candidates.KF_fChi2Geo",               -HugeNumber, 3        ),
+//   RangeCut("Candidates.KF_fChi2Topo",              -HugeNumber, 5        ),
+//   RangeCut("Candidates.KF_fDecayLengthNormalised", 3,          HugeNumber),
 };
 
 void treeKF_qa(const std::string& filelist){
@@ -46,7 +46,7 @@ void treeKF_qa(const std::string& filelist){
   auto* task = new QA::Task;
   task->SetOutputFileName("treeKF_qa.root");
 
-  TopoQA(*task);
+//   TopoQA(*task);
   PidQA(*task);
 
   man->AddTask(task);
@@ -78,19 +78,19 @@ void PidQA(QA::Task& task) {
   }
 
   std::vector<std::string> PidDetectors{"Tpc", "Tof", "TpcTof"};
-  std::vector<std::string> ProngSpecies{"p", "K", "#pi"};
+  std::vector<std::pair<std::string, std::string>> ProngSpecies{{"Pr", "p"}, {"Ka", "K"}, {"Pi", "#pi"}};
 
   for(int iDet=0; iDet<nPidDetectors; iDet++) {
-    varPid.at(iDet).at(kProton) = Variable("nSig" + PidDetectors.at(iDet) + "Pr",
+    varPid.at(iDet).at(kProton) = Variable("nSig" + PidDetectors.at(iDet) + ProngSpecies.at(0).first,
                                            {{"Candidates", "Lite_fNSig" + PidDetectors.at(iDet) + "Pr0"}, {"Candidates", "Lite_fNSig" + PidDetectors.at(iDet) + "Pr2"}, {"Candidates", "Lite_fCandidateSelFlag"}},
                                            []( std::vector<double>& var ) { return var.at(2)==1 ? var.at(0) : var.at(2)==2 ? var.at(1) : UndefValueFloat; });
 
-    varPid.at(iDet).at(kPion) = Variable("nSig" + PidDetectors.at(iDet) + "Pi",
+    varPid.at(iDet).at(kPion) = Variable("nSig" + PidDetectors.at(iDet) + ProngSpecies.at(2).first,
                                          {{"Candidates", "Lite_fNSig" + PidDetectors.at(iDet) + "Pi0"}, {"Candidates", "Lite_fNSig" + PidDetectors.at(iDet) + "Pi2"}, {"Candidates", "Lite_fCandidateSelFlag"}},
                                          []( std::vector<double>& var ) { return var.at(2)==1 ? var.at(1) : var.at(2)==2 ? var.at(0) : UndefValueFloat; });
 
     varPid.at(iDet).at(kKaon) = Variable::FromString("Candidates.Lite_fNSig" + PidDetectors.at(iDet) + "Ka1");
-    varPid.at(iDet).at(kKaon).SetName("nSig" + PidDetectors.at(iDet) + "Ka");
+    varPid.at(iDet).at(kKaon).SetName("nSig" + PidDetectors.at(iDet) + ProngSpecies.at(1).first);
   }
 
   for(auto& dt : datatypes) {
@@ -101,13 +101,23 @@ void PidQA(QA::Task& task) {
 
       Cuts* cutsTotal = new Cuts(dt.GetTitle() + "_" + dcaSel.GetTitle() + "_total", allCuts);
 
-      for(int iDet=0; iDet<nPidDetectors; iDet++) {
-        for(int iPs=0; iPs<nProngSpecies; iPs++) {
-          task.AddH1(varPid.at(iDet).at(iPs).GetName() + "_" + dt.GetTitle() + "_" + dcaSel.GetTitle(), {"#sigma_{" + PidDetectors.at(iDet) + "} {" + ProngSpecies.at(iPs) + "}", varPid.at(iDet).at(iPs), {400, -20, 20}}, cutsTotal);
-        } // nProngSpecies
-      } // nPidDetectors
-    } // dcaFitterSelections
-  } // datatypes
+      for(int iPs=0; iPs<nProngSpecies; iPs++) {
+        SimpleCut tofCut = SimpleCut((std::vector<Variable>){varPid.at(kTof).at(iPs)}, [](std::vector<double> par) { return std::abs(par[0] + 999) > 0.5; } );
+        for(int iDet=0; iDet<nPidDetectors; iDet++) {
+          Cuts* cutsTotalWithTof = new Cuts(*cutsTotal);
+          if(PidDetectors.at(iDet) == "Tof") cutsTotalWithTof->AddCut(tofCut);
+          const float axisLeftEdge = PidDetectors.at(iDet) == "TpcTof" ? -1 : -20;
+          task.AddH1(varPid.at(iDet).at(iPs).GetName() + "_" + dt.GetTitle() + "_" + dcaSel.GetTitle(), {"#sigma_{" + PidDetectors.at(iDet) + "} {" + ProngSpecies.at(iPs).second + "}", varPid.at(iDet).at(iPs), {1000, axisLeftEdge, 20}}, cutsTotalWithTof);
+          task.AddH2(varPid.at(iDet).at(iPs).GetName() + "VsP_" + dt.GetTitle() + "_" + dcaSel.GetTitle(),
+                     {"p, GeV/c", Variable::FromString("Candidates.KF_fP"), {160, 0, 16}},
+                     {"#sigma_{" + PidDetectors.at(iDet) + "} {" + ProngSpecies.at(iPs).second + "}", varPid.at(iDet).at(iPs), {400, axisLeftEdge, 20}},
+                     cutsTotalWithTof);
+        } // iDet : nPidDetectors
+        task.AddH2("nSig2D_" + ProngSpecies.at(iPs).first + "_" + dt.GetTitle() + "_" + dcaSel.GetTitle(), {"#sigma_{Tpc} {" + ProngSpecies.at(iPs).second + "}", varPid.at(kTpc).at(iPs), {200, -20, 20}},
+                                                                                                           {"#sigma_{Tof} {" + ProngSpecies.at(iPs).second + "}", varPid.at(kTof).at(iPs), {200, -20, 20}}, cutsTotal);
+      } // iPs : nProngSpecies
+    } // dcaSel : dcaFitterSelections
+  } // dt : datatypes
 }
 
 void TopoQA(QA::Task& task) {
@@ -121,6 +131,28 @@ void TopoQA(QA::Task& task) {
 
   auto pTCuts = HelperFunctions::CreateSliceCuts({0.f, 2.f, 4.f, 6.f, 8.f, 12.f, 16.f, 24.f}, "pT_", "Candidates.KF_fPt");
 
+//   std::vector<Quantity> vars {
+//     {"Mass",         "KF_fMassInv",                 "m_{pK#pi}, GeV/c^{2}", {600, 1.98, 2.58}, pTCuts},
+//     {"P",            "KF_fP",                       "p, GeV/c",             {600, 0,    16  }, {}    },
+//     {"Pt",           "KF_fPt",                      "p_{T}, GeV/c",         {600, 0,    16  }, {}    },
+//     {"Chi2prim_p",   "KF_fChi2PrimProton",          "#chi^{2}_{prim}{p}",   {100, 0,    60  }, {}    },
+//     {"Chi2prim_K",   "KF_fChi2PrimKaon",            "#chi^{2}_{prim}{K}",   {100, 0,    60  }, {}    },
+//     {"Chi2prim_pi",  "KF_fChi2PrimPion",            "#chi^{2}_{prim}{#pi}", {100, 0,    60  }, {}    },
+//     {"Chi2geo_p_pi", "KF_fChi2geoProtonPion",       "#chi^{2}_{geo}{p#pi}", {100, 0,    4   }, {}    },
+//     {"Chi2geo_p_K",  "KF_fChi2geoProtonKaon",       "#chi^{2}_{geo}{pK}",   {100, 0,    4   }, {}    },
+//     {"Chi2geo_K_pi", "KF_fChi2geoPionKaon",         "#chi^{2}_{geo}{K#pi}", {100, 0,    4   }, {}    },
+//     {"DCA_p_pi",     "KF_fDCAProtonPion",           "DCA{p#pi}, cm",        {100, 0,    0.1 }, {}    },
+//     {"DCA_p_K",      "KF_fDCAProtonKaon",           "DCA{pK}, cm",          {100, 0,    0.1 }, {}    },
+//     {"DCA_K_pi",     "KF_fDCAPionKaon",             "DCA{K#pi}, cm",        {100, 0,    0.1 }, {}    },
+//     {"Chi2geo",      "KF_fChi2geo",                 "#chi^{2}_{geo}",       {100, 0,    10  }, {}    },
+//     {"Chi2topo",     "KF_fChi2topo",                "#chi^{2}_{topo}",      {100, 0,    20  }, {}    },
+//     {"LdL",          "KF_fLdL",                     "L/#Delta L",           {100, 0,    10  }, {}    },
+//     {"L",            "KF_fL",                       "L, cm",                {100, 0,    0.5 }, {}    },
+//     {"T",            "KF_fT",                       "T, ps",                {400, 0,    5   }, {}    },
+//     {"isSel",        "KF_fIsSelected",              "isSel",                {10 , -5,   5   }, {}    },
+//     {"nPCPV",        "Lite_fNProngsContributorsPV", "nPCPV",                {6,   -1  , 5   }, {}    },
+//   };
+
   std::vector<Quantity> vars {
     {"Mass",         "KF_fMassInv",                 "m_{pK#pi}, GeV/c^{2}", {600, 1.98, 2.58}, pTCuts},
     {"P",            "KF_fP",                       "p, GeV/c",             {600, 0,    16  }, {}    },
@@ -128,16 +160,16 @@ void TopoQA(QA::Task& task) {
     {"Chi2prim_p",   "KF_fChi2PrimProton",          "#chi^{2}_{prim}{p}",   {100, 0,    60  }, {}    },
     {"Chi2prim_K",   "KF_fChi2PrimKaon",            "#chi^{2}_{prim}{K}",   {100, 0,    60  }, {}    },
     {"Chi2prim_pi",  "KF_fChi2PrimPion",            "#chi^{2}_{prim}{#pi}", {100, 0,    60  }, {}    },
-    {"Chi2geo_p_pi", "KF_fChi2geoProtonPion",       "#chi^{2}_{geo}{p#pi}", {100, 0,    4   }, {}    },
-    {"Chi2geo_p_K",  "KF_fChi2geoProtonKaon",       "#chi^{2}_{geo}{pK}",   {100, 0,    4   }, {}    },
-    {"Chi2geo_K_pi", "KF_fChi2geoPionKaon",         "#chi^{2}_{geo}{K#pi}", {100, 0,    4   }, {}    },
-    {"DCA_p_pi",     "KF_fDCAProtonPion",           "DCA{p#pi}, cm",        {100, 0,    0.1 }, {}    },
-    {"DCA_p_K",      "KF_fDCAProtonKaon",           "DCA{pK}, cm",          {100, 0,    0.1 }, {}    },
-    {"DCA_K_pi",     "KF_fDCAPionKaon",             "DCA{K#pi}, cm",        {100, 0,    0.1 }, {}    },
-    {"Chi2geo",      "KF_fChi2geo",                 "#chi^{2}_{geo}",       {100, 0,    10  }, {}    },
-    {"Chi2topo",     "KF_fChi2topo",                "#chi^{2}_{topo}",      {100, 0,    20  }, {}    },
-    {"LdL",          "KF_fLdL",                     "L/#Delta L",           {100, 0,    10  }, {}    },
-    {"L",            "KF_fL",                       "L, cm",                {100, 0,    0.5 }, {}    },
+    {"Chi2geo_p_pi", "KF_fChi2GeoProtonPion",       "#chi^{2}_{geo}{p#pi}", {100, 0,    4   }, {}    },
+    {"Chi2geo_p_K",  "KF_fChi2GeoProtonKaon",       "#chi^{2}_{geo}{pK}",   {100, 0,    4   }, {}    },
+    {"Chi2geo_K_pi", "KF_fChi2GeoPionKaon",         "#chi^{2}_{geo}{K#pi}", {100, 0,    4   }, {}    },
+    {"DCA_p_pi",     "KF_fDcaProtonPion",           "DCA{p#pi}, cm",        {100, 0,    0.1 }, {}    },
+    {"DCA_p_K",      "KF_fDcaProtonKaon",           "DCA{pK}, cm",          {100, 0,    0.1 }, {}    },
+    {"DCA_K_pi",     "KF_fDcaPionKaon",             "DCA{K#pi}, cm",        {100, 0,    0.1 }, {}    },
+    {"Chi2geo",      "KF_fChi2Geo",                 "#chi^{2}_{geo}",       {100, 0,    10  }, {}    },
+    {"Chi2topo",     "KF_fChi2Topo",                "#chi^{2}_{topo}",      {100, 0,    20  }, {}    },
+    {"LdL",          "KF_fDecayLengthNormalised",   "L/#Delta L",           {100, 0,    10  }, {}    },
+    {"L",            "KF_fDecayLength",             "L, cm",                {400, 0,    0.5 }, {}    },
     {"T",            "KF_fT",                       "T, ps",                {400, 0,    5   }, {}    },
     {"isSel",        "KF_fIsSelected",              "isSel",                {10 , -5,   5   }, {}    },
     {"nPCPV",        "Lite_fNProngsContributorsPV", "nPCPV",                {6,   -1  , 5   }, {}    },
