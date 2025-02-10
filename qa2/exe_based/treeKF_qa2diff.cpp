@@ -28,8 +28,8 @@ void treeKF_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool i
 
   const std::string promptness = prompt_or_nonprompt == 1 ? "prompt" : "nonprompt";
 
-  const std::string statusDcaFSel = "isDcaFSel";
-//  const std::string statusDcaFSel = "noDcaFSel";
+//  const std::string statusDcaFSel = "isDcaFSel";
+  const std::string statusDcaFSel = "noDcaFSel";
 
   const std::string fileOutName = "treeKF_qa2diff";
 

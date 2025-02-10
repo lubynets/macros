@@ -54,14 +54,14 @@ void treeKF_qa2(const std::string& fileName) {
 
   std::vector<SignalSpecies> signal_species {
     {"prompt",     kRed},
-//     {"nonprompt",  kBlue},
-//     {"background", kGreen+2},
-//     {"wrongswap",  kBlack},
+    {"nonprompt",  kBlue},
+    {"background", kGreen+2},
+    {"wrongswap",  kBlack},
 //     {"data",       kBlue},
   };
 
-  const std::string statusDcaFSel = "isDcaFSel";
-//  const std::string statusDcaFSel = "noDcaFSel";
+//  const std::string statusDcaFSel = "isDcaFSel";
+  const std::string statusDcaFSel = "noDcaFSel";
 
   bool is_first_canvas{true};
   for(auto& var : vars) {
@@ -70,7 +70,7 @@ void treeKF_qa2(const std::string& fileName) {
       const std::string histoName = "Candidates_" + ss.name_ + "_" + statusDcaFSel + "_total/" + var.name_ + "_" + ss.name_ + "_" + statusDcaFSel;
       histos.emplace_back(fileIn->Get<TH1D>(histoName.c_str()));
       if(histos.back() == nullptr) {
-        throw std::runtime_error(histoName);
+        throw std::runtime_error(histoName + " is not present");
       }
     }
 

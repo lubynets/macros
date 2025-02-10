@@ -45,6 +45,8 @@ inline std::string to_string_with_significant_figures(T a_value, int n=2);
 template<typename T>
 inline void RemoveEdgeLabelFromAxis(T* obj, const std::string& axisletter);
 
+inline void AddOneLineText(const std::string& text, float x1, float y1, float x2, float y2);
+
 //======================================================================================================================
 
 template<typename T>
@@ -69,6 +71,7 @@ std::string to_string_with_significant_figures(const T a_value, const int n) {
 }
 
 struct HistoQuantities {
+  float nentries_{-999.f};
   float underflow_{-999.f};
   float overflow_{-999.f};
   float mean_{-999.f};
@@ -80,6 +83,7 @@ struct HistoQuantities {
 HistoQuantities EvaluateHistoQuantities(const TH1* h) {
   HistoQuantities result;
   const float integral = h->GetEntries();
+  result.nentries_ = integral;
   result.underflow_ = h->GetBinContent(0) / integral;
   result.overflow_ = h->GetBinContent(h->GetNbinsX() + 1) / integral;
   result.mean_ = h->GetMean();
@@ -96,6 +100,7 @@ TPaveText ConvertHistoQuantitiesToText(const HistoQuantities& q, float x1, float
   text.SetTextSize(0.03);
   text.SetTextFont(62);
 
+  text.AddText(("nentries = " + to_string_with_precision(q.nentries_, 0)).c_str());
   text.AddText(("underflow = " + to_string_with_precision(q.underflow_ * 100, 2) + "%").c_str());
   text.AddText(("overflow = " + to_string_with_precision(q.overflow_ * 100, 2) + "%").c_str());
   text.AddText(
@@ -216,6 +221,15 @@ void RemoveEdgeLabelFromAxis(T* obj, const std::string& edge, const std::string&
       axis->Set(axis->GetNbins(), axis->GetXmin(), axis->GetXmax() - 1e-5);
     }
   }
+}
+
+void AddOneLineText(const std::string& text, float x1, float y1, float x2, float y2) {
+  TPaveText* textPtr = new TPaveText(x1, y1, x2, y2, "brNDC");
+  textPtr->SetFillColor(0);
+  textPtr->SetTextSize(0.03);
+  textPtr->SetTextFont(62);
+  textPtr->AddText(text.c_str());
+  textPtr->Draw("same");
 }
 }
 #endif //QA2_HELPER_HPP
