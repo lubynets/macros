@@ -19,7 +19,7 @@ using namespace Helper;
 void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool isDoFit, bool isSaveRoot) {
   TString currentMacroPath = __FILE__;
   TString directory = currentMacroPath(0, currentMacroPath.Last('/'));
-  gROOT->Macro( directory + "/mc_qa2.style.cc" );
+  gROOT->Macro( directory + "/../styles/mc_qa2.style.cc" );
 
   if(prompt_or_nonprompt !=1 && prompt_or_nonprompt != 2) {
     throw std::runtime_error("prompt_or_nonprompt must be 1 or 2");

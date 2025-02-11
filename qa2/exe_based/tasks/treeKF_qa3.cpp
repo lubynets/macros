@@ -20,7 +20,7 @@ void treeKF_qa3(const std::string& fileName1, const std::string& fileName2) {
 
   TString currentMacroPath = __FILE__;
   TString directory = currentMacroPath(0, currentMacroPath.Last('/'));
-  gROOT->Macro( directory + "/treeKF_qa2.style.cc" );
+  gROOT->Macro( directory + "/../styles/treeKF_qa2.style.cc" );
 
   TFile* fileIn1 = TFile::Open(fileName1.c_str());
   TFile* fileIn2 = TFile::Open(fileName2.c_str());

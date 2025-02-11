@@ -13,11 +13,12 @@ SET(EXECUTABLES
 )
 
 SET(SOURCES
+    Helper.cpp
     ShapeFitter.cpp
 )
 
 string(REPLACE ".cpp" ".hpp" HEADERS "${SOURCES}")
-list(APPEND HEADERS "Helper.hpp" "Shapes.hpp")
+list(APPEND HEADERS "Shapes.hpp")
 
 # Specify the C++ standard
 set(CMAKE_CXX_STANDARD 17)
@@ -67,7 +68,7 @@ install(FILES
 
 foreach(EXE ${EXECUTABLES})
     # Add the executable
-    add_executable(${EXE} ${EXE}.cpp)
+    add_executable(${EXE} tasks/${EXE}.cpp)
     # Link ROOT libraries to the executable
     target_link_libraries(${EXE} ${ROOT_LIBRARIES} Qa2)
     install (TARGETS ${EXE} RUNTIME DESTINATION bin)

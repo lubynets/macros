@@ -14,7 +14,7 @@ using namespace Helper;
 void treeKF_qa2(const std::string& fileName) {
   TString currentMacroPath = __FILE__;
   TString directory = currentMacroPath(0, currentMacroPath.Last('/'));
-  gROOT->Macro( directory + "/treeKF_qa2.style.cc" );
+  gROOT->Macro( directory + "/../styles/treeKF_qa2.style.cc" );
 
   TFile* fileIn = TFile::Open(fileName.c_str());
   if(fileIn == nullptr) {
