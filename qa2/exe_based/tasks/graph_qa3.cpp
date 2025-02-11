@@ -12,11 +12,14 @@
 
 using namespace Helper;
 
-void treeKF_qa3(const std::string& fileName1, const std::string& fileName2) {
+void graph_qa3(const std::string& fileName1, const std::string& fileName2) {
 
   const std::string leg1 = "no constraint";
-//  const std::string leg2 = "m_{inv} constraint";
-  const std::string leg2 = "topo constraint";
+  const std::string leg2 = "m_{inv} constraint";
+//  const std::string leg2 = "topo constraint";
+
+//  const std::string promptness = "prompt";
+  const std::string promptness = "nonprompt";
 
   TString currentMacroPath = __FILE__;
   TString directory = currentMacroPath(0, currentMacroPath.Last('/'));
@@ -56,20 +59,21 @@ void treeKF_qa3(const std::string& fileName1, const std::string& fileName2) {
   TCanvas cc("cc", "cc", 1200, 800);
   mGr->Draw("AP");
   leg->Draw("same");
-  cc.Print("treeKF_qa3.pdf", "pdf");
+  AddOneLineText(promptness, 0.74, 0.82, 0.87, 0.90);
+  cc.Print("graph_qa3.pdf", "pdf");
 }
 
 int main(int argc, char* argv[]) {
   if (argc < 3) {
     std::cout << "Error! Please use " << std::endl;
-    std::cout << " ./treeKF_qa2diff fileName1 fileName2" << std::endl;
+    std::cout << " ./graph_qa3 fileName1 fileName2" << std::endl;
     exit(EXIT_FAILURE);
   }
 
   const std::string fileName1 = argv[1];
   const std::string fileName2 = argv[2];
 
-  treeKF_qa3(fileName1, fileName2);
+  graph_qa3(fileName1, fileName2);
 
   return 0;
 }

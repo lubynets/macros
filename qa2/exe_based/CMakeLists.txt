@@ -9,7 +9,7 @@ SET(EXECUTABLES
     mc_qa2
     treeKF_qa2diff
     pid_qa
-    treeKF_qa3
+    graph_qa3
 )
 
 SET(SOURCES

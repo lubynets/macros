@@ -86,7 +86,7 @@ void mc_qa2(const std::string& fileName, int prompt_or_nonprompt) {
     disclaimer_mc.AddText("MC matched with reco only");
     disclaimer_mc.Draw("same");
     HistoQuantities mc_quant = EvaluateHistoQuantities(hmc);
-    TPaveText mc_quant_text = ConvertHistoQuantitiesToText(mc_quant, 0.74, 0.6, 0.87, 0.7);
+    TPaveText mc_quant_text = ConvertHistoQuantitiesToText(mc_quant, 0.70, 0.6, 0.90, 0.8);
     mc_quant_text.Draw("same");
 
     TCanvas ccRec("ccRec", "ccRec", 1200, 800);
@@ -100,7 +100,7 @@ void mc_qa2(const std::string& fileName, int prompt_or_nonprompt) {
     disclaimer_rec.AddText("Rec matched to MC-true only");
     disclaimer_rec.Draw("same");
     HistoQuantities rec_quant = EvaluateHistoQuantities(hrec);
-    TPaveText rec_quant_text = ConvertHistoQuantitiesToText(rec_quant, 0.74, 0.6, 0.87, 0.7);
+    TPaveText rec_quant_text = ConvertHistoQuantitiesToText(rec_quant, 0.70, 0.6, 0.90, 0.8);
     rec_quant_text.Draw("same");
 
     TCanvas ccRes("ccRes", "ccRes", 1200, 800);
@@ -108,7 +108,7 @@ void mc_qa2(const std::string& fileName, int prompt_or_nonprompt) {
     hres->Draw();
     promptnessText.Draw("same");
     HistoQuantities res_quant = EvaluateHistoQuantities(hres);
-    TPaveText res_quant_text = ConvertHistoQuantitiesToText(res_quant, 0.74, 0.6, 0.87, 0.7);
+    TPaveText res_quant_text = ConvertHistoQuantitiesToText(res_quant, 0.70, 0.6, 0.90, 0.8);
     res_quant_text.Draw("same");
 
     TCanvas ccCorr("ccCorr", "ccCorr", 1200, 800);
@@ -122,7 +122,7 @@ void mc_qa2(const std::string& fileName, int prompt_or_nonprompt) {
     hpull->Draw();
     promptnessText.Draw("same");
     HistoQuantities pull_quant = EvaluateHistoQuantities(hpull);
-    TPaveText pull_quant_text = ConvertHistoQuantitiesToText(pull_quant, 0.74, 0.6, 0.87, 0.7);
+    TPaveText pull_quant_text = ConvertHistoQuantitiesToText(pull_quant, 0.70, 0.6, 0.90, 0.8);
     pull_quant_text.Draw("same");
 
     if(is_first_canvas) printing_bracket = "(";
