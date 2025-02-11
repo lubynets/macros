@@ -124,7 +124,7 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool isDoF
         hIn->Draw();
         cutText.Draw("same");
         HistoQuantities quant = EvaluateHistoQuantities(hIn);
-        TPaveText quant_text = ConvertHistoQuantitiesToText(quant, 0.74, 0.6, 0.87, 0.7);
+        TPaveText quant_text = ConvertHistoQuantitiesToText(quant, 0.70, 0.6, 0.90, 0.8);
         quant_text.Draw("same");
 
         if(isDoFit) {
@@ -210,7 +210,7 @@ int main(int argc, char* argv[]) {
   const std::string fileName = argv[1];
   const int prompt_or_nonprompt = argc>2 ? atoi(argv[2]) : 1;
   const bool isDoFit = argc < 4 || strcmp(argv[3], "true") == 0;
-  const bool isSaveRoot = argc >= 5 && strcmp(argv[4], "false") == 0;
+  const bool isSaveRoot = argc >= 5 && strcmp(argv[4], "true") == 0;
 
   mc_qa2diff(fileName, prompt_or_nonprompt, isDoFit, isSaveRoot);
 

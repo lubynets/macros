@@ -47,7 +47,19 @@ inline void RemoveEdgeLabelFromAxis(T* obj, const std::string& axisletter);
 
 inline void AddOneLineText(const std::string& text, float x1, float y1, float x2, float y2);
 
+inline void SlightlyShiftXAxis(TGraph* gr, float value = -1);
+
 //======================================================================================================================
+
+void SlightlyShiftXAxis(TGraph* gr, float value) {
+  if(value == -1) {
+    value = (gr->GetPointX(gr->GetN()-1) - gr->GetPointX(0)) / 50;
+  }
+  const int nPoints = gr->GetN();
+  for(int iPoint=0; iPoint<nPoints; iPoint++) {
+    gr->SetPointX(iPoint, gr->GetPointX(iPoint) + value);
+  }
+}
 
 template<typename T>
 std::string to_string_with_precision(const T a_value, const int n) {
