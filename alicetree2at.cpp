@@ -2,12 +2,15 @@
 #include "Detector.hpp"
 #include "Matching.hpp"
 #include "Particle.hpp"
+#include "PlainTreeFiller.hpp"
+#include "TaskManager.hpp"
 
 #include "TBranch.h"
 #include "TFile.h"
 #include "TTree.h"
 
 #include <iostream>
+#include <fstream>
 #include <string>
 
 struct IndexMap {
@@ -25,8 +28,9 @@ struct FicCarrier {
 void SetAddressFIC(TBranch* branch, const IndexMap& imap, FicCarrier& ficc);
 void SetFieldsFIC(const std::vector<IndexMap>& imap, AnalysisTree::Particle& particle, const std::vector<FicCarrier>& ficc);
 std::vector<std::string> GetDFNames(const std::string& fileName);
+bool string_to_bool(const std::string& str);
 
-void AliceTree2AT(const std::string& fileName, bool isMC, int maxEntries) {
+void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int maxEntries) {
   bool isConfigInitialized{false};
   AnalysisTree::Configuration config_;
 
@@ -69,7 +73,8 @@ void AliceTree2AT(const std::string& fileName, bool isMC, int maxEntries) {
   auto dirNames = GetDFNames(fileName);
   std::cout << "dirNames.size() = " << dirNames.size() << "\n";
 
-  TFile* out_file_ = new TFile("AnalysisTree.root", "recreate");
+  std::string fileOutName = "AnalysisTree.root";
+  TFile* out_file_ = new TFile(fileOutName.c_str(), "recreate");
   TTree* tree_ = new TTree("aTree", "Analysis Tree");
   tree_->SetAutoSave(0);
 
@@ -153,19 +158,41 @@ void AliceTree2AT(const std::string& fileName, bool isMC, int maxEntries) {
   config_.Write("Configuration");
   tree_->Write();
   out_file_->Close();
+
+  if (isDoPlain) {
+    std::ofstream filelist;
+    filelist.open("filelist.txt");
+    filelist << fileOutName + "\n";
+    filelist.close();
+
+    auto* tree_task = new AnalysisTree::PlainTreeFiller();
+    tree_task->SetOutputName("PlainTree.root", "plain_tree");
+    std::string branchname_rec = "Candidates";
+    tree_task->SetInputBranchNames({branchname_rec});
+    tree_task->AddBranch(branchname_rec);
+    tree_task->SetIsIgnoreDefaultFields();
+
+    auto* man = AnalysisTree::TaskManager::GetInstance();
+    man->AddTask(tree_task);
+
+    man->Init({"filelist.txt"}, {"aTree"});
+    man->Run(-1);// -1 = all events
+    man->Finish();
+  } // isDoPlain
 }
 
 int main(int argc, char* argv[]) {
   if (argc < 2) {
     std::cout << "Error! Please use " << std::endl;
-    std::cout << " ./alicetree2at fileName (isMC nEntries)" << std::endl;
+    std::cout << " ./alicetree2at fileName (isMC=true isDoPlain=false nEntries=ALL)" << std::endl;
     exit(EXIT_FAILURE);
   }
 
   const std::string fileName = argv[1];
-  const bool isMC = argc <= 2 || strcmp(argv[2], "true") == 0;
-  const int nEntries = argc > 3 ? atoi(argv[3]) : -1;
-  AliceTree2AT(fileName, isMC, nEntries);
+  const bool isMC = argc>2 ? string_to_bool(argv[2]) : true;
+  const bool isDoPlain = argc>3 ? string_to_bool(argv[3]) : false;
+  const int nEntries = argc > 4 ? atoi(argv[4]) : -1;
+  AliceTree2AT(fileName, isMC, isDoPlain, nEntries);
 
   return 0;
 }
@@ -200,4 +227,10 @@ std::vector<std::string> GetDFNames(const std::string& fileName) {
   fileIn->Close();
 
   return result;
+}
+
+bool string_to_bool(const std::string& str) {
+  if(str == "true") return true;
+  else if(str == "false") return false;
+  else throw std::runtime_error("string_to_bool(): argument must be either true or false");
 }
