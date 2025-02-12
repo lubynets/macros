@@ -40,15 +40,20 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
   int kfLiteSepar;
   std::vector<FicCarrier> candValues;
 
-  AnalysisTree::Particles* simulated_{nullptr};
+  AnalysisTree::Particles* simulated_{nullptr}; // MC matched with reco
   AnalysisTree::BranchConfig SimulatedConfig("Simulated", AnalysisTree::DetType::kParticle);
   std::vector<IndexMap> simulatedMap;
   std::vector<FicCarrier> simValues;
 
+  AnalysisTree::Particles* generated_{nullptr}; // MC all decaying by 3-prong channel
+  AnalysisTree::BranchConfig GeneratedConfig("Generated", AnalysisTree::DetType::kParticle);
+  std::vector<IndexMap> generatedMap;
+  std::vector<FicCarrier> genValues;
+
   AnalysisTree::Matching* cand2sim_{nullptr};
 
   auto CreateConfiguration = [&] (TTree* t,
-                                 std::string prefix,
+                                 const std::string& prefix,
                                  AnalysisTree::BranchConfig& branch_config,
                                  std::vector<IndexMap>& vmap
                              ) {
@@ -84,6 +89,7 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
     TTree* treeKF = fileIn->Get<TTree>((dirname + "/O2hfcandlckf").c_str());
     TTree* treeLite = fileIn->Get<TTree>((dirname + "/O2hfcandlclite").c_str());
     TTree* treeMC = isMC ? fileIn->Get<TTree>((dirname + "/O2hfcandlcmc").c_str()) : nullptr;
+    TTree* treeGen = isMC ? fileIn->Get<TTree>((dirname + "/O2hfcandlcfullp").c_str()) : nullptr;
 
     if(!isConfigInitialized) {
       CreateConfiguration(treeKF, "KF_", CandidatesConfig, candidateMap);
@@ -105,7 +111,14 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
         cand2sim_ = new AnalysisTree::Matching(CandidatesConfig.GetId(), SimulatedConfig.GetId());
         config_.AddMatch(cand2sim_);
         tree_->Branch((CandidatesConfig.GetName() + "2" + SimulatedConfig.GetName() + ".").c_str(), "AnalysisTree::Matching", &cand2sim_);
+
+        CreateConfiguration(treeGen, "Gen_", GeneratedConfig, generatedMap);
+        genValues.resize(generatedMap.size());
+        config_.AddBranchConfig(GeneratedConfig);
+        generated_ = new AnalysisTree::Particles(GeneratedConfig.GetId());
+        tree_->Branch((GeneratedConfig.GetName() + ".").c_str(), "AnalysisTree::Particles", &generated_);
       }
+      config_.Print();
       isConfigInitialized = true;
     }
 
@@ -113,6 +126,8 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
     if(isMC) {
       simulated_->ClearChannels();
       cand2sim_->Clear();
+
+      generated_->ClearChannels();
     }
 
     for(int iV=0; iV<candValues.size(); iV++) {
@@ -124,6 +139,10 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
       for(int iV=0; iV<simValues.size(); iV++) {
         TBranch* branch = treeMC->GetBranch(simulatedMap.at(iV).name_.c_str());
         SetAddressFIC(branch, simulatedMap.at(iV), simValues.at(iV));
+      }
+      for(int iV=0; iV<genValues.size(); iV++) {
+        TBranch* branch = treeGen->GetBranch(generatedMap.at(iV).name_.c_str());
+        SetAddressFIC(branch, generatedMap.at(iV), genValues.at(iV));
       }
     }
 
@@ -150,6 +169,14 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
       }
       ++iGlobalEntry;
     }
+    if(isMC) {
+      const int nGenEntries = treeGen->GetEntries();
+      for(int iEntry=0; iEntry<nGenEntries; iEntry++) {
+        treeGen->GetEntry(iEntry);
+        auto& generated = generated_->AddChannel(config_.GetBranchConfig(generated_->GetId()));
+        SetFieldsFIC(generatedMap, generated, genValues);
+      }
+    }
     tree_->Fill();
     fileIn->Close();
   }
@@ -166,7 +193,7 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
     filelist.close();
 
     auto* tree_task = new AnalysisTree::PlainTreeFiller();
-    tree_task->SetOutputName("PlainTree.root", "plain_tree");
+    tree_task->SetOutputName("PlainTree.root", "pTree");
     std::string branchname_rec = "Candidates";
     tree_task->SetInputBranchNames({branchname_rec});
     tree_task->AddBranch(branchname_rec);
