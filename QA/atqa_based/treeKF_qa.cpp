@@ -12,11 +12,11 @@ void PidQA(QA::Task& task);
 void TopoQA(QA::Task& task);
 
 std::vector<SimpleCut> datatypes {
-//   EqualsCut("Candidates.KF_fSigBgStatus", 0,    "background"),
-//   EqualsCut("Candidates.KF_fSigBgStatus", 1,    "prompt"),
-//   EqualsCut("Candidates.KF_fSigBgStatus", 2,    "nonprompt"),
-//   EqualsCut("Candidates.KF_fSigBgStatus", 3,    "wrongswap"),
-  EqualsCut("Candidates.KF_fSigBgStatus", -999, "data"),
+  EqualsCut("Candidates.KF_fSigBgStatus", 0,    "background"),
+  EqualsCut("Candidates.KF_fSigBgStatus", 1,    "prompt"),
+  EqualsCut("Candidates.KF_fSigBgStatus", 2,    "nonprompt"),
+  EqualsCut("Candidates.KF_fSigBgStatus", 3,    "wrongswap"),
+//   EqualsCut("Candidates.KF_fSigBgStatus", -999, "data"),
 //   SimpleCut({"Candidates.KF_fSigBgStatus"}, [](std::vector<double> par){ return par[0] != 0 && par[0] != 1 && par[0] != 2 && par[0] != 3 && par[0] != -999; }, "impossible"),
 };
 
@@ -95,11 +95,11 @@ void PidQA(QA::Task& task) {
 
   for(auto& dt : datatypes) {
     for(auto& dcaSel : dcaFitterSelections) {
-      std::vector<SimpleCut> allCuts = topoSelectionCuts;
-      allCuts.emplace_back(dt);
-      allCuts.emplace_back(dcaSel);
+//       std::vector<SimpleCut> allCuts = topoSelectionCuts;
+//       allCuts.emplace_back(dt);
+//       allCuts.emplace_back(dcaSel);
 
-      Cuts* cutsTotal = new Cuts(dt.GetTitle() + "_" + dcaSel.GetTitle() + "_total", allCuts);
+      Cuts* cutsTotal = new Cuts(dt.GetTitle() + "_" + dcaSel.GetTitle() + "_total", topoSelectionCuts, dt, dcaSel);
 
       for(int iPs=0; iPs<nProngSpecies; iPs++) {
         SimpleCut tofCut = SimpleCut((std::vector<Variable>){varPid.at(kTof).at(iPs)}, [](std::vector<double> par) { return std::abs(par[0] + 999) > 0.5; } );
@@ -130,28 +130,6 @@ void TopoQA(QA::Task& task) {
   };
 
   auto pTCuts = HelperFunctions::CreateSliceCuts({0.f, 2.f, 4.f, 6.f, 8.f, 12.f, 16.f, 24.f}, "pT_", "Candidates.KF_fPt");
-
-//   std::vector<Quantity> vars {
-//     {"Mass",         "KF_fMassInv",                 "m_{pK#pi}, GeV/c^{2}", {600, 1.98, 2.58}, pTCuts},
-//     {"P",            "KF_fP",                       "p, GeV/c",             {600, 0,    16  }, {}    },
-//     {"Pt",           "KF_fPt",                      "p_{T}, GeV/c",         {600, 0,    16  }, {}    },
-//     {"Chi2prim_p",   "KF_fChi2PrimProton",          "#chi^{2}_{prim}{p}",   {100, 0,    60  }, {}    },
-//     {"Chi2prim_K",   "KF_fChi2PrimKaon",            "#chi^{2}_{prim}{K}",   {100, 0,    60  }, {}    },
-//     {"Chi2prim_pi",  "KF_fChi2PrimPion",            "#chi^{2}_{prim}{#pi}", {100, 0,    60  }, {}    },
-//     {"Chi2geo_p_pi", "KF_fChi2geoProtonPion",       "#chi^{2}_{geo}{p#pi}", {100, 0,    4   }, {}    },
-//     {"Chi2geo_p_K",  "KF_fChi2geoProtonKaon",       "#chi^{2}_{geo}{pK}",   {100, 0,    4   }, {}    },
-//     {"Chi2geo_K_pi", "KF_fChi2geoPionKaon",         "#chi^{2}_{geo}{K#pi}", {100, 0,    4   }, {}    },
-//     {"DCA_p_pi",     "KF_fDCAProtonPion",           "DCA{p#pi}, cm",        {100, 0,    0.1 }, {}    },
-//     {"DCA_p_K",      "KF_fDCAProtonKaon",           "DCA{pK}, cm",          {100, 0,    0.1 }, {}    },
-//     {"DCA_K_pi",     "KF_fDCAPionKaon",             "DCA{K#pi}, cm",        {100, 0,    0.1 }, {}    },
-//     {"Chi2geo",      "KF_fChi2geo",                 "#chi^{2}_{geo}",       {100, 0,    10  }, {}    },
-//     {"Chi2topo",     "KF_fChi2topo",                "#chi^{2}_{topo}",      {100, 0,    20  }, {}    },
-//     {"LdL",          "KF_fLdL",                     "L/#Delta L",           {100, 0,    10  }, {}    },
-//     {"L",            "KF_fL",                       "L, cm",                {100, 0,    0.5 }, {}    },
-//     {"T",            "KF_fT",                       "T, ps",                {400, 0,    5   }, {}    },
-//     {"isSel",        "KF_fIsSelected",              "isSel",                {10 , -5,   5   }, {}    },
-//     {"nPCPV",        "Lite_fNProngsContributorsPV", "nPCPV",                {6,   -1  , 5   }, {}    },
-//   };
 
   std::vector<Quantity> vars {
     {"Mass",         "KF_fMassInv",                 "m_{pK#pi}, GeV/c^{2}", {600, 1.98, 2.58}, pTCuts},
