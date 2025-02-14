@@ -12,10 +12,10 @@ void PidQA(QA::Task& task);
 void TopoQA(QA::Task& task);
 
 std::vector<SimpleCut> datatypes {
-  EqualsCut("Candidates.KF_fSigBgStatus", 0,    "background"),
+//  EqualsCut("Candidates.KF_fSigBgStatus", 0,    "background"),
   EqualsCut("Candidates.KF_fSigBgStatus", 1,    "prompt"),
   EqualsCut("Candidates.KF_fSigBgStatus", 2,    "nonprompt"),
-  EqualsCut("Candidates.KF_fSigBgStatus", 3,    "wrongswap"),
+//  EqualsCut("Candidates.KF_fSigBgStatus", 3,    "wrongswap"),
 //   EqualsCut("Candidates.KF_fSigBgStatus", -999, "data"),
 //   SimpleCut({"Candidates.KF_fSigBgStatus"}, [](std::vector<double> par){ return par[0] != 0 && par[0] != 1 && par[0] != 2 && par[0] != 3 && par[0] != -999; }, "impossible"),
 };
@@ -46,7 +46,7 @@ void treeKF_qa(const std::string& filelist){
   auto* task = new QA::Task;
   task->SetOutputFileName("treeKF_qa.root");
 
-//   TopoQA(*task);
+  TopoQA(*task);
   PidQA(*task);
 
   man->AddTask(task);
@@ -57,6 +57,7 @@ void treeKF_qa(const std::string& filelist){
 }
 
 void PidQA(QA::Task& task) {
+  task.SetTopLevelDirName("PidQA");
   enum eProngSpecies : int {
     kProton = 0,
     kKaon,
@@ -95,11 +96,12 @@ void PidQA(QA::Task& task) {
 
   for(auto& dt : datatypes) {
     for(auto& dcaSel : dcaFitterSelections) {
-//       std::vector<SimpleCut> allCuts = topoSelectionCuts;
-//       allCuts.emplace_back(dt);
-//       allCuts.emplace_back(dcaSel);
+       std::vector<SimpleCut> allCuts = topoSelectionCuts;
+       allCuts.emplace_back(dt);
+       allCuts.emplace_back(dcaSel);
+       Cuts* cutsTotal = new Cuts(dt.GetTitle() + "_" + dcaSel.GetTitle() + "_total", allCuts);
 
-      Cuts* cutsTotal = new Cuts(dt.GetTitle() + "_" + dcaSel.GetTitle() + "_total", topoSelectionCuts, dt, dcaSel);
+//      Cuts* cutsTotal = new Cuts(dt.GetTitle() + "_" + dcaSel.GetTitle() + "_total", topoSelectionCuts, dt, dcaSel); // TODO hangs. Needs debugging
 
       for(int iPs=0; iPs<nProngSpecies; iPs++) {
         SimpleCut tofCut = SimpleCut((std::vector<Variable>){varPid.at(kTof).at(iPs)}, [](std::vector<double> par) { return std::abs(par[0] + 999) > 0.5; } );
@@ -121,6 +123,7 @@ void PidQA(QA::Task& task) {
 }
 
 void TopoQA(QA::Task& task) {
+  task.SetTopLevelDirName("TopoQA");
   struct Quantity {
     std::string name_;
     std::string name_in_tree_;
@@ -129,7 +132,7 @@ void TopoQA(QA::Task& task) {
     std::vector<SimpleCut> slice_cuts_;
   };
 
-  auto pTCuts = HelperFunctions::CreateSliceCuts({0.f, 2.f, 4.f, 6.f, 8.f, 12.f, 16.f, 24.f}, "pT_", "Candidates.KF_fPt");
+  auto pTCuts = HelperFunctions::CreateRangeCuts({0.f, 2.f, 4.f, 6.f, 8.f, 12.f, 16.f, 24.f}, "pT_", "Candidates.KF_fPt", 2);
 
   std::vector<Quantity> vars {
     {"Mass",         "KF_fMassInv",                 "m_{pK#pi}, GeV/c^{2}", {600, 1.98, 2.58}, pTCuts},
