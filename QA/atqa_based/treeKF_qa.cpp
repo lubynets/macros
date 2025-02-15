@@ -96,20 +96,23 @@ void PidQA(QA::Task& task) {
 
   for(auto& dt : datatypes) {
     for(auto& dcaSel : dcaFitterSelections) {
-       std::vector<SimpleCut> allCuts = topoSelectionCuts;
-       allCuts.emplace_back(dt);
-       allCuts.emplace_back(dcaSel);
-       Cuts* cutsTotal = new Cuts(dt.GetTitle() + "_" + dcaSel.GetTitle() + "_total", allCuts);
+//       std::vector<SimpleCut> allCuts = topoSelectionCuts;
+//       allCuts.emplace_back(dt);
+//       allCuts.emplace_back(dcaSel);
+//       Cuts* cutsTotal = new Cuts(dt.GetTitle() + "_" + dcaSel.GetTitle() + "_total", allCuts);
 
-//      Cuts* cutsTotal = new Cuts(dt.GetTitle() + "_" + dcaSel.GetTitle() + "_total", topoSelectionCuts, dt, dcaSel); // TODO hangs. Needs debugging
+      std::cout << "pre Cuts* cutsTotal\n";
+      Cuts* cutsTotal = new Cuts(dt.GetTitle() + "_" + dcaSel.GetTitle() + "_total", topoSelectionCuts, dt, dcaSel); // TODO hangs. Needs debugging
+      std::cout << "post Cuts* cutsTotal\n";
 
       for(int iPs=0; iPs<nProngSpecies; iPs++) {
         SimpleCut tofCut = SimpleCut((std::vector<Variable>){varPid.at(kTof).at(iPs)}, [](std::vector<double> par) { return std::abs(par[0] + 999) > 0.5; } );
         for(int iDet=0; iDet<nPidDetectors; iDet++) {
           Cuts* cutsTotalWithTof = new Cuts(*cutsTotal);
           if(PidDetectors.at(iDet) == "Tof") cutsTotalWithTof->AddCut(tofCut);
-          const float axisLeftEdge = PidDetectors.at(iDet) == "TpcTof" ? -1 : -20;
-          task.AddH1(varPid.at(iDet).at(iPs).GetName() + "_" + dt.GetTitle() + "_" + dcaSel.GetTitle(), {"#sigma_{" + PidDetectors.at(iDet) + "} {" + ProngSpecies.at(iPs).second + "}", varPid.at(iDet).at(iPs), {1000, axisLeftEdge, 20}}, cutsTotalWithTof);
+          const float axisEdge = 200;
+          const float axisLeftEdge = PidDetectors.at(iDet) == "TpcTof" ? 0 : -axisEdge;
+          task.AddH1(varPid.at(iDet).at(iPs).GetName() + "_" + dt.GetTitle() + "_" + dcaSel.GetTitle(), {"#sigma_{" + PidDetectors.at(iDet) + "} {" + ProngSpecies.at(iPs).second + "}", varPid.at(iDet).at(iPs), {10000, axisLeftEdge, axisEdge}}, cutsTotalWithTof);
           task.AddH2(varPid.at(iDet).at(iPs).GetName() + "VsP_" + dt.GetTitle() + "_" + dcaSel.GetTitle(),
                      {"p, GeV/c", Variable::FromString("Candidates.KF_fP"), {160, 0, 16}},
                      {"#sigma_{" + PidDetectors.at(iDet) + "} {" + ProngSpecies.at(iPs).second + "}", varPid.at(iDet).at(iPs), {400, axisLeftEdge, 20}},
