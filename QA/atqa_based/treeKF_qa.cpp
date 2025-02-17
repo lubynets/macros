@@ -96,14 +96,10 @@ void PidQA(QA::Task& task) {
 
   for(auto& dt : datatypes) {
     for(auto& dcaSel : dcaFitterSelections) {
-//       std::vector<SimpleCut> allCuts = topoSelectionCuts;
-//       allCuts.emplace_back(dt);
-//       allCuts.emplace_back(dcaSel);
-//       Cuts* cutsTotal = new Cuts(dt.GetTitle() + "_" + dcaSel.GetTitle() + "_total", allCuts);
-
-      std::cout << "pre Cuts* cutsTotal\n";
-      Cuts* cutsTotal = new Cuts(dt.GetTitle() + "_" + dcaSel.GetTitle() + "_total", topoSelectionCuts, dt, dcaSel); // TODO hangs. Needs debugging
-      std::cout << "post Cuts* cutsTotal\n";
+      std::vector<SimpleCut> allCuts = topoSelectionCuts;
+      allCuts.emplace_back(dt);
+      allCuts.emplace_back(dcaSel);
+      Cuts* cutsTotal = new Cuts(dt.GetTitle() + "_" + dcaSel.GetTitle() + "_total", allCuts);
 
       for(int iPs=0; iPs<nProngSpecies; iPs++) {
         SimpleCut tofCut = SimpleCut((std::vector<Variable>){varPid.at(kTof).at(iPs)}, [](std::vector<double> par) { return std::abs(par[0] + 999) > 0.5; } );
