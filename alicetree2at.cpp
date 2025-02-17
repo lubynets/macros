@@ -1,5 +1,6 @@
 #include "Configuration.hpp"
 #include "Detector.hpp"
+#include "EventHeader.hpp"
 #include "Matching.hpp"
 #include "Particle.hpp"
 #include "PlainTreeFiller.hpp"
@@ -54,6 +55,11 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
   bool isConfigInitialized{false};
   AnalysisTree::Configuration config_;
 
+  AnalysisTree::EventHeader* eve_header_{nullptr};
+  AnalysisTree::BranchConfig EventsConfig("Events", AnalysisTree::DetType::kEventHeader);
+  std::vector<IndexMap> eventsMap;
+  std::vector<FicCarrier> eventValues;
+
   AnalysisTree::Particles* candidates_{nullptr};
   AnalysisTree::BranchConfig CandidatesConfig("Candidates", AnalysisTree::DetType::kParticle);
   std::vector<IndexMap> candidateMap;
@@ -85,11 +91,11 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
       const std::string fieldType = leave->ClassName();
       if (std::find(fields_to_ignore_.begin(), fields_to_ignore_.end(), prefix + fieldName) != fields_to_ignore_.end()) continue;
       if (fieldType == "TLeafF") {
-        branch_config.AddField<float>((prefix + fieldName).c_str());
+        branch_config.AddField<float>(prefix + fieldName);
       } else if (fieldType == "TLeafI" || fieldType == "TLeafB" || fieldType == "TLeafS") {
-        branch_config.AddField<int>((prefix + fieldName).c_str());
+        branch_config.AddField<int>(prefix + fieldName);
       }
-      vmap.emplace_back((IndexMap){fieldName, fieldType, branch_config.GetFieldId((prefix + fieldName).c_str())});
+      vmap.emplace_back((IndexMap){fieldName, fieldType, branch_config.GetFieldId(prefix + fieldName)});
     }
   };
 
@@ -111,8 +117,15 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
     TTree* treeLite = fileIn->Get<TTree>((dirname + "/O2hfcandlclite").c_str());
     TTree* treeMC = isMC ? fileIn->Get<TTree>((dirname + "/O2hfcandlcmc").c_str()) : nullptr;
     TTree* treeGen = isMC ? fileIn->Get<TTree>((dirname + "/O2hfcandlcfullp").c_str()) : nullptr;
+    TTree* treeEvent = fileIn->Get<TTree>((dirname + "/O2hfcandlcfullev").c_str());
 
     if(!isConfigInitialized) {
+      CreateConfiguration(treeEvent, "Ev_", EventsConfig, eventsMap);
+      eventValues.resize(eventsMap.size());
+      config_.AddBranchConfig(EventsConfig);
+      eve_header_ = new AnalysisTree::EventHeader(EventsConfig.GetId());
+      treeEvent->Branch((EventsConfig.GetName() + ".").c_str(), "AnalysisTree::EventHeader", &eve_header_);
+
       CreateConfiguration(treeKF, "KF_", CandidatesConfig, candidateMap);
       kfLiteSepar = candidateMap.size();
       CreateConfiguration(treeLite, "Lite_", CandidatesConfig, candidateMap);
