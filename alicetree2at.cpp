@@ -32,6 +32,25 @@ std::vector<std::string> GetDFNames(const std::string& fileName);
 bool string_to_bool(const std::string& str);
 
 void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int maxEntries) {
+
+  std::vector<std::string> fields_to_ignore_{"Lite_fChi2PCA",
+                                             "Lite_fCpa",
+                                             "Lite_fCpaXY",
+                                             "Lite_fCt",
+                                             "Lite_fDecayLength",
+                                             "Lite_fDecayLengthXY",
+                                             "Lite_fEta",
+                                             "Lite_fImpactParameter0",
+                                             "Lite_fImpactParameter1",
+                                             "Lite_fImpactParameter2",
+                                             "Lite_fM",
+                                             "Lite_fMassKPi",
+                                             "Lite_fPhi",
+                                             "Lite_fPt",
+                                             "Lite_fPtProng0",
+                                             "Lite_fPtProng1",
+                                             "Lite_fPtProng2"};
+
   bool isConfigInitialized{false};
   AnalysisTree::Configuration config_;
 
@@ -64,6 +83,7 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
       auto leave = lol->At(iLeave);
       const std::string fieldName = leave->GetName();
       const std::string fieldType = leave->ClassName();
+      if (std::find(fields_to_ignore_.begin(), fields_to_ignore_.end(), prefix + fieldName) != fields_to_ignore_.end()) continue;
       if (fieldType == "TLeafF") {
         branch_config.AddField<float>((prefix + fieldName).c_str());
       } else if (fieldType == "TLeafI" || fieldType == "TLeafB" || fieldType == "TLeafS") {
