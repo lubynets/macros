@@ -23,6 +23,7 @@ struct FicCarrier {
   float float_{-999.f};
   int int_{-999};
   char char_{static_cast<char>(-999)};
+  short short_{static_cast<short>(-999)};
 };
 
 void SetAddressFIC(TBranch* branch, const IndexMap& imap, FicCarrier& ficc);
@@ -65,7 +66,7 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
       const std::string fieldType = leave->ClassName();
       if (fieldType == "TLeafF") {
         branch_config.AddField<float>((prefix + fieldName).c_str());
-      } else if (fieldType == "TLeafI" || fieldType == "TLeafB") {
+      } else if (fieldType == "TLeafI" || fieldType == "TLeafB" || fieldType == "TLeafS") {
         branch_config.AddField<int>((prefix + fieldName).c_str());
       }
       vmap.emplace_back((IndexMap){fieldName, fieldType, branch_config.GetFieldId((prefix + fieldName).c_str())});
@@ -216,8 +217,8 @@ int main(int argc, char* argv[]) {
   }
 
   const std::string fileName = argv[1];
-  const bool isMC = argc>2 ? string_to_bool(argv[2]) : true;
-  const bool isDoPlain = argc>3 ? string_to_bool(argv[3]) : false;
+  const bool isMC = argc > 2 ? string_to_bool(argv[2]) : true;
+  const bool isDoPlain = argc > 3 ? string_to_bool(argv[3]) : false;
   const int nEntries = argc > 4 ? atoi(argv[4]) : -1;
   AliceTree2AT(fileName, isMC, isDoPlain, nEntries);
 
@@ -228,6 +229,7 @@ void SetAddressFIC(TBranch* branch, const IndexMap& imap, FicCarrier& ficc) {
   if     (imap.field_type_ == "TLeafF") branch->SetAddress(&ficc.float_);
   else if(imap.field_type_ == "TLeafI") branch->SetAddress(&ficc.int_);
   else if(imap.field_type_ == "TLeafB") branch->SetAddress(&ficc.char_);
+  else if(imap.field_type_ == "TLeafS") branch->SetAddress(&ficc.short_);
 }
 
 void SetFieldsFIC(const std::vector<IndexMap>& imap, AnalysisTree::Particle& particle, const std::vector<FicCarrier>& ficc) {
@@ -235,6 +237,7 @@ void SetFieldsFIC(const std::vector<IndexMap>& imap, AnalysisTree::Particle& par
     if     (imap.at(iV).field_type_ == "TLeafF") particle.SetField(ficc.at(iV).float_, imap.at(iV).index_);
     else if(imap.at(iV).field_type_ == "TLeafI") particle.SetField(ficc.at(iV).int_, imap.at(iV).index_);
     else if(imap.at(iV).field_type_ == "TLeafB") particle.SetField(static_cast<int>(ficc.at(iV).char_), imap.at(iV).index_);
+    else if(imap.at(iV).field_type_ == "TLeafS") particle.SetField(static_cast<int>(ficc.at(iV).short_), imap.at(iV).index_);
   }
 }
 
