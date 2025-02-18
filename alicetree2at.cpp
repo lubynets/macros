@@ -28,8 +28,10 @@ struct FicCarrier {
 };
 
 void SetAddressFIC(TBranch* branch, const IndexMap& imap, FicCarrier& ficc);
-void SetFieldsFIC(const std::vector<IndexMap>& imap, AnalysisTree::Particle& particle, const std::vector<FicCarrier>& ficc);
+void SetFieldsFICParticle(const std::vector<IndexMap>& imap, AnalysisTree::Particle& particle, const std::vector<FicCarrier>& ficc);
+void SetFieldsFICEventHeader(const std::vector<IndexMap>& imap, AnalysisTree::EventHeader* evehead, const std::vector<FicCarrier>& ficc);
 std::vector<std::string> GetDFNames(const std::string& fileName);
+int DetermineFieldIdByName(const std::vector<IndexMap>& iMap, const std::string& name);
 bool string_to_bool(const std::string& str);
 
 void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int maxEntries) {
@@ -100,6 +102,8 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
   };
 
   int sb_status_field_id;
+  int collision_id_field_id_in_evehead;
+  int collision_id_field_id_in_cand;
   int iGlobalEntry{0};
 
   auto dirNames = GetDFNames(fileName);
@@ -122,17 +126,18 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
     if(!isConfigInitialized) {
       CreateConfiguration(treeEvent, "Ev_", EventsConfig, eventsMap);
       eventValues.resize(eventsMap.size());
+      collision_id_field_id_in_evehead = DetermineFieldIdByName(eventsMap, "fIndexCollisions");
       config_.AddBranchConfig(EventsConfig);
       eve_header_ = new AnalysisTree::EventHeader(EventsConfig.GetId());
+      eve_header_->Init(EventsConfig);
       treeEvent->Branch((EventsConfig.GetName() + ".").c_str(), "AnalysisTree::EventHeader", &eve_header_);
 
       CreateConfiguration(treeKF, "KF_", CandidatesConfig, candidateMap);
       kfLiteSepar = candidateMap.size();
       CreateConfiguration(treeLite, "Lite_", CandidatesConfig, candidateMap);
       candValues.resize(candidateMap.size());
-      sb_status_field_id = std::distance(candidateMap.begin(),
-                                         std::find_if(candidateMap.begin(), candidateMap.end(),
-                                                      [](const IndexMap& p) { return p.name_ == "fSigBgStatus"; }));
+      sb_status_field_id = DetermineFieldIdByName(candidateMap, "fSigBgStatus");
+      collision_id_field_id_in_cand = DetermineFieldIdByName(candidateMap, "fIndexCollisions");
       config_.AddBranchConfig(CandidatesConfig);
       candidates_ = new AnalysisTree::Particles(CandidatesConfig.GetId());
       tree_->Branch((CandidatesConfig.GetName() + ".").c_str(), "AnalysisTree::Particles", &candidates_);
@@ -156,12 +161,9 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
       isConfigInitialized = true;
     }
 
-    candidates_->ClearChannels();
-    if(isMC) {
-      simulated_->ClearChannels();
-      cand2sim_->Clear();
-
-      generated_->ClearChannels();
+    for(int iV=0; iV<eventValues.size(); iV++) {
+      TBranch* branch = treeEvent->GetBranch(eventsMap.at(iV).name_.c_str());
+      SetAddressFIC(branch, eventsMap.at(iV), eventValues.at(iV));
     }
 
     for(int iV=0; iV<candValues.size(); iV++) {
@@ -180,38 +182,82 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
       }
     }
 
-    const int nEntries = treeKF->GetEntries();
-    if(treeLite->GetEntries() != nEntries || (isMC && treeMC->GetEntries() != nEntries)) {
-      throw std::runtime_error("treeLite->GetEntries() != nEntries || treeMC->GetEntries() != nEntries");
+    const int nEntriesKF = treeKF->GetEntries();
+    if(treeLite->GetEntries() != nEntriesKF || (isMC && treeMC->GetEntries() != nEntriesKF)) {
+      throw std::runtime_error("treeLite->GetEntries() != nEntriesKF || treeMC->GetEntries() != nEntriesKF");
     }
 
-    for(int iEntry=0; iEntry<nEntries; iEntry++) {
-      if(maxEntries > 0 && iGlobalEntry >= maxEntries) break;
-      treeKF->GetEntry(iEntry);
-      treeLite->GetEntry(iEntry);
-      if(isMC) treeMC->GetEntry(iEntry);
+    const int nEntriesEve = treeEvent->GetEntries();
+    int EntryKFToStart{0};
+    for(int iEntryEve=0; iEntryEve<nEntriesEve; iEntryEve++) {
+      candidates_->ClearChannels();
+      if(isMC) {
+        simulated_->ClearChannels();
+        cand2sim_->Clear();
 
-      auto& candidate = candidates_->AddChannel(config_.GetBranchConfig(candidates_->GetId()));
-      SetFieldsFIC(candidateMap, candidate, candValues);
-
-      if(isMC && (candValues.at(sb_status_field_id).int_ == 1 || candValues.at(sb_status_field_id).int_ == 2)) {
-
-        auto& simulated = simulated_->AddChannel(config_.GetBranchConfig(simulated_->GetId()));
-        SetFieldsFIC(simulatedMap, simulated, simValues);
-
-        cand2sim_->AddMatch(candidate.GetId(), simulated.GetId());
+        generated_->ClearChannels();
       }
-      ++iGlobalEntry;
-    }
-    if(isMC) {
-      const int nGenEntries = treeGen->GetEntries();
-      for(int iEntry=0; iEntry<nGenEntries; iEntry++) {
-        treeGen->GetEntry(iEntry);
-        auto& generated = generated_->AddChannel(config_.GetBranchConfig(generated_->GetId()));
-        SetFieldsFIC(generatedMap, generated, genValues);
+
+      treeEvent->GetEntry(iEntryEve);
+      SetFieldsFICEventHeader(eventsMap, eve_header_, eventValues);
+
+      const int indexCollision = eventValues.at(collision_id_field_id_in_evehead).int_;
+
+      for(int iEntryKF = EntryKFToStart; iEntryKF<nEntriesKF; ) {
+        treeKF->GetEntry(iEntryKF);
+        treeLite->GetEntry(iEntryKF);
+        if(isMC) treeMC->GetEntry(iEntryKF);
+
+        const int candIndexCollision = candValues.at(collision_id_field_id_in_cand).int_;
+//        std::cout << "indexCollision = " << indexCollision << "\tcandIndexCollision = " << candIndexCollision << "\n";
+        if(candIndexCollision < indexCollision) {
+          iEntryKF++;
+        } else if(candIndexCollision == indexCollision) {
+          iEntryKF++;
+          auto& candidate = candidates_->AddChannel(config_.GetBranchConfig(candidates_->GetId()));
+          SetFieldsFICParticle(candidateMap, candidate, candValues);
+
+          if(isMC && (candValues.at(sb_status_field_id).int_ == 1 || candValues.at(sb_status_field_id).int_ == 2)) {
+
+            auto& simulated = simulated_->AddChannel(config_.GetBranchConfig(simulated_->GetId()));
+            SetFieldsFICParticle(simulatedMap, simulated, simValues);
+
+            cand2sim_->AddMatch(candidate.GetId(), simulated.GetId());
+          }
+        } else {
+          EntryKFToStart = iEntryKF; // need -1?
+          break;
+        }
       }
+      tree_->Fill();
     }
-    tree_->Fill();
+
+//    for(int iEntry=0; iEntry<nEntriesKF; iEntry++) {
+//      if(maxEntries > 0 && iGlobalEntry >= maxEntries) break;
+//      treeKF->GetEntry(iEntry);
+//      treeLite->GetEntry(iEntry);
+//      if(isMC) treeMC->GetEntry(iEntry);
+//
+//      auto& candidate = candidates_->AddChannel(config_.GetBranchConfig(candidates_->GetId()));
+//      SetFieldsFICParticle(candidateMap, candidate, candValues);
+//
+//      if(isMC && (candValues.at(sb_status_field_id).int_ == 1 || candValues.at(sb_status_field_id).int_ == 2)) {
+//
+//        auto& simulated = simulated_->AddChannel(config_.GetBranchConfig(simulated_->GetId()));
+//        SetFieldsFICParticle(simulatedMap, simulated, simValues);
+//
+//        cand2sim_->AddMatch(candidate.GetId(), simulated.GetId());
+//      }
+//      ++iGlobalEntry;
+//    }
+//    if(isMC) {
+//      const int nGenEntries = treeGen->GetEntries();
+//      for(int iEntry=0; iEntry<nGenEntries; iEntry++) {
+//        treeGen->GetEntry(iEntry);
+//        auto& generated = generated_->AddChannel(config_.GetBranchConfig(generated_->GetId()));
+//        SetFieldsFICParticle(generatedMap, generated, genValues);
+//      }
+//    }
     fileIn->Close();
   }
 
@@ -265,12 +311,21 @@ void SetAddressFIC(TBranch* branch, const IndexMap& imap, FicCarrier& ficc) {
   else if(imap.field_type_ == "TLeafS") branch->SetAddress(&ficc.short_);
 }
 
-void SetFieldsFIC(const std::vector<IndexMap>& imap, AnalysisTree::Particle& particle, const std::vector<FicCarrier>& ficc) {
+void SetFieldsFICParticle(const std::vector<IndexMap>& imap, AnalysisTree::Particle& particle, const std::vector<FicCarrier>& ficc) {
   for(int iV=0; iV<ficc.size(); iV++) {
     if     (imap.at(iV).field_type_ == "TLeafF") particle.SetField(ficc.at(iV).float_, imap.at(iV).index_);
     else if(imap.at(iV).field_type_ == "TLeafI") particle.SetField(ficc.at(iV).int_, imap.at(iV).index_);
     else if(imap.at(iV).field_type_ == "TLeafB") particle.SetField(static_cast<int>(ficc.at(iV).char_), imap.at(iV).index_);
     else if(imap.at(iV).field_type_ == "TLeafS") particle.SetField(static_cast<int>(ficc.at(iV).short_), imap.at(iV).index_);
+  }
+}
+
+void SetFieldsFICEventHeader(const std::vector<IndexMap>& imap, AnalysisTree::EventHeader* evehead, const std::vector<FicCarrier>& ficc) {
+  for(int iV=0; iV<ficc.size(); iV++) {
+    if     (imap.at(iV).field_type_ == "TLeafF") evehead->SetField(ficc.at(iV).float_, imap.at(iV).index_);
+    else if(imap.at(iV).field_type_ == "TLeafI") evehead->SetField(ficc.at(iV).int_, imap.at(iV).index_);
+    else if(imap.at(iV).field_type_ == "TLeafB") evehead->SetField(static_cast<int>(ficc.at(iV).char_), imap.at(iV).index_);
+    else if(imap.at(iV).field_type_ == "TLeafS") evehead->SetField(static_cast<int>(ficc.at(iV).short_), imap.at(iV).index_);
   }
 }
 
@@ -290,6 +345,10 @@ std::vector<std::string> GetDFNames(const std::string& fileName) {
   fileIn->Close();
 
   return result;
+}
+
+int DetermineFieldIdByName(const std::vector<IndexMap>& iMap, const std::string& name) {
+  return std::distance(iMap.begin(),std::find_if(iMap.begin(), iMap.end(), [&name](const IndexMap& p) { return p.name_ == name; }));
 }
 
 bool string_to_bool(const std::string& str) {
