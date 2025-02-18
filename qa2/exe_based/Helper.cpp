@@ -45,19 +45,31 @@ TPaveText Helper::ConvertHistoQuantitiesToText(const HistoQuantities& q, float x
   return text;
 }
 
-std::vector<std::pair<std::string, std::string>> Helper::FindCuts(const TFile* fileIn, std::string name_start) {
+std::string Helper::getSubstringBeforeLastSlash(const std::string& input) {
+  size_t pos = input.rfind('/');  // Find the last occurrence of the slash
+
+  if (pos == std::string::npos) {
+    return "";  // No slash found, return an empty string
+  }
+
+  return input.substr(0, pos);  // Return the substring before the last slash
+}
+
+std::vector<std::pair<std::string, std::string>> Helper::FindCuts(TFile* fileIn, std::string name_start) {
   if (name_start.back() != '_') name_start.push_back('_');
   std::vector<std::pair<std::string, std::string>> result;
 
-  auto lok = fileIn->GetListOfKeys();
+  const std::string name_start_before_slash = getSubstringBeforeLastSlash(name_start);
+  auto lok = fileIn->GetDirectory(name_start_before_slash.c_str())->GetListOfKeys();
   const int nDirs = lok->GetEntries();
   for (int iDir = 0; iDir < nDirs; iDir++) {
     const std::string dirName = lok->At(iDir)->GetName();
-    if (dirName.substr(0, name_start.size()) != name_start) continue;
+    const std::string fullDirName = !name_start_before_slash.empty() ? name_start_before_slash + "/" + dirName : dirName;
+    if (fullDirName.substr(0, name_start.size()) != name_start) continue;
     std::pair<std::string, std::string> cutPair;
     bool isFirstCutRead{false};
-    for (int iChar = name_start.size(); iChar < dirName.size(); iChar++) {
-      char letter = dirName.at(iChar);
+    for (int iChar = name_start.size(); iChar < fullDirName.size(); iChar++) {
+      char letter = fullDirName.at(iChar);
       if (letter != '_') {
         if (!isFirstCutRead) cutPair.first.push_back(letter);
         else cutPair.second.push_back(letter);
@@ -70,7 +82,7 @@ std::vector<std::pair<std::string, std::string>> Helper::FindCuts(const TFile* f
 
   std::sort(result.begin(), result.end(), stofCompare);
 
-  if (result.size() == 0) {
+  if (result.empty()) {
     throw std::runtime_error("FindCuts(): " + name_start + " cuts are not present");
   }
 

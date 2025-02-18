@@ -47,9 +47,12 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool isDoF
 //  name    cutname  title          unit    logres logpull
     {"P",   "psim",  "p^{mc}",     "GeV/c", false, false},
     {"Pt",  "pTsim", "p_{T}^{mc}", "GeV/c", false, false},
-    {"Xsv", "psim",  "p^{mc}",     "GeV/c", false, false},
-    {"Ysv", "psim",  "p^{mc}",     "GeV/c", false, false},
-    {"Zsv", "psim",  "p^{mc}",     "GeV/c", false, false},
+    {"Xpv", "nPVC",  "numPVTracks","",      false, false},
+    {"Ypv", "nPVC",  "numPVTracks","",      false, false},
+    {"Zpv", "nPVC",  "numPVTracks","",      false, false},
+    {"Xsv", "pTsim", "p_{T}^{mc}","GeV/c", false, false},
+    {"Ysv", "pTsim", "p_{T}^{mc}","GeV/c", false, false},
+    {"Zsv", "pTsim", "p_{T}^{mc}","GeV/c", false, false},
     {"L",   "lsim",  "L^{mc}",     "cm",    false, false},
     {"T",   "tsim",  "T^{mc}",     "ps",    false, false},
   };
@@ -68,8 +71,9 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool isDoF
   for(auto& var : vars) {
     bool is_first_canvas{true};
     std::string printing_bracket = "(";
+    const std::string comma = var.cut_unit_ == "" ? "" : ", ";
 
-    auto cutsVar = FindCuts(fileIn, "Candidates_Simulated_"  + promptness + "_" + var.cut_name_);
+    auto cutsVar = FindCuts(fileIn, "PullsAndResiduals/Candidates_Simulated_"  + promptness + "_" + var.cut_name_);
 
     std::vector<TGraphMultiErrors*> grMu;
     std::vector<TGraphErrors*> grSigma;
@@ -80,7 +84,7 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool isDoF
       grSigma.at(iRP) = new TGraphErrors(cutsVar.size());
       for(auto& g : (std::vector<TGraph*>){grMu.at(iRP), grSigma.at(iRP)}) {
         g->SetTitle("");
-        g->GetXaxis()->SetTitle((var.cut_title_ + ", " + var.cut_unit_).c_str());
+        g->GetXaxis()->SetTitle((var.cut_title_ + comma + var.cut_unit_).c_str());
         g->SetMarkerStyle(kFullSquare);
         g->SetMarkerSize(2);
         g->SetMarkerColor(kBlue);
@@ -106,7 +110,7 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool isDoF
       for(int iRP=0; iRP<resPulls.size(); iRP++) {
         const std::string currentFileOutName = fileOutName + "_" + var.name_ + "_" +  resPulls.at(iRP).prefix_;
         const std::string cutName = var.cut_name_ + "_"  + cV.first + "_"  + cV.second;
-        const std::string histoName = "Candidates_Simulated_" + promptness + "_"  + cutName + "/" +  resPulls.at(iRP).prefix_ + "_"  + var.name_ + "_"  + cutName;
+        const std::string histoName = "PullsAndResiduals/Candidates_Simulated_" + promptness + "_"  + cutName + "/" +  resPulls.at(iRP).prefix_ + "_"  + var.name_ + "_"  + cutName;
         TH1D* hIn = fileIn->Get<TH1D>(histoName.c_str());
         if(hIn == nullptr) {
           throw std::runtime_error("hIn == nullptr for " + var.name_ + "; " + var.cut_name_ + "; " + cV.first + "; "  + cV.second + "; " + resPulls.at(iRP).prefix_);
@@ -175,6 +179,7 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool isDoF
       grMu.at(iRP)->Draw("AP; 2");
       zeroLine->Draw("L same");
       legBoth.Draw("same");
+      if(var.name_.find("pv") == std::string::npos) AddOneLineText(promptness, 0.74, 0.82, 0.87, 0.90);
       ccMuStat.Print((currentFileOutName + ".pdf").c_str(), "pdf");
       if(isSaveRoot) grMu.at(iRP)->Write("mu");
 
@@ -183,12 +188,14 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool isDoF
       CustomizeGraphYRange(grMu.at(iRP));
       zeroLine->Draw("L same");
       legStat.Draw("same");
+      if(var.name_.find("pv") == std::string::npos) AddOneLineText(promptness, 0.74, 0.82, 0.87, 0.90);
       ccMuWidth.Print((currentFileOutName + ".pdf").c_str(), "pdf");
 
       TCanvas ccSigma(("cc" +  resPulls.at(iRP).prefix_ + "Sigma").c_str(), ("cc" +  resPulls.at(iRP).prefix_ + "Sigma").c_str(), 1200, 800);
       grSigma.at(iRP)->Draw("AP");
       if(resPulls.at(iRP).is_draw_oneline_on_stddev_) oneLine->Draw("L same");
       legStat.Draw("same");
+      if(var.name_.find("pv") == std::string::npos) AddOneLineText(promptness, 0.74, 0.82, 0.87, 0.90);
       ccSigma.Print((currentFileOutName + ".pdf").c_str(), "pdf");
       if(isSaveRoot) grSigma.at(iRP)->Write("sigma");
 

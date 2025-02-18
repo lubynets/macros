@@ -30,7 +30,9 @@ struct HistoQuantities {
   float stddev_err_{-999.f};
 };
 
-std::vector<std::pair<std::string, std::string>> FindCuts(const TFile* fileIn, std::string name_start);
+std::string getSubstringBeforeLastSlash(const std::string& input);
+
+std::vector<std::pair<std::string, std::string>> FindCuts(TFile* fileIn, std::string name_start);
 
 bool stofCompare(std::pair<std::string, std::string> a, std::pair<std::string, std::string> b);
 
