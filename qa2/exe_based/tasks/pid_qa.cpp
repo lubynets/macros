@@ -21,8 +21,8 @@ void pid_qa2(const std::string& fileName) {
 //    const std::string statusDcaFSel = "isDcaFSel";
   const std::string statusDcaFSel = "noDcaFSel";
 
-  const bool setLogY = false;
-//  const bool setLogY = true;
+//  const bool setLogY = false;
+  const bool setLogY = true;
 
   TString currentMacroPath = __FILE__;
   TString directory = currentMacroPath(0, currentMacroPath.Last('/'));
@@ -36,11 +36,11 @@ void pid_qa2(const std::string& fileName) {
   const std::string fileOutName = "pid_qa2";
 
   std::vector<std::string> SignalSpecies {
-//    "prompt",
-//    "nonprompt",
+    "prompt",
+    "nonprompt",
 //    "background",
 //    "wrongswap",
-    "data",
+//    "data",
   };
 
   std::vector<std::string> PidDetectors{"Tpc", "Tof", "TpcTof"};
@@ -51,7 +51,7 @@ void pid_qa2(const std::string& fileName) {
       bool is_first_canvas{true};
       const std::string currentFileOutName = fileOutName + "." + ss + "." + prong + ".pdf";
       for(auto& det : PidDetectors) {
-        const std::string histoName = "Candidates_" + ss + "_" + statusDcaFSel + "_total/nSig" + det + prong + "_" + ss + "_" + statusDcaFSel;
+        const std::string histoName = "PidQA/Candidates_" + ss + "_" + statusDcaFSel + "_total/nSig" + det + prong + "_" + ss + "_" + statusDcaFSel;
         TH1D* histo = fileIn->Get<TH1D>(histoName.c_str());
         if(histo == nullptr) throw std::runtime_error(histoName + " is not present");
 
@@ -68,7 +68,7 @@ void pid_qa2(const std::string& fileName) {
         cc.Print((currentFileOutName + printing_bracket).c_str(), "pdf");
         is_first_canvas = false;
       } // PidDetectors
-      const std::string histoName = "Candidates_" + ss + "_" + statusDcaFSel + "_total/nSig2D_" + prong + "_" + ss + "_" + statusDcaFSel;
+      const std::string histoName = "PidQA/Candidates_" + ss + "_" + statusDcaFSel + "_total/nSig2D_" + prong + "_" + ss + "_" + statusDcaFSel;
       TH2D* histo = fileIn->Get<TH2D>(histoName.c_str());
       if(histo == nullptr) throw std::runtime_error(histoName + " is not present");
 
