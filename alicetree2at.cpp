@@ -116,6 +116,7 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
 
   for(auto& dirname : dirNames) {
     TFile* fileIn = TFile::Open(fileName.c_str(), "read");
+    bool is_gentree_processed{false};
 
     TTree* treeKF = fileIn->Get<TTree>((dirname + "/O2hfcandlckf").c_str());
     TTree* treeLite = fileIn->Get<TTree>((dirname + "/O2hfcandlclite").c_str());
@@ -130,7 +131,7 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
       config_.AddBranchConfig(EventsConfig);
       eve_header_ = new AnalysisTree::EventHeader(EventsConfig.GetId());
       eve_header_->Init(EventsConfig);
-      treeEvent->Branch((EventsConfig.GetName() + ".").c_str(), "AnalysisTree::EventHeader", &eve_header_);
+      tree_->Branch((EventsConfig.GetName() + ".").c_str(), "AnalysisTree::EventHeader", &eve_header_);
 
       CreateConfiguration(treeKF, "KF_", CandidatesConfig, candidateMap);
       kfLiteSepar = candidateMap.size();
@@ -228,38 +229,20 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
           EntryKFToStart = iEntryKF; // need -1?
           break;
         }
-      }
+      } // KF entries
+      if(isMC && !is_gentree_processed) {
+        const int nGenEntries = treeGen->GetEntries();
+        for(int iEntry=0; iEntry<nGenEntries; iEntry++) {
+          treeGen->GetEntry(iEntry);
+          auto& generated = generated_->AddChannel(config_.GetBranchConfig(generated_->GetId()));
+          SetFieldsFICParticle(generatedMap, generated, genValues);
+        } // Gen entries
+        is_gentree_processed = true;
+      } // isMC && !is_gentree_processed
       tree_->Fill();
-    }
-
-//    for(int iEntry=0; iEntry<nEntriesKF; iEntry++) {
-//      if(maxEntries > 0 && iGlobalEntry >= maxEntries) break;
-//      treeKF->GetEntry(iEntry);
-//      treeLite->GetEntry(iEntry);
-//      if(isMC) treeMC->GetEntry(iEntry);
-//
-//      auto& candidate = candidates_->AddChannel(config_.GetBranchConfig(candidates_->GetId()));
-//      SetFieldsFICParticle(candidateMap, candidate, candValues);
-//
-//      if(isMC && (candValues.at(sb_status_field_id).int_ == 1 || candValues.at(sb_status_field_id).int_ == 2)) {
-//
-//        auto& simulated = simulated_->AddChannel(config_.GetBranchConfig(simulated_->GetId()));
-//        SetFieldsFICParticle(simulatedMap, simulated, simValues);
-//
-//        cand2sim_->AddMatch(candidate.GetId(), simulated.GetId());
-//      }
-//      ++iGlobalEntry;
-//    }
-//    if(isMC) {
-//      const int nGenEntries = treeGen->GetEntries();
-//      for(int iEntry=0; iEntry<nGenEntries; iEntry++) {
-//        treeGen->GetEntry(iEntry);
-//        auto& generated = generated_->AddChannel(config_.GetBranchConfig(generated_->GetId()));
-//        SetFieldsFICParticle(generatedMap, generated, genValues);
-//      }
-//    }
+    } // event entries
     fileIn->Close();
-  }
+  } // dirNames
 
   out_file_->cd();
   config_.Write("Configuration");
