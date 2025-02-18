@@ -46,7 +46,7 @@ void treeKF_qa(const std::string& filelist){
   auto* task = new QA::Task;
   task->SetOutputFileName("treeKF_qa.root");
 
-  TopoQA(*task);
+//   TopoQA(*task);
   PidQA(*task);
 
   man->AddTask(task);
@@ -106,9 +106,9 @@ void PidQA(QA::Task& task) {
         for(int iDet=0; iDet<nPidDetectors; iDet++) {
           Cuts* cutsTotalWithTof = new Cuts(*cutsTotal);
           if(PidDetectors.at(iDet) == "Tof") cutsTotalWithTof->AddCut(tofCut);
-          const float axisEdge = 200;
+          const float axisEdge = 1000;
           const float axisLeftEdge = PidDetectors.at(iDet) == "TpcTof" ? 0 : -axisEdge;
-          task.AddH1(varPid.at(iDet).at(iPs).GetName() + "_" + dt.GetTitle() + "_" + dcaSel.GetTitle(), {"#sigma_{" + PidDetectors.at(iDet) + "} {" + ProngSpecies.at(iPs).second + "}", varPid.at(iDet).at(iPs), {10000, axisLeftEdge, axisEdge}}, cutsTotalWithTof);
+          task.AddH1(varPid.at(iDet).at(iPs).GetName() + "_" + dt.GetTitle() + "_" + dcaSel.GetTitle(), {"#sigma_{" + PidDetectors.at(iDet) + "} {" + ProngSpecies.at(iPs).second + "}", varPid.at(iDet).at(iPs), {2000, axisLeftEdge, axisEdge}}, cutsTotalWithTof);
           task.AddH2(varPid.at(iDet).at(iPs).GetName() + "VsP_" + dt.GetTitle() + "_" + dcaSel.GetTitle(),
                      {"p, GeV/c", Variable::FromString("Candidates.KF_fP"), {160, 0, 16}},
                      {"#sigma_{" + PidDetectors.at(iDet) + "} {" + ProngSpecies.at(iPs).second + "}", varPid.at(iDet).at(iPs), {400, axisLeftEdge, 20}},

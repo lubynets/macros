@@ -49,10 +49,10 @@ void EfficiencyQA(QA::Task& task) {
   SimpleCut rapidityCutRec = RangeCut(Variable::FromString("Candidates.Lite_fY"), rapidityCut.first, rapidityCut.second);
   SimpleCut rapidityCutGen = RangeCut(Variable::FromString("Generated.Gen_fY"), rapidityCut.first, rapidityCut.second);
   const std::vector<Quantity> vars{
-      {"Y", "Lite_fY", "Gen_fY", "y", "", {nbins, -1, 1}, {}, {}},
-      {"Pt", "KF_fPt", "Gen_fPt", "p_{T}", "GeV/c", {nbins, 0, 16}, {rapidityCutRec}, {rapidityCutGen}},
-      {"L", "KF_fDecayLength", "Gen_fLDecay", "L", "cm", {nbins, 0, 0.2}, {rapidityCutRec}, {rapidityCutGen}},
-      {"T", "KF_fT", "Gen_fTDecay", "T", "ps", {nbins, 0, 2}, {rapidityCutRec}, {rapidityCutGen}},
+    {"Y", "Lite_fY", "Gen_fY", "y", "", {nbins, -1, 1}, {}, {}},
+    {"Pt", "KF_fPt", "Gen_fPt", "p_{T}", "GeV/c", {nbins, 0, 16}, {rapidityCutRec}, {rapidityCutGen}},
+    {"L", "KF_fDecayLength", "Gen_fLDecay", "L", "cm", {nbins, 0, 0.2}, {rapidityCutRec}, {rapidityCutGen}},
+    {"T", "KF_fT", "Gen_fTDecay", "T", "ps", {nbins, 0, 2}, {rapidityCutRec}, {rapidityCutGen}},
   };
 
   struct Promptness {
@@ -86,7 +86,7 @@ void EfficiencyQA(QA::Task& task) {
                {vars.at(0).title_ + vars.at(0).unit_, Variable::FromString("Generated." + vars.at(0).name_in_tree_gen_), vars.at(0).axis_},
                {vars.at(1).title_ + ", " + vars.at(1).unit_, Variable::FromString("Generated." + vars.at(1).name_in_tree_gen_), vars.at(1).axis_}, genCut);
   } // promptnesses
-} //void EfficiencyQA(QA::Task& task)
+} // EfficiencyQA()
 
 void PullsAndResidualsQA(QA::Task& task) {
   task.SetTopLevelDirName("PullsAndResiduals");
@@ -113,16 +113,17 @@ void PullsAndResidualsQA(QA::Task& task) {
   auto pCuts = HelperFunctions::CreateRangeCuts({0.f, 2.f, 4.f, 6.f, 8.f, 12.f, 16.f}, "psim_", "Simulated.Sim_fP", 2);
   auto lCuts = HelperFunctions::CreateRangeCuts({0.f, 0.02f, 0.04f, 0.06f, 0.08f, 0.12f, 0.16f, 0.20f}, "lsim_", "Simulated.Sim_fLDecay", 2);
   auto tCuts = HelperFunctions::CreateRangeCuts({0.f, 0.2f, 0.4f, 0.6f, 0.8f, 1.2f, 1.6f, 2.f}, "tsim_", "Simulated.Sim_fTDecay", 2);
-  auto nPVCCuts = HelperFunctions::CreateEqualCuts({0, 1, 2, 3}, "nPVC_", "Candidates.Lite_fNProngsContributorsPV", 0);
+  constexpr float Shift001 = 0.01;
+  auto nPVCCuts = HelperFunctions::CreateRangeCuts({0, 10-Shift001, 20-Shift001, 40-Shift001, 60-Shift001, 80-Shift001, 100}, "nPVC_", "Candidates.KF_fMultNTracksPV", 2);
 
   const int nbins = 400;
 
   std::vector<Quantity> vars {
     {"P",    "KF_fP",           "Sim_fP",      "KF_fErrP",             "p",      "GeV/c", {nbins, 0,    16 }, {nbins, -1, 1      }, {nbins, -5,  5 }, pCuts   },
     {"Pt",   "KF_fPt",          "Sim_fPt",     "KF_fErrPt",            "p_{T}",  "GeV/c", {nbins, 0,    16 }, {nbins, -1, 1      }, {nbins, -5,  5 }, pTCuts  },
-    {"Xsv",  "KF_fX",           "Sim_fXDecay", "KF_fErrX",             "X_{SV}", "cm",    {nbins, -0.5, 0.5}, {nbins, -0.05, 0.05}, {nbins, -5,  5 }, pCuts   },
-    {"Ysv",  "KF_fY",           "Sim_fYDecay", "KF_fErrY",             "Y_{SV}", "cm",    {nbins, -0.5, 0.5}, {nbins, -0.05, 0.05}, {nbins, -5,  5 }, pCuts   },
-    {"Zsv",  "KF_fZ",           "Sim_fZDecay", "KF_fErrZ",             "Z_{SV}", "cm",    {nbins, -20,  20 }, {nbins, -0.05, 0.05}, {nbins, -5,  5 }, pCuts   },
+    {"Xsv",  "KF_fX",           "Sim_fXDecay", "KF_fErrX",             "X_{SV}", "cm",    {nbins, -0.5, 0.5}, {nbins, -0.05, 0.05}, {nbins, -5,  5 }, pTCuts  },
+    {"Ysv",  "KF_fY",           "Sim_fYDecay", "KF_fErrY",             "Y_{SV}", "cm",    {nbins, -0.5, 0.5}, {nbins, -0.05, 0.05}, {nbins, -5,  5 }, pTCuts  },
+    {"Zsv",  "KF_fZ",           "Sim_fZDecay", "KF_fErrZ",             "Z_{SV}", "cm",    {nbins, -20,  20 }, {nbins, -0.05, 0.05}, {nbins, -5,  5 }, pTCuts  },
     {"Xpv",  "Lite_fPosX",      "Sim_fXEvent", "KF_fErrPVX",           "X_{PV}", "cm",    {nbins, -0.1, 0.1}, {nbins, -0.05, 0.05}, {nbins, -5,  5 }, nPVCCuts},
     {"Ypv",  "Lite_fPosY",      "Sim_fYEvent", "KF_fErrPVY",           "Y_{PV}", "cm",    {nbins, -0.1, 0.1}, {nbins, -0.05, 0.05}, {nbins, -5,  5 }, nPVCCuts},
     {"Zpv",  "Lite_fPosZ",      "Sim_fZEvent", "KF_fErrPVZ",           "Z_{PV}", "cm",    {nbins, -20,  20 }, {nbins, -0.05, 0.05}, {nbins, -5,  5 }, nPVCCuts},
@@ -173,7 +174,7 @@ void PullsAndResidualsQA(QA::Task& task) {
       } // var.slice_cuts_
     } // vars
   } // promptnesses
-}
+} // PullsAndResidualsQA()
 
 int main(int argc, char* argv[]){
   if (argc < 2) {
