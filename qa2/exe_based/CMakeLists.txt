@@ -10,6 +10,7 @@ SET(EXECUTABLES
     treeKF_qa2diff
     pid_qa
     graph_qa3
+    efficiency
 )
 
 SET(SOURCES

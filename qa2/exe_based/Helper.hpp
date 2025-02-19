@@ -42,9 +42,13 @@ TPaveText ConvertHistoQuantitiesToText(const HistoQuantities& q, float x1, float
 
 void CustomizeGraphYRange(TGraphMultiErrors* graph, int ne = 1, TF1* f = nullptr);
 
+void CustomizeHistogramsYRange(const std::vector<TH1*>& histos, double absoluteMaximum=1e9);
+
 void SetLineDrawParameters(std::vector<TF1*> fs, int lineWidth = 1, int lineStyle = 7, Color_t lineColor = kBlack);
 
 TF1* HorizontalLine4Graph(float level, TGraph* graph);
+
+bool string_to_bool(const std::string& str);
 
 template<typename T>
 inline std::string to_string_with_precision(const T a_value, const int n=2) {

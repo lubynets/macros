@@ -149,3 +149,21 @@ void Helper::AddOneLineText(const std::string& text, float x1, float y1, float x
   textPtr->AddText(text.c_str());
   textPtr->Draw("same");
 }
+
+bool Helper::string_to_bool(const std::string& str) {
+  if(str == "true") return true;
+  else if(str == "false") return false;
+  else throw std::runtime_error("string_to_bool(): argument must be either true or false");
+}
+
+void Helper::CustomizeHistogramsYRange(const std::vector<TH1*>& histos, double absoluteMaximum) {
+  double max = -1e9;
+  for(auto& histo : histos) {
+    max = std::max(max, histo->GetMaximum());
+  }
+  max *= 1.1;
+  max = std::min(max, absoluteMaximum);
+  for(auto& histo : histos) {
+    histo->GetYaxis()->SetRangeUser(0, max);
+  }
+}
