@@ -32,13 +32,14 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
     int rebin_factor_;
     bool logy_eff_;
     bool logy_yield_;
+    std::string cut_text_;
   };
 
   std::vector<Variable> variables {
-    {"Y",  2, false, false},
-    {"Pt", 5, false, true },
-    {"L",  5, false, true },
-    {"T",  5, false, true },
+    {"Y",  2, false, false, ""},
+    {"Pt", 5, false, true,  "|y| < 0.8" },
+    {"L",  5, false, true,  "|y| < 0.8"  },
+    {"T",  5, false, true,  "|y| < 0.8"  },
   };
 
   TLegend* legEff = new TLegend(0.75, 0.7, 0.95, 0.82);
@@ -96,18 +97,19 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
                             bool logy,
                             const std::string& oneLineText = "",
                             TLegend* leg = nullptr) {
-        TCanvas cc("cc", "cc", 1200, 800);
-        cc.SetLogy(logy);
-        histos.at(0)->Draw("");
-        histos.at(1)->Draw("same");
-        if(logy) {
-          for(auto& histo : histos) {
-            histo->GetYaxis()->SetRangeUser(0.1, histo->GetMaximum()*2);
-          }
+      TCanvas cc("cc", "cc", 1200, 800);
+      cc.SetLogy(logy);
+      histos.at(0)->Draw("");
+      histos.at(1)->Draw("same");
+      if(logy) {
+        for(auto& histo : histos) {
+          histo->GetYaxis()->SetRangeUser(std::max(0.1, histo->GetMinimum()/2), histo->GetMaximum()*2);
         }
-        if(leg != nullptr) leg->Draw("same");
-        if(!oneLineText.empty()) AddOneLineText(oneLineText, 0.74, 0.82, 0.87, 0.90);
-        cc.Print((namePrefix + ".pdf" + printing_bracket).c_str(), "pdf");
+      }
+      if(leg != nullptr) leg->Draw("same");
+      AddOneLineText(oneLineText, 0.74, 0.82, 0.87, 0.90);
+      AddOneLineText(var.cut_text_, 0.60, 0.82, 0.73, 0.90);
+      cc.Print((namePrefix + ".pdf" + printing_bracket).c_str(), "pdf");
     };
 
     PrintCanvas1D({histoEffPrompt, histoEffNonPrompt}, "efficiency", var.logy_eff_, "", legEff);
@@ -148,11 +150,11 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
   auto PrintCanvas2D = [&] (TH2D* histo,
                           const std::string& namePrefix,
                           const std::string& oneLineText="") {
-      TCanvas cc("cc", "cc", 1200, 800);
-      cc.SetRightMargin(0.16);
-      histo->Draw("colz");
-      if(!oneLineText.empty()) AddOneLineText(oneLineText, 0.69, 0.82, 0.82, 0.90);
-      cc.Print((namePrefix + ".pdf" + printing_bracket).c_str(), "pdf");
+    TCanvas cc("cc", "cc", 1200, 800);
+    cc.SetRightMargin(0.16);
+    histo->Draw("colz");
+    if(!oneLineText.empty()) AddOneLineText(oneLineText, 0.69, 0.82, 0.82, 0.90);
+    cc.Print((namePrefix + ".pdf" + printing_bracket).c_str(), "pdf");
   };
 
   PrintCanvas2D(histoEffPrompt, "efficiency", "prompt");

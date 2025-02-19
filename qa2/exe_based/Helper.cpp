@@ -142,6 +142,7 @@ TF1* Helper::HorizontalLine4Graph(float level, TGraph* graph) {
 }
 
 void Helper::AddOneLineText(const std::string& text, float x1, float y1, float x2, float y2) {
+  if(text.empty()) return;
   TPaveText* textPtr = new TPaveText(x1, y1, x2, y2, "brNDC");
   textPtr->SetFillColor(0);
   textPtr->SetTextSize(0.03);
@@ -164,6 +165,6 @@ void Helper::CustomizeHistogramsYRange(const std::vector<TH1*>& histos, double a
   max *= 1.1;
   max = std::min(max, absoluteMaximum);
   for(auto& histo : histos) {
-    histo->GetYaxis()->SetRangeUser(0, max);
+    histo->GetYaxis()->SetRangeUser(histo->GetMinimum(), max);
   }
 }
