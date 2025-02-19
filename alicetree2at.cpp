@@ -28,8 +28,8 @@ struct FicCarrier {
 };
 
 void SetAddressFIC(TBranch* branch, const IndexMap& imap, FicCarrier& ficc);
-void SetFieldsFICParticle(const std::vector<IndexMap>& imap, AnalysisTree::Particle& particle, const std::vector<FicCarrier>& ficc);
-void SetFieldsFICEventHeader(const std::vector<IndexMap>& imap, AnalysisTree::EventHeader* evehead, const std::vector<FicCarrier>& ficc);
+template <typename T>
+void SetFieldsFIC(const std::vector<IndexMap>& imap, T& obj, const std::vector<FicCarrier>& ficc);
 std::vector<std::string> GetDFNames(const std::string& fileName);
 int DetermineFieldIdByName(const std::vector<IndexMap>& iMap, const std::string& name);
 bool string_to_bool(const std::string& str);
@@ -190,7 +190,7 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
 
     const int nEntriesEve = treeEvent->GetEntries();
     int EntryKFToStart{0};
-    for(int iEntryEve=0; iEntryEve<nEntriesEve; iEntryEve++) {
+    for(int iEntryEve=0; iEntryEve<nEntriesEve && (maxEntries<0 || iGlobalEntry<maxEntries); iEntryEve++, iGlobalEntry++) {
       candidates_->ClearChannels();
       if(isMC) {
         simulated_->ClearChannels();
@@ -200,7 +200,7 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
       }
 
       treeEvent->GetEntry(iEntryEve);
-      SetFieldsFICEventHeader(eventsMap, eve_header_, eventValues);
+      SetFieldsFIC(eventsMap, *eve_header_, eventValues);
 
       const int indexCollision = eventValues.at(collision_id_field_id_in_evehead).int_;
 
@@ -216,12 +216,12 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
         } else if(candIndexCollision == indexCollision) {
           iEntryKF++;
           auto& candidate = candidates_->AddChannel(config_.GetBranchConfig(candidates_->GetId()));
-          SetFieldsFICParticle(candidateMap, candidate, candValues);
+          SetFieldsFIC(candidateMap, candidate, candValues);
 
           if(isMC && (candValues.at(sb_status_field_id).int_ == 1 || candValues.at(sb_status_field_id).int_ == 2)) {
 
             auto& simulated = simulated_->AddChannel(config_.GetBranchConfig(simulated_->GetId()));
-            SetFieldsFICParticle(simulatedMap, simulated, simValues);
+            SetFieldsFIC(simulatedMap, simulated, simValues);
 
             cand2sim_->AddMatch(candidate.GetId(), simulated.GetId());
           }
@@ -235,7 +235,7 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
         for(int iEntry=0; iEntry<nGenEntries; iEntry++) {
           treeGen->GetEntry(iEntry);
           auto& generated = generated_->AddChannel(config_.GetBranchConfig(generated_->GetId()));
-          SetFieldsFICParticle(generatedMap, generated, genValues);
+          SetFieldsFIC(generatedMap, generated, genValues);
         } // Gen entries
         is_gentree_processed = true;
       } // isMC && !is_gentree_processed
@@ -294,21 +294,13 @@ void SetAddressFIC(TBranch* branch, const IndexMap& imap, FicCarrier& ficc) {
   else if(imap.field_type_ == "TLeafS") branch->SetAddress(&ficc.short_);
 }
 
-void SetFieldsFICParticle(const std::vector<IndexMap>& imap, AnalysisTree::Particle& particle, const std::vector<FicCarrier>& ficc) {
+template <typename T>
+void SetFieldsFIC(const std::vector<IndexMap>& imap, T& obj, const std::vector<FicCarrier>& ficc) {
   for(int iV=0; iV<ficc.size(); iV++) {
-    if     (imap.at(iV).field_type_ == "TLeafF") particle.SetField(ficc.at(iV).float_, imap.at(iV).index_);
-    else if(imap.at(iV).field_type_ == "TLeafI") particle.SetField(ficc.at(iV).int_, imap.at(iV).index_);
-    else if(imap.at(iV).field_type_ == "TLeafB") particle.SetField(static_cast<int>(ficc.at(iV).char_), imap.at(iV).index_);
-    else if(imap.at(iV).field_type_ == "TLeafS") particle.SetField(static_cast<int>(ficc.at(iV).short_), imap.at(iV).index_);
-  }
-}
-
-void SetFieldsFICEventHeader(const std::vector<IndexMap>& imap, AnalysisTree::EventHeader* evehead, const std::vector<FicCarrier>& ficc) {
-  for(int iV=0; iV<ficc.size(); iV++) {
-    if     (imap.at(iV).field_type_ == "TLeafF") evehead->SetField(ficc.at(iV).float_, imap.at(iV).index_);
-    else if(imap.at(iV).field_type_ == "TLeafI") evehead->SetField(ficc.at(iV).int_, imap.at(iV).index_);
-    else if(imap.at(iV).field_type_ == "TLeafB") evehead->SetField(static_cast<int>(ficc.at(iV).char_), imap.at(iV).index_);
-    else if(imap.at(iV).field_type_ == "TLeafS") evehead->SetField(static_cast<int>(ficc.at(iV).short_), imap.at(iV).index_);
+    if     (imap.at(iV).field_type_ == "TLeafF") obj.SetField(ficc.at(iV).float_, imap.at(iV).index_);
+    else if(imap.at(iV).field_type_ == "TLeafI") obj.SetField(ficc.at(iV).int_, imap.at(iV).index_);
+    else if(imap.at(iV).field_type_ == "TLeafB") obj.SetField(static_cast<int>(ficc.at(iV).char_), imap.at(iV).index_);
+    else if(imap.at(iV).field_type_ == "TLeafS") obj.SetField(static_cast<int>(ficc.at(iV).short_), imap.at(iV).index_);
   }
 }
 
