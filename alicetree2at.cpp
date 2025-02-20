@@ -319,7 +319,9 @@ std::vector<std::string> GetDFNames(const std::string& fileName) {
 }
 
 int DetermineFieldIdByName(const std::vector<IndexMap>& iMap, const std::string& name) {
-  return std::distance(iMap.begin(),std::find_if(iMap.begin(), iMap.end(), [&name](const IndexMap& p) { return p.name_ == name; }));
+  auto distance = std::distance(iMap.begin(),std::find_if(iMap.begin(), iMap.end(), [&name](const IndexMap& p) { return p.name_ == name; }));
+  if(distance == iMap.size()) throw std::runtime_error("DetermineFieldIdByName(): name " + name + " is missing");
+  return distance;
 }
 
 bool string_to_bool(const std::string& str) {
