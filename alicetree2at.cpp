@@ -33,6 +33,7 @@ void SetFieldsFIC(const std::vector<IndexMap>& imap, T& obj, const std::vector<F
 std::vector<std::string> GetDFNames(const std::string& fileName);
 int DetermineFieldIdByName(const std::vector<IndexMap>& iMap, const std::string& name);
 bool string_to_bool(const std::string& str);
+std::vector<int> findPositions(const std::vector<int>& vec, int M);
 
 void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int maxEntries) {
 
@@ -188,14 +189,18 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
       throw std::runtime_error("treeLite->GetEntries() != nEntriesKF || treeMC->GetEntries() != nEntriesKF");
     }
 
+    std::vector<int> candidateCollisionIndices;
+    for(int iEntryKF = 0; iEntryKF<nEntriesKF; iEntryKF++) {
+      treeKF->GetEntry(iEntryKF);
+      candidateCollisionIndices.emplace_back(candValues.at(collision_id_field_id_in_cand).int_);
+    }
+
     const int nEntriesEve = treeEvent->GetEntries();
-    int EntryKFToStart{0};
     for(int iEntryEve=0; iEntryEve<nEntriesEve && (maxEntries<0 || iGlobalEntry<maxEntries); iEntryEve++, iGlobalEntry++) {
       candidates_->ClearChannels();
       if(isMC) {
         simulated_->ClearChannels();
         cand2sim_->Clear();
-
         generated_->ClearChannels();
       }
 
@@ -203,31 +208,22 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
       SetFieldsFIC(eventsMap, *eve_header_, eventValues);
 
       const int indexCollision = eventValues.at(collision_id_field_id_in_evehead).int_;
+      auto candidatesOfThisCollisionIndices = findPositions(candidateCollisionIndices, indexCollision);
 
-      for(int iEntryKF = EntryKFToStart; iEntryKF<nEntriesKF; ) {
-        treeKF->GetEntry(iEntryKF);
-        treeLite->GetEntry(iEntryKF);
-        if(isMC) treeMC->GetEntry(iEntryKF);
+      for(auto& cOTI : candidatesOfThisCollisionIndices) {
+        treeKF->GetEntry(cOTI);
+        treeLite->GetEntry(cOTI);
+        if(isMC) treeMC->GetEntry(cOTI);
 
-        const int candIndexCollision = candValues.at(collision_id_field_id_in_cand).int_;
-//        std::cout << "indexCollision = " << indexCollision << "\tcandIndexCollision = " << candIndexCollision << "\n";
-        if(candIndexCollision < indexCollision) {
-          iEntryKF++;
-        } else if(candIndexCollision == indexCollision) {
-          iEntryKF++;
-          auto& candidate = candidates_->AddChannel(config_.GetBranchConfig(candidates_->GetId()));
-          SetFieldsFIC(candidateMap, candidate, candValues);
+        auto& candidate = candidates_->AddChannel(config_.GetBranchConfig(candidates_->GetId()));
+        SetFieldsFIC(candidateMap, candidate, candValues);
 
-          if(isMC && (candValues.at(sb_status_field_id).int_ == 1 || candValues.at(sb_status_field_id).int_ == 2)) {
+        if(isMC && (candValues.at(sb_status_field_id).int_ == 1 || candValues.at(sb_status_field_id).int_ == 2)) {
 
-            auto& simulated = simulated_->AddChannel(config_.GetBranchConfig(simulated_->GetId()));
-            SetFieldsFIC(simulatedMap, simulated, simValues);
+          auto& simulated = simulated_->AddChannel(config_.GetBranchConfig(simulated_->GetId()));
+          SetFieldsFIC(simulatedMap, simulated, simValues);
 
-            cand2sim_->AddMatch(candidate.GetId(), simulated.GetId());
-          }
-        } else {
-          EntryKFToStart = iEntryKF; // need -1?
-          break;
+          cand2sim_->AddMatch(candidate.GetId(), simulated.GetId());
         }
       } // KF entries
       if(isMC && !is_gentree_processed) {
@@ -330,4 +326,14 @@ bool string_to_bool(const std::string& str) {
   if(str == "true") return true;
   else if(str == "false") return false;
   else throw std::runtime_error("string_to_bool(): argument must be either true or false");
+}
+
+std::vector<int> findPositions(const std::vector<int>& vec, int M) {
+  std::vector<int> positions;
+  for (int i = 0; i < vec.size(); ++i) {
+    if (vec[i] == M) {
+      positions.push_back(i); // Store the index
+    }
+  }
+  return positions;
 }
