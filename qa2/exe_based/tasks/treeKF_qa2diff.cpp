@@ -26,10 +26,16 @@ void treeKF_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool i
     throw std::runtime_error("fileIn == nullptr");
   }
 
-  const std::string promptness = prompt_or_nonprompt == 1 ? "prompt" : "nonprompt";
+  std::string promptness;
+  switch (prompt_or_nonprompt) {
+    case 1: promptness = "prompt"; break;
+    case 2: promptness = "nonprompt"; break;
+    case -999: promptness = "data"; break;
+    default: throw std::runtime_error("Illegal value of prompt_or_nonprompt. Should be either 1, 2 or -999");
+  }
 
-//  const std::string statusDcaFSel = "isDcaFSel";
-  const std::string statusDcaFSel = "noDcaFSel";
+  const std::string statusDcaFSel = "isDcaFSel";
+//  const std::string statusDcaFSel = "noDcaFSel";
 
   const std::string fileOutName = "treeKF_qa2diff";
 
@@ -52,7 +58,7 @@ void treeKF_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool i
     TFile* fileOut{nullptr};
     if(isSaveRoot) fileOut = TFile::Open((currentFileOutName + ".root").c_str(), "recreate");
 
-    auto cutsVar = FindCuts(fileIn, "Candidates_" + promptness + "_" + statusDcaFSel + "_" + var.cut_name_);
+    auto cutsVar = FindCuts(fileIn, "TopoQA/Candidates_" + promptness + "_" + statusDcaFSel + "_" + var.cut_name_);
 
     TGraphMultiErrors* grMu{nullptr};
     TGraphErrors* grSigma{nullptr};
@@ -84,7 +90,7 @@ void treeKF_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool i
       const float grEX = -(atof(cutsVar.at(0).second.c_str()) - atof(cutsVar.at(0).first.c_str())) / 15;
 
       const std::string cutName = var.cut_name_ + "_"  + cV.first + "_"  + cV.second;
-      const std::string histoName = "Candidates_"  + promptness + "_" + statusDcaFSel + "_" + cutName + "/Mass_"  + promptness + "_" + statusDcaFSel + "_" + cutName;
+      const std::string histoName = "TopoQA/Candidates_"  + promptness + "_" + statusDcaFSel + "_" + cutName + "/Mass_"  + promptness + "_" + statusDcaFSel + "_" + cutName;
       TH1D* hIn = fileIn->Get<TH1D>(histoName.c_str());
       if(hIn == nullptr) {
         throw std::runtime_error("hIn == nullptr for " + histoName);
@@ -177,8 +183,8 @@ int main(int argc, char* argv[]) {
 
   const std::string fileName = argv[1];
   const int prompt_or_nonprompt = argc>2 ? atoi(argv[2]) : 1;
-  const bool isDoFit = argc < 4 || strcmp(argv[3], "true") == 0;
-  const bool isSaveRoot = argc >= 5 && strcmp(argv[4], "true") == 0;
+  const bool isDoFit = argc > 3 ? string_to_bool(argv[3]) : false;
+  const bool isSaveRoot = argc > 4 ? string_to_bool(argv[4]) : false;
 
   treeKF_qa2diff(fileName, prompt_or_nonprompt, isDoFit, isSaveRoot);
 

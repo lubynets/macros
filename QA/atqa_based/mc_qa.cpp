@@ -8,11 +8,35 @@
 
 using namespace AnalysisTree;
 
-void PullsAndResidualsQA(QA::Task& task);
+void CandidatesQA(QA::Task& task);
+void EventsQA(QA::Task& task);
 void EfficiencyQA(QA::Task& task);
 
 //   SimpleCut simpleCutSelected = RangeCut("Candidates.KF_fIsSelected", 0.9, 1.1);
 const SimpleCut simpleCutSelected = RangeCut("Candidates.KF_fIsSelected", -0.1, 1.1);
+
+struct Quantity {
+  std::string name_;
+  std::string name_in_tree_rec_;
+  std::string name_in_tree_mc_;
+  std::string name_in_tree_error_;
+  std::string title_;
+  std::string unit_;
+  TAxis axis_plain_;
+  TAxis axis_res_;
+  TAxis axis_pull_;
+  std::vector<SimpleCut> slice_cuts_;
+};
+
+struct Histogram {
+  std::string name_;
+  std::string xaxis_title_;
+  Variable variable_;
+  TAxis xaxis_;
+  bool to_be_sliced_;
+};
+
+std::vector<Histogram> PrepareSetOfHistograms(Quantity& var, const std::string& recTreeName, const std::string& mcTreeName, const std::string& errTreeName);
 
 void mc_qa(const std::string& filelist){
   auto* man = TaskManager::GetInstance();
@@ -20,7 +44,7 @@ void mc_qa(const std::string& filelist){
   auto* task = new QA::Task;
   task->SetOutputFileName("mc_qa.root");
 
-  PullsAndResidualsQA(*task);
+  CandidatesQA(*task);
   EfficiencyQA(*task);
 
   man->AddTask(task);
@@ -33,7 +57,7 @@ void mc_qa(const std::string& filelist){
 void EfficiencyQA(QA::Task& task) {
   task.SetTopLevelDirName("EfficiencyQA");
 
-  struct Quantity {
+  struct Quantity4Eff {
     std::string name_;
     std::string name_in_tree_rec_;
     std::string name_in_tree_gen_;
@@ -48,11 +72,11 @@ void EfficiencyQA(QA::Task& task) {
   const std::pair<float, float> rapidityCut = std::make_pair(-0.8, 0.8);
   SimpleCut rapidityCutRec = RangeCut(Variable::FromString("Candidates.Lite_fY"), rapidityCut.first, rapidityCut.second);
   SimpleCut rapidityCutGen = RangeCut(Variable::FromString("Generated.Gen_fY"), rapidityCut.first, rapidityCut.second);
-  const std::vector<Quantity> vars{
-    {"Y", "Lite_fY", "Gen_fY", "y", "", {nbins, -1, 1}, {}, {}},
-    {"Pt", "KF_fPt", "Gen_fPt", "p_{T}", "GeV/c", {nbins, 0, 16}, {rapidityCutRec}, {rapidityCutGen}},
-    {"L", "KF_fDecayLength", "Gen_fLDecay", "L", "cm", {nbins, 0, 0.2}, {rapidityCutRec}, {rapidityCutGen}},
-    {"T", "KF_fT", "Gen_fTDecay", "T", "ps", {nbins, 0, 2}, {rapidityCutRec}, {rapidityCutGen}},
+  const std::vector<Quantity4Eff> vars {
+    {"Y",  "Lite_fY",         "Gen_fY",      "y",     "",      {nbins, -1, 1}, {},               {}              },
+    {"Pt", "KF_fPt",          "Gen_fPt",     "p_{T}", "GeV/c", {nbins, 0, 16}, {rapidityCutRec}, {rapidityCutGen}},
+    {"L",  "KF_fDecayLength", "Gen_fLDecay", "L",     "cm",    {nbins, 0, 2},  {rapidityCutRec}, {rapidityCutGen}},
+    {"T",  "KF_fT",           "Gen_fTDecay", "T",     "ps",    {nbins, 0, 2},  {rapidityCutRec}, {rapidityCutGen}},
   };
 
   struct Promptness {
@@ -73,7 +97,7 @@ void EfficiencyQA(QA::Task& task) {
     for (auto& var : vars) {
       Cuts* varRecCut = new Cuts(*recCut);
       Cuts* varGenCut = new Cuts(*genCut);
-      const std::string comma = var.unit_ == "" ? "" : ", ";
+      const std::string comma = var.unit_.empty() ? "" : ", ";
       varRecCut->AddCuts(var.cut_rec_);
       varGenCut->AddCuts(var.cut_gen_);
       task.AddH1("rec_" + var.name_, {var.title_ + comma + var.unit_, Variable::FromString("Candidates." + var.name_in_tree_rec_), var.axis_}, varRecCut);
@@ -88,74 +112,54 @@ void EfficiencyQA(QA::Task& task) {
   } // promptnesses
 } // EfficiencyQA()
 
-void PullsAndResidualsQA(QA::Task& task) {
-  task.SetTopLevelDirName("PullsAndResiduals");
+void EventsQA(QA::Task& task) {
+  task.SetTopLevelDirName("EventsQA");
+
+  constexpr float Shift001 = 0.01;
+  auto nPVCCuts = HelperFunctions::CreateRangeCuts({0, 10-Shift001, 20-Shift001, 40-Shift001, 60-Shift001, 80-Shift001, 100}, "nPVC_", "Events.Ev_fMultNTracksPV", 2);
+
+  const int nbins = 400;
+  std::vector<Quantity> vars {
+    {"Xpv", "Ev_fPosX", "Ev_fMcPosX", "Ev_fPosXErr", "X_{PV}", "cm", {nbins, -0.1, 0.1}, {nbins, -0.05, 0.05}, {nbins, -5,  5 }, nPVCCuts},
+    {"Ypv", "Ev_fPosY", "Ev_fMcPosY", "Ev_fPosYErr", "Y_{PV}", "cm", {nbins, -0.1, 0.1}, {nbins, -0.05, 0.05}, {nbins, -5,  5 }, nPVCCuts},
+    {"Zpv", "Ev_fPosZ", "Ev_fMcPosZ", "Ev_fPosZErr", "Z_{PV}", "cm", {nbins, -20,  20 }, {nbins, -0.05, 0.05}, {nbins, -5,  5 }, nPVCCuts},
+  };
+
+  for(auto& var : vars) {
+
+  } // vars
+
+
+} // EventsQA()
+
+void CandidatesQA(QA::Task& task) {
+  task.SetTopLevelDirName("CandidatesQA");
 
   const std::vector<SimpleCut> promptnesses {
     EqualsCut("Candidates.KF_fSigBgStatus", 1, "prompt"),
     EqualsCut("Candidates.KF_fSigBgStatus", 2, "nonprompt")
   };
 
-  struct Quantity {
-    std::string name_;
-    std::string name_in_tree_rec_;
-    std::string name_in_tree_mc_;
-    std::string name_in_tree_error_;
-    std::string title_;
-    std::string unit_;
-    TAxis axis_plain_;
-    TAxis axis_res_;
-    TAxis axis_pull_;
-    std::vector<SimpleCut> slice_cuts_;
-  };
-
   auto pTCuts = HelperFunctions::CreateRangeCuts({0.f, 2.f, 4.f, 6.f, 8.f, 12.f, 16.f}, "pTsim_", "Simulated.Sim_fPt", 2);
   auto pCuts = HelperFunctions::CreateRangeCuts({0.f, 2.f, 4.f, 6.f, 8.f, 12.f, 16.f}, "psim_", "Simulated.Sim_fP", 2);
   auto lCuts = HelperFunctions::CreateRangeCuts({0.f, 0.02f, 0.04f, 0.06f, 0.08f, 0.12f, 0.16f, 0.20f}, "lsim_", "Simulated.Sim_fLDecay", 2);
   auto tCuts = HelperFunctions::CreateRangeCuts({0.f, 0.2f, 0.4f, 0.6f, 0.8f, 1.2f, 1.6f, 2.f}, "tsim_", "Simulated.Sim_fTDecay", 2);
-  constexpr float Shift001 = 0.01;
-  auto nPVCCuts = HelperFunctions::CreateRangeCuts({0, 10-Shift001, 20-Shift001, 40-Shift001, 60-Shift001, 80-Shift001, 100}, "nPVC_", "Candidates.KF_fMultNTracksPV", 2);
 
   const int nbins = 400;
-
   std::vector<Quantity> vars {
     {"P",    "KF_fP",           "Sim_fP",      "KF_fErrP",             "p",      "GeV/c", {nbins, 0,    16 }, {nbins, -1, 1      }, {nbins, -5,  5 }, pCuts   },
     {"Pt",   "KF_fPt",          "Sim_fPt",     "KF_fErrPt",            "p_{T}",  "GeV/c", {nbins, 0,    16 }, {nbins, -1, 1      }, {nbins, -5,  5 }, pTCuts  },
     {"Xsv",  "KF_fX",           "Sim_fXDecay", "KF_fErrX",             "X_{SV}", "cm",    {nbins, -0.5, 0.5}, {nbins, -0.05, 0.05}, {nbins, -5,  5 }, pTCuts  },
     {"Ysv",  "KF_fY",           "Sim_fYDecay", "KF_fErrY",             "Y_{SV}", "cm",    {nbins, -0.5, 0.5}, {nbins, -0.05, 0.05}, {nbins, -5,  5 }, pTCuts  },
     {"Zsv",  "KF_fZ",           "Sim_fZDecay", "KF_fErrZ",             "Z_{SV}", "cm",    {nbins, -20,  20 }, {nbins, -0.05, 0.05}, {nbins, -5,  5 }, pTCuts  },
-    {"Xpv",  "Lite_fPosX",      "Sim_fXEvent", "KF_fErrPVX",           "X_{PV}", "cm",    {nbins, -0.1, 0.1}, {nbins, -0.05, 0.05}, {nbins, -5,  5 }, nPVCCuts},
-    {"Ypv",  "Lite_fPosY",      "Sim_fYEvent", "KF_fErrPVY",           "Y_{PV}", "cm",    {nbins, -0.1, 0.1}, {nbins, -0.05, 0.05}, {nbins, -5,  5 }, nPVCCuts},
-    {"Zpv",  "Lite_fPosZ",      "Sim_fZEvent", "KF_fErrPVZ",           "Z_{PV}", "cm",    {nbins, -20,  20 }, {nbins, -0.05, 0.05}, {nbins, -5,  5 }, nPVCCuts},
     {"L",    "KF_fDecayLength", "Sim_fLDecay", "KF_fDecayLengthError", "L",      "cm",    {nbins, -0.1, 0.2}, {nbins, -0.05, 0.05}, {nbins, -5,  5 }, lCuts   },
     {"T",    "KF_fT",           "Sim_fTDecay", "KF_fErrT",             "T",      "ps",    {nbins, -1,   2  }, {nbins, -2, 2      }, {nbins, -10, 10}, tCuts   },
-  };
-
-
-  struct Histogram {
-    std::string name_;
-    std::string xaxis_title_;
-    Variable variable_;
-    TAxis xaxis_;
-    bool to_be_sliced_;
   };
 
   for(auto& pro : promptnesses) {
     Cuts* cutsTotal = new Cuts(pro.GetTitle() + "_total", {simpleCutSelected, pro});
     for(auto& var : vars) {
-
-      Variable varMc(Variable::FromString("Simulated." + var.name_in_tree_mc_));
-      Variable varRec(Variable::FromString("Candidates." + var.name_in_tree_rec_));
-      Variable varResidual("res_" + var.name_, {{"Candidates", var.name_in_tree_rec_}, {"Simulated", var.name_in_tree_mc_}}, []( std::vector<double>& v ) { return v.at(0) - v.at(1); });
-      Variable varPull("pull_" + var.name_, {{"Candidates", var.name_in_tree_rec_}, {"Simulated", var.name_in_tree_mc_}, {"Candidates", var.name_in_tree_error_}}, []( std::vector<double>& v ) { return (v.at(0) - v.at(1)) / v.at(2); });
-
-      std::vector<Histogram> histos {
-          {"mc_" + var.name_, var.title_ + "^{mc}, " + var.unit_, varMc, var.axis_plain_, false},
-          {"rec_" + var.name_, var.title_ + "^{rec}, " + var.unit_, varRec, var.axis_plain_, false},
-          {"res_" + var.name_, var.title_ + "^{rec} - " + var.title_ + "^{mc}, " + var.unit_, varResidual, var.axis_res_, true},
-          {"pull_" + var.name_, "(" + var.title_ + "^{rec} - " + var.title_ + "^{mc}) / #sigma_{" + var.title_ + "^{rec}}", varPull, var.axis_pull_, true},
-      };
-
+      std::vector<Histogram> histos = PrepareSetOfHistograms(var, "Candidates", "Simulated", "Candidates");
       for(auto& histo : histos) {
         task.AddH1(histo.name_, {histo.xaxis_title_, histo.variable_, histo.xaxis_}, cutsTotal);
       }
@@ -168,13 +172,29 @@ void PullsAndResidualsQA(QA::Task& task) {
         Cuts* cutSlice = new Cuts(pro.GetTitle() + "_" + slc.GetTitle(), {simpleCutSelected, pro, slc});
 
         for(auto& histo : histos) {
-          if(histo.name_ == "mc_" + var.name_ || histo.name_ == "rec_" + var.name_) continue;
+          if(!histo.to_be_sliced_) continue;
           task.AddH1(histo.name_ + "_" + slc.GetTitle(), {histo.xaxis_title_, histo.variable_, histo.xaxis_}, cutSlice);
         }
       } // var.slice_cuts_
     } // vars
   } // promptnesses
 } // PullsAndResidualsQA()
+
+std::vector<Histogram> PrepareSetOfHistograms(Quantity& var, const std::string& recTreeName, const std::string& mcTreeName, const std::string& errTreeName) {
+  Variable varMc(Variable::FromString(mcTreeName + "." + var.name_in_tree_mc_));
+  Variable varRec(Variable::FromString(recTreeName + "." + var.name_in_tree_rec_));
+  Variable varResidual("res_" + var.name_, {{recTreeName, var.name_in_tree_rec_}, {mcTreeName, var.name_in_tree_mc_}}, []( std::vector<double>& v ) { return v.at(0) - v.at(1); });
+  Variable varPull("pull_" + var.name_, {{recTreeName, var.name_in_tree_rec_}, {mcTreeName, var.name_in_tree_mc_}, {errTreeName, var.name_in_tree_error_}}, []( std::vector<double>& v ) { return (v.at(0) - v.at(1)) / v.at(2); });
+
+  std::vector<Histogram> histos {
+      {"mc_" + var.name_, var.title_ + "^{mc}, " + var.unit_, varMc, var.axis_plain_, false},
+      {"rec_" + var.name_, var.title_ + "^{rec}, " + var.unit_, varRec, var.axis_plain_, false},
+      {"res_" + var.name_, var.title_ + "^{rec} - " + var.title_ + "^{mc}, " + var.unit_, varResidual, var.axis_res_, true},
+      {"pull_" + var.name_, "(" + var.title_ + "^{rec} - " + var.title_ + "^{mc}) / #sigma_{" + var.title_ + "^{rec}}", varPull, var.axis_pull_, true},
+  };
+
+  return histos;
+}
 
 int main(int argc, char* argv[]){
   if (argc < 2) {
