@@ -82,21 +82,20 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
     }
     histoEffPrompt->SetName(("hEffPrompt" + var.name_).c_str());
     histoEffNonPrompt->SetName(("hEffNonPrompt" + var.name_).c_str());
-    for(auto& histo : std::array<TH1D*, 3>{histoRecPrompt, histoRecNonPrompt, histoEffPrompt}) {
-      histo->SetLineColor(kRed);
-    }
-    for(auto& histo : std::array<TH1D*, 3>{histoGenPrompt, histoGenNonPrompt, histoEffNonPrompt}) {
-      histo->SetLineColor(kBlue);
-    }
-    CustomizeHistogramsYRange({histoRecPrompt, histoGenPrompt});
-    CustomizeHistogramsYRange({histoRecNonPrompt, histoGenNonPrompt});
-    CustomizeHistogramsYRange({histoEffPrompt, histoEffNonPrompt},100);
+    const std::vector<Color_t> colors{kRed, kBlue};
 
-    auto PrintCanvas1D = [&] (const std::array<TH1D*, 2>& histos,
-                            const std::string& namePrefix,
-                            bool logy,
-                            const std::string& oneLineText = "",
-                            TLegend* leg = nullptr) {
+    auto PrintCanvas1D = [&] (std::vector<TH1*> histos,
+                              const std::vector<Color_t >& colors,
+                              const std::string& namePrefix,
+                              bool logy,
+                              const std::string& oneLineText = "",
+                              TLegend* leg = nullptr) {
+      const double yAxisMax = static_cast<TString>(histos.at(0)->GetName()).Contains("Eff") ? 100 : 1e9;
+      if(histos.size() != colors.size()) throw std::runtime_error("PrintCanvas1D(): histos.size() != colors.size()");
+      for(int iH=0; iH<histos.size(); iH++) {
+        histos.at(iH)->SetLineColor(colors.at(iH));
+      }
+      CustomizeHistogramsYRange(histos, yAxisMax);
       TCanvas cc("cc", "cc", 1200, 800);
       cc.SetLogy(logy);
       histos.at(0)->Draw("");
@@ -112,9 +111,11 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
       cc.Print((namePrefix + ".pdf" + printing_bracket).c_str(), "pdf");
     };
 
-    PrintCanvas1D({histoEffPrompt, histoEffNonPrompt}, "efficiency", var.logy_eff_, "", legEff);
-    PrintCanvas1D({histoRecPrompt, histoGenPrompt}, "yieldPrompt", var.logy_yield_, "prompt", legYield);
-    PrintCanvas1D({histoRecNonPrompt, histoGenNonPrompt}, "yieldNonPrompt", var.logy_yield_, "nonprompt", legYield);
+    PrintCanvas1D({histoEffPrompt, histoEffNonPrompt}, colors, "efficiency", var.logy_eff_, "", legEff);
+    PrintCanvas1D({histoRecPrompt, histoGenPrompt}, colors, "yieldPrompt", var.logy_yield_, "prompt", legYield);
+    PrintCanvas1D({histoRecNonPrompt, histoGenNonPrompt}, colors, "yieldNonPrompt", var.logy_yield_, "nonprompt", legYield);
+    PrintCanvas1D({histoRecPrompt, histoRecNonPrompt}, colors, "yieldRec", var.logy_yield_, "rec", legEff);
+    PrintCanvas1D({histoGenPrompt, histoGenNonPrompt}, colors, "yieldGen", var.logy_yield_, "gen", legEff);
     printing_bracket = "";
   } // variables
 
@@ -160,10 +161,14 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
   PrintCanvas2D(histoEffPrompt, "efficiency", "prompt");
   PrintCanvas2D(histoRecPrompt, "yieldPrompt", "prompt, rec");
   PrintCanvas2D(histoRecNonPrompt, "yieldNonPrompt", "nonprompt, rec");
+  PrintCanvas2D(histoRecPrompt, "yieldRec", "prompt, rec");
+  PrintCanvas2D(histoGenPrompt, "yieldGen", "prompt, gen");
   printing_bracket = ")";
   PrintCanvas2D(histoEffNonPrompt, "efficiency", "nonprompt");
   PrintCanvas2D(histoGenPrompt, "yieldPrompt", "prompt, gen");
   PrintCanvas2D(histoGenNonPrompt, "yieldNonPrompt", "nonprompt, gen");
+  PrintCanvas2D(histoRecNonPrompt, "yieldRec", "nonprompt, rec");
+  PrintCanvas2D(histoGenNonPrompt, "yieldGen", "nonprompt, gen");
 
   if(isSaveToRoot) {
     fileOut->cd();

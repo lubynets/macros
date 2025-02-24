@@ -159,12 +159,15 @@ bool Helper::string_to_bool(const std::string& str) {
 
 void Helper::CustomizeHistogramsYRange(const std::vector<TH1*>& histos, double absoluteMaximum) {
   double max = -1e9;
+  double min = 1e9;
   for(auto& histo : histos) {
-    max = std::max(max, histo->GetMaximum());
+    max = std::max(max, histo->GetBinContent(histo->GetMaximumBin()));
+    min = std::min(min, histo->GetBinContent(histo->GetMinimumBin()));
   }
   max *= 1.1;
+  min *= 0.9;
   max = std::min(max, absoluteMaximum);
   for(auto& histo : histos) {
-    histo->GetYaxis()->SetRangeUser(histo->GetMinimum(), max);
+    histo->GetYaxis()->SetRangeUser(min, max);
   }
 }
