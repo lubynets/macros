@@ -90,12 +90,13 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
                               bool logy,
                               const std::string& oneLineText = "",
                               TLegend* leg = nullptr) {
+      const double yAxisMin = 0;
       const double yAxisMax = static_cast<TString>(histos.at(0)->GetName()).Contains("Eff") ? 100 : 1e9;
       if(histos.size() != colors.size()) throw std::runtime_error("PrintCanvas1D(): histos.size() != colors.size()");
       for(int iH=0; iH<histos.size(); iH++) {
         histos.at(iH)->SetLineColor(colors.at(iH));
       }
-      CustomizeHistogramsYRange(histos, yAxisMax);
+      CustomizeHistogramsYRange(histos, yAxisMin, yAxisMax);
       TCanvas cc("cc", "cc", 1200, 800);
       cc.SetLogy(logy);
       histos.at(0)->Draw("");
@@ -110,6 +111,12 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
       AddOneLineText(var.cut_text_, 0.60, 0.82, 0.73, 0.90);
       cc.Print((namePrefix + ".pdf" + printing_bracket).c_str(), "pdf");
     };
+
+    if(isSaveToRoot) {
+      fileOut->cd();
+      histoEffPrompt->Write();
+      histoEffNonPrompt->Write();
+    }
 
     PrintCanvas1D({histoEffPrompt, histoEffNonPrompt}, colors, "efficiency", var.logy_eff_, "", legEff);
     PrintCanvas1D({histoRecPrompt, histoGenPrompt}, colors, "yieldPrompt", var.logy_yield_, "prompt", legYield);
@@ -170,13 +177,7 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
   PrintCanvas2D(histoRecNonPrompt, "yieldRec", "nonprompt, rec");
   PrintCanvas2D(histoGenNonPrompt, "yieldGen", "nonprompt, gen");
 
-  if(isSaveToRoot) {
-    fileOut->cd();
-    histoEffPrompt->Write();
-    histoEffNonPrompt->Write();
-    fileOut->Close();
-  }
-
+  if(isSaveToRoot) fileOut->Close();
   fileIn->Close();
 }
 

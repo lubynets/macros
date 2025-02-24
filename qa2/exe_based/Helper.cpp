@@ -157,17 +157,17 @@ bool Helper::string_to_bool(const std::string& str) {
   else throw std::runtime_error("string_to_bool(): argument must be either true or false");
 }
 
-void Helper::CustomizeHistogramsYRange(const std::vector<TH1*>& histos, double absoluteMaximum) {
+void Helper::CustomizeHistogramsYRange(const std::vector<TH1*>& histos, double lo, double hi, double part) {
   double max = -1e9;
   double min = 1e9;
   for(auto& histo : histos) {
     max = std::max(max, histo->GetBinContent(histo->GetMaximumBin()));
     min = std::min(min, histo->GetBinContent(histo->GetMinimumBin()));
   }
-  max *= 1.1;
-  min *= 0.9;
-  max = std::min(max, absoluteMaximum);
+  const double diff = max - min;
+  const double up = std::min(hi, max + (1-part)/2*diff/part);
+  const double down = std::max(lo, min - (1-part)/2*diff/part);
   for(auto& histo : histos) {
-    histo->GetYaxis()->SetRangeUser(min, max);
+    histo->GetYaxis()->SetRangeUser(down, up);
   }
 }

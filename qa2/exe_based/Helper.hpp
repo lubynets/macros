@@ -42,7 +42,7 @@ TPaveText ConvertHistoQuantitiesToText(const HistoQuantities& q, float x1, float
 
 void CustomizeGraphYRange(TGraphMultiErrors* graph, int ne = 1, TF1* f = nullptr);
 
-void CustomizeHistogramsYRange(const std::vector<TH1*>& histos, double absoluteMaximum=1e9);
+void CustomizeHistogramsYRange(const std::vector<TH1*>& histos, double lo=-1e9, double hi=1e9, double part = 0.9);
 
 void SetLineDrawParameters(std::vector<TF1*> fs, int lineWidth = 1, int lineStyle = 7, Color_t lineColor = kBlack);
 
