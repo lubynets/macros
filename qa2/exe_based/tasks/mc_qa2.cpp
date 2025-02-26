@@ -44,104 +44,52 @@ void mc_qa2(const std::string& fileName, int prompt_or_nonprompt) {
     {"Xsv", false, false, false, true, false},
     {"Ysv", false, false, false, true, false},
     {"Zsv", false, false, false, true, false},
-    {"Xpv", false, false, false, true, false},
-    {"Ypv", false, false, false, true, false},
-    {"Zpv", false, false, false, true, false},
     {"L",   false, true,  true,  true, true},
     {"T",   false, true,  true,  true, true},
   };
 
-  bool is_first_canvas{true};
-  std::string printing_bracket = "(";
-  for(auto& var : vars) {
-    TH1D* hmc = fileIn->Get<TH1D>(("Simulated_" + promptness + "_total/mc_" + var.name_).c_str());
-    TH1D* hrec = fileIn->Get<TH1D>(("Candidates_" + promptness + "_total/rec_" + var.name_).c_str());
-    TH1D* hres = fileIn->Get<TH1D>(("Candidates_Simulated_"  + promptness + "_total/res_" + var.name_).c_str());
-    TH2D* hcorr = fileIn->Get<TH2D>(("Candidates_Simulated_"  + promptness + "_total/corr_" + var.name_).c_str());
-    TH1D* hpull = fileIn->Get<TH1D>(("Candidates_Simulated_"  + promptness + "_total/pull_" + var.name_).c_str());
-    if(hmc == nullptr || hrec == nullptr || hres == nullptr || hcorr == nullptr || hpull == nullptr) {
-      throw std::runtime_error(("hmc == nullptr || hrec == nullptr || hres == nullptr || hcorr == nullptr || hpull == nullptr for " + var.name_).c_str());
+  std::string printing_bracket;
+  for(int iVar=0; iVar<vars.size(); iVar++) {
+    if(iVar == 0) printing_bracket = "(";
+    else if(iVar==vars.size()-1) printing_bracket = ")";
+    else printing_bracket = "";
+
+    auto PrintCanvas1D = [&] (const std::string& histoType, const std::string& dirName, bool logy, const std::string& oneLineText = "") {
+      TH1D* h = fileIn->Get<TH1D>(("PullsAndResiduals/" + dirName + "_" + promptness + "_total/" + histoType + "_" + vars.at(iVar).name_).c_str());
+      if(h == nullptr) {
+        throw std::runtime_error(("h == nullptr for " + histoType + " " + vars.at(iVar).name_).c_str());
+      }
+      h->UseCurrentStyle();
+      TCanvas cc("cc", "cc", 1200, 800);
+      cc.SetLogy(logy);
+      h->Draw();
+      AddOneLineText(promptness, 0.74, 0.86, 0.87, 0.90);
+      AddOneLineText(oneLineText, 0.74, 0.78, 0.87, 0.84);
+      HistoQuantities quant = EvaluateHistoQuantities(h);
+      TPaveText quant_text = ConvertHistoQuantitiesToText(quant, 0.70, 0.6, 0.90, 0.8);
+      quant_text.Draw("same");
+      cc.Print((fileOutName + "_" + histoType + ".pdf" + printing_bracket).c_str(), "pdf");
+    };
+
+    PrintCanvas1D("mc", "Simulated", vars.at(iVar).log_mc_, "MC matched with reco only");
+    PrintCanvas1D("rec", "Candidates", vars.at(iVar).log_rec_, "Rec matched to MC-true only");
+    PrintCanvas1D("res", "Candidates_Simulated", vars.at(iVar).log_res_);
+    PrintCanvas1D("pull", "Candidates_Simulated", vars.at(iVar).log_pull_);
+
+    TH2D* hcorr = fileIn->Get<TH2D>(("PullsAndResiduals/Candidates_Simulated_"  + promptness + "_total/corr_" + vars.at(iVar).name_).c_str());
+    if(hcorr == nullptr) {
+      throw std::runtime_error(("hcorr == nullptr for " + vars.at(iVar).name_).c_str());
     }
-
-    hmc->UseCurrentStyle();
-    hrec->UseCurrentStyle();
-    hres->UseCurrentStyle();
     hcorr->UseCurrentStyle();
-    hpull->UseCurrentStyle();
-
-    TPaveText promptnessText(0.74, 0.86, 0.87, 0.90, "brNDC");
-    promptnessText.SetFillColor(0);
-    promptnessText.SetTextSize(0.03);
-    promptnessText.SetTextFont(62);
-    promptnessText.AddText(promptness.c_str());
-
-    TCanvas ccMc("ccMc", "ccMc", 1200, 800);
-    ccMc.SetLogy(var.log_mc_);
-    hmc->Draw();
-    promptnessText.Draw("same");
-    TPaveText disclaimer_mc(0.74, 0.78, 0.87, 0.84, "brNDC");
-    disclaimer_mc.SetFillColor(0);
-    disclaimer_mc.SetTextSize(0.02);
-    disclaimer_mc.SetTextFont(62);
-    disclaimer_mc.AddText("MC matched with reco only");
-    disclaimer_mc.Draw("same");
-    HistoQuantities mc_quant = EvaluateHistoQuantities(hmc);
-    TPaveText mc_quant_text = ConvertHistoQuantitiesToText(mc_quant, 0.70, 0.6, 0.90, 0.8);
-    mc_quant_text.Draw("same");
-
-    TCanvas ccRec("ccRec", "ccRec", 1200, 800);
-    ccRec.SetLogy(var.log_rec_);
-    hrec->Draw();
-    promptnessText.Draw("same");
-    TPaveText disclaimer_rec(0.74, 0.78, 0.87, 0.84, "brNDC");
-    disclaimer_rec.SetFillColor(0);
-    disclaimer_rec.SetTextSize(0.02);
-    disclaimer_rec.SetTextFont(62);
-    disclaimer_rec.AddText("Rec matched to MC-true only");
-    disclaimer_rec.Draw("same");
-    HistoQuantities rec_quant = EvaluateHistoQuantities(hrec);
-    TPaveText rec_quant_text = ConvertHistoQuantitiesToText(rec_quant, 0.70, 0.6, 0.90, 0.8);
-    rec_quant_text.Draw("same");
-
-    TCanvas ccRes("ccRes", "ccRes", 1200, 800);
-    ccRes.SetLogy(var.log_res_);
-    hres->Draw();
-    promptnessText.Draw("same");
-    HistoQuantities res_quant = EvaluateHistoQuantities(hres);
-    TPaveText res_quant_text = ConvertHistoQuantitiesToText(res_quant, 0.70, 0.6, 0.90, 0.8);
-    res_quant_text.Draw("same");
 
     TCanvas ccCorr("ccCorr", "ccCorr", 1200, 800);
     ccCorr.SetRightMargin(0.16);
-    ccCorr.SetLogz(var.log_corr_);
+    ccCorr.SetLogz(vars.at(iVar).log_corr_);
     hcorr->Draw("colz");
-    promptnessText.Draw("same");
+    AddOneLineText(promptness, 0.74, 0.86, 0.87, 0.90);
 
-    TCanvas ccPull("ccPull", "ccPull", 1200, 800);
-    ccPull.SetLogy(var.log_pull_);
-    hpull->Draw();
-    promptnessText.Draw("same");
-    HistoQuantities pull_quant = EvaluateHistoQuantities(hpull);
-    TPaveText pull_quant_text = ConvertHistoQuantitiesToText(pull_quant, 0.70, 0.6, 0.90, 0.8);
-    pull_quant_text.Draw("same");
-
-    if(is_first_canvas) printing_bracket = "(";
-    else                printing_bracket = "";
-    ccMc.Print((fileOutName + "_mc.pdf" + printing_bracket).c_str(), "pdf");
-    ccRec.Print((fileOutName + "_rec.pdf" + printing_bracket).c_str(), "pdf");
-    ccRes.Print((fileOutName + "_res.pdf" + printing_bracket).c_str(), "pdf");
     ccCorr.Print((fileOutName + "_corr.pdf" + printing_bracket).c_str(), "pdf");
-    ccPull.Print((fileOutName + "_pull.pdf" + printing_bracket).c_str(), "pdf");
-    is_first_canvas = false;
-  }
-
-  printing_bracket = "]";
-  TCanvas emptycanvas("emptycanvas", "", 1200, 800);
-  emptycanvas.Print((fileOutName + "_mc.pdf" + printing_bracket).c_str(), "pdf");
-  emptycanvas.Print((fileOutName + "_rec.pdf" + printing_bracket).c_str(), "pdf");
-  emptycanvas.Print((fileOutName + "_res.pdf" + printing_bracket).c_str(), "pdf");
-  emptycanvas.Print((fileOutName + "_corr.pdf" + printing_bracket).c_str(), "pdf");
-  emptycanvas.Print((fileOutName + "_pull.pdf" + printing_bracket).c_str(), "pdf");
+  } // vars
 }
 
 int main(int argc, char* argv[]) {
