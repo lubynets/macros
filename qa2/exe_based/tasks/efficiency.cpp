@@ -52,10 +52,11 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
   std::string printing_bracket = "(";
 
   for(auto& var : variables) {
-    TH1D* histoGenPrompt = fileIn->Get<TH1D>(("EfficiencyQA/prompt/Generated_prompt/gen_" + var.name_).c_str());
-    TH1D* histoRecPrompt = fileIn->Get<TH1D>(("EfficiencyQA/prompt/Candidates_prompt/rec_" + var.name_).c_str());
-    TH1D* histoGenNonPrompt = fileIn->Get<TH1D>(("EfficiencyQA/nonprompt/Generated_nonprompt/gen_" + var.name_).c_str());
-    TH1D* histoRecNonPrompt = fileIn->Get<TH1D>(("EfficiencyQA/nonprompt/Candidates_nonprompt/rec_" + var.name_).c_str());
+    const std::string shortLong = var.name_ == "Y" ? "_short" : "";
+    TH1D* histoGenPrompt = fileIn->Get<TH1D>(("EfficiencyQA/prompt/Generated_prompt" + shortLong + "/gen_" + var.name_ + shortLong).c_str());
+    TH1D* histoRecPrompt = fileIn->Get<TH1D>(("EfficiencyQA/prompt/Candidates_prompt" + shortLong + "/rec_" + var.name_ + shortLong).c_str());
+    TH1D* histoGenNonPrompt = fileIn->Get<TH1D>(("EfficiencyQA/nonprompt/Generated_nonprompt" + shortLong + "/gen_" + var.name_ + shortLong).c_str());
+    TH1D* histoRecNonPrompt = fileIn->Get<TH1D>(("EfficiencyQA/nonprompt/Candidates_nonprompt" + shortLong + "/rec_" + var.name_ + shortLong).c_str());
     for(auto& histo : std::array<TH1D*, 4>{histoGenPrompt, histoRecPrompt, histoGenNonPrompt, histoRecNonPrompt}) {
       if(histo == nullptr) throw std::runtime_error("One of the TH1 histograms is nullptr!");
       if(var.rebin_factor_ != 1) histo->Rebin(var.rebin_factor_);
