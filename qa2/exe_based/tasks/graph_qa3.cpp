@@ -12,14 +12,10 @@
 
 using namespace Helper;
 
-void graph_qa3(const std::string& fileName1, const std::string& fileName2) {
+void graph_qa3(const std::string& fileName1, const std::string& fileName2, const std::string& promptness, const std::string& constraint) {
 
   const std::string leg1 = "no constraint";
-  const std::string leg2 = "m_{inv} constraint";
-//  const std::string leg2 = "topo constraint";
-
-//  const std::string promptness = "prompt";
-  const std::string promptness = "nonprompt";
+  const std::string leg2 = constraint == "topoConstr" ? "topo constraint" : constraint == "minvConstr" ? "m_{inv} constraint" : "ERROR";
 
   TString currentMacroPath = __FILE__;
   TString directory = currentMacroPath(0, currentMacroPath.Last('/'));
@@ -72,8 +68,10 @@ int main(int argc, char* argv[]) {
 
   const std::string fileName1 = argv[1];
   const std::string fileName2 = argv[2];
+  const std::string promptness = argv[3];
+  const std::string constraint = argv[4];
 
-  graph_qa3(fileName1, fileName2);
+  graph_qa3(fileName1, fileName2, promptness, constraint);
 
   return 0;
 }
