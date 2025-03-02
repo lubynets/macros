@@ -11,8 +11,10 @@ using namespace AnalysisTree;
 void PullsAndResidualsQA(QA::Task& task);
 void EfficiencyQA(QA::Task& task);
 
-//   SimpleCut simpleCutSelected = RangeCut("Candidates.KF_fIsSelected", 0.9, 1.1);
-const SimpleCut simpleCutSelected = RangeCut("Candidates.KF_fIsSelected", -0.1, 1.1);
+std::vector selectCuts {
+  RangeCut("Candidates.KF_fIsSelected", 0.9, 1.1, "isSel"),
+  RangeCut("Candidates.KF_fIsSelected", -0.1, 1.1, "noSel")
+};
 
 void mc_qa(const std::string& filelist){
   auto* man = TaskManager::GetInstance();
@@ -26,7 +28,7 @@ void mc_qa(const std::string& filelist){
   man->AddTask(task);
   man->Init({filelist}, {"aTree"});
   man->SetVerbosityPeriod(10000);
-  man->Run(-1);
+  man->Run();
   man->Finish();
 }
 
@@ -67,24 +69,31 @@ void EfficiencyQA(QA::Task& task) {
   };
 
   for (auto& promptness : promptnesses) {
-    task.SetTopLevelDirName("EfficiencyQA/" + promptness.name_);
-    Cuts* recCut = new Cuts(promptness.name_, {promptness.cut_rec_});
-    Cuts* genCut = new Cuts(promptness.name_, {promptness.cut_gen_});
-    for (auto& var : vars) {
-      Cuts* varRecCut = new Cuts(*recCut);
-      Cuts* varGenCut = new Cuts(*genCut);
-      const std::string comma = var.unit_ == "" ? "" : ", ";
-      varRecCut->AddCuts(var.cut_rec_);
-      varGenCut->AddCuts(var.cut_gen_);
-      task.AddH1("rec_" + var.name_, {var.title_ + comma + var.unit_, Variable::FromString("Candidates." + var.name_in_tree_rec_), var.axis_}, varRecCut);
-      task.AddH1("gen_" + var.name_, {var.title_ + comma + var.unit_, Variable::FromString("Generated." + var.name_in_tree_gen_), var.axis_}, varGenCut);
-    }
-    task.AddH2("rec_" + vars.at(0).name_ + "_Vs_" + vars.at(1).name_,
-               {vars.at(0).title_ + vars.at(0).unit_, Variable::FromString("Candidates." + vars.at(0).name_in_tree_rec_), vars.at(0).axis_},
-               {vars.at(1).title_ + ", " + vars.at(1).unit_, Variable::FromString("Candidates." + vars.at(1).name_in_tree_rec_), vars.at(1).axis_}, recCut);
+    task.SetTopLevelDirName("EfficiencyQA/" + promptness.name_ + "/gen");
+    Cuts* genCut2D = new Cuts(promptness.name_, {promptness.cut_gen_});
     task.AddH2("gen_" + vars.at(0).name_ + "_Vs_" + vars.at(1).name_,
-               {vars.at(0).title_ + vars.at(0).unit_, Variable::FromString("Generated." + vars.at(0).name_in_tree_gen_), vars.at(0).axis_},
-               {vars.at(1).title_ + ", " + vars.at(1).unit_, Variable::FromString("Generated." + vars.at(1).name_in_tree_gen_), vars.at(1).axis_}, genCut);
+              {vars.at(0).title_ + vars.at(0).unit_, Variable::FromString("Generated." + vars.at(0).name_in_tree_gen_), vars.at(0).axis_},
+              {vars.at(1).title_ + ", " + vars.at(1).unit_, Variable::FromString("Generated." + vars.at(1).name_in_tree_gen_), vars.at(1).axis_}, genCut2D);
+    for (auto& var : vars) {
+      task.SetTopLevelDirName("EfficiencyQA/" + promptness.name_ + "/gen");
+      const std::string comma = var.unit_ == "" ? "" : ", ";
+      Cuts* genCut1D = new Cuts(promptness.name_, {promptness.cut_gen_});
+      genCut1D->AddCuts(var.cut_gen_);
+      task.AddH1("gen_" + var.name_, {var.title_ + comma + var.unit_, Variable::FromString("Generated." + var.name_in_tree_gen_), var.axis_}, genCut1D);
+      for(auto& sel : selectCuts) {
+        task.SetTopLevelDirName("EfficiencyQA/" + promptness.name_ + "/rec/" + sel.GetTitle());
+        Cuts* recCut1D = new Cuts(promptness.name_, {promptness.cut_rec_, sel});
+        recCut1D->AddCuts(var.cut_rec_);
+        task.AddH1("rec_" + var.name_, {var.title_ + comma + var.unit_, Variable::FromString("Candidates." + var.name_in_tree_rec_), var.axis_}, recCut1D);
+      } // selectCuts
+    } // vars
+    for(auto& sel : selectCuts) {
+      task.SetTopLevelDirName("EfficiencyQA/" + promptness.name_ + "/rec/" + sel.GetTitle());
+      Cuts* recCut2D = new Cuts(promptness.name_, {promptness.cut_rec_, sel});
+      task.AddH2("rec_" + vars.at(0).name_ + "_Vs_" + vars.at(1).name_,
+                {vars.at(0).title_ + vars.at(0).unit_, Variable::FromString("Candidates." + vars.at(0).name_in_tree_rec_), vars.at(0).axis_},
+                {vars.at(1).title_ + ", " + vars.at(1).unit_, Variable::FromString("Candidates." + vars.at(1).name_in_tree_rec_), vars.at(1).axis_}, recCut2D);
+    } // selectCuts
   } // promptnesses
 } // EfficiencyQA()
 
@@ -176,13 +185,15 @@ void PullsAndResidualsQA(QA::Task& task) {
     } // var.slice_cuts_
   };
 
-  task.SetTopLevelDirName("PullsAndResiduals/CandidatesQA");
-  for(auto& pro : promptnesses) {
-    Cuts* cutsTotal = new Cuts(pro.GetTitle() + "_total", {simpleCutSelected, pro});
-    for(auto& var : varsCand) {
-      BuildPullsAndResiduals(var, "Candidates", "Simulated", "Candidates", cutsTotal);
-    } // varsCand
-  } // promptnesses
+  for(auto& sel : selectCuts) {
+    for(auto& pro : promptnesses) {
+      task.SetTopLevelDirName("PullsAndResiduals/CandidatesQA/" + sel.GetTitle() + "/" + pro.GetTitle());
+      Cuts* cutsTotal = new Cuts(pro.GetTitle() + "_total", {sel, pro});
+      for(auto& var : varsCand) {
+        BuildPullsAndResiduals(var, "Candidates", "Simulated", "Candidates", cutsTotal);
+      } // varsCand
+    } // promptnesses
+  } // selectCuts
 
   task.SetTopLevelDirName("PullsAndResiduals/EventsQA");
   for(auto& var : varsEve) {
