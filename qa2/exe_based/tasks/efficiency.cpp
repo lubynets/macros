@@ -26,25 +26,33 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
     throw std::runtime_error("fileIn == nullptr");
   }
 
-//  const std::string selection = "isSel";
-  const std::string selection = "noSel";
+  const std::string selection = "isSel";
+//  const std::string selection = "noSel";
 
   const std::string fileOutName = "efficiency." + selection;
 
   struct Variable {
     std::string name_;
     int rebin_factor_;
+    std::vector<double> rebin_edges_;
     bool logy_eff_;
     bool logy_yield_;
     std::string cut_text_;
   };
 
   std::vector<Variable> variables {
-    {"Y",  2, false, false, ""},
-    {"Pt", 5, false, true,  "|y| < 0.8" },
-    {"L",  5, false, true,  "|y| < 0.8"  },
-    {"T",  5, false, true,  "|y| < 0.8"  },
+    {"Y",  2, {}, false, false, ""},
+    {"Pt", 5, {}, false, true,  "|y| < 0.8" },
+    {"L",  5, {}, false, true,  "|y| < 0.8"  },
+    {"T",  5, {}, false, true,  "|y| < 0.8"  },
   };
+
+  for(int iB=0; iB<40; iB++) {
+    variables.at(3).rebin_edges_.push_back(0.025 * iB);
+  }
+  for(int iB=0; iB<11; iB++) {
+    variables.at(3).rebin_edges_.push_back(1 + iB*0.1);
+  }
 
   const std::vector<Color_t> colors{kRed, kBlue};
 
@@ -53,16 +61,32 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
   std::string printing_bracket = "(";
 
   for(auto& var : variables) {
+    if(var.rebin_factor_ != 1 && !var.rebin_edges_.empty()) {
+      std::cout << "Warning: For var " << var.name_ << " both rebin_factor_ and rebin_edges_ are set. Only rebin_edges_ will be applied\n";
+    }
     TH1D* histoGenPrompt = fileIn->Get<TH1D>(("EfficiencyQA/prompt/gen/Generated_prompt/gen_" + var.name_).c_str());
     TH1D* histoRecPrompt = fileIn->Get<TH1D>(("EfficiencyQA/prompt/rec/" + selection + "/Candidates_prompt/rec_" + var.name_).c_str());
     TH1D* histoGenNonPrompt = fileIn->Get<TH1D>(("EfficiencyQA/nonprompt/gen/Generated_nonprompt/gen_" + var.name_).c_str());
     TH1D* histoRecNonPrompt = fileIn->Get<TH1D>(("EfficiencyQA/nonprompt/rec/" + selection + "/Candidates_nonprompt/rec_" + var.name_).c_str());
-    for(auto& histo : std::array<TH1D*, 4>{histoGenPrompt, histoRecPrompt, histoGenNonPrompt, histoRecNonPrompt}) {
+    auto ProcessHistogram = [&] (TH1D*& histo) {
       if(histo == nullptr) throw std::runtime_error("One of the TH1 histograms is nullptr!");
-      if(var.rebin_factor_ != 1) histo->Rebin(var.rebin_factor_);
       histo->Sumw2();
+      if(var.rebin_factor_ != 1 && var.rebin_edges_.empty()) histo->Rebin(var.rebin_factor_);
+      if(!var.rebin_edges_.empty()) {
+        std::cout << "Info: var " << var.name_ << " is rebinned to\n{";
+        for(auto& be : var.rebin_edges_) {
+          std::cout << be << " ";
+        }
+        std::cout << "}\n";
+        auto histor = dynamic_cast<TH1D*>(histo->Rebin(var.rebin_edges_.size() - 1,histo->GetName(),var.rebin_edges_.data()));
+        histo = histor;
+      }
       histo->UseCurrentStyle();
-    }
+    };
+    ProcessHistogram(histoGenPrompt);
+    ProcessHistogram(histoRecPrompt);
+    ProcessHistogram(histoGenNonPrompt);
+    ProcessHistogram(histoRecNonPrompt);
 
     TH1D* histoEffPrompt = (TH1D*)histoRecPrompt->Clone();
     histoEffPrompt->Divide(histoGenPrompt);

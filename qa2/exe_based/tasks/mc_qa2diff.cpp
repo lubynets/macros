@@ -176,6 +176,7 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool isDoF
       entry->SetFillStyle(1000);
 
       TCanvas ccMuStat(("cc" +  resPulls.at(iRP).prefix_ + "Mu").c_str(), ("cc" +  resPulls.at(iRP).prefix_ + "Mu").c_str(), 1200, 800);
+      grMu.at(iRP)->GetYaxis()->SetRangeUser(-0.5, 0.5);
       grMu.at(iRP)->Draw("AP; 2");
       zeroLine->Draw("L same");
       legBoth.Draw("same");
@@ -185,13 +186,14 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool isDoF
 
       TCanvas ccMuWidth(("cc" +  resPulls.at(iRP).prefix_ + "Mu").c_str(), ("cc" +  resPulls.at(iRP).prefix_ + "Mu").c_str(), 1200, 800);
       grMu.at(iRP)->Draw("AP; X");
-      CustomizeGraphYRange(grMu.at(iRP));
+//      CustomizeGraphYRange(grMu.at(iRP));
       zeroLine->Draw("L same");
       legStat.Draw("same");
       if(var.name_.find("pv") == std::string::npos) AddOneLineText(promptness, 0.74, 0.82, 0.87, 0.90);
       ccMuWidth.Print((currentFileOutName + ".pdf").c_str(), "pdf");
 
       TCanvas ccSigma(("cc" +  resPulls.at(iRP).prefix_ + "Sigma").c_str(), ("cc" +  resPulls.at(iRP).prefix_ + "Sigma").c_str(), 1200, 800);
+      grSigma.at(iRP)->GetYaxis()->SetRangeUser(0.5, 1.5);
       grSigma.at(iRP)->Draw("AP");
       if(resPulls.at(iRP).is_draw_oneline_on_stddev_) oneLine->Draw("L same");
       legStat.Draw("same");
