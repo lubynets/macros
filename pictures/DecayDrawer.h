@@ -14,8 +14,34 @@ void QuadritizeTMultiGraph(TMultiGraph* mgr);
 void MarkUpCanvas(TCanvas* cc, bool is=true);
 std::vector<TGraph*> CreateTubes(TGraph* gr, const Arc& arc, float tubeRadius, float compression=0.2);
 TGraph* Ellipse(float x, float y, float Rave, float deltaR, float alpha);
+TGraph* ExtendArc(const Arc& arc_in, float alpha);
 
 // ===========================================================================================================
+
+TGraph* ExtendArc(const Arc& arc_in, float alpha) {
+  const float d2 = (arc_in.x2_-arc_in.x1_)*(arc_in.x2_-arc_in.x1_) + (arc_in.y2_-arc_in.y1_)*(arc_in.y2_-arc_in.y1_);
+  const float d = std::sqrt(d2);
+  const float D2 = arc_in.r_*arc_in.r_ - d2/4;
+  if(D2 < 0) throw std::runtime_error("ExtendArc(): circle points and its radius are incompatible");
+  const float D = std::sqrt(D2);
+
+  const float q = arc_in.camel_ ? 1 : -1;
+
+  const float xc = (arc_in.x1_+arc_in.x2_)/2 + q * D * (arc_in.y2_-arc_in.y1_)/d;
+  const float yc = (arc_in.y1_+arc_in.y2_)/2 - q * D * (arc_in.x2_-arc_in.x1_)/d;
+
+  float edgeX, edgeY;
+  if(alpha > 0) {
+    edgeX = arc_in.x2_ - xc;
+    edgeY = arc_in.y2_ - yc;
+  } else {
+    edgeX = arc_in.x1_ - xc;
+    edgeY = arc_in.y1_ - yc;
+  }
+  const float edgeAlpha = TMath::ATan2(edgeY, edgeX);
+
+  return CircleFromCenter(xc, yc, arc_in.r_, edgeAlpha, edgeAlpha-alpha);
+}
 
 std::vector<TGraph*> CreateTubes(TGraph* gr, const Arc& arc, float tubeRadius, float compression) {
   const float xFirst = gr->GetPointX(0);
@@ -101,8 +127,10 @@ void QuadritizeTMultiGraph(TMultiGraph* mgr) {
   const double min = std::min(xmin, ymin);
   const double max = std::max(xmax, ymax);
 
-  mgr->GetXaxis()->SetRangeUser(min, max);
+//   mgr->GetXaxis()->SetRangeUser(min, max);
   mgr->GetYaxis()->SetRangeUser(min, max);
+  mgr->GetXaxis()->SetLimits(min, max);
+//   mgr->GetYaxis()->SetLimits(min, max);
 }
 
 TGraph* Ellipse(float xc, float yc, float Rave, float deltaR, float alpha) {

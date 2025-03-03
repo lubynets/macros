@@ -18,8 +18,8 @@ void threeBodyDecay() {
   const float svY = 2;
 
   // Lambda c
-  const float Lc_begin_shift_X = -0.1;
-  const float Lc_begin_shift_Y = 0.08;
+  const float Lc_begin_shift_X = 0.1;
+  const float Lc_begin_shift_Y = -0.25;
   const float Lc_end_shift_X = -0.1;
   const float Lc_end_shift_Y = 0.06;
 
@@ -69,7 +69,7 @@ void threeBodyDecay() {
   Lc_sim->SetLineStyle(1);
   mgr->Add(Lc_sim, "L");
 
-  auto Lc_tubes = CreateTubes(Lc_sim, Lc_arc, 0.1);
+  auto Lc_tubes = CreateTubes(Lc_sim, Lc_arc, 0.15);
   for(auto& tube : Lc_tubes) {
     tube->SetLineColor(Lc_sim->GetLineColor());
     tube->SetLineWidth(1);
@@ -83,7 +83,7 @@ void threeBodyDecay() {
   proton_sim->SetLineStyle(1);
   mgr->Add(proton_sim, "L");
 
-  auto proton_tubes = CreateTubes(proton_sim, proton_arc, 0.1);
+  auto proton_tubes = CreateTubes(proton_sim, proton_arc, 0.08);
   for(auto& tube : proton_tubes) {
     tube->SetLineColor(proton_sim->GetLineColor());
     tube->SetLineWidth(1);
@@ -97,7 +97,7 @@ void threeBodyDecay() {
   pion_sim->SetLineStyle(1);
   mgr->Add(pion_sim, "L");
 
-  auto pion_tubes = CreateTubes(pion_sim, pion_arc, 0.1);
+  auto pion_tubes = CreateTubes(pion_sim, pion_arc, 0.12);
   for(auto& tube : pion_tubes) {
     tube->SetLineColor(pion_sim->GetLineColor());
     tube->SetLineWidth(1);
@@ -111,7 +111,7 @@ void threeBodyDecay() {
   kaon_sim->SetLineStyle(1);
   mgr->Add(kaon_sim, "L");
 
-  auto kaon_tubes = CreateTubes(kaon_sim, kaon_arc, 0.1);
+  auto kaon_tubes = CreateTubes(kaon_sim, kaon_arc, 0.10);
   for(auto& tube : kaon_tubes) {
     tube->SetLineColor(kaon_sim->GetLineColor());
     tube->SetLineWidth(1);
@@ -119,12 +119,20 @@ void threeBodyDecay() {
     mgr->Add(tube, "L");
   }
 
+  auto pion_pretrack = ExtendArc(pion_arc, -0.9);
+  pion_pretrack->SetLineColor(pion_sim->GetLineColor());
+  pion_pretrack->SetLineWidth(3);
+  pion_pretrack->SetLineStyle(7);
+  mgr->Add(pion_pretrack, "L");
+
   TGraph* verteces = new TGraph();
   verteces->AddPoint(pvX, pvY);
   verteces->AddPoint(svX, svY);
   verteces->SetMarkerStyle(kFullCircle);
   verteces->SetMarkerSize(1);
   mgr->Add(verteces, "P");
+
+//   QuadritizeTMultiGraph(mgr);
 
   mgr->Draw("A");
 }
