@@ -157,12 +157,23 @@ bool Helper::string_to_bool(const std::string& str) {
   else throw std::runtime_error("string_to_bool(): argument must be either true or false");
 }
 
+std::pair<double, double> Helper::GetMinMaxBinWithError(const TH1* h) {
+  double min = 1e9;
+  double max = -1e9;
+  for(int iBin=1; iBin<=h->GetNbinsX(); iBin++) {
+    min = std::min(min, h->GetBinContent(iBin) - h->GetBinError(iBin));
+    max = std::max(max, h->GetBinContent(iBin) + h->GetBinError(iBin));
+  }
+  return std::make_pair(min, max);
+}
+
 void Helper::CustomizeHistogramsYRange(const std::vector<TH1*>& histos, double lo, double hi, double part) {
   double max = -1e9;
   double min = 1e9;
   for(auto& histo : histos) {
-    max = std::max(max, histo->GetBinContent(histo->GetMaximumBin()));
-    min = std::min(min, histo->GetBinContent(histo->GetMinimumBin()));
+    auto [hmin, hmax] = GetMinMaxBinWithError(histo);
+    max = std::max(max, hmax);
+    min = std::min(min, hmin);
   }
   const double diff = max - min;
   const double up = std::min(hi, max + (1-part)/2*diff/part);
