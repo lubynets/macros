@@ -62,7 +62,7 @@ void graph_qa3(const std::string& fileName1, const std::string& fileName2, const
 int main(int argc, char* argv[]) {
   if (argc < 3) {
     std::cout << "Error! Please use " << std::endl;
-    std::cout << " ./graph_qa3 fileName1 fileName2" << std::endl;
+    std::cout << " ./graph_qa3 fileName1 fileName2 promptness constraint" << std::endl;
     exit(EXIT_FAILURE);
   }
 

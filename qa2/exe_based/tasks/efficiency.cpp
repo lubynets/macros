@@ -47,12 +47,12 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
     {"T",  5, {}, false, true,  "|y| < 0.8"  },
   };
 
-  for(int iB=0; iB<40; iB++) {
-    variables.at(3).rebin_edges_.push_back(0.025 * iB);
-  }
-  for(int iB=0; iB<11; iB++) {
-    variables.at(3).rebin_edges_.push_back(1 + iB*0.1);
-  }
+//  for(int iB=0; iB<40; iB++) {
+//    variables.at(3).rebin_edges_.push_back(0.025 * iB);
+//  }
+//  for(int iB=0; iB<11; iB++) {
+//    variables.at(3).rebin_edges_.push_back(1 + iB*0.1);
+//  }
 
   const std::vector<Color_t> colors{kRed, kBlue};
 
@@ -68,6 +68,10 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
     TH1D* histoRecPrompt = fileIn->Get<TH1D>(("EfficiencyQA/prompt/rec/" + selection + "/Candidates_prompt/rec_" + var.name_).c_str());
     TH1D* histoGenNonPrompt = fileIn->Get<TH1D>(("EfficiencyQA/nonprompt/gen/Generated_nonprompt/gen_" + var.name_).c_str());
     TH1D* histoRecNonPrompt = fileIn->Get<TH1D>(("EfficiencyQA/nonprompt/rec/" + selection + "/Candidates_nonprompt/rec_" + var.name_).c_str());
+    histoGenPrompt->SetName((static_cast<std::string>(histoGenPrompt->GetName()) + "_Prompt").c_str());
+    histoRecPrompt->SetName((static_cast<std::string>(histoRecPrompt->GetName()) + "_Prompt").c_str());
+    histoGenNonPrompt->SetName((static_cast<std::string>(histoGenNonPrompt->GetName()) + "_NonPrompt").c_str());
+    histoRecNonPrompt->SetName((static_cast<std::string>(histoRecNonPrompt->GetName()) + "_NonPrompt").c_str());
     auto ProcessHistogram = [&] (TH1D*& histo) {
       if(histo == nullptr) throw std::runtime_error("One of the TH1 histograms is nullptr!");
       histo->Sumw2();
@@ -78,8 +82,7 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
           std::cout << be << " ";
         }
         std::cout << "}\n";
-        auto histor = dynamic_cast<TH1D*>(histo->Rebin(var.rebin_edges_.size() - 1,histo->GetName(),var.rebin_edges_.data()));
-        histo = histor;
+        histo = dynamic_cast<TH1D*>(histo->Rebin(var.rebin_edges_.size() - 1,histo->GetName(),var.rebin_edges_.data()));
       }
       histo->UseCurrentStyle();
     };
@@ -107,7 +110,7 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
                               bool logy,
                               const std::string& oneLineText = "",
                               const std::vector<std::string>& legTexts={}) {
-      TLegend* leg = new TLegend(0.75, 0.7, 0.95, 0.82);
+      TLegend* leg = new TLegend(0.65, 0.2, 0.85, 0.32);
       leg->SetBorderSize(0);
       const double yAxisMin = 0;
       const double yAxisMax = static_cast<TString>(histos.at(0)->GetName()).Contains("Eff") ? 100 : 1e9;
@@ -134,8 +137,9 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
 
     if(isSaveToRoot) {
       fileOut->cd();
-      histoEffPrompt->Write();
-      histoEffNonPrompt->Write();
+      for(auto& histo : std::vector<TH1D*>{histoEffPrompt, histoEffNonPrompt, histoRecPrompt, histoRecNonPrompt, histoGenPrompt, histoGenNonPrompt}) {
+        histo->Write();
+      }
     }
 
     PrintCanvas1D({histoEffPrompt, histoEffNonPrompt}, colors, "efficiency." + selection, var.logy_eff_, "", {"prompt", "nonprompt"});
