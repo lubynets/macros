@@ -42,7 +42,8 @@ void lifetimes() {
     AddExperiment(gr, experiments.at(0).y_value_, pa.pdg_);
     AddExperiment(gr, experiments.at(1).y_value_, pa.lhcb_cl_);
     AddExperiment(gr, experiments.at(2).y_value_, pa.lhcb_prompt_);
-    AddExperiment(gr, experiments.at(3).y_value_, pa.belleii_);
+    if(pa.name_ != "Lambda_c") AddExperiment(gr, experiments.at(3).y_value_, pa.belleii_);
+    else                       AddExperiment(gr, experiments.at(3).y_value_+0.2, pa.belleii_);
     gr->SetMarkerColor(pa.color_);
     gr->SetLineColor(pa.color_);
     gr->SetMarkerSize(2);
@@ -65,7 +66,7 @@ void lifetimes() {
     AddText(particles.at(0).greek_name_, particles.at(0).pdg_.at(0), experiments.at(0).y_value_ + 0.3);
     AddText(particles.at(0).greek_name_, particles.at(0).lhcb_cl_.at(0), experiments.at(1).y_value_ + 0.3);
 //     AddText(particles.at(0).greek_name_, particles.at(0).lhcb_prompt_.at(0), experiments.at(2).y_value_ + 0.3);
-    AddText(particles.at(0).greek_name_, particles.at(0).belleii_.at(0), experiments.at(3).y_value_ + 0.3);
+    AddText(particles.at(0).greek_name_, particles.at(0).belleii_.at(0), experiments.at(3).y_value_ + 0.3 + 0.2);
 
     AddText(particles.at(1).greek_name_, particles.at(1).pdg_.at(0), experiments.at(0).y_value_ + 0.3);
     AddText(particles.at(1).greek_name_, particles.at(1).lhcb_cl_.at(0), experiments.at(1).y_value_ + 0.3);

@@ -26,8 +26,8 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
     throw std::runtime_error("fileIn == nullptr");
   }
 
-  const std::string selection = "isSel";
-//  const std::string selection = "noSel";
+//   const std::string selection = "isSel";
+ const std::string selection = "noSel";
 
   const std::string fileOutName = "efficiency." + selection;
 
@@ -47,12 +47,12 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
     {"T",  5, {}, false, true,  "|y| < 0.8"  },
   };
 
-//  for(int iB=0; iB<40; iB++) {
-//    variables.at(3).rebin_edges_.push_back(0.025 * iB);
-//  }
-//  for(int iB=0; iB<11; iB++) {
-//    variables.at(3).rebin_edges_.push_back(1 + iB*0.1);
-//  }
+  for(int iB=0; iB<40; iB++) {
+    variables.at(3).rebin_edges_.push_back(0.025 * iB);
+  }
+  for(int iB=0; iB<11; iB++) {
+    variables.at(3).rebin_edges_.push_back(1 + iB*0.1);
+  }
 
   const std::vector<Color_t> colors{kRed, kBlue};
 
@@ -110,7 +110,7 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
                               bool logy,
                               const std::string& oneLineText = "",
                               const std::vector<std::string>& legTexts={}) {
-      TLegend* leg = new TLegend(0.65, 0.2, 0.85, 0.32);
+      TLegend* leg = new TLegend(0.25, 0.6, 0.45, 0.72);
       leg->SetBorderSize(0);
       const double yAxisMin = 0;
       const double yAxisMax = static_cast<TString>(histos.at(0)->GetName()).Contains("Eff") ? 100 : 1e9;

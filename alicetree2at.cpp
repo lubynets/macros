@@ -37,6 +37,8 @@ std::vector<int> findPositions(const std::vector<int>& vec, int M);
 
 void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int maxEntries) {
 
+  std::cout << "AliceTree2AT()\nInput file for conversion: " << fileIn << "\n";
+
   std::vector<std::string> fields_to_ignore_{"Lite_fChi2PCA",
                                              "Lite_fCpa",
                                              "Lite_fCpaXY",

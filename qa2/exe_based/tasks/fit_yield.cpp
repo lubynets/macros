@@ -13,23 +13,24 @@ using namespace Helper;
 
 std::pair<float, float> EstimateExpoParameters(TH1* h, float lo, float hi);
 
-void fit_yield(const std::string& fileName, bool isSaveToRoot) {
+void fit_yield(const std::string& fileNameEff, const std::string& fileNameYield, bool isSaveToRoot) {
   TString currentMacroPath = __FILE__;
   TString directory = currentMacroPath(0, currentMacroPath.Last('/'));
   gROOT->Macro( directory + "/../styles/mc_qa2.style.cc" );
 
-  TFile* fileIn = TFile::Open(fileName.c_str());
-  if(fileIn == nullptr) {
-    throw std::runtime_error("fileIn == nullptr");
+  TFile* fileInEff = TFile::Open(fileNameEff.c_str());
+  TFile* fileInYield = TFile::Open(fileNameYield.c_str());
+  if(fileInEff == nullptr || fileInYield == nullptr) {
+    throw std::runtime_error("fileInEff == nullptr || fileInYield == nullptr");
   }
 
   const std::string promptness = "Prompt";
 
   const std::string fileOutName = "yield_fit." + promptness;
 
-  TH1D* histoRec = fileIn->Get<TH1D>(("rec_T_" + promptness).c_str());
-  TH1D* histoGen = fileIn->Get<TH1D>(("gen_T_" + promptness).c_str());
-  TH1D* histoEff = fileIn->Get<TH1D>(("hEff" + promptness + "T").c_str());
+  TH1D* histoRec = fileInYield->Get<TH1D>(("rec_T_" + promptness).c_str());
+  TH1D* histoGen = fileInYield->Get<TH1D>(("gen_T_" + promptness).c_str());
+  TH1D* histoEff = fileInEff->Get<TH1D>(("hEff" + promptness + "T").c_str());
 
   for(auto& histo : {histoRec, histoGen, histoEff}) {
     histo->Sumw2();
@@ -41,14 +42,14 @@ void fit_yield(const std::string& fileName, bool isSaveToRoot) {
   histoRecCorrected->Scale(100);
 
   TF1* fitMC = new TF1("fitMC", "[0]*TMath::Exp(-x/[1])", 0, 2);
-  auto pars_est_MC = EstimateExpoParameters(histoRecCorrected, 0, 2);
+  auto pars_est_MC = EstimateExpoParameters(histoRecCorrected, 0.2, 2);
   fitMC->SetParameters(pars_est_MC.first, pars_est_MC.second);
-  histoGen->Fit(fitMC, "0", "", 0, 2);
+  histoGen->Fit(fitMC, "0", "", 0.2, 2);
 
   TF1* fitRecCorrected = new TF1("fitRecCorrected", "[0]*TMath::Exp(-x/[1])", 0, 2);
-  auto pars_est_Rec = EstimateExpoParameters(histoRecCorrected, 0, 2);
+  auto pars_est_Rec = EstimateExpoParameters(histoRecCorrected, 0.2, 2);
   fitRecCorrected->SetParameters(pars_est_Rec.first, pars_est_Rec.second);
-  histoRecCorrected->Fit(fitRecCorrected, "", "", 0, 2);
+  histoRecCorrected->Fit(fitRecCorrected, "0", "", 0.2, 2);
 
   TLegend* leg = new TLegend(0.7, 0.7, 0.9, 0.82);
   leg->AddEntry(histoGen, "MC", "L");
@@ -63,6 +64,7 @@ void fit_yield(const std::string& fileName, bool isSaveToRoot) {
 
   histoGen->Draw("");
   histoRecCorrected->Draw("same");
+  fitRecCorrected->Draw("same");
   leg->Draw("same");
   AddOneLineText(promptness, 0.69, 0.82, 0.82, 0.90);
   const std::string lifetimeFitRecCorrected = "#tau_{#Lambda_{c}} [Fit] = (" +
@@ -86,16 +88,17 @@ void fit_yield(const std::string& fileName, bool isSaveToRoot) {
 }
 
 int main(int argc, char* argv[]) {
-  if (argc < 2) {
+  if (argc < 3) {
     std::cout << "Error! Please use " << std::endl;
-    std::cout << " ./fit_yield fileName (isSaveRoot=false)" << std::endl;
+    std::cout << " ./fit_yield fileNameEff fileNameYield (isSaveRoot=false)" << std::endl;
     exit(EXIT_FAILURE);
   }
 
-  const std::string fileName = argv[1];
-  const bool isSaveToRoot = argc > 2 ? string_to_bool(argv[2]) : false;
+  const std::string fileNameEff = argv[1];
+  const std::string fileNameYield = argv[2];
+  const bool isSaveToRoot = argc > 3 ? string_to_bool(argv[3]) : false;
 
-  fit_yield(fileName, isSaveToRoot);
+  fit_yield(fileNameEff, fileNameYield, isSaveToRoot);
 
   return 0;
 }
