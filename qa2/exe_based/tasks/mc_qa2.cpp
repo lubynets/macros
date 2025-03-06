@@ -118,7 +118,7 @@ void mc_qa2(const std::string& fileName) {
 }
 
 int main(int argc, char* argv[]) {
-  if (argc < 1) {
+  if (argc < 2) {
     std::cout << "Error! Please use " << std::endl;
     std::cout << " ./mc_qa2 fileName" << std::endl;
     exit(EXIT_FAILURE);

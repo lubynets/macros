@@ -12,14 +12,15 @@
 
 using namespace Helper;
 
-void graph_qa3(const std::string& fileName1, const std::string& fileName2, const std::string& promptness, const std::string& constraint) {
+void graph_qa3(const std::string& fileName1, const std::string& fileName2, const std::string& promptness, const std::string& constraint, bool drawLeg=true) {
 
-  const std::string leg1 = "no constraint";
-  const std::string leg2 = constraint == "topoConstr" ? "topo constraint" : constraint == "minvConstr" ? "m_{inv} constraint" : "ERROR";
+  const std::string leg1 = "w/o constraint";
+//  const std::string leg2 = constraint == "topoConstr" ? "topo constraint" : constraint == "minvConstr" ? "m_{inv} constraint" : "ERROR";
+  const std::string leg2 = "w/ constraint";
 
   TString currentMacroPath = __FILE__;
   TString directory = currentMacroPath(0, currentMacroPath.Last('/'));
-  gROOT->Macro( directory + "/../styles/treeKF_qa2.style.cc" );
+  gROOT->Macro( directory + "/../styles/treeKF_qa2.dpg.style.cc" );
 
   TFile* fileIn1 = TFile::Open(fileName1.c_str());
   TFile* fileIn2 = TFile::Open(fileName2.c_str());
@@ -49,20 +50,21 @@ void graph_qa3(const std::string& fileName1, const std::string& fileName2, const
   mGr->GetYaxis()->SetTitle(gr1->GetYaxis()->GetTitle());
 
   TLegend* leg = new TLegend(0.2, 0.7, 0.4, 0.9);
+  leg->SetTextSize(0.07);
   leg->AddEntry(gr1, leg1.c_str(), "PE");
   leg->AddEntry(gr2, leg2.c_str(), "PE");
 
   TCanvas cc("cc", "cc", 1200, 800);
   mGr->Draw("AP");
-  leg->Draw("same");
-  AddOneLineText(promptness, 0.74, 0.82, 0.87, 0.90);
+  if(drawLeg) leg->Draw("same");
+//  AddOneLineText(promptness, 0.74, 0.82, 0.87, 0.90);
   cc.Print("graph_qa3.pdf", "pdf");
 }
 
 int main(int argc, char* argv[]) {
   if (argc < 3) {
     std::cout << "Error! Please use " << std::endl;
-    std::cout << " ./graph_qa3 fileName1 fileName2 promptness constraint" << std::endl;
+    std::cout << " ./graph_qa3 fileName1 fileName2 promptness constraint drawLeg=true" << std::endl;
     exit(EXIT_FAILURE);
   }
 
@@ -70,8 +72,9 @@ int main(int argc, char* argv[]) {
   const std::string fileName2 = argv[2];
   const std::string promptness = argv[3];
   const std::string constraint = argv[4];
+  const bool drawLeg = argc > 5 ? string_to_bool(argv[5]) : true;
 
-  graph_qa3(fileName1, fileName2, promptness, constraint);
+  graph_qa3(fileName1, fileName2, promptness, constraint, drawLeg);
 
   return 0;
 }

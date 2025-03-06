@@ -19,7 +19,7 @@ using namespace Helper;
 void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool isDoFit, bool isSaveRoot) {
   TString currentMacroPath = __FILE__;
   TString directory = currentMacroPath(0, currentMacroPath.Last('/'));
-  gROOT->Macro( directory + "/../styles/mc_qa2.style.cc" );
+  gROOT->Macro( directory + "/../styles/mc_qa2.dpg.style.cc" );
 
   if(prompt_or_nonprompt !=1 && prompt_or_nonprompt != 2) {
     throw std::runtime_error("prompt_or_nonprompt must be 1 or 2");
@@ -45,16 +45,17 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool isDoF
 
   std::vector<Variable> vars {
 //  name    cutname  title          unit    logres logpull
-    {"P",   "psim",  "p^{mc}",     "GeV/c", false, false},
-    {"Pt",  "pTsim", "p_{T}^{mc}", "GeV/c", false, false},
-    {"Xpv", "nPVC",  "numPVTracks","",      false, false},
-    {"Ypv", "nPVC",  "numPVTracks","",      false, false},
-    {"Zpv", "nPVC",  "numPVTracks","",      false, false},
-    {"Xsv", "pTsim", "p_{T}^{mc}","GeV/c", false, false},
-    {"Ysv", "pTsim", "p_{T}^{mc}","GeV/c", false, false},
-    {"Zsv", "pTsim", "p_{T}^{mc}","GeV/c", false, false},
-    {"L",   "lsim",  "L^{mc}",     "cm",    false, false},
+//    {"P",   "psim",  "#it{p}^{mc}",     "GeV/#it{c}", false, false},
+    {"Pt",  "pTsim", "#it{p}_{T}^{mc}", "GeV/#it{c}", false, false},
+//    {"Xpv", "nPVC",  "numPVTracks","",      false, false},
+//    {"Ypv", "nPVC",  "numPVTracks","",      false, false},
+//    {"Zpv", "nPVC",  "numPVTracks","",      false, false},
+//    {"Xsv", "pTsim", "#it{p}_{T}^{mc}","GeV/#it{c}", false, false},
+//    {"Ysv", "pTsim", "#it{p}_{T}^{mc}","GeV/#it{c}", false, false},
+//    {"Zsv", "pTsim", "#it{p}_{T}^{mc}","GeV/#it{c}", false, false},
+//    {"L",   "lsim",  "L^{mc}",     "cm",    false, false},
     {"T",   "tsim",  "T^{mc}",     "ps",    false, false},
+//    {"T",   "trec",  "T^{rec}",    "ps",    false, false},
   };
 
   struct ResPull{
@@ -71,9 +72,9 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool isDoF
   for(auto& var : vars) {
     bool is_first_canvas{true};
     std::string printing_bracket = "(";
-    const std::string comma = var.cut_unit_ == "" ? "" : ", ";
+    const std::string xtitle = var.cut_unit_.empty() ? var.cut_title_ : var.cut_title_ + " (" + var.cut_unit_ + ")";
 
-    auto cutsVar = FindCuts(fileIn, "PullsAndResiduals/Candidates_Simulated_"  + promptness + "_" + var.cut_name_);
+    auto cutsVar = FindCuts(fileIn, "PullsAndResiduals/CandidatesQA/noSel/"  + promptness + "/Candidates_Simulated_"  + promptness + "_total_" + var.cut_name_);
 
     std::vector<TGraphMultiErrors*> grMu;
     std::vector<TGraphErrors*> grSigma;
@@ -84,7 +85,7 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool isDoF
       grSigma.at(iRP) = new TGraphErrors(cutsVar.size());
       for(auto& g : (std::vector<TGraph*>){grMu.at(iRP), grSigma.at(iRP)}) {
         g->SetTitle("");
-        g->GetXaxis()->SetTitle((var.cut_title_ + comma + var.cut_unit_).c_str());
+        g->GetXaxis()->SetTitle(xtitle.c_str());
         g->SetMarkerStyle(kFullSquare);
         g->SetMarkerSize(2);
         g->SetMarkerColor(kBlue);
@@ -110,15 +111,15 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool isDoF
       for(int iRP=0; iRP<resPulls.size(); iRP++) {
         const std::string currentFileOutName = fileOutName + "_" + var.name_ + "_" +  resPulls.at(iRP).prefix_;
         const std::string cutName = var.cut_name_ + "_"  + cV.first + "_"  + cV.second;
-        const std::string histoName = "PullsAndResiduals/Candidates_Simulated_" + promptness + "_"  + cutName + "/" +  resPulls.at(iRP).prefix_ + "_"  + var.name_ + "_"  + cutName;
+        const std::string histoName = "PullsAndResiduals/CandidatesQA/noSel/"  + promptness + "/Candidates_Simulated_"  + promptness + "_total_"  + cutName + "/" +  resPulls.at(iRP).prefix_ + "_"  + var.name_ + "_"  + cutName;
         TH1D* hIn = fileIn->Get<TH1D>(histoName.c_str());
         if(hIn == nullptr) {
-          throw std::runtime_error("hIn == nullptr for " + var.name_ + "; " + var.cut_name_ + "; " + cV.first + "; "  + cV.second + "; " + resPulls.at(iRP).prefix_);
+          throw std::runtime_error("hIn == nullptr for " + histoName);
         }
 
         if(is_first_canvas && iPoint==0) {
-          grMu.at(iRP)->GetYaxis()->SetTitle((resPulls.at(iRP).name_ + " mean of " + hIn->GetXaxis()->GetTitle()).c_str());
-          grSigma.at(iRP)->GetYaxis()->SetTitle((resPulls.at(iRP).name_ + " width of " + hIn->GetXaxis()->GetTitle()).c_str());
+          grMu.at(iRP)->GetYaxis()->SetTitle((resPulls.at(iRP).name_ + " mean").c_str());
+          grSigma.at(iRP)->GetYaxis()->SetTitle((resPulls.at(iRP).name_ + " width (" + var.cut_unit_ + ")").c_str());
         }
 
         hIn->UseCurrentStyle();
@@ -176,28 +177,28 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool isDoF
       entry->SetFillStyle(1000);
 
       TCanvas ccMuStat(("cc" +  resPulls.at(iRP).prefix_ + "Mu").c_str(), ("cc" +  resPulls.at(iRP).prefix_ + "Mu").c_str(), 1200, 800);
-      grMu.at(iRP)->GetYaxis()->SetRangeUser(-0.5, 0.5);
+//      grMu.at(iRP)->GetYaxis()->SetRangeUser(-0.5, 0.5);
       grMu.at(iRP)->Draw("AP; 2");
       zeroLine->Draw("L same");
-      legBoth.Draw("same");
-      if(var.name_.find("pv") == std::string::npos) AddOneLineText(promptness, 0.74, 0.82, 0.87, 0.90);
+//      legBoth.Draw("same");
+//      if(var.name_.find("pv") == std::string::npos) AddOneLineText(promptness, 0.74, 0.82, 0.87, 0.90);
       ccMuStat.Print((currentFileOutName + ".pdf").c_str(), "pdf");
       if(isSaveRoot) grMu.at(iRP)->Write("mu");
 
       TCanvas ccMuWidth(("cc" +  resPulls.at(iRP).prefix_ + "Mu").c_str(), ("cc" +  resPulls.at(iRP).prefix_ + "Mu").c_str(), 1200, 800);
       grMu.at(iRP)->Draw("AP; X");
-//      CustomizeGraphYRange(grMu.at(iRP));
+      CustomizeGraphYRange(grMu.at(iRP));
       zeroLine->Draw("L same");
-      legStat.Draw("same");
-      if(var.name_.find("pv") == std::string::npos) AddOneLineText(promptness, 0.74, 0.82, 0.87, 0.90);
+//      legStat.Draw("same");
+//      if(var.name_.find("pv") == std::string::npos) AddOneLineText(promptness, 0.74, 0.82, 0.87, 0.90);
       ccMuWidth.Print((currentFileOutName + ".pdf").c_str(), "pdf");
 
       TCanvas ccSigma(("cc" +  resPulls.at(iRP).prefix_ + "Sigma").c_str(), ("cc" +  resPulls.at(iRP).prefix_ + "Sigma").c_str(), 1200, 800);
-      grSigma.at(iRP)->GetYaxis()->SetRangeUser(0.5, 1.5);
+//      grSigma.at(iRP)->GetYaxis()->SetRangeUser(0.5, 1.5);
       grSigma.at(iRP)->Draw("AP");
       if(resPulls.at(iRP).is_draw_oneline_on_stddev_) oneLine->Draw("L same");
-      legStat.Draw("same");
-      if(var.name_.find("pv") == std::string::npos) AddOneLineText(promptness, 0.74, 0.82, 0.87, 0.90);
+//      legStat.Draw("same");
+//      if(var.name_.find("pv") == std::string::npos) AddOneLineText(promptness, 0.74, 0.82, 0.87, 0.90);
       ccSigma.Print((currentFileOutName + ".pdf").c_str(), "pdf");
       if(isSaveRoot) grSigma.at(iRP)->Write("sigma");
 
@@ -212,14 +213,14 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool isDoF
 int main(int argc, char* argv[]) {
   if (argc < 2) {
     std::cout << "Error! Please use " << std::endl;
-    std::cout << " ./mc_qa2diff fileName (prompt_or_nonprompt isDoFit isSaveRoot)" << std::endl;
+    std::cout << " ./mc_qa2diff fileName (prompt_or_nonprompt=1 isDoFit=true isSaveRoot=true)" << std::endl;
     exit(EXIT_FAILURE);
   }
 
   const std::string fileName = argv[1];
   const int prompt_or_nonprompt = argc>2 ? atoi(argv[2]) : 1;
-  const bool isDoFit = argc < 4 || strcmp(argv[3], "true") == 0;
-  const bool isSaveRoot = argc >= 5 && strcmp(argv[4], "true") == 0;
+  const bool isDoFit = argc > 3 ? string_to_bool(argv[3]) : true;
+  const bool isSaveRoot = argc > 4 ? string_to_bool(argv[4]) : true;
 
   mc_qa2diff(fileName, prompt_or_nonprompt, isDoFit, isSaveRoot);
 

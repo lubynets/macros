@@ -19,7 +19,7 @@ using namespace Helper;
 void treeKF_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool isDoFit, bool isSaveRoot) {
   TString currentMacroPath = __FILE__;
   TString directory = currentMacroPath(0, currentMacroPath.Last('/'));
-  gROOT->Macro( directory + "/../styles/treeKF_qa2.style.cc" );
+  gROOT->Macro( directory + "/../styles/treeKF_qa2.dpg.style.cc" );
 
   TFile* fileIn = TFile::Open(fileName.c_str());
   if(fileIn == nullptr) {
@@ -177,7 +177,7 @@ void treeKF_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool i
 int main(int argc, char* argv[]) {
   if (argc < 2) {
     std::cout << "Error! Please use " << std::endl;
-    std::cout << " ./treeKF_qa2diff fileName (prompt_or_nonprompt isDoFit isSaveRoot)" << std::endl;
+    std::cout << " ./treeKF_qa2diff fileName (prompt_or_nonprompt=1 isDoFit=false isSaveRoot=false)" << std::endl;
     exit(EXIT_FAILURE);
   }
 
