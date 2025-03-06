@@ -13,10 +13,10 @@ void lifetimes() {
   };
 
   std::vector<Experiment> experiments {
-    {"PDG",         "(2018)",    4},
-    {"LHCb SL",     "(2018/19)", 3},
-    {"LHCb Prompt", "(2021)",    2},
-    {"Belle II",    "(2023)",    1}
+    {"PDG",      "(2018)",    4},
+    {"LHCb",     "(2018/19)", 3},
+    {"LHCb",     "(2021)",    2},
+    {"Belle II", "(2023)",    1}
   };
 
   struct Particle {
@@ -49,7 +49,7 @@ void lifetimes() {
     gr->SetMarkerSize(2);
     gr->SetMarkerStyle(kFullSquare);
     if(pa.name_ == "Lambda_c") {
-      gr->GetXaxis()->SetTitle("Lifetime, ps");
+      gr->GetXaxis()->SetTitle("lifetime (fs)");
       gr->GetXaxis()->SetLimits(0, 500);
       gr->GetYaxis()->Set(40, 0, 5);
       gr->GetYaxis()->SetTickSize(0);
