@@ -88,7 +88,7 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool isDoF
         g->SetTitle("");
         g->GetXaxis()->SetTitle(xtitle.c_str());
         g->SetMarkerStyle(kFullSquare);
-        g->SetMarkerSize(2);
+        g->SetMarkerSize(3.2);
         g->SetMarkerColor(kBlue);
         g->SetLineWidth(3);
         g->SetLineColor(kBlue);

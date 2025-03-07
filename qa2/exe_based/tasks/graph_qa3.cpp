@@ -35,9 +35,10 @@ void graph_qa3(const std::string& fileName1, const std::string& fileName2, const
     g->UseCurrentStyle();
     g->SetTitle("");
     g->SetMarkerStyle(kFullSquare);
-    g->SetMarkerSize(2);
+    g->SetMarkerSize(3.2);
     g->SetLineWidth(3);
   }
+  gr2->SetMarkerStyle(kOpenSquare); // TODO ad. hoc.
   gr1->SetMarkerColor(kBlue);
   gr2->SetMarkerColor(kRed);
   gr1->SetLineColor(kBlue);
