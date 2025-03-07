@@ -52,7 +52,7 @@ void fit_yield(const std::string& fileNameEff, const std::string& fileNameYield,
   histoRecCorrected->Fit(fitRecCorrected, "", "", 0.2, 2);
 
   TLegend* leg = new TLegend(0.7, 0.7, 0.9, 0.82);
-  leg->AddEntry(histoGen, "MC", "L");
+  leg->AddEntry(histoGen, "MC", "P");
   leg->AddEntry(histoRecCorrected, "Rec (corrected)", "L");
   leg->AddEntry(fitRecCorrected, "Fit to Rec", "L");
 
@@ -60,9 +60,12 @@ void fit_yield(const std::string& fileNameEff, const std::string& fileNameYield,
   cc.SetLogy();
 
   histoGen->SetLineColor(kBlack);
+  histoGen->SetMarkerStyle(kOpenCircle);
+  histoGen->SetMarkerColor(kBlack);
   histoRecCorrected->SetLineColor(kBlue);
 
-  histoGen->Draw("");
+  histoGen->GetXaxis()->SetTitle("T (ps)"); // TODO ad. hoc. to be changed in the main code for histo production
+  histoGen->Draw("P");
   histoRecCorrected->Draw("same");
   leg->Draw("same");
   AddOneLineText(promptness, {0.69, 0.82, 0.82, 0.90});
@@ -84,6 +87,48 @@ void fit_yield(const std::string& fileNameEff, const std::string& fileNameYield,
   AddOneLineText(lifetimePdg, {0.69, 0.52, 0.82, 0.60});
 
   cc.Print((fileOutName + ".pdf").c_str(), "pdf");
+
+  //=========== build ratio ==============================
+  TH1D* histoRecCorrected2RecFit = dynamic_cast<TH1D*>(histoRecCorrected->Clone());
+  histoRecCorrected2RecFit->Divide(fitRecCorrected);
+  histoRecCorrected2RecFit->GetYaxis()->SetTitle("Ratio");
+
+  TCanvas ccRatio2RecFit("ccRatio2RecFit", "", 1200, 800);
+  TF1* oneline = new TF1("oneline", "[0]", 0, 2);
+  oneline->SetParameter(0, 1);
+  oneline->SetLineColor(kBlack);
+  oneline->SetLineStyle(7);
+  histoRecCorrected2RecFit->Draw("HIST PE");
+  oneline->Draw("same");
+  ccRatio2RecFit.Print((fileOutName + "Ratio2RecFit.pdf").c_str(), "pdf");
+ // ---------------------------------------------------------
+  TH1D* histoMC2MCFit = dynamic_cast<TH1D*>(histoGen->Clone());
+  histoMC2MCFit->Divide(fitMC);
+  histoMC2MCFit->GetYaxis()->SetTitle("Ratio");
+  histoMC2MCFit->GetYaxis()->SetRangeUser(0, 2);
+
+  TH1D* histoRecCorrected2MCFit = dynamic_cast<TH1D*>(histoRecCorrected->Clone());
+  histoRecCorrected2MCFit->Divide(fitMC);
+
+  TF1* fitRecCorrected2MCFit = new TF1("fitRecCorrected2MCFit", "[0]*TMath::Exp(-x/[1])", 0.2, 2);
+  fitRecCorrected2MCFit->SetParameter(0, fitRecCorrected->GetParameter(0) / fitMC->GetParameter(0));
+  fitRecCorrected2MCFit->SetParameter(1, fitMC->GetParameter(1) * fitRecCorrected->GetParameter(1) / (fitMC->GetParameter(1) - fitRecCorrected->GetParameter(1)));
+  std::cout << fitRecCorrected2MCFit->GetParameter(0) << "\t" << fitRecCorrected2MCFit->GetParameter(1) << "\n";
+
+  TCanvas ccRatio2MCFit("ccRatio2MCFit", "", 1200, 800);
+  histoMC2MCFit->Draw("HIST PE");
+  histoRecCorrected2MCFit->Draw("same HIST PE");
+  fitRecCorrected2MCFit->Draw("same");
+  oneline->Draw("same");
+
+  TLegend* legratio = new TLegend(0.3, 0.20, 0.5, 0.4);
+  legratio->AddEntry(histoMC2MCFit, "MC to MC fit", "P");
+  legratio->AddEntry(histoRecCorrected2MCFit, "Rec to MC fit", "L");
+  legratio->AddEntry(fitRecCorrected2MCFit, "Rec fit MC fit", "L");
+  legratio->Draw("same");
+
+  ccRatio2MCFit.Print((fileOutName + "Ratio2MCFit.pdf").c_str(), "pdf");
+  //=========== build ratio ==============================
 }
 
 int main(int argc, char* argv[]) {
