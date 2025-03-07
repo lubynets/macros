@@ -130,8 +130,8 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
         }
       }
       leg->Draw("same");
-      AddOneLineText(oneLineText, {0.60, 0.82, 0.73, 0.90}, 0.04);
-      AddOneLineText(var.cut_text_, {0.60, 0.74, 0.73, 0.82}, 0.04);
+      AddOneLineText(oneLineText, {0.60, 0.82, 0.73, 0.90}, "brNDC", 0.04);
+      AddOneLineText(var.cut_text_, {0.60, 0.74, 0.73, 0.82}, "brNDC", 0.04);
       cc.Print((namePrefix + ".pdf" + printing_bracket).c_str(), "pdf");
     };
 

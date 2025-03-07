@@ -1,6 +1,7 @@
 #include "Helper.hpp"
 #include "ShapeFitter.hpp"
 
+#include <TArrow.h>
 #include <TCanvas.h>
 #include <TFile.h>
 #include <TF1.h>
@@ -118,8 +119,9 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool isDoF
         }
 
         if(is_first_canvas && iPoint==0) {
-          grMu.at(iRP)->GetYaxis()->SetTitle((resPulls.at(iRP).name_ + " mean").c_str());
-          grSigma.at(iRP)->GetYaxis()->SetTitle((resPulls.at(iRP).name_ + " width (" + var.cut_unit_ + ")").c_str());
+          const std::string residualSuffix = iRP == 0 ? " (" + var.cut_unit_ + ")" : "";
+          grMu.at(iRP)->GetYaxis()->SetTitle((resPulls.at(iRP).name_ + " mean" + residualSuffix).c_str());
+          grSigma.at(iRP)->GetYaxis()->SetTitle((resPulls.at(iRP).name_ + " width" + residualSuffix).c_str());
         }
 
         hIn->UseCurrentStyle();
@@ -177,7 +179,7 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool isDoF
       entry->SetFillStyle(1000);
 
       TCanvas ccMuStat(("cc" +  resPulls.at(iRP).prefix_ + "Mu").c_str(), ("cc" +  resPulls.at(iRP).prefix_ + "Mu").c_str(), 1200, 800);
-//      grMu.at(iRP)->GetYaxis()->SetRangeUser(-0.5, 0.5);
+      grMu.at(iRP)->GetYaxis()->SetRangeUser(-0.199, 0.3);
       grMu.at(iRP)->Draw("AP; 2");
       zeroLine->Draw("L same");
 //      legBoth.Draw("same");
@@ -187,14 +189,28 @@ void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool isDoF
 
       TCanvas ccMuWidth(("cc" +  resPulls.at(iRP).prefix_ + "Mu").c_str(), ("cc" +  resPulls.at(iRP).prefix_ + "Mu").c_str(), 1200, 800);
       grMu.at(iRP)->Draw("AP; X");
-      CustomizeGraphYRange(grMu.at(iRP));
+      if(iRP == 1 && var.name_ == "T") {
+        for(int iOutlyerPoint=0; iOutlyerPoint<=1; iOutlyerPoint++) {
+          TArrow* arrow = new TArrow(grMu.at(1)->GetPointX(iOutlyerPoint), 0.25, grMu.at(1)->GetPointX(iOutlyerPoint), 0.295, 0.01, "|>");
+          arrow->SetLineColor(kBlue);
+          arrow->Draw();
+          AddOneLineText(to_string_with_significant_figures(grMu.at(1)->GetPointY(iOutlyerPoint), 2),
+                         {static_cast<float>(grMu.at(1)->GetPointX(iOutlyerPoint)), 0.23,
+                          static_cast<float>(grMu.at(1)->GetPointX(iOutlyerPoint)), 0.25}, "", 0.04);
+        }
+      }
+//      CustomizeGraphYRange(grMu.at(iRP));
       zeroLine->Draw("L same");
 //      legStat.Draw("same");
 //      if(var.name_.find("pv") == std::string::npos) AddOneLineText(promptness, 0.74, 0.82, 0.87, 0.90);
       ccMuWidth.Print((currentFileOutName + ".pdf").c_str(), "pdf");
 
       TCanvas ccSigma(("cc" +  resPulls.at(iRP).prefix_ + "Sigma").c_str(), ("cc" +  resPulls.at(iRP).prefix_ + "Sigma").c_str(), 1200, 800);
-//      grSigma.at(iRP)->GetYaxis()->SetRangeUser(0.5, 1.5);
+
+      if(var.name_ == "T") grSigma.at(1)->GetXaxis()->SetLimits(0.01, 2);
+      if(var.name_ == "Pt") grSigma.at(1)->GetXaxis()->SetLimits(0, 15.5);
+
+      grSigma.at(iRP)->GetYaxis()->SetRangeUser(0.65, 1.3);
       grSigma.at(iRP)->Draw("AP");
       if(resPulls.at(iRP).is_draw_oneline_on_stddev_) oneLine->Draw("L same");
 //      legStat.Draw("same");
