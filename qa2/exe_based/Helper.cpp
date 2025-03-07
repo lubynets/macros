@@ -141,9 +141,9 @@ TF1* Helper::HorizontalLine4Graph(float level, TGraph* graph) {
   return horizLine;
 }
 
-void Helper::AddOneLineText(const std::string& text, const std::array<float, 4>& xy, float size) {
+void Helper::AddOneLineText(const std::string& text, const std::array<float, 4>& xy, const std::string& option, float size) {
   if(text.empty()) return;
-  TPaveText* textPtr = new TPaveText(xy.at(0), xy.at(1), xy.at(2), xy.at(3), "brNDC");
+  TPaveText* textPtr = new TPaveText(xy.at(0), xy.at(1), xy.at(2), xy.at(3), option.c_str());
   textPtr->SetFillColor(0);
   textPtr->SetTextSize(size);
   textPtr->SetTextFont(62);
