@@ -19,7 +19,7 @@ using namespace Helper;
 void efficiency(const std::string& fileName, bool isSaveToRoot) {
   TString currentMacroPath = __FILE__;
   TString directory = currentMacroPath(0, currentMacroPath.Last('/'));
-  gROOT->Macro( directory + "/../styles/mc_qa2.style.cc" );
+  gROOT->Macro( directory + "/../styles/mc_qa2.dpg.style.cc" );
 
   TFile* fileIn = TFile::Open(fileName.c_str());
   if(fileIn == nullptr) {
@@ -130,8 +130,8 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
         }
       }
       leg->Draw("same");
-      AddOneLineText(oneLineText, 0.74, 0.82, 0.87, 0.90);
-      AddOneLineText(var.cut_text_, 0.60, 0.82, 0.73, 0.90);
+      AddOneLineText(oneLineText, {0.60, 0.82, 0.73, 0.90}, 0.04);
+      AddOneLineText(var.cut_text_, {0.60, 0.74, 0.73, 0.82}, 0.04);
       cc.Print((namePrefix + ".pdf" + printing_bracket).c_str(), "pdf");
     };
 
@@ -142,7 +142,7 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
       }
     }
 
-    PrintCanvas1D({histoEffPrompt, histoEffNonPrompt}, colors, "efficiency." + selection, var.logy_eff_, "", {"prompt", "nonprompt"});
+    PrintCanvas1D({histoEffPrompt, histoEffNonPrompt}, colors, "efficiency." + selection, var.logy_eff_, "#it{p}_{T} > 0", {"prompt", "nonprompt"});
     PrintCanvas1D({histoRecPrompt, histoGenPrompt}, colors, "yieldPrompt." + selection, var.logy_yield_, "prompt", {"rec", "gen"});
     PrintCanvas1D({histoRecNonPrompt, histoGenNonPrompt}, colors, "yieldNonPrompt." + selection, var.logy_yield_, "nonprompt", {"rec", "gen"});
     PrintCanvas1D({histoRecPrompt, histoRecNonPrompt}, colors, "yieldRec." + selection, var.logy_yield_, "rec", {"prompt", "nonprompt"});
@@ -185,7 +185,7 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
     TCanvas cc("cc", "cc", 1200, 800);
     cc.SetRightMargin(0.16);
     histo->Draw("colz");
-    if(!oneLineText.empty()) AddOneLineText(oneLineText, 0.69, 0.82, 0.82, 0.90);
+    if(!oneLineText.empty()) AddOneLineText(oneLineText, {0.69, 0.82, 0.82, 0.90});
     cc.Print((namePrefix + ".pdf" + printing_bracket).c_str(), "pdf");
   };
 

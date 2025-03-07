@@ -73,7 +73,7 @@ inline std::string to_string_with_significant_figures(const T a_value, const int
   return to_string_with_precision(reshifted_value, precision);
 }
 
-void AddOneLineText(const std::string& text, float x1, float y1, float x2, float y2);
+void AddOneLineText(const std::string& text, const std::array<float, 4>& xy, float size=0.03);
 
 void SlightlyShiftXAxis(TGraph* gr, float value = -1);
 

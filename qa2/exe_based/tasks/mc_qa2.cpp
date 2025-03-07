@@ -43,7 +43,7 @@ void mc_qa2(const std::string& fileName) {
     cc.SetLogy(logy);
     h->Draw();
     for(int iOLT=0; iOLT<oneLineTexts.size(); iOLT++) {
-      AddOneLineText(oneLineTexts.at(iOLT), 0.74, 0.86 - iOLT*0.04, 0.87, 0.90 - iOLT*0.04);
+      AddOneLineText(oneLineTexts.at(iOLT), {0.74, 0.86 - iOLT*0.04, 0.87, 0.90 - iOLT*0.04});
     }
     HistoQuantities quant = EvaluateHistoQuantities(h);
     TPaveText quant_text = ConvertHistoQuantitiesToText(quant, 0.70, 0.6, 0.90, 0.8);
@@ -64,7 +64,7 @@ void mc_qa2(const std::string& fileName) {
     ccCorr.SetLogz(var.log_corr_);
     hcorr->Draw("colz");
     for(int iOLT=0; iOLT<oneLineTexts.size(); iOLT++) {
-      AddOneLineText(oneLineTexts.at(iOLT), 0.64, 0.86 - iOLT*0.04, 0.77, 0.90 - iOLT*0.04);
+      AddOneLineText(oneLineTexts.at(iOLT), {0.64, static_cast<float>(0.86 - iOLT*0.04), 0.77, static_cast<float>(0.90 - iOLT*0.04)});
     }
     ccCorr.Print((fileOutName + "_corr.pdf" + printing_bracket).c_str(), "pdf");
   };

@@ -59,7 +59,7 @@ void pid_qa2(const std::string& fileName) {
         TCanvas cc("cc", "cc", 1200, 800);
         cc.SetLogy(setLogY);
         histo->Draw();
-        AddOneLineText(ss, 0.74, 0.82, 0.87, 0.90);
+        AddOneLineText(ss, {0.74, 0.82, 0.87, 0.90});
         HistoQuantities quant = EvaluateHistoQuantities(histo);
         TPaveText quant_text = ConvertHistoQuantitiesToText(quant, 0.70, 0.6, 0.90, 0.8);
         quant_text.Draw("same");
@@ -75,7 +75,7 @@ void pid_qa2(const std::string& fileName) {
       histo->UseCurrentStyle();
       TCanvas cc("cc", "cc", 1200, 800);
       histo->Draw();
-      AddOneLineText(ss, 0.74, 0.82, 0.87, 0.90);
+      AddOneLineText(ss, {0.74, 0.82, 0.87, 0.90});
 
       cc.Print((currentFileOutName + ")").c_str(), "pdf");
     } // ProngSpecies

@@ -16,7 +16,7 @@ std::pair<float, float> EstimateExpoParameters(TH1* h, float lo, float hi);
 void fit_yield(const std::string& fileNameEff, const std::string& fileNameYield, bool isSaveToRoot) {
   TString currentMacroPath = __FILE__;
   TString directory = currentMacroPath(0, currentMacroPath.Last('/'));
-  gROOT->Macro( directory + "/../styles/mc_qa2.style.cc" );
+  gROOT->Macro( directory + "/../styles/mc_qa2.dpg.style.cc" );
 
   TFile* fileInEff = TFile::Open(fileNameEff.c_str());
   TFile* fileInYield = TFile::Open(fileNameYield.c_str());
@@ -49,7 +49,7 @@ void fit_yield(const std::string& fileNameEff, const std::string& fileNameYield,
   TF1* fitRecCorrected = new TF1("fitRecCorrected", "[0]*TMath::Exp(-x/[1])", 0, 2);
   auto pars_est_Rec = EstimateExpoParameters(histoRecCorrected, 0.2, 2);
   fitRecCorrected->SetParameters(pars_est_Rec.first, pars_est_Rec.second);
-  histoRecCorrected->Fit(fitRecCorrected, "0", "", 0.2, 2);
+  histoRecCorrected->Fit(fitRecCorrected, "", "", 0.2, 2);
 
   TLegend* leg = new TLegend(0.7, 0.7, 0.9, 0.82);
   leg->AddEntry(histoGen, "MC", "L");
@@ -64,25 +64,24 @@ void fit_yield(const std::string& fileNameEff, const std::string& fileNameYield,
 
   histoGen->Draw("");
   histoRecCorrected->Draw("same");
-  fitRecCorrected->Draw("same");
   leg->Draw("same");
-  AddOneLineText(promptness, 0.69, 0.82, 0.82, 0.90);
+  AddOneLineText(promptness, {0.69, 0.82, 0.82, 0.90});
   const std::string lifetimeFitRecCorrected = "#tau_{#Lambda_{c}} [Fit] = (" +
                                               to_string_with_significant_figures(fitRecCorrected->GetParameter(1)*1000, 5) +
                                               " #pm " +
                                               to_string_with_significant_figures(fitRecCorrected->GetParError(1)*1000, 2) +
                                               ") fs";
-  AddOneLineText(lifetimeFitRecCorrected, 0.69, 0.62, 0.82, 0.70);
+  AddOneLineText(lifetimeFitRecCorrected, {0.69, 0.62, 0.82, 0.70});
 
   const std::string lifetimeFitMC = "#tau_{#Lambda_{c}} [MC] = (" +
                                     to_string_with_significant_figures(fitMC->GetParameter(1)*1000, 5) +
                                     " #pm " +
                                     to_string_with_significant_figures(fitMC->GetParError(1)*1000, 2) +
                                     ") fs";
-  AddOneLineText(lifetimeFitMC, 0.69, 0.57, 0.82, 0.65);
+  AddOneLineText(lifetimeFitMC, {0.69, 0.57, 0.82, 0.65});
 
   const std::string lifetimePdg = "#tau_{#Lambda_{c}} [PDG] = (202.6 #pm 1.0) fs";
-  AddOneLineText(lifetimePdg, 0.69, 0.52, 0.82, 0.60);
+  AddOneLineText(lifetimePdg, {0.69, 0.52, 0.82, 0.60});
 
   cc.Print((fileOutName + ".pdf").c_str(), "pdf");
 }
