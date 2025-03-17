@@ -317,7 +317,7 @@
         "createDs": "false",
         "createLc": "true",
         "createXic": "false",
-        "applyTopoConstraint": "false",
+        "applyTopoConstraint": "true",
         "applyInvMassConstraint": "false",
         "hfEvSel": {
             "centralityMin": "0",
@@ -908,14 +908,11 @@
                 "2",
                 "3",
                 "4",
-                "5",
                 "6",
                 "8",
-                "10",
                 "12",
-                "16",
                 "24",
-                "50"
+                "36"
             ]
         },
         "cutDirMl": {
@@ -947,83 +944,110 @@
             ],
             "values": [
                 [
-                    "0.5",
-                    "0.5",
-                    "0.5"
+                    "0.025000000000000001",
+                    "0",
+                    "0"
+                ],
+                [
+                    "0.050000000000000003",
+                    "0",
+                    "0"
+                ],
+                [
+                    "0.10000000000000001",
+                    "0",
+                    "0"
+                ],
+                [
+                    "0.14999999999999999",
+                    "0",
+                    "0"
+                ],
+                [
+                    "0.29999999999999999",
+                    "0",
+                    "0"
                 ],
                 [
                     "0.5",
-                    "0.5",
-                    "0.5"
+                    "0",
+                    "0"
                 ],
                 [
-                    "0.5",
-                    "0.5",
-                    "0.5"
+                    "1",
+                    "0",
+                    "0"
                 ],
                 [
-                    "0.5",
-                    "0.5",
-                    "0.5"
+                    "1",
+                    "0",
+                    "0"
                 ],
                 [
-                    "0.5",
-                    "0.5",
-                    "0.5"
+                    "1",
+                    "0",
+                    "0"
                 ],
                 [
-                    "0.5",
-                    "0.5",
-                    "0.5"
+                    "1",
+                    "0",
+                    "0"
                 ],
                 [
-                    "0.5",
-                    "0.5",
-                    "0.5"
+                    "1",
+                    "0",
+                    "0"
                 ],
                 [
-                    "0.5",
-                    "0.5",
-                    "0.5"
-                ],
-                [
-                    "0.5",
-                    "0.5",
-                    "0.5"
-                ],
-                [
-                    "0.5",
-                    "0.5",
-                    "0.5"
-                ],
-                [
-                    "0.5",
-                    "0.5",
-                    "0.5"
-                ],
-                [
-                    "0.5",
-                    "0.5",
-                    "0.5"
+                    "1",
+                    "0",
+                    "0"
                 ]
             ]
         },
         "nClassesMl": "3",
         "namesInputFeatures": {
             "values": [
-                " the res",
-                "RECREATE"
+                "impactParameterXY0",
+                "impactParameterXY1",
+                "impactParameterXY2",
+                "chi2PCA",
+                "cpa",
+                "cpaXY",
+                "decayLengthXY",
+                "decayLength",
+                "tpcTofNSigmaPi0",
+                "tpcTofNSigmaPr0",
+                "tpcTofNSigmaKa1",
+                "tpcTofNSigmaPi2",
+                "tpcTofNSigmaPr2"
             ]
         },
         "ccdbUrl": "http:\/\/alice-ccdb.cern.ch",
         "modelPathsCCDB": {
             "values": [
-                "EventFiltering\/PWGHF\/BDTLc"
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
             ]
         },
         "onnxFileNames": {
             "values": [
-                "ModelHandler_onnx_LcToPKPi.onnx"
+                "\/lustre\/alice\/users\/lubynets\/CSTlc\/BDT\/ModelHandler_pT_0_1.onnx",
+                "\/lustre\/alice\/users\/lubynets\/CSTlc\/BDT\/ModelHandler_pT_1_2.onnx",
+                "\/lustre\/alice\/users\/lubynets\/CSTlc\/BDT\/ModelHandler_pT_2_3.onnx",
+                "\/lustre\/alice\/users\/lubynets\/CSTlc\/BDT\/ModelHandler_pT_3_4.onnx",
+                "\/lustre\/alice\/users\/lubynets\/CSTlc\/BDT\/ModelHandler_pT_4_6.onnx",
+                "\/lustre\/alice\/users\/lubynets\/CSTlc\/BDT\/ModelHandler_pT_6_8.onnx",
+                "\/lustre\/alice\/users\/lubynets\/CSTlc\/BDT\/ModelHandler_pT_8_12.onnx",
+                "\/lustre\/alice\/users\/lubynets\/CSTlc\/BDT\/ModelHandler_pT_12_24.onnx",
+                "\/lustre\/alice\/users\/lubynets\/CSTlc\/BDT\/ModelHandler_pT_12_24.onnx"
             ]
         },
         "timestampCCDB": "-1",
@@ -1141,7 +1165,7 @@
                 "5"
             ]
         },
-        "fillTHn": "true",
+        "fillTHn": "false",
         "processDataStd": "false",
         "processDataStdWithFT0C": "false",
         "processDataStdWithFT0M": "false",

@@ -241,7 +241,7 @@
         "processProtonPidTpcAndTof": "0",
         "ccdbPathGrp": "GLO/GRP/GRP",
         "etaMaxTrackBachLfCasc": "1.1",
-        "doPvRefit": "1",
+        "doPvRefit": "0",
         "useIsGlobalTrackWoDCA": "1",
         "axisPvRefitDeltaY": {
         "values": [
@@ -687,7 +687,7 @@
             ]
         ]
         },
-        "process2And3ProngsWithPvRefit": "1",
+        "process2And3ProngsWithPvRefit": "0",
         "cutsD0ToPiK": {
         "values": [
             [
