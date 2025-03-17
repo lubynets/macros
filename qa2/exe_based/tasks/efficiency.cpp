@@ -16,10 +16,12 @@
 
 using namespace Helper;
 
+std::pair<TH1D* , TH1D*> EvaluateEfficiencyHisto(TH1D* hNum, TH1D* hDen);
+
 void efficiency(const std::string& fileName, bool isSaveToRoot) {
   TString currentMacroPath = __FILE__;
   TString directory = currentMacroPath(0, currentMacroPath.Last('/'));
-  gROOT->Macro( directory + "/../styles/mc_qa2.dpg.style.cc" );
+  gROOT->Macro( directory + "/../styles/mc_qa2.style.cc" );
 
   TFile* fileIn = TFile::Open(fileName.c_str());
   if(fileIn == nullptr) {
@@ -41,17 +43,17 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
   };
 
   std::vector<Variable> variables {
-    {"Y",  2, {}, false, false, ""},
-    {"Pt", 5, {}, false, true,  "|y| < 0.8" },
-    {"L",  5, {}, false, true,  "|y| < 0.8"  },
+//    {"Y",  2, {}, false, false, ""},
+//    {"Pt", 5, {}, false, true,  "|y| < 0.8" },
+//    {"L",  5, {}, false, true,  "|y| < 0.8"  },
     {"T",  5, {}, false, true,  "|y| < 0.8"  },
   };
 
   for(int iB=0; iB<40; iB++) {
-    variables.at(3).rebin_edges_.push_back(0.025 * iB);
+    variables.at(0).rebin_edges_.push_back(0.025 * iB);
   }
   for(int iB=0; iB<11; iB++) {
-    variables.at(3).rebin_edges_.push_back(1 + iB*0.1);
+    variables.at(0).rebin_edges_.push_back(1 + iB*0.1);
   }
 
   const std::vector<Color_t> colors{kRed, kBlue};
@@ -91,18 +93,13 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
     ProcessHistogram(histoGenNonPrompt);
     ProcessHistogram(histoRecNonPrompt);
 
-    TH1D* histoEffPrompt = (TH1D*)histoRecPrompt->Clone();
-    histoEffPrompt->Divide(histoGenPrompt);
-    TH1D* histoEffNonPrompt = (TH1D*)histoRecNonPrompt->Clone();
-    histoEffNonPrompt->Divide(histoGenNonPrompt);
+    auto [histoEffPrompt, histoRelErrEffPrompt] = EvaluateEfficiencyHisto(histoRecPrompt, histoGenPrompt);
+    auto [histoEffNonPrompt, histoRelErrEffNonPrompt] = EvaluateEfficiencyHisto(histoRecNonPrompt, histoGenNonPrompt);
 
-    for(auto& histo : std::array<TH1D*, 2>{histoEffPrompt, histoEffNonPrompt}) {
-      histo->GetYaxis()->SetTitle("#varepsilon, %");
-      histo->Scale(100);
-      histo->SetTitle("");
-    }
     histoEffPrompt->SetName(("hEffPrompt" + var.name_).c_str());
     histoEffNonPrompt->SetName(("hEffNonPrompt" + var.name_).c_str());
+    histoRelErrEffPrompt->SetName(("hRelErrEffPrompt" + var.name_).c_str());
+    histoRelErrEffNonPrompt->SetName(("hRelErrEffNonPrompt" + var.name_).c_str());
 
     auto PrintCanvas1D = [&] (std::vector<TH1*> histos,
                               const std::vector<Color_t >& colors,
@@ -137,12 +134,13 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
 
     if(isSaveToRoot) {
       fileOut->cd();
-      for(auto& histo : std::vector<TH1D*>{histoEffPrompt, histoEffNonPrompt, histoRecPrompt, histoRecNonPrompt, histoGenPrompt, histoGenNonPrompt}) {
+      for(auto& histo : std::vector<TH1D*>{histoEffPrompt, histoEffNonPrompt, histoRelErrEffPrompt, histoRelErrEffNonPrompt, histoRecPrompt, histoRecNonPrompt, histoGenPrompt, histoGenNonPrompt}) {
         histo->Write();
       }
     }
 
     PrintCanvas1D({histoEffPrompt, histoEffNonPrompt}, colors, "efficiency." + selection, var.logy_eff_, "#it{p}_{T} > 0", {"prompt", "nonprompt"});
+    PrintCanvas1D({histoRelErrEffPrompt, histoRelErrEffNonPrompt}, colors, "relErrOfEff." + selection, var.logy_eff_, "#it{p}_{T} > 0", {"prompt", "nonprompt"});
     PrintCanvas1D({histoRecPrompt, histoGenPrompt}, colors, "yieldPrompt." + selection, var.logy_yield_, "prompt", {"rec", "gen"});
     PrintCanvas1D({histoRecNonPrompt, histoGenNonPrompt}, colors, "yieldNonPrompt." + selection, var.logy_yield_, "nonprompt", {"rec", "gen"});
     PrintCanvas1D({histoRecPrompt, histoRecNonPrompt}, colors, "yieldRec." + selection, var.logy_yield_, "rec", {"prompt", "nonprompt"});
@@ -179,12 +177,12 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
     }
   }
 
-  auto PrintCanvas2D = [&] (TH2D* histo,
-                          const std::string& namePrefix,
+  auto PrintCanvas2D = [&] (TH2D* histo= nullptr,
+                          const std::string& namePrefix="",
                           const std::string& oneLineText="") {
     TCanvas cc("cc", "cc", 1200, 800);
     cc.SetRightMargin(0.16);
-    histo->Draw("colz");
+    if(histo != nullptr) histo->Draw("colz");
     if(!oneLineText.empty()) AddOneLineText(oneLineText, {0.69, 0.82, 0.82, 0.90});
     cc.Print((namePrefix + ".pdf" + printing_bracket).c_str(), "pdf");
   };
@@ -200,9 +198,64 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
   PrintCanvas2D(histoGenNonPrompt, "yieldNonPrompt." + selection, "nonprompt, gen");
   PrintCanvas2D(histoRecNonPrompt, "yieldRec." + selection, "nonprompt, rec");
   PrintCanvas2D(histoGenNonPrompt, "yieldGen." + selection, "nonprompt, gen");
+  printing_bracket = "]";
+  PrintCanvas2D(nullptr, "relErrOfEff." + selection, "");
 
   if(isSaveToRoot) fileOut->Close();
   fileIn->Close();
+}
+
+std::pair<TH1D* , TH1D*> EvaluateEfficiencyHisto(TH1D* hNum, TH1D* hDen) {
+  const int nBins = hNum->GetNbinsX();
+  if(hNum->GetNbinsX() != hDen->GetNbinsX()) throw std::runtime_error("EvaluateEfficiencyHisto(): hNum->GetNbinsX() != hDen->GetNbinsX()");
+  for(int iBin=1; iBin<=nBins; iBin++) {
+    if(std::abs(hNum->GetBinCenter(iBin) - hDen->GetBinCenter(iBin)) > 1e-6) throw std::runtime_error("EvaluateEfficiencyHisto(): bins do not coincide");
+  }
+
+  TH1D* hEff = dynamic_cast<TH1D*>(hNum->Clone());
+  TH1D* hRelErr = dynamic_cast<TH1D*>(hNum->Clone());
+  hEff->Reset();
+  hRelErr->Reset();
+
+  auto EvalEfficiency = [] (double num, double den) {
+    if(den == 0.) return 0.;
+    else return num/den;
+  };
+
+  auto EvalRelErrOfEfficiency = [] (double num, double den) {
+    if(num == 0. || den == 0.) return 0.;
+    if(num > den) return 1.;
+
+    return std::sqrt(1./num - 1./den);
+  };
+
+  auto EvalAbsErrOfRelErrOfEfficiency = [&] (double num, double den) {
+    if(num == 0. || den == 0. || num > den) return 0.;
+
+    auto relErr = EvalRelErrOfEfficiency(num, den);
+    return 1./2./relErr * std::sqrt(1./num/num/num + 1./den/den/den - 2./num/den/den);
+  };
+
+  for(int iBin=1; iBin<=nBins; iBin++) {
+    const double num = hNum->GetBinContent(iBin);
+    const double den = hDen->GetBinContent(iBin);
+    const double eff = EvalEfficiency(num, den);
+    const double relErr = EvalRelErrOfEfficiency(num, den);
+    const double absErrOnRelErr = EvalAbsErrOfRelErrOfEfficiency(num, den);
+    hEff->SetBinContent(iBin, eff);
+    hEff->SetBinError(iBin, eff*relErr);
+    hRelErr->SetBinContent(iBin, relErr);
+    hRelErr->SetBinError(iBin, absErrOnRelErr);
+  }
+
+  hEff->GetYaxis()->SetTitle("#varepsilon, %");
+  hEff->Scale(100);
+  hEff->SetTitle("");
+
+  hRelErr->GetYaxis()->SetTitle("#varepsilon_{#varepsilon}");
+  hRelErr->SetTitle("");
+
+  return std::make_pair(hEff, hRelErr);
 }
 
 int main(int argc, char* argv[]) {
