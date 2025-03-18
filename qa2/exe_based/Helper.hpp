@@ -120,5 +120,7 @@ inline void RemoveEdgeLabelFromAxis(T* obj, const std::string& edge, const std::
   }
 }
 
+void PrintInfoOnTF1(const TF1* f);
+
 } // namespace Helper
 #endif //QA2_HELPER_HPP

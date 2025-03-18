@@ -201,3 +201,16 @@ void Helper::CustomizeHistogramsYRange(const std::vector<TH1*>& histos, double l
     histo->GetYaxis()->SetRangeUser(down, up);
   }
 }
+
+void Helper::PrintInfoOnTF1(const TF1* f) {
+  std::cout << "Name = " << f->GetName() << "\n";
+  std::cout << "Title = " << f->GetTitle() << "\n";
+  const int nPar = f->GetNpar();
+  std::cout << "NPar = " << nPar << "\n";
+  std::cout << "NFreePar = " << f->GetNumberFreeParameters() << "\n";
+  for(int iPar = 0; iPar<nPar; iPar++) {
+    double min, max;
+    f->GetParLimits(iPar, min, max);
+    std::cout << f->GetParName(iPar) << "\t" << f->GetParameter(iPar) << " +- " << f->GetParError(iPar) << "\t(" << min << "; " << max << ")\n";
+  }
+}

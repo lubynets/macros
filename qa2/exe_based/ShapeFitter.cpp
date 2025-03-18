@@ -61,22 +61,12 @@ void ShapeFitter::FitSideBands() {
 
 TPaveText* ShapeFitter::ConvertFitParametersToText(const std::string& funcType, std::array<float, 2> coordinatesLeftUpperCorner) const {
   TF1* func{nullptr};
-  double chi2;
-  int ndf;
-  if(funcType == "peak") {
-    func = peak_fit_;
-    chi2 = chi2_peak_;
-    ndf = ndf_peak_;
-  } else if(funcType == "bg") {
-    func = sidebands_fit_;
-    chi2 = chi2_sideband_;
-    ndf = ndf_sideband_;
-  } else if(funcType == "all") {
-    func = all_fit_;
-    chi2 = chi2_all_;
-    ndf = ndf_all_;
-  }
+  if(funcType == "peak") func = peak_fit_;
+  else if(funcType == "bg") func = sidebands_fit_;
+  else if(funcType == "all") func = all_fit_;
+  else if(funcType == "reall") func = all_refit_;
   else throw std::runtime_error("ShapeFitter::ConvertFitParametersToText() - funcType must be either peak or bg");
+
   const float x1 = coordinatesLeftUpperCorner.at(0);
   const float y2 = coordinatesLeftUpperCorner.at(1);
   const float x2 = x1 + 0.2;
@@ -86,7 +76,7 @@ TPaveText* ShapeFitter::ConvertFitParametersToText(const std::string& funcType, 
   ptpar->SetTextSize(0.025);
   ptpar->SetTextFont(22);
   ptpar->AddText(func->GetTitle());
-  ptpar->AddText(("#chi^{2}/ndf (" + funcType + ") = " + to_string_with_precision(chi2, 2) + " / " + std::to_string(ndf)).c_str());
+  ptpar->AddText(("#chi^{2}/ndf (" + funcType + ") = " + to_string_with_precision(func->GetChisquare(), 2) + " / " + std::to_string(func->GetNDF())).c_str());
   const int nPar = func->GetNpar();
   for(int iPar=0; iPar<nPar; iPar++) {
     ptpar->AddText((static_cast<std::string>(func->GetParName(iPar)) + " = " +
@@ -153,7 +143,7 @@ void ShapeFitter::DefineSideBand(double left, double right) {
   for(int iPar = bg_pol_n_+2; iPar < PolN::nPars; iPar++) {
     sidebands_fit_->FixParameter(iPar, 0.);
   }
-  sidebands_fit_->SetParNames("#mu_{ref}", "a_{0}", "a_{1}", "a_{2}", "a_{3}");
+  sidebands_fit_->SetParNames("#mu_{0}", "p_{0}", "p_{1}", "p_{2}", "p_{3}");
   sidebands_fit_->SetTitle(("Pol" + std::to_string(bg_pol_n_)).c_str());
   sidebands_fit_->SetNpx(1000);
 }
@@ -176,19 +166,29 @@ void ShapeFitter::CopyPasteParametersToAll(int nParsSideBand, int nParsPeak) {
   for (int iPar = 0; iPar < nParsSideBand; iPar++) {
     double minlimit, maxlimit;
     sidebands_fit_->GetParLimits(iPar, minlimit, maxlimit);
+    const double parValue = sidebands_fit_->GetParameter(iPar);
     for(auto& all : {all_fit_, all_refit_}) {
-      all->SetParameter(iPar, sidebands_fit_->GetParameter(iPar));
+      all->SetParameter(iPar, parValue);
       all->SetParName(iPar, sidebands_fit_->GetParName(iPar));
       all->SetParLimits(iPar, minlimit, maxlimit);
+      if((std::abs(maxlimit - minlimit)<1e-4 && std::abs(parValue - minlimit)<1e-4) ||
+         (std::abs(maxlimit-1)<1e-4) && std::abs(minlimit-1)<1e-4 && std::abs(parValue)<1e-4) {
+        all->FixParameter(iPar, parValue);
+      }
     }
   }
   for (int iPar = 0; iPar < nParsPeak; iPar++) {
     double minlimit, maxlimit;
     peak_fit_->GetParLimits(iPar, minlimit, maxlimit);
+    const double parValue = peak_fit_->GetParameter(iPar);
     for(auto& all : {all_fit_, all_refit_}) {
-      all->SetParameter(nParsSideBand + iPar, peak_fit_->GetParameter(iPar));
+      all->SetParameter(nParsSideBand + iPar, parValue);
       all->SetParName(nParsSideBand + iPar, peak_fit_->GetParName(iPar));
       all->SetParLimits(nParsSideBand + iPar, minlimit, maxlimit);
+      if((std::abs(maxlimit - minlimit)<1e-4 && std::abs(parValue - minlimit)<1e-4) ||
+         (std::abs(maxlimit-1)<1e-4) && std::abs(minlimit-1)<1e-4 && std::abs(parValue)<1e-4) {
+        all->FixParameter(nParsSideBand + iPar, parValue);
+      }
     }
   }
 }

@@ -38,7 +38,7 @@ void mass_fit(const std::string& fileName, bool isMC, bool isSaveToRoot) {
 
   std::vector<WeightsUsage> weightsUsages {
     {"wo_weight", "", ""},
-    {"with_weight", "_weight_recEffWeigth", "_W"}
+//    {"with_weight", "_weight_recEffWeigth", "_W"}
   };
 
   auto sliceCuts = FindCuts(fileIn, mainDataType + "/Candidates_" + mainDataType + "_T", true);
@@ -68,7 +68,7 @@ void mass_fit(const std::string& fileName, bool isMC, bool isSaveToRoot) {
       AddOneLineText(cutRangeText, {0.74, 0.82, 0.87, 0.90});
       TPaveText* parsSideBandText = shapeFitter.ConvertFitParametersToText("bg", {0.2, 0.9});
       parsSideBandText->Draw("same");
-      ccSideBand.Print(("sideBand_" + wu.name_ + printingBracket).c_str(), "pdf");
+      ccSideBand.Print(("sideBand_" + wu.name_ + ".pdf" + printingBracket).c_str(), "pdf");
 
       TCanvas ccPeak("ccPeak", "");
       ccPeak.SetCanvasSize(1200, 800);
@@ -77,19 +77,21 @@ void mass_fit(const std::string& fileName, bool isMC, bool isSaveToRoot) {
       AddOneLineText(cutRangeText, {0.74, 0.82, 0.87, 0.90});
       TPaveText* parsPeakText = shapeFitter.ConvertFitParametersToText("peak", {0.2, 0.9});
       parsPeakText->Draw("same");
-      ccPeak.Print(("peak_" + wu.name_ + printingBracket).c_str(), "pdf");
+      ccPeak.Print(("peak_" + wu.name_ + ".pdf" + printingBracket).c_str(), "pdf");
 
       TCanvas ccAll("ccAll", "");
       ccAll.SetCanvasSize(1200, 800);
       shapeFitter.GetAllHisto()->Draw();
       shapeFitter.GetAllFunc()->SetLineColor(kRed);
-      shapeFitter.GetAllReFunc()->SetLineColor(kBlack);
+      shapeFitter.GetAllReFunc()->SetLineColor(kRed);
+      shapeFitter.GetAllFunc()->SetLineWidth(3);
+      shapeFitter.GetAllReFunc()->SetLineWidth(3);
       shapeFitter.GetAllFunc()->SetLineStyle(7);
       shapeFitter.GetAllReFunc()->SetLineStyle(1);
-//      shapeFitter.GetAllFunc()->Draw("same");
+      shapeFitter.GetAllFunc()->Draw("same");
       shapeFitter.GetAllReFunc()->Draw("same");
       AddOneLineText(cutRangeText, {0.74, 0.82, 0.87, 0.90});
-      TPaveText* parsAllText = shapeFitter.ConvertFitParametersToText("all", {0.2, 0.9});
+      TPaveText* parsAllText = shapeFitter.ConvertFitParametersToText("reall", {0.2, 0.9});
       parsAllText->Draw("same");
       ccAll.Print(("all_" + wu.name_ + ".pdf" + printingBracket).c_str(), "pdf");
 
