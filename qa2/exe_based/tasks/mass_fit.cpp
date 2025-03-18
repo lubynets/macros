@@ -82,11 +82,16 @@ void mass_fit(const std::string& fileName, bool isMC, bool isSaveToRoot) {
       TCanvas ccAll("ccAll", "");
       ccAll.SetCanvasSize(1200, 800);
       shapeFitter.GetAllHisto()->Draw();
-      shapeFitter.GetAllFunc()->Draw("same");
+      shapeFitter.GetAllFunc()->SetLineColor(kRed);
+      shapeFitter.GetAllReFunc()->SetLineColor(kBlack);
+      shapeFitter.GetAllFunc()->SetLineStyle(7);
+      shapeFitter.GetAllReFunc()->SetLineStyle(1);
+//      shapeFitter.GetAllFunc()->Draw("same");
+      shapeFitter.GetAllReFunc()->Draw("same");
       AddOneLineText(cutRangeText, {0.74, 0.82, 0.87, 0.90});
       TPaveText* parsAllText = shapeFitter.ConvertFitParametersToText("all", {0.2, 0.9});
       parsAllText->Draw("same");
-      ccAll.Print(("all_" + wu.name_ + printingBracket).c_str(), "pdf");
+      ccAll.Print(("all_" + wu.name_ + ".pdf" + printingBracket).c_str(), "pdf");
 
       printingBracket = "";
     } // sliceCuts
@@ -94,7 +99,7 @@ void mass_fit(const std::string& fileName, bool isMC, bool isSaveToRoot) {
     emptyCanvas.SetCanvasSize(1200, 800);
     printingBracket = "]";
     for(auto& ccType : {"sideBand", "peak", "all"}) {
-      emptyCanvas.Print((static_cast<std::string>(ccType) + "_" + wu.name_ + printingBracket).c_str(), "pdf");
+      emptyCanvas.Print((static_cast<std::string>(ccType) + "_" + wu.name_ + ".pdf" + printingBracket).c_str(), "pdf");
     }
   } // weightsUsages
 }

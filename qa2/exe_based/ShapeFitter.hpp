@@ -16,15 +16,18 @@ class ShapeFitter {
   explicit ShapeFitter(TH1D* histo) { histo_in_ = histo; }
   virtual ~ShapeFitter() = default;
 
-  TF1* const GetPeakFunc() const { return peak_fit_; }
+  TF1* GetPeakFunc() const { return peak_fit_; }
+  TF1* GetPeakReFunc() const { return peak_refit_; }
   double GetPeakChi2() const { return chi2_peak_; }
   TH1D* GetPeakHisto() const { return histo_peak_; }
 
-  TF1* const GetSideBandFunc() const { return sidebands_fit_; }
+  TF1* GetSideBandFunc() const { return sidebands_fit_; }
+  TF1* GetSideBandReFunc() const { return sidebands_refit_; }
   double GetSideBandChi2() const { return chi2_sideband_; }
   TH1D* GetSideBandHisto() const { return histo_sidebands_; }
 
   TF1* GetAllFunc() const { return all_fit_; }
+  TF1* GetAllReFunc() const { return all_refit_; }
   double GetAllChi2() const { return chi2_all_; }
   TH1D* GetAllHisto() const { return histo_in_; }
 
@@ -40,8 +43,9 @@ class ShapeFitter {
   TPaveText* ConvertFitParametersToText(const std::string& funcType, std::array<float, 2> coordinatesLeftUpperCorner) const;
 
  private:
-  void FitPeak(TH1D* h, const std::string& peakFunc);
-  void FitSideBands(TH1D* h);
+  void FitPeak();
+  void FitSideBands();
+  void FitAll();
 
   void DefinePeakGaus(TH1D* h, double left, double right);
   void DefinePeakDoubleGaus(TH1D* histo, double left, double right);
@@ -53,15 +57,22 @@ class ShapeFitter {
   void DefineSideBand(double left, double right);
   void DefineAll(double left, double right);
 
+  void RedefinePeakAndSideBand(double left, double right);
+
   void PrepareHistoSidebands();
   void PrepareHistoPeak();
 
   TH1D* histo_in_{nullptr};
   TH1D* histo_sidebands_{nullptr};
   TH1D* histo_peak_{nullptr};
+
   TF1* peak_fit_{nullptr};
   TF1* sidebands_fit_{nullptr};
   TF1* all_fit_{nullptr};
+
+  TF1* peak_refit_{nullptr};
+  TF1* sidebands_refit_{nullptr};
+  TF1* all_refit_{nullptr};
 
   double chi2_peak_{Helper::UndefValueDouble};
   double chi2_sideband_{Helper::UndefValueDouble};
