@@ -28,8 +28,8 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
     throw std::runtime_error("fileIn == nullptr");
   }
 
-//   const std::string selection = "isSel";
- const std::string selection = "noSel";
+  const std::string selection = "isSel";
+// const std::string selection = "noSel";
 
   const std::string fileOutName = "efficiency." + selection;
 
@@ -55,6 +55,7 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
   for(int iB=0; iB<11; iB++) {
     variables.at(0).rebin_edges_.push_back(1 + iB*0.1);
   }
+//  variables.at(0).rebin_edges_ = {0.2, 0.35, 0.5, 0.7, 0.9, 1.6};
 
   const std::vector<Color_t> colors{kRed, kBlue};
 
