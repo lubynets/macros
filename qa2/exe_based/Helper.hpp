@@ -19,6 +19,11 @@
 namespace Helper {
 
 constexpr double massLambdaC{2.28646};
+constexpr double massLambdaCDetectorWidth{0.01}; // by order of magnitude. Needed for initializing the fit.
+
+constexpr double UndefValueDouble{-999.};
+constexpr float UndefValueFloat{-999.f};
+constexpr int UndefValueInt{-999};
 
 struct HistoQuantities {
   float nentries_{-999.f};
@@ -32,7 +37,7 @@ struct HistoQuantities {
 
 std::string getSubstringBeforeLastSlash(const std::string& input);
 
-std::vector<std::pair<std::string, std::string>> FindCuts(TFile* fileIn, std::string name_start);
+std::vector<std::pair<std::string, std::string>> FindCuts(TFile* fileIn, std::string name_start, bool printCuts=false);
 
 bool stofCompare(std::pair<std::string, std::string> a, std::pair<std::string, std::string> b);
 
@@ -51,6 +56,17 @@ void SetLineDrawParameters(std::vector<TF1*> fs, int lineWidth = 1, int lineStyl
 TF1* HorizontalLine4Graph(float level, TGraph* graph);
 
 bool string_to_bool(const std::string& str);
+
+TFile* OpenFileWithNullptrCheck(const std::string& fileName, const std::string& option = "read");
+
+template<typename T>
+T* GetObjectWithNullptrCheck(TFile* fileIn, const std::string& objectName) {
+  T* ptr = fileIn->Get<T>(objectName.c_str());
+  if(ptr == nullptr) {
+    throw std::runtime_error("GetObjectWithNullptrCheck() - object " + objectName + " in file " + fileIn->GetName() + " is missing");
+  }
+  return ptr;
+}
 
 template<typename T>
 inline std::string to_string_with_precision(const T a_value, const int n=2) {
@@ -73,7 +89,7 @@ inline std::string to_string_with_significant_figures(const T a_value, const int
   return to_string_with_precision(reshifted_value, precision);
 }
 
-void AddOneLineText(const std::string& text, const std::array<float, 4>& xy, const std::string& option="brNDC", float size=0.03);
+TPaveText* AddOneLineText(const std::string& text, const std::array<float, 4>& xy, const std::string& option="brNDC", float size=0.03);
 
 void SlightlyShiftXAxis(TGraph* gr, float value = -1);
 

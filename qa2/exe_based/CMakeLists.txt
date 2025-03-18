@@ -12,6 +12,7 @@ SET(EXECUTABLES
     graph_qa3
     efficiency
     fit_yield
+    mass_fit
 )
 
 SET(SOURCES

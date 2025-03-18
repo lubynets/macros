@@ -55,7 +55,7 @@ std::string Helper::getSubstringBeforeLastSlash(const std::string& input) {
   return input.substr(0, pos);  // Return the substring before the last slash
 }
 
-std::vector<std::pair<std::string, std::string>> Helper::FindCuts(TFile* fileIn, std::string name_start) {
+std::vector<std::pair<std::string, std::string>> Helper::FindCuts(TFile* fileIn, std::string name_start, bool printCuts) {
   if (name_start.back() != '_') name_start.push_back('_');
   std::vector<std::pair<std::string, std::string>> result;
 
@@ -68,8 +68,13 @@ std::vector<std::pair<std::string, std::string>> Helper::FindCuts(TFile* fileIn,
     if (fullDirName.substr(0, name_start.size()) != name_start) continue;
     std::pair<std::string, std::string> cutPair;
     bool isFirstCutRead{false};
+    bool isGoodCut{true};
     for (int iChar = name_start.size(); iChar < fullDirName.size(); iChar++) {
       char letter = fullDirName.at(iChar);
+      if(!(std::isdigit(letter) || letter == '.' || letter == '_')) {
+        isGoodCut = false;
+        break;
+      }
       if (letter != '_') {
         if (!isFirstCutRead) cutPair.first.push_back(letter);
         else cutPair.second.push_back(letter);
@@ -77,13 +82,18 @@ std::vector<std::pair<std::string, std::string>> Helper::FindCuts(TFile* fileIn,
         isFirstCutRead = true;
       }
     }
-    result.emplace_back(cutPair);
+    if(isGoodCut) result.emplace_back(cutPair);
   }
 
   std::sort(result.begin(), result.end(), stofCompare);
 
   if (result.empty()) {
     throw std::runtime_error("FindCuts(): " + name_start + " cuts are not present");
+  }
+
+  if(printCuts) {
+    std::cout << "Slice cuts are:\n";
+    for(auto& r : result) std::cout << r.first << "\t" << r.second << "\n";
   }
 
   return result;
@@ -141,14 +151,15 @@ TF1* Helper::HorizontalLine4Graph(float level, TGraph* graph) {
   return horizLine;
 }
 
-void Helper::AddOneLineText(const std::string& text, const std::array<float, 4>& xy, const std::string& option, float size) {
-  if(text.empty()) return;
+TPaveText* Helper::AddOneLineText(const std::string& text, const std::array<float, 4>& xy, const std::string& option, float size) {
+  if(text.empty()) return nullptr;
   TPaveText* textPtr = new TPaveText(xy.at(0), xy.at(1), xy.at(2), xy.at(3), option.c_str());
   textPtr->SetFillColor(0);
   textPtr->SetTextSize(size);
   textPtr->SetTextFont(62);
   textPtr->AddText(text.c_str());
   textPtr->Draw("same");
+  return textPtr;
 }
 
 bool Helper::string_to_bool(const std::string& str) {
@@ -165,6 +176,14 @@ std::pair<double, double> Helper::GetMinMaxBinWithError(const TH1* h) {
     max = std::max(max, h->GetBinContent(iBin) + h->GetBinError(iBin));
   }
   return std::make_pair(min, max);
+}
+
+TFile* Helper::OpenFileWithNullptrCheck(const std::string& fileName, const std::string& option) {
+  TFile* file = TFile::Open(fileName.c_str(), option.c_str());
+  if(file == nullptr) {
+    throw std::runtime_error("Helper::OpenFileWithNullptrCheck() - file " + fileName + " is missing");
+  }
+  return file;
 }
 
 void Helper::CustomizeHistogramsYRange(const std::vector<TH1*>& histos, double lo, double hi, double part) {

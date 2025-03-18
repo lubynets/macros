@@ -7,6 +7,29 @@
 
 #include <TMath.h>
 
+namespace PolN {
+enum Pars : int {
+  kShift = 0,
+  kConst,
+  kSlope,
+  kSecond,
+  kThird,
+  nPars
+};
+
+inline double Shape(const double* x, const double* par) {
+  double shift = par[kShift]; // designed to be fixed at expected peak position
+  double a0 = par[kConst];
+  double a1 = par[kSlope];
+  double a2 = par[kSecond];
+  double a3 = par[kThird];
+
+  double u = x[0] - shift;
+
+  return a0 + a1 * u + a2 * u*u + a3 * u*u*u;
+}
+}
+
 namespace Gaus {
 enum Pars : int {
   kFactor = 0,
@@ -40,12 +63,12 @@ enum Pars : int {
 };
 
 inline double Shape(const double* x, const double* par) {
-  double factor1 = par[0];
-  double factor2 = par[1];
-  double shift = par[2]; // designed to be fixed at expected peak position
-  double mu = par[3];
-  double sigma1 = par[4];
-  double sigma2 = par[5];
+  double factor1 = par[kFactor1];
+  double factor2 = par[kFactor2];
+  double shift = par[kShift]; // designed to be fixed at expected peak position
+  double mu = par[kMu];
+  double sigma1 = par[kSigma1];
+  double sigma2 = par[kSigma2];
 
   double u1 = (x[0] - shift - mu) / sigma1;
   double u2 = (x[0] - shift - mu) / sigma2;
