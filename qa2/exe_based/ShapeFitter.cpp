@@ -28,42 +28,63 @@ void ShapeFitter::SetSideBandsViaSigma(double le, double li, double ri, double r
 
 void ShapeFitter::Fit() {
   PrepareHistoSidebands();
-  FitSideBands(histo_sidebands_, bg_pol_n_);
+  FitSideBands(histo_sidebands_);
   PrepareHistoPeak();
   FitPeak(histo_peak_, peak_shape_);
+  DefineAll(left_sideband_external_, right_sideband_external_);
 }
 
 void ShapeFitter::FitPeak(TH1D* h, const std::string& peakFunc) {
-  if      (peakFunc == "Gaus")       DefinePeakGaus(h, left_sideband_external_, right_sideband_external_);
-  else if (peakFunc == "DSCB")       DefinePeakDSCB(h, left_sideband_external_, right_sideband_external_);
-  else if (peakFunc == "DoubleGaus") DefinePeakDoubleGaus(h, left_sideband_external_, right_sideband_external_);
-  else                               throw std::runtime_error("ShapeFitter::FitPeak(): peakFunc must be one of the available");
+  DefinePeak(h, left_sideband_external_, right_sideband_external_);
   peak_fit_->SetNpx(1000);
 
   h->Fit(peak_fit_, "R0");
-  chi2_peak_ = peak_fit_->GetChisquare() / peak_fit_->GetNDF();
+  chi2_peak_ = peak_fit_->GetChisquare();
+  ndf_peak_ = peak_fit_->GetNDF();
 }
 
-void ShapeFitter::FitSideBands(TH1D* h, int polN) {
-  DefineSideBandPol(left_sideband_external_, right_sideband_external_, polN);
+void ShapeFitter::FitSideBands(TH1D* h) {
+  DefineSideBand(left_sideband_external_, right_sideband_external_);
   sidebands_fit_->SetNpx(1000);
 
   h->Fit(sidebands_fit_, "R0");
-  chi2_sideband_ = sidebands_fit_->GetChisquare() / sidebands_fit_->GetNDF();
+  chi2_sideband_ = sidebands_fit_->GetChisquare();
+  ndf_sideband_ = sidebands_fit_->GetNDF();
 }
 
-TPaveText* ShapeFitter::FitParametersToText(float x1, float y1, float x2, float y2) const {
+TPaveText* ShapeFitter::ConvertFitParametersToText(const std::string& funcType, std::array<float, 2> coordinatesLeftUpperCorner) const {
+  TF1* func{nullptr};
+  double chi2;
+  int ndf;
+  if(funcType == "peak") {
+    func = peak_fit_;
+    chi2 = chi2_peak_;
+    ndf = ndf_peak_;
+  } else if(funcType == "bg") {
+    func = sidebands_fit_;
+    chi2 = chi2_sideband_;
+    ndf = ndf_sideband_;
+  } else if(funcType == "all") {
+    func = all_fit_;
+    chi2 = chi2_all_;
+    ndf = ndf_all_;
+  }
+  else throw std::runtime_error("ShapeFitter::ConvertFitParametersToText() - funcType must be either peak or bg");
+  const float x1 = coordinatesLeftUpperCorner.at(0);
+  const float y2 = coordinatesLeftUpperCorner.at(1);
+  const float x2 = x1 + 0.2;
+  const float y1 = y2 - 0.05 * func->GetNpar();
   auto* ptpar = new TPaveText(x1, y1, x2, y2, "brNDC");
   ptpar->SetFillColor(0);
   ptpar->SetTextSize(0.025);
   ptpar->SetTextFont(22);
-  ptpar->AddText(peak_fit_->GetTitle());
-  ptpar->AddText(("#chi^{2}/ndf (peak) = " + to_string_with_precision(chi2_peak_, 2)).c_str());
-  const int nPar = peak_fit_->GetNpar();
+  ptpar->AddText(func->GetTitle());
+  ptpar->AddText(("#chi^{2}/ndf (" + funcType + ") = " + to_string_with_precision(chi2, 2) + " / " + std::to_string(ndf)).c_str());
+  const int nPar = func->GetNpar();
   for(int iPar=0; iPar<nPar; iPar++) {
-    ptpar->AddText((static_cast<std::string>(peak_fit_->GetParName(iPar)) + " = " +
-                  to_string_with_significant_figures(peak_fit_->GetParameter(iPar), 3) + " #pm " +
-                  to_string_with_significant_figures(peak_fit_->GetParError(iPar), 3)).c_str());
+    ptpar->AddText((static_cast<std::string>(func->GetParName(iPar)) + " = " +
+                  to_string_with_significant_figures(func->GetParameter(iPar), 3) + " #pm " +
+                  to_string_with_significant_figures(func->GetParError(iPar), 3)).c_str());
   }
 
   return ptpar;
@@ -72,7 +93,7 @@ TPaveText* ShapeFitter::FitParametersToText(float x1, float y1, float x2, float 
 void ShapeFitter::PrepareHistoSidebands() {
   histo_sidebands_ = dynamic_cast<TH1D*>(histo_in_->Clone());
   const int nBins = histo_sidebands_->GetNbinsX();
-  for(int iBin=1; iBin<nBins; iBin++) {
+  for(int iBin = 1; iBin <= nBins; iBin++) {
     const double binCenter = histo_sidebands_->GetBinCenter(iBin);
     if(binCenter < left_sideband_external_ ||
        (binCenter > left_sideband_internal_ && binCenter < right_sideband_internal_) ||
@@ -98,17 +119,57 @@ void ShapeFitter::PrepareHistoPeak() {
   }
 }
 
-void ShapeFitter::DefineSideBandPol(double left, double right, int polN) {
-  if(polN < -1 || polN > PolN::nPars-2) {
-    throw std::runtime_error("ShapeFitter::DefineSideBandPol() - polN must be from 0 to " + std::to_string(PolN::nPars-2));
+void ShapeFitter::DefineSideBand(double left, double right) {
+  if(bg_pol_n_ < -1 || bg_pol_n_ > PolN::nPars-2) {
+    throw std::runtime_error("ShapeFitter::DefineSideBand() - bg_pol_n_ must be from 0 to " + std::to_string(PolN::nPars-2));
   }
   sidebands_fit_ = new TF1("sideband_fit", PolN::Shape, left, right, PolN::nPars);
   sidebands_fit_->FixParameter(PolN::kShift, expected_mu_);
-  for(int iPar = polN+2; iPar < PolN::nPars; iPar++) {
+  for(int iPar = bg_pol_n_+2; iPar < PolN::nPars; iPar++) {
     sidebands_fit_->FixParameter(iPar, 0.);
   }
   sidebands_fit_->SetParNames("#mu_{ref}", "a_{0}", "a_{1}", "a_{2}", "a_{3}");
-  sidebands_fit_->SetTitle(("Pol" + std::to_string(polN)).c_str());
+  sidebands_fit_->SetTitle(("Pol" + std::to_string(bg_pol_n_)).c_str());
+}
+
+void ShapeFitter::DefineAll(double left, double right) {
+  int nParsPeak{UndefValueInt};
+  if(peak_shape_ == "Gaus") nParsPeak = Gaus::nPars;
+  if(peak_shape_ == "DoubleGaus") nParsPeak = DoubleGaus::nPars;
+  if(peak_shape_ == "DSCB") nParsPeak = DoubleSidedCrystalBall::nPars;
+  auto AllShape = [&] (const double* x, const double* par) {
+    if(peak_shape_ == "Gaus") return PolN::Shape(x, par) + Gaus::Shape(x, &par[PolN::nPars]);
+    if(peak_shape_ == "DoubleGaus") return PolN::Shape(x, par) + DoubleGaus::Shape(x, &par[PolN::nPars]);
+    if(peak_shape_ == "DSCB") return PolN::Shape(x, par) + DoubleSidedCrystalBall::Shape(x, &par[PolN::nPars]);
+    throw std::runtime_error("ShapeFitter::DefineAll() - peak_shape_ must be one of the availables");
+  };
+  std::cout << "nParsPeak = " << nParsPeak << "\n";
+  all_fit_ = new TF1("all_fit", AllShape, left, right, nParsPeak + PolN::nPars);
+  CopyPasteParametersToAll(PolN::nPars, nParsPeak);
+}
+
+void ShapeFitter::CopyPasteParametersToAll(int nParsSideBand, int nParsPeak) {
+  for (int iPar = 0; iPar < nParsSideBand; iPar++) {
+    all_fit_->SetParameter(iPar, sidebands_fit_->GetParameter(iPar));
+    all_fit_->SetParName(iPar, sidebands_fit_->GetParName(iPar));
+    double minlimit, maxlimit;
+    sidebands_fit_->GetParLimits(iPar, minlimit, maxlimit);
+    all_fit_->SetParLimits(iPar, minlimit, maxlimit);
+  }
+  for (int iPar = 0; iPar < nParsPeak; iPar++) {
+    all_fit_->SetParameter(nParsSideBand + iPar, peak_fit_->GetParameter(iPar));
+    all_fit_->SetParName(nParsSideBand + iPar, peak_fit_->GetParName(iPar));
+    double minlimit, maxlimit;
+    peak_fit_->GetParLimits(iPar, minlimit, maxlimit);
+    all_fit_->SetParLimits(nParsSideBand + iPar, minlimit, maxlimit);
+  }
+}
+
+void ShapeFitter::DefinePeak(TH1D* histo, float left, float right) {
+  if      (peak_shape_ == "Gaus")       DefinePeakGaus(histo, left, right);
+  else if (peak_shape_ == "DSCB")       DefinePeakDSCB(histo, left, right);
+  else if (peak_shape_ == "DoubleGaus") DefinePeakDoubleGaus(histo, left, right);
+  else                                  throw std::runtime_error("ShapeFitter::DefinePeak(): peak_shape_ must be one of the available");
 }
 
 void ShapeFitter::DefinePeakGaus(TH1D* histo, double left, double right) {

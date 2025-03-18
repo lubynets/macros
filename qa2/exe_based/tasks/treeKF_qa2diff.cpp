@@ -118,7 +118,7 @@ void treeKF_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool i
         shFtr.SetPeakShape("DSCB");
         shFtr.SetBgPolN(-1); // FIXME effectively should zero BG polynomial. Careful, not tested yet! To be re-implemented properly.
         shFtr.Fit();
-        TPaveText* fit_text = shFtr.FitParametersToText(0.20, 0.90 - 0.05 * shFtr.GetPeakFunc()->GetNpar(), 0.45, 0.90);
+        TPaveText* fit_text = shFtr.ConvertFitParametersToText("peak", {0.20, 0.90});
         fit_text->Draw("same");
       }
 

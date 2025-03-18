@@ -50,6 +50,7 @@ void mass_fit(const std::string& fileName, bool isMC, bool isSaveToRoot) {
       const std::string cutRangeText = sc.first + " < T < " + sc.second + " (fs)";
       TH1D* histoIn = GetObjectWithNullptrCheck<TH1D>(fileIn, histoName);
       histoIn->UseCurrentStyle();
+      histoIn->Sumw2();
       if(rebinFactor != 1) histoIn->Rebin(rebinFactor);
 
       ShapeFitter shapeFitter(histoIn);
@@ -65,6 +66,8 @@ void mass_fit(const std::string& fileName, bool isMC, bool isSaveToRoot) {
       shapeFitter.GetSideBandHisto()->Draw();
       shapeFitter.GetSideBandFunc()->Draw("same");
       AddOneLineText(cutRangeText, {0.74, 0.82, 0.87, 0.90});
+      TPaveText* parsSideBandText = shapeFitter.ConvertFitParametersToText("bg", {0.2, 0.9});
+      parsSideBandText->Draw("same");
       ccSideBand.Print(("sideBand_" + wu.name_ + printingBracket).c_str(), "pdf");
 
       TCanvas ccPeak("ccPeak", "");
@@ -72,15 +75,25 @@ void mass_fit(const std::string& fileName, bool isMC, bool isSaveToRoot) {
       shapeFitter.GetPeakHisto()->Draw();
       shapeFitter.GetPeakFunc()->Draw("same");
       AddOneLineText(cutRangeText, {0.74, 0.82, 0.87, 0.90});
+      TPaveText* parsPeakText = shapeFitter.ConvertFitParametersToText("peak", {0.2, 0.9});
+      parsPeakText->Draw("same");
       ccPeak.Print(("peak_" + wu.name_ + printingBracket).c_str(), "pdf");
 
+      TCanvas ccAll("ccAll", "");
+      ccAll.SetCanvasSize(1200, 800);
+      shapeFitter.GetAllHisto()->Draw();
+      shapeFitter.GetAllFunc()->Draw("same");
+      AddOneLineText(cutRangeText, {0.74, 0.82, 0.87, 0.90});
+      TPaveText* parsAllText = shapeFitter.ConvertFitParametersToText("all", {0.2, 0.9});
+      parsAllText->Draw("same");
+      ccAll.Print(("all_" + wu.name_ + printingBracket).c_str(), "pdf");
 
       printingBracket = "";
     } // sliceCuts
     TCanvas emptyCanvas("emptyCanvas", "");
     emptyCanvas.SetCanvasSize(1200, 800);
     printingBracket = "]";
-    for(auto& ccType : {"sideBand", "peak"}) {
+    for(auto& ccType : {"sideBand", "peak", "all"}) {
       emptyCanvas.Print((static_cast<std::string>(ccType) + "_" + wu.name_ + printingBracket).c_str(), "pdf");
     }
   } // weightsUsages
