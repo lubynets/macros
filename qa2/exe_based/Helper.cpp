@@ -3,6 +3,8 @@
 //
 #include "Helper.hpp"
 
+#include <TCanvas.h>
+
 void Helper::SlightlyShiftXAxis(TGraph* gr, float value) {
   if(value == -1) {
     value = (gr->GetPointX(gr->GetN()-1) - gr->GetPointX(0)) / 50;
@@ -213,4 +215,33 @@ void Helper::PrintInfoOnTF1(const TF1* f) {
     f->GetParLimits(iPar, min, max);
     std::cout << f->GetParName(iPar) << "\t" << f->GetParameter(iPar) << " +- " << f->GetParError(iPar) << "\t(" << min << "; " << max << ")\n";
   }
+}
+
+void Helper::CloseCanvasPrinting(const std::vector<std::string>& names) {
+  TCanvas emptyCanvas("emptyCanvas", "", 1000, 1000);
+  for(auto& name : names) {
+    emptyCanvas.Print((name + ".pdf]").c_str(), "pdf");
+  }
+}
+
+void Helper::CheckHistogramsForXaxisIdentity(const TH1* h1, const TH1* h2) {
+  if(h1->GetNbinsX() != h2->GetNbinsX()) {
+    throw std::runtime_error("Helper::CheckHistogramsForXaxisIdentity(): nBinsX do not match for " + static_cast<std::string>(h1->GetName()) + " and " + h2->GetName());
+  }
+  const int nBins = h1->GetNbinsX();
+  for(int iBin=1; iBin<=nBins; iBin++) {
+    if(std::abs(h1->GetBinCenter(iBin) - h2->GetBinCenter(iBin)) > 1e-6) {
+      throw std::runtime_error("Helper::CheckHistogramsForXaxisIdentity(): bins do not coincide for " + static_cast<std::string>(h1->GetName()) + " and " + h2->GetName());
+    }
+  }
+}
+
+std::pair<float, float> Helper::EstimateExpoParameters(TH1* h, float lo, float hi) {
+  const int ilo = h->FindBin(lo);
+  const int ihi = h->FindBin(hi);
+  const float flo = h->GetBinContent(ilo)/* * h->GetBinWidth(ilo)*/;
+  const float fhi = h->GetBinContent(ihi)/* * h->GetBinWidth(ihi)*/;
+  const float tau = (hi-lo)/std::log(flo/fhi);
+  const float A = flo / std::exp(-lo/tau);
+  return std::make_pair(A, tau);
 }

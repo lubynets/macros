@@ -208,10 +208,7 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
 
 std::pair<TH1D* , TH1D*> EvaluateEfficiencyHisto(TH1D* hNum, TH1D* hDen) {
   const int nBins = hNum->GetNbinsX();
-  if(hNum->GetNbinsX() != hDen->GetNbinsX()) throw std::runtime_error("EvaluateEfficiencyHisto(): hNum->GetNbinsX() != hDen->GetNbinsX()");
-  for(int iBin=1; iBin<=nBins; iBin++) {
-    if(std::abs(hNum->GetBinCenter(iBin) - hDen->GetBinCenter(iBin)) > 1e-6) throw std::runtime_error("EvaluateEfficiencyHisto(): bins do not coincide");
-  }
+  CheckHistogramsForXaxisIdentity(hNum, hDen);
 
   TH1D* hEff = dynamic_cast<TH1D*>(hNum->Clone());
   TH1D* hRelErr = dynamic_cast<TH1D*>(hNum->Clone());

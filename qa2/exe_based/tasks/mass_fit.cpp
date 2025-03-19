@@ -22,22 +22,24 @@ void mass_fit(const std::string& fileName, bool isMC, bool isSaveToRoot) {
 
   TFile* fileIn = OpenFileWithNullptrCheck(fileName);
 
-//  const std::vector<std::string> mcDataTypes {
-//    "prompt",
-//    "nonprompt",
-//    "signal",
-//    "background",
-//  };
-
   const int rebinFactor = 4;
-  const std::string peakShape = "DSCB";
+//  const std::string peakShape = "DSCB";
 //  const std::string peakShape = "Gaus";
-//  const std::string peakShape = "DoubleGaus";
+  const std::string peakShape = "DoubleGaus";
+
+  const int bgShape = 2;
 
   const bool drawRefit{false};
 //  const bool drawRefit{true};
 
   const std::string mainDataType = isMC ? "all" : "data";
+
+  std::string fitShape;
+  if(peakShape == "DSCB") fitShape = "dscb.";
+  if(peakShape == "Gaus") fitShape = "gaus.";
+  if(peakShape == "DoubleGaus") fitShape = "doublegaus.";
+
+  fitShape = fitShape + "pol" + std::to_string(bgShape);
 
   struct WeightsUsage {
     std::string name_;
@@ -53,11 +55,18 @@ void mass_fit(const std::string& fileName, bool isMC, bool isSaveToRoot) {
   auto sliceCuts = FindCuts(fileIn, mainDataType + "/Candidates_" + mainDataType + "_T", true);
   auto ctBinEdges = EvaluateLifetimeBinRanges(sliceCuts);
 
+  TFile* fileOut{nullptr};
+  if(isSaveToRoot) fileOut = TFile::Open(("yields." + fitShape + ".root").c_str(), "recreate");
+
   for(auto& wu : weightsUsages) {
     std::string printingBracket = "(";
+    TH1D* histoYieldSignal = new TH1D(("histoYieldSignal_" + wu.name_).c_str(), "", ctBinEdges.size()-1, ctBinEdges.data());
+    histoYieldSignal->GetXaxis()->SetTitle("T (ps)");
+    histoYieldSignal->GetYaxis()->SetTitle("Entries");
+    int iSc{1};
     for(auto& sc : sliceCuts) {
-      const std::string histoName = mainDataType + "/Candidates_" + mainDataType + "_T_" + sc.first + "_" + sc.second + wu.dir_name_suffix_ + "/Mass" + wu.histo_name_suffix_ + "_all_T_" + sc.first + "_" + sc.second;
-      const std::string cutRangeText = sc.first + " < T < " + sc.second + " (fs)";
+      const std::string histoName = mainDataType + "/Candidates_" + mainDataType + "_T_" + sc.first + "_" + sc.second + wu.dir_name_suffix_ + "/Mass" + wu.histo_name_suffix_ + "_" + mainDataType + "_T_" + sc.first + "_" + sc.second;
+      const std::string cutRangeText = sc.first + " < T < " + sc.second + " (ps)";
       TH1D* histoIn = GetObjectWithNullptrCheck<TH1D>(fileIn, histoName);
       histoIn->UseCurrentStyle();
       histoIn->Sumw2();
@@ -68,8 +77,11 @@ void mass_fit(const std::string& fileName, bool isMC, bool isSaveToRoot) {
       shapeFitter.SetExpectedSigma(massLambdaCDetectorWidth);
       shapeFitter.SetSideBands(2.12, 2.20, 2.38, 2.42);
       shapeFitter.SetPeakShape(peakShape);
-      shapeFitter.SetBgPolN(2);
+      shapeFitter.SetBgPolN(bgShape);
       shapeFitter.Fit();
+
+      histoYieldSignal->SetBinContent(iSc, shapeFitter.GetSignalIntegral3Sigma());
+      histoYieldSignal->SetBinError(iSc, shapeFitter.GetSignalErrIntegral3Sigma());
 
       for(auto& lines : {shapeFitter.GetAllFunc(), shapeFitter.GetAllReFunc(), shapeFitter.GetSideBandFunc(), shapeFitter.GetSideBandReFunc()}) {
         lines->SetLineWidth(3);
@@ -95,7 +107,7 @@ void mass_fit(const std::string& fileName, bool isMC, bool isSaveToRoot) {
       AddOneLineText(cutRangeText, {0.74, 0.82, 0.87, 0.90});
       TPaveText* parsSideBandText = shapeFitter.ConvertFitParametersToText("bg", {0.2, 0.9});
       parsSideBandText->Draw("same");
-      ccSideBand.Print(("sideBand_" + wu.name_ + ".pdf" + printingBracket).c_str(), "pdf");
+      ccSideBand.Print(("sideBand_" + fitShape + "_" + wu.name_ + ".pdf" + printingBracket).c_str(), "pdf");
 
       TCanvas ccPeak("ccPeak", "");
       ccPeak.SetCanvasSize(1200, 800);
@@ -105,7 +117,7 @@ void mass_fit(const std::string& fileName, bool isMC, bool isSaveToRoot) {
       AddOneLineText(cutRangeText, {0.74, 0.82, 0.87, 0.90});
       TPaveText* parsPeakText = shapeFitter.ConvertFitParametersToText("peak", {0.2, 0.9});
       parsPeakText->Draw("same");
-      ccPeak.Print(("peak_" + wu.name_ + ".pdf" + printingBracket).c_str(), "pdf");
+      ccPeak.Print(("peak_" + fitShape + "_" + wu.name_ + ".pdf" + printingBracket).c_str(), "pdf");
 
       TCanvas ccAll("ccAll", "");
       ccAll.SetCanvasSize(1200, 800);
@@ -124,17 +136,28 @@ void mass_fit(const std::string& fileName, bool isMC, bool isSaveToRoot) {
       leg.AddEntry(shapeFitter.GetSideBandFunc(), "Bg", "L");
       leg.AddEntry(shapeFitter.GetPeakFunc(), "Sig", "F");
       leg.Draw("same");
-      ccAll.Print(("all_" + wu.name_ + ".pdf" + printingBracket).c_str(), "pdf");
+      ccAll.Print(("all_" + fitShape + "_" + wu.name_ + ".pdf" + printingBracket).c_str(), "pdf");
 
       printingBracket = "";
+      ++iSc;
     } // sliceCuts
-    TCanvas emptyCanvas("emptyCanvas", "");
-    emptyCanvas.SetCanvasSize(1200, 800);
-    printingBracket = "]";
+
+    TCanvas ccHistoYield("ccHistoYield", "");
+    ccHistoYield.SetCanvasSize(1200, 800);
+    histoYieldSignal->Draw();
+    ccHistoYield.Print(("all_" + fitShape + "_" + wu.name_ + ".pdf" + printingBracket).c_str(), "pdf");
+
+    std::vector<std::string> ccS;
     for(auto& ccType : {"sideBand", "peak", "all"}) {
-      emptyCanvas.Print((static_cast<std::string>(ccType) + "_" + wu.name_ + ".pdf" + printingBracket).c_str(), "pdf");
+      ccS.emplace_back((static_cast<std::string>(ccType) + "_" + fitShape + "_" + wu.name_).c_str());
+    }
+    CloseCanvasPrinting(ccS);
+    if(isSaveToRoot) {
+      fileOut->cd();
+      histoYieldSignal->Write();
     }
   } // weightsUsages
+  if(isSaveToRoot) fileOut->Close();
 }
 
 std::vector<double> EvaluateLifetimeBinRanges(const std::vector<std::pair<std::string, std::string>>& sliceCuts, bool doPrint) {

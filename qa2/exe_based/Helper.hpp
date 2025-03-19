@@ -120,7 +120,13 @@ inline void RemoveEdgeLabelFromAxis(T* obj, const std::string& edge, const std::
   }
 }
 
+std::pair<float, float> EstimateExpoParameters(TH1* h, float lo, float hi);
+
 void PrintInfoOnTF1(const TF1* f);
+
+void CloseCanvasPrinting(const std::vector<std::string>& names);
+
+void CheckHistogramsForXaxisIdentity(const TH1* h1, const TH1* h2);
 
 } // namespace Helper
 #endif //QA2_HELPER_HPP

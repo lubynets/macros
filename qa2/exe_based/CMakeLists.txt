@@ -11,8 +11,9 @@ SET(EXECUTABLES
     pid_qa
     graph_qa3
     efficiency
-    fit_yield
+    ct_mcfit
     mass_fit
+    ct_fit
 )
 
 SET(SOURCES

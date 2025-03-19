@@ -11,9 +11,7 @@
 
 using namespace Helper;
 
-std::pair<float, float> EstimateExpoParameters(TH1* h, float lo, float hi);
-
-void fit_yield(const std::string& fileNameEff, const std::string& fileNameYield, bool isSaveToRoot) {
+void ct_mcfit(const std::string& fileNameEff, const std::string& fileNameYield, bool isSaveToRoot) {
   TString currentMacroPath = __FILE__;
   TString directory = currentMacroPath(0, currentMacroPath.Last('/'));
   gROOT->Macro( directory + "/../styles/mc_qa2.dpg.style.cc" );
@@ -134,7 +132,7 @@ void fit_yield(const std::string& fileNameEff, const std::string& fileNameYield,
 int main(int argc, char* argv[]) {
   if (argc < 3) {
     std::cout << "Error! Please use " << std::endl;
-    std::cout << " ./fit_yield fileNameEff fileNameYield (isSaveRoot=false)" << std::endl;
+    std::cout << " ./ct_mcfit fileNameEff fileNameYield (isSaveRoot=false)" << std::endl;
     exit(EXIT_FAILURE);
   }
 
@@ -142,17 +140,7 @@ int main(int argc, char* argv[]) {
   const std::string fileNameYield = argv[2];
   const bool isSaveToRoot = argc > 3 ? string_to_bool(argv[3]) : false;
 
-  fit_yield(fileNameEff, fileNameYield, isSaveToRoot);
+  ct_mcfit(fileNameEff, fileNameYield, isSaveToRoot);
 
   return 0;
-}
-
-std::pair<float, float> EstimateExpoParameters(TH1* h, float lo, float hi) {
-  const int ilo = h->FindBin(lo);
-  const int ihi = h->FindBin(hi);
-  const float flo = h->GetBinContent(ilo)/* * h->GetBinWidth(ilo)*/;
-  const float fhi = h->GetBinContent(ihi)/* * h->GetBinWidth(ihi)*/;
-  const float tau = (hi-lo)/std::log(flo/fhi);
-  const float A = flo / std::exp(-lo/tau);
-  return std::make_pair(A, tau);
 }
