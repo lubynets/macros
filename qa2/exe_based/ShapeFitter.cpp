@@ -33,22 +33,24 @@ void ShapeFitter::Fit() {
   FitPeak();
   FitAll();
   RedefinePeakAndSideBand(left_sideband_external_, right_sideband_external_);
+  EvaluatePeakSigma();
+  EvaluateSigBgIntegrals();
 }
 
 void ShapeFitter::FitPeak() {
   DefinePeak(histo_peak_, left_sideband_external_, right_sideband_external_);
   peak_fit_->SetNpx(1000);
-  histo_peak_->Fit(peak_fit_, "R0");
+  peak_fit_result_ptr_ = histo_peak_->Fit(peak_fit_, "RS0");
 }
 
 void ShapeFitter::FitAll() {
   DefineAll(left_sideband_external_, right_sideband_external_);
-  histo_in_->Fit(all_refit_, "R0");
+  all_refit_result_ptr_ = histo_in_->Fit(all_refit_, "RS0");
 }
 
 void ShapeFitter::FitSideBands() {
   DefineSideBand(left_sideband_external_, right_sideband_external_);
-  histo_sidebands_->Fit(sidebands_fit_, "R0");
+  sidebands_fit_result_ptr_ = histo_sidebands_->Fit(sidebands_fit_, "RS0");
 }
 
 TPaveText* ShapeFitter::ConvertFitParametersToText(const std::string& funcType, std::array<float, 2> coordinatesLeftUpperCorner) const {
@@ -90,6 +92,8 @@ TPaveText* ShapeFitter::ConvertFitParametersToText(const std::string& funcType, 
                   to_string_with_significant_figures(func->GetParameter(iPar), 3) + " #pm " +
                   to_string_with_significant_figures(func->GetParError(iPar), 3)).c_str());
   }
+  ptpar->AddText(("S = " + to_string_with_precision(GetSignalIntegral3Sigma(), 2) + " #pm " + to_string_with_precision(GetSignalErrIntegral3Sigma(), 2)).c_str());
+  ptpar->AddText(("S/B = " + to_string_with_precision(GetSignalIntegral3Sigma() / GetBgIntegral3Sigma(), 2)).c_str());
 
   return ptpar;
 }
@@ -121,6 +125,29 @@ void ShapeFitter::PrepareHistoPeak() {
       histo_peak_->SetBinError(iBin, 0.);
     }
   }
+}
+
+void ShapeFitter::EvaluatePeakSigma() {
+  if(peak_shape_ == "Gaus") {
+    peak_sigma_ = peak_fit_->GetParameter(Gaus::kSigma);
+  } else if(peak_shape_ == "DoubleGaus") {
+    const double A1 = peak_fit_->GetParameter(DoubleGaus::kFactor1);
+    const double A2 = peak_fit_->GetParameter(DoubleGaus::kFactor2);
+    const double s1 = peak_fit_->GetParameter(DoubleGaus::kSigma1);
+    const double s2 = peak_fit_->GetParameter(DoubleGaus::kSigma2);
+    peak_sigma_ = std::sqrt((A1*s1*s1 + A2*s2*s2) / (A1+A2));
+  } else if(peak_shape_ == "DSCB") {
+    peak_sigma_ = peak_fit_->GetParameter(DoubleSidedCrystalBall::kSigma);
+  } else {
+    throw std::runtime_error("ShapeFitter::EvaluatePeakSigma() - peak_shape_ must be one of the available");
+  }
+}
+
+void ShapeFitter::EvaluateSigBgIntegrals() {
+  peak_integral_3s_ = peak_fit_->Integral(expected_mu_ - 3*peak_sigma_, expected_mu_ + 3*peak_sigma_) / histo_in_->GetBinWidth(1);
+  bg_integral_3s_ = sidebands_fit_->Integral(expected_mu_ - 3*peak_sigma_, expected_mu_ + 3*peak_sigma_) / histo_in_->GetBinWidth(1);
+  peak_errintegral_3s_ = peak_fit_->IntegralError(expected_mu_ - 3*peak_sigma_, expected_mu_ + 3*peak_sigma_, peak_fit_result_ptr_->GetParams(), peak_fit_result_ptr_->GetCovarianceMatrix().GetMatrixArray()) / histo_in_->GetBinWidth(1);
+  bg_errintegral_3s_ = sidebands_fit_->IntegralError(expected_mu_ - 3*peak_sigma_, expected_mu_ + 3*peak_sigma_, sidebands_fit_result_ptr_->GetParams(), sidebands_fit_result_ptr_->GetCovarianceMatrix().GetMatrixArray()) / histo_in_->GetBinWidth(1);
 }
 
 void ShapeFitter::RedefinePeakAndSideBand(double left, double right) {
@@ -177,6 +204,7 @@ void ShapeFitter::CopyPasteParametersToAll(const TF1* funcFrom, int nParsFunc, i
     const double parValue = funcFrom->GetParameter(iPar);
     for(auto& all : {all_fit_, all_refit_}) {
       all->SetParameter(nParsShift + iPar, parValue);
+      all->SetParError(nParsShift + iPar, funcFrom->GetParError(iPar));
       all->SetParName(nParsShift + iPar, funcFrom->GetParName(iPar));
       all->SetParLimits(nParsShift + iPar, minlimit, maxlimit);
       if((std::abs(maxlimit - minlimit)<1e-4 && std::abs(parValue - minlimit)<1e-4) ||
@@ -243,4 +271,10 @@ void ShapeFitter::DefinePeakDSCB(TH1D* histo, float left, float right) {
   peak_fit_->SetParLimits(DoubleSidedCrystalBall::kN2, -5, 5);
   peak_fit_->SetParNames("Height", "#mu_{ref}", "#mu - #mu_{ref}", "#sigma", "a_{1}", "log_{10}n_{1}", "a_{2}", "log_{10}n_{2}");
   peak_fit_->SetTitle("DSCB");
+}
+
+ShapeFitter::~ShapeFitter() {
+//  delete peak_fit_cov_;
+//  delete sidebands_fit_cov_;
+//  delete all_refit_cov_;
 }

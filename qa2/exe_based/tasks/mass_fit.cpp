@@ -13,6 +13,8 @@
 
 using namespace Helper;
 
+std::vector<double> EvaluateLifetimeBinRanges(const std::vector<std::pair<std::string, std::string>>& sliceCuts, bool doPrint=false);
+
 void mass_fit(const std::string& fileName, bool isMC, bool isSaveToRoot) {
   TString currentMacroPath = __FILE__;
   TString directory = currentMacroPath(0, currentMacroPath.Last('/'));
@@ -45,10 +47,11 @@ void mass_fit(const std::string& fileName, bool isMC, bool isSaveToRoot) {
 
   std::vector<WeightsUsage> weightsUsages {
     {"wo_weight", "", ""},
-//    {"with_weight", "_weight_recEffWeigth", "_W"}
+    {"with_weight", "_weight_recEffWeigth", "_W"}
   };
 
   auto sliceCuts = FindCuts(fileIn, mainDataType + "/Candidates_" + mainDataType + "_T", true);
+  auto ctBinEdges = EvaluateLifetimeBinRanges(sliceCuts);
 
   for(auto& wu : weightsUsages) {
     std::string printingBracket = "(";
@@ -132,6 +135,24 @@ void mass_fit(const std::string& fileName, bool isMC, bool isSaveToRoot) {
       emptyCanvas.Print((static_cast<std::string>(ccType) + "_" + wu.name_ + ".pdf" + printingBracket).c_str(), "pdf");
     }
   } // weightsUsages
+}
+
+std::vector<double> EvaluateLifetimeBinRanges(const std::vector<std::pair<std::string, std::string>>& sliceCuts, bool doPrint) {
+  std::vector<double> result;
+  for(auto& sc : sliceCuts) {
+    result.emplace_back(atof(sc.first.c_str()));
+  }
+  result.emplace_back(atof(sliceCuts.back().second.c_str()));
+
+  if(doPrint) {
+    std::cout << "Info: EvaluateLifetimeBinRanges()\n";
+    for(auto& r : result) {
+      std::cout << r << "\t";
+    }
+    std::cout << "\n";
+  }
+
+  return result;
 }
 
 int main(int argc, char* argv[]) {

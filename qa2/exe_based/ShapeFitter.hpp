@@ -8,13 +8,14 @@
 #include "Helper.hpp"
 
 #include <TF1.h>
+#include <TFitResult.h>
 #include <TH1.h>
 #include <TPaveText.h>
 
 class ShapeFitter {
  public:
   explicit ShapeFitter(TH1D* histo) { histo_in_ = histo; }
-  virtual ~ShapeFitter() = default;
+  virtual ~ShapeFitter();
 
   TF1* GetPeakFunc() const { return peak_fit_; }
   TF1* GetPeakReFunc() const { return peak_refit_; }
@@ -39,6 +40,12 @@ class ShapeFitter {
   int GetAllNDF() const { return GetSideBandNDF() + GetPeakNDF(); }
   double GetAllChi2OverNDF() const { return GetAllChi2() / GetAllNDF(); }
   TH1D* GetAllHisto() const { return histo_in_; }
+
+  double GetPeakSigma() const { return peak_sigma_; }
+  double GetSignalIntegral3Sigma() const { return peak_integral_3s_; }
+  double GetBgIntegral3Sigma() const { return bg_integral_3s_; }
+  double GetSignalErrIntegral3Sigma() const { return peak_errintegral_3s_; }
+  double GetBgErrIntegral3Sigma() const { return bg_errintegral_3s_; }
 
   void SetExpectedMu(double value) { expected_mu_ = value; }
   void SetExpectedSigma(double value) { expected_sigma_ = value; }
@@ -71,6 +78,9 @@ class ShapeFitter {
   void PrepareHistoSidebands();
   void PrepareHistoPeak();
 
+  void EvaluatePeakSigma();
+  void EvaluateSigBgIntegrals();
+
   TH1D* histo_in_{nullptr};
   TH1D* histo_sidebands_{nullptr};
   TH1D* histo_peak_{nullptr};
@@ -79,9 +89,19 @@ class ShapeFitter {
   TF1* sidebands_fit_{nullptr};
   TF1* all_fit_{nullptr};
 
+  TFitResultPtr peak_fit_result_ptr_;
+  TFitResultPtr sidebands_fit_result_ptr_;
+  TFitResultPtr all_refit_result_ptr_;
+
   TF1* peak_refit_{nullptr};
   TF1* sidebands_refit_{nullptr};
   TF1* all_refit_{nullptr};
+
+  double peak_sigma_{Helper::UndefValueDouble};
+  double peak_integral_3s_{Helper::UndefValueDouble};
+  double bg_integral_3s_{Helper::UndefValueDouble};
+  double peak_errintegral_3s_{Helper::UndefValueDouble};
+  double bg_errintegral_3s_{Helper::UndefValueDouble};
 
   double expected_mu_{Helper::UndefValueDouble};
   double expected_sigma_{Helper::UndefValueDouble};
