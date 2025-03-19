@@ -18,17 +18,26 @@ class ShapeFitter {
 
   TF1* GetPeakFunc() const { return peak_fit_; }
   TF1* GetPeakReFunc() const { return peak_refit_; }
-  double GetPeakChi2() const { return chi2_peak_; }
+  double GetPeakChi2() const { return peak_fit_->GetChisquare(); }
+  int GetPeakNDF() const { return peak_fit_->GetNDF(); }
+  double GetPeakChi2OverNDF() const { return GetPeakChi2() / GetPeakNDF(); }
   TH1D* GetPeakHisto() const { return histo_peak_; }
 
   TF1* GetSideBandFunc() const { return sidebands_fit_; }
   TF1* GetSideBandReFunc() const { return sidebands_refit_; }
-  double GetSideBandChi2() const { return chi2_sideband_; }
+  double GetSideBandChi2() const { return sidebands_fit_->GetChisquare(); }
+  int GetSideBandNDF() const { return sidebands_fit_->GetNDF(); }
+  double GetSideBandChi2OverNDF() const { return GetSideBandChi2() / GetSideBandNDF(); }
   TH1D* GetSideBandHisto() const { return histo_sidebands_; }
 
   TF1* GetAllFunc() const { return all_fit_; }
   TF1* GetAllReFunc() const { return all_refit_; }
-  double GetAllChi2() const { return chi2_all_; }
+  double GetAllReChi2() const { return all_refit_->GetChisquare(); }
+  int GetAllReNDF() const { return all_refit_->GetNDF(); }
+  double GetAllReChi2OverNDF() const { return GetAllReChi2() / GetAllReNDF(); }
+  double GetAllChi2() const { return GetSideBandChi2() + GetPeakChi2(); }
+  int GetAllNDF() const { return GetSideBandNDF() + GetPeakNDF(); }
+  double GetAllChi2OverNDF() const { return GetAllChi2() / GetAllNDF(); }
   TH1D* GetAllHisto() const { return histo_in_; }
 
   void SetExpectedMu(double value) { expected_mu_ = value; }
@@ -51,7 +60,7 @@ class ShapeFitter {
   void DefinePeakDoubleGaus(TH1D* histo, double left, double right);
   void DefinePeakDSCB(TH1D* histo, float left, float right);
 
-  void CopyPasteParametersToAll(int nParsSideBand, int nParsPeak);
+  void CopyPasteParametersToAll(const TF1* funcFrom, int nParsFunc, int nParsShift);
 
   void DefinePeak(TH1D* histo, float left, float right);
   void DefineSideBand(double left, double right);
@@ -73,13 +82,6 @@ class ShapeFitter {
   TF1* peak_refit_{nullptr};
   TF1* sidebands_refit_{nullptr};
   TF1* all_refit_{nullptr};
-
-  double chi2_peak_{Helper::UndefValueDouble};
-  double chi2_sideband_{Helper::UndefValueDouble};
-  double chi2_all_{Helper::UndefValueDouble};
-  int ndf_peak_{Helper::UndefValueInt};
-  int ndf_sideband_{Helper::UndefValueInt};
-  int ndf_all_{Helper::UndefValueInt};
 
   double expected_mu_{Helper::UndefValueDouble};
   double expected_sigma_{Helper::UndefValueDouble};

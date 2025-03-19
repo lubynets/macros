@@ -49,13 +49,13 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
     {"T",  5, {}, false, true,  "|y| < 0.8"  },
   };
 
-  for(int iB=0; iB<40; iB++) {
-    variables.at(0).rebin_edges_.push_back(0.025 * iB);
-  }
-  for(int iB=0; iB<11; iB++) {
-    variables.at(0).rebin_edges_.push_back(1 + iB*0.1);
-  }
-//  variables.at(0).rebin_edges_ = {0.2, 0.35, 0.5, 0.7, 0.9, 1.6};
+//  for(int iB=0; iB<40; iB++) {
+//    variables.at(0).rebin_edges_.push_back(0.025 * iB);
+//  }
+//  for(int iB=0; iB<11; iB++) {
+//    variables.at(0).rebin_edges_.push_back(1 + iB*0.1);
+//  }
+  variables.at(0).rebin_edges_ = {0.2, 0.35, 0.5, 0.7, 0.9, 1.6};
 
   const std::vector<Color_t> colors{kRed, kBlue};
 
