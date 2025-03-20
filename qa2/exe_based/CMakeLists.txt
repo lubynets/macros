@@ -14,21 +14,23 @@ SET(EXECUTABLES
     ct_mcfit
     mass_fit
     ct_fit
+    runMassFitter
 )
 
 SET(SOURCES
     Helper.cpp
     ShapeFitter.cpp
+    HFInvMassFitter.cpp
 )
 
 string(REPLACE ".cpp" ".hpp" HEADERS "${SOURCES}")
-list(APPEND HEADERS "Shapes.hpp")
+list(APPEND HEADERS "Shapes.hpp" "document.h", "filereadstream.h")
 
 # Specify the C++ standard
 set(CMAKE_CXX_STANDARD 17)
 
 # Find the ROOT package (you might need to specify the ROOT_DIR if it's not in the default location)
-find_package(ROOT REQUIRED)
+find_package(ROOT REQUIRED COMPONENTS RooFit RooFitCore)
 
 # Specify where ROOT headers are located
 include_directories(${ROOT_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR})
@@ -43,7 +45,7 @@ ROOT_GENERATE_DICTIONARY( G__Qa2 ${HEADERS}
 )
 
 add_library(Qa2 SHARED ${SOURCES} G__Qa2.cxx)
-target_link_libraries(Qa2 PRIVATE ${ROOT_LIBRARIES})
+target_link_libraries(Qa2 PRIVATE ${ROOT_LIBRARIES} ROOT::RooFit ROOT::RooFitCore)
 
 install(TARGETS Qa2 EXPORT Qa2Targets
         LIBRARY DESTINATION lib
