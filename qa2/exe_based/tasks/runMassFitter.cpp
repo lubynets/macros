@@ -19,7 +19,7 @@
 
 #if !defined(__CINT__) || defined(__CLING__)
 
-#include "HFInvMassFitter.h"
+#include "HFInvMassFitter.hpp"
 
 #include <iostream> // std::cout
 #include <string>   // std::string
@@ -29,8 +29,8 @@
 #include <TROOT.h>
 
 // if .h file not found, please include your local rapidjson/document.h and rapidjson/filereadstream.h here
-#include <rapidjson/document.h>
-#include <rapidjson/filereadstream.h>
+#include <document.h>
+#include <filereadstream.h>
 
 #endif
 

@@ -14,7 +14,7 @@ SET(EXECUTABLES
     ct_mcfit
     mass_fit
     ct_fit
-    runMassFitter
+#    runMassFitter
 )
 
 SET(SOURCES
@@ -24,7 +24,7 @@ SET(SOURCES
 )
 
 string(REPLACE ".cpp" ".hpp" HEADERS "${SOURCES}")
-list(APPEND HEADERS "Shapes.hpp" "document.h", "filereadstream.h")
+list(APPEND HEADERS "Shapes.hpp")
 
 # Specify the C++ standard
 set(CMAKE_CXX_STANDARD 17)

@@ -23,6 +23,8 @@
 #include <iostream> // std::cout
 #include <string>   // std::string
 
+#include <RooPlot.h>
+#include <RooRealVar.h>
 #include <RooWorkspace.h>
 #include <TCanvas.h>
 #include <TCanvas.h>
