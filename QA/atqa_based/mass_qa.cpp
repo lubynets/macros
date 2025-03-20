@@ -15,11 +15,12 @@ double Interpolate(const TH1* h, double value);
 
 std::vector<SimpleCut> datatypes {
     RangeCut("Candidates.KF_fSigBgStatus", -0.1, 3.1, "all"),
-    EqualsCut("Candidates.KF_fSigBgStatus", 0,"background"),
+    SimpleCut({"Candidates.KF_fSigBgStatus"}, [](std::vector<double> par){ return par[0] == 0 || par[0] == 3; }, "background"),
     EqualsCut("Candidates.KF_fSigBgStatus", 1,"prompt"),
     EqualsCut("Candidates.KF_fSigBgStatus", 2,"nonprompt"),
+    RangeCut("Candidates.KF_fSigBgStatus",  0.9, 2.1, "signal"),
     EqualsCut("Candidates.KF_fSigBgStatus", 3,"wrongswap"),
-    //   EqualsCut("Candidates.KF_fSigBgStatus", -999, "data"),
+//       EqualsCut("Candidates.KF_fSigBgStatus", -999, "data"),
     //   SimpleCut({"Candidates.KF_fSigBgStatus"}, [](std::vector<double> par){ return par[0] != 0 && par[0] != 1 && par[0] != 2 && par[0] != 3 && par[0] != -999; }, "impossible"),
 };
 
@@ -54,7 +55,7 @@ void MassQA(QA::Task& task, TH1D* hEff) {
   Variable recEffWeigth("recEffWeigth",
                         {{"Candidates", "KF_fT"}},
                         [=] (std::vector<double>& par) {
-                          const double eff = Interpolate(hEff, par[0]);
+                          const double eff = Interpolate(hEff, par[0]) / 100;
                           return eff < 1e-4 ? 0. : 1. / eff;
                         } );
 

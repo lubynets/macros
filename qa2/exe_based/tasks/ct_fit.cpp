@@ -47,6 +47,7 @@ void ct_mcfit(const std::string& fileNameYield, const std::string& fileNameEff, 
         histoYieldCorr4Eff->SetBinContent(iBin, histoYieldCorr4Eff->GetBinContent(iBin) / histoEff->GetBinContent(iBin));
         histoYieldCorr4Eff->SetBinError(iBin, histoYieldCorr4Eff->GetBinError(iBin) / histoEff->GetBinContent(iBin));
       }
+      histoYieldCorr4Eff->Scale(100);
     }
 
     // differential (per x-axis unit) yield histogram
