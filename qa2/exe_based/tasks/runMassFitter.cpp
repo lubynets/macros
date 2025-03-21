@@ -28,9 +28,12 @@
 #include <Riostream.h>
 #include <TROOT.h>
 
+#include <TFile.h>
+#include <TH2F.h>
+
 // if .h file not found, please include your local rapidjson/document.h and rapidjson/filereadstream.h here
-#include <document.h>
-#include <filereadstream.h>
+#include <rapidjson/document.h>
+#include <rapidjson/filereadstream.h>
 
 #endif
 
@@ -693,4 +696,18 @@ void divideCanvas(TCanvas* canvas, int nPtBins)
   } else {
     canvas->Divide((nPtBins + 1) / 2, 2);
   }
+}
+
+int main(int argc, char* argv[]) {
+  if (argc < 2) {
+    std::cout << "Error! Please use " << std::endl;
+    std::cout << " ./runMassFitter configFileName" << std::endl;
+    exit(EXIT_FAILURE);
+  }
+
+  const std::string configFileName = argv[1];
+
+  runMassFitter(configFileName);
+
+  return 0;
 }
