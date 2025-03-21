@@ -5,6 +5,7 @@
 #ifndef QA2_HELPER_HPP
 #define QA2_HELPER_HPP
 
+#include <TCanvas.h>
 #include <TGraphErrors.h>
 #include <TGraphMultiErrors.h>
 #include <TF1.h>
@@ -119,6 +120,17 @@ inline void RemoveEdgeLabelFromAxis(T* obj, const std::string& edge, const std::
     }
   }
 }
+
+template<typename T1, typename T2>
+void ScalePlotVertically(T1* plotTo, const T2* plotFrom, double scaleFactor) {
+  plotTo->GetXaxis()->SetTitleSize(plotFrom->GetXaxis()->GetTitleSize()*scaleFactor);
+  plotTo->GetXaxis()->SetLabelSize(plotFrom->GetXaxis()->GetLabelSize()*scaleFactor);
+  plotTo->GetYaxis()->SetTitleSize(plotFrom->GetYaxis()->GetTitleSize()*scaleFactor);
+  plotTo->GetYaxis()->SetLabelSize(plotFrom->GetYaxis()->GetLabelSize()*scaleFactor);
+  plotTo->GetYaxis()->SetTitleOffset(plotFrom->GetYaxis()->GetTitleOffset()/scaleFactor);
+}
+
+void ScaleCanvasVertically(TCanvas* cTo, const TCanvas* cFrom, double scaleFactor);
 
 std::pair<float, float> EstimateExpoParameters(TH1* h, float lo, float hi);
 

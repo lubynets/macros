@@ -23,6 +23,11 @@ void ct_mcfit(const std::string& fileNameYield, const std::string& fileNameEff, 
     "with_weight"
   };
 
+  bool useIntegral{true};
+//  bool useIntegral{false};
+
+  const std::string fitIntegralOption = useIntegral ? "I" : "";
+
   // ad hoc
   if(!((fileNameEff.find(".Full.") != std::string::npos && mcOrData == "Data") || (fileNameEff.find(".I.") != std::string::npos && mcOrData == "Mc"))) {
     std::cout << "WARNING! Something wrong with input efficiency histogram and type of input (mc or data)\n";
@@ -37,6 +42,7 @@ void ct_mcfit(const std::string& fileNameYield, const std::string& fileNameEff, 
 
     // original yield histogram
     TH1D* histoYield = GetObjectWithNullptrCheck<TH1D>(fileInYield, ("histoYieldSignal_" + wu).c_str());
+    histoYield->UseCurrentStyle();
 
     // yield histogram corrected for efficiency (if weights not used, otherwise it is already corrected for efficiency)
     TH1D* histoYieldCorr4Eff = dynamic_cast<TH1D*>(histoYield->Clone());
@@ -64,7 +70,7 @@ void ct_mcfit(const std::string& fileNameYield, const std::string& fileNameEff, 
     auto parEst = EstimateExpoParameters(histoYieldDiff, lo, hi);
     TF1* fitFunc = new TF1("fitFunc", "[0]*TMath::Exp(-x/[1])", lo, hi);
     fitFunc->SetParameters(parEst.first, parEst.second);
-    histoYieldDiff->Fit(fitFunc, "0I", "", lo, hi);
+    histoYieldDiff->Fit(fitFunc, ("0"+fitIntegralOption).c_str(), "", lo, hi);
 
     const std::string lifetimeFitValue = "#tau_{#Lambda_{c}} [Fit] = (" +
                                                 to_string_with_significant_figures(fitFunc->GetParameter(1)*1000, 3) +
@@ -99,8 +105,38 @@ void ct_mcfit(const std::string& fileNameYield, const std::string& fileNameEff, 
     AddOneLineText(chi2Value, {oltX1, oltY2-2*oltYstep, oltX2, oltY2-3*oltYstep});
     AddOneLineText(lifetimeFitValue, {oltX1, oltY2-3*oltYstep, oltX2, oltY2-4*oltYstep});
     AddOneLineText(lifetimePdg, {oltX1, oltY2-4*oltYstep, oltX2, oltY2-5*oltYstep});
-    ccYieldDiff.Print((fileOutNamePrefix + wu + ".pdf)").c_str(), "pdf");
-  }
+    ccYieldDiff.Print((fileOutNamePrefix + wu + ".pdf").c_str(), "pdf");
+
+    // ============== build ratio ==============================
+    TH1D* histoYieldDiff2Fit = dynamic_cast<TH1D*>(histoYieldDiff->Clone());
+    ScalePlotVertically(histoYieldDiff2Fit, histoYieldDiff, 2);
+    if(!useIntegral) {
+      histoYieldDiff2Fit->Divide(fitFunc);
+    } else {
+      for(int iBin=1, nBins=histoYieldDiff2Fit->GetNbinsX(); iBin<=nBins; iBin++) {
+        const double histoValue = histoYieldDiff2Fit->GetBinContent(iBin);
+        const double histoError = histoYieldDiff2Fit->GetBinError(iBin);
+        const double lo = histoYieldDiff2Fit->GetBinLowEdge(iBin);
+        const double hi = histoYieldDiff2Fit->GetBinLowEdge(iBin+1);
+        const double funcAverage = fitFunc->Integral(lo, hi) / (hi-lo);
+        histoYieldDiff2Fit->SetBinContent(iBin, histoValue/funcAverage);
+        histoYieldDiff2Fit->SetBinError(iBin, histoError/funcAverage);
+      }
+    }
+    histoYieldDiff2Fit->GetYaxis()->SetTitle("Ratio");
+
+    TCanvas ccRatio("ccRatio", "");
+    ScaleCanvasVertically(&ccRatio, &ccYieldDiff, 2);
+    TF1* oneline = new TF1("oneline", "[0]", 0, 2);
+    oneline->SetParameter(0, 1);
+    oneline->SetLineColor(kBlack);
+    oneline->SetLineStyle(7);
+    histoYieldDiff2Fit->Draw("HIST PE");
+    oneline->Draw("same");
+    ccRatio.Print((fileOutNamePrefix + wu + ".pdf)").c_str(), "pdf");
+    // ============== end build ratio ==========================
+
+  } // weightUsages
 }
 
 int main(int argc, char* argv[]) {
