@@ -245,11 +245,11 @@ int runMassFitter(TString configFileName)
 
   for (unsigned int iPt = 0; iPt < nPtBins; iPt++) {
     if (!isMc) {
-      hMass[iPt] = static_cast<TH1F*>(inputFile->Get(inputHistoName[iPt].data()));
+      hMass[iPt] = dynamic_cast<TH1F*>(inputFile->Get(inputHistoName[iPt].data()));
       if (enableRefl) {
-        hMassRefl[iPt] = static_cast<TH1F*>(inputFileRefl->Get(reflHistoName[iPt].data()));
-        hMassSgn[iPt] = static_cast<TH1F*>(inputFileRefl->Get(fdHistoName[iPt].data()));
-        hMassSgn[iPt]->Add(static_cast<TH1F*>(inputFileRefl->Get(promptHistoName[iPt].data())));
+        hMassRefl[iPt] = dynamic_cast<TH1F*>(inputFileRefl->Get(reflHistoName[iPt].data()));
+        hMassSgn[iPt] = dynamic_cast<TH1F*>(inputFileRefl->Get(fdHistoName[iPt].data()));
+        hMassSgn[iPt]->Add(dynamic_cast<TH1F*>(inputFileRefl->Get(promptHistoName[iPt].data())));
         if (!hMassRefl[iPt]) {
           cerr << "ERROR: MC reflection histogram not found! Exit!" << endl;
           return -1;
@@ -260,18 +260,18 @@ int runMassFitter(TString configFileName)
         }
       }
     } else {
-      hMass[iPt] = static_cast<TH1F*>(inputFile->Get(promptHistoName[iPt].data()));
-      hMass[iPt]->Add(static_cast<TH1F*>(inputFile->Get(fdHistoName[iPt].data())));
+      hMass[iPt] = dynamic_cast<TH1F*>(inputFile->Get(promptHistoName[iPt].data()));
+      hMass[iPt]->Add(dynamic_cast<TH1F*>(inputFile->Get(fdHistoName[iPt].data())));
       if (includeSecPeak) {
-        hMass[iPt]->Add(static_cast<TH1F*>(inputFile->Get(promptSecPeakHistoName[iPt].data())));
-        hMass[iPt]->Add(static_cast<TH1F*>(inputFile->Get(fdSecPeakHistoName[iPt].data())));
+        hMass[iPt]->Add(dynamic_cast<TH1F*>(inputFile->Get(promptSecPeakHistoName[iPt].data())));
+        hMass[iPt]->Add(dynamic_cast<TH1F*>(inputFile->Get(fdSecPeakHistoName[iPt].data())));
       }
     }
     if (!hMass[iPt]) {
       cerr << "ERROR: input histogram for fit not found! Exit!" << endl;
       return -1;
     }
-    hMass[iPt]->SetDirectory(0);
+    hMass[iPt]->SetDirectory(nullptr);
   }
   inputFile->Close();
 

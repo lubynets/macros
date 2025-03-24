@@ -1,0 +1,140 @@
+{
+  "IsMC": false,
+  "InFileName": "/home/oleksii/alidir/working/ctExtraction/mcClosure/II/mass_qa.mc.lhc24e3.all.noConstr.set1.II.promptEff.root",
+  "ReflFileName": "",
+  "OutFileName": "fileOut.root",
+  "#InputHistoName": [
+    "all/Candidates_all_T_0.20_0.35/Mass_all_T_0.20_0.35",
+    "all/Candidates_all_T_0.35_0.50/Mass_all_T_0.35_0.50",
+    "all/Candidates_all_T_0.50_0.70/Mass_all_T_0.50_0.70",
+    "all/Candidates_all_T_0.70_0.90/Mass_all_T_0.70_0.90",
+    "all/Candidates_all_T_0.90_1.60/Mass_all_T_0.90_1.60"
+  ],
+  "InputHistoName": [
+    "all/Candidates_all_T_0.20_0.35",
+    "all/Candidates_all_T_0.35_0.50",
+    "all/Candidates_all_T_0.50_0.70",
+    "all/Candidates_all_T_0.70_0.90",
+    "all/Candidates_all_T_0.90_1.60"
+  ],
+  "PromptHistoName": [
+    "MC prompt histogram name array"
+  ],
+  "FDHistoName": [
+    "MC FD histogram name array"
+  ],
+  "ReflHistoName": [
+    "MC reflection histogram name array"
+  ],
+  "PromptSecPeakHistoName": [
+    "MC prompt second peak histogram name array"
+  ],
+  "FDSecPeakHistoName": [
+    "MC FD second peak histogram name array"
+  ],
+  "Particle": "LcToPKPi",
+  "_Particles": [
+    "Dplus",
+    "Ds",
+    "LcToPKPi",
+    "LcToPK0s",
+    "Dstar"
+  ],
+  "EnableRefl": false,
+  "FixSigma": false,
+  "SigmaFile": "",
+  "_SigmaFile": "fix sigma from file",
+  "FixSigmaManual": [
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "_FixSigmaManual": "fix sigma mannually",
+  "FixMean": false,
+  "MeanFile": "",
+  "_MeanFile": "fix mean from file",
+  "PtMin": [
+    0.2,
+    0.35,
+    0.5,
+    0.7,
+    0.9
+  ],
+  "PtMax": [
+    0.35,
+    0.5,
+    0.7,
+    0.9,
+    1.6
+  ],
+  "MassMin": [
+    2.12,
+    2.12,
+    2.12,
+    2.12,
+    2.12
+  ],
+  "MassMax": [
+    2.42,
+    2.42,
+    2.42,
+    2.42,
+    2.42
+  ],
+  "Rebin": [
+    4,
+    4,
+    4,
+    4,
+    4
+  ],
+  "InclSecPeak": false,
+  "SigmaSecPeak": "",
+  "SigmaFileSecPeak": "",
+  "SigmaMultFactor": 0,
+  "SigmaMultFactorSecPeak": 1.0,
+  "FixSigmaRatio": false,
+  "FixSigmaToFirstPeak": false,
+  "SigmaRatioFile": "",
+  "UseLikelihood": false,
+  "_UseLikelihood": [
+    "true: likelihood fit",
+    "false: chi2 fit"
+  ],
+  "BkgFunc": [
+    2,
+    2,
+    2,
+    2,
+    2
+  ],
+  "_BkgFuncs": [
+    "0 for Expo",
+    "1 for Poly1",
+    "2 for Poly2",
+    "3 for Pow",
+    "4 for PowEx",
+    "5 for Poly3",
+    "6 for NoBkg"
+  ],
+  "SgnFunc": [
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "_SgnFuncs": [
+    "0 for SingleGaus",
+    "1 for DoubleGaus",
+    "2 for DoubleGausSigmaRatioPar",
+    "3 for GausSec"
+  ],
+  "BoundMean": false,
+  "_BoundMean": [
+    "false: Do not set limits on mean range",
+    "true: the mean is set to be between MassMin[i] and MassMax[i]"
+  ]
+}
