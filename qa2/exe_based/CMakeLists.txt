@@ -47,7 +47,7 @@ ROOT_GENERATE_DICTIONARY( G__Qa2 ${HEADERS}
 )
 
 add_library(Qa2 SHARED ${SOURCES} G__Qa2.cxx)
-target_link_libraries(Qa2 PRIVATE ${ROOT_LIBRARIES} ROOT::RooFit ROOT::RooFitCore)
+target_link_libraries(Qa2 PRIVATE ${ROOT_LIBRARIES} ROOT::EG ROOT::RooFit ROOT::RooFitCore)
 
 install(TARGETS Qa2 EXPORT Qa2Targets
         LIBRARY DESTINATION lib
@@ -78,6 +78,6 @@ foreach(EXE ${EXECUTABLES})
     # Add the executable
     add_executable(${EXE} tasks/${EXE}.cpp)
     # Link ROOT libraries to the executable
-    target_link_libraries(${EXE} ${ROOT_LIBRARIES} Qa2)
+    target_link_libraries(${EXE} ${ROOT_LIBRARIES} ROOT::EG Qa2)
     install (TARGETS ${EXE} RUNTIME DESTINATION bin)
 endforeach()
