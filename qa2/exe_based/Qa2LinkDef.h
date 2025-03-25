@@ -6,5 +6,6 @@
 #pragma link off all typedef;
 
 #pragma link C++ class ShapeFitter+;
+#pragma link C++ class HFInvMassFitter+;
 
 #endif

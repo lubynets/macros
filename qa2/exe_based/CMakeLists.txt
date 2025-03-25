@@ -14,11 +14,13 @@ SET(EXECUTABLES
     ct_mcfit
     mass_fit
     ct_fit
+    runMassFitter
 )
 
 SET(SOURCES
     Helper.cpp
     ShapeFitter.cpp
+    HFInvMassFitter.cpp
 )
 
 string(REPLACE ".cpp" ".hpp" HEADERS "${SOURCES}")
@@ -27,11 +29,13 @@ list(APPEND HEADERS "Shapes.hpp")
 # Specify the C++ standard
 set(CMAKE_CXX_STANDARD 17)
 
+set(QA_RAPIDJSON_INCLUDE_DIRS "" CACHE STRING "Location of rapidjson include directores")
+
 # Find the ROOT package (you might need to specify the ROOT_DIR if it's not in the default location)
-find_package(ROOT REQUIRED)
+find_package(ROOT REQUIRED COMPONENTS RooFit RooFitCore)
 
 # Specify where ROOT headers are located
-include_directories(${ROOT_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR})
+include_directories(${ROOT_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR} ${QA_RAPIDJSON_INCLUDE_DIRS})
 
 set(PCM_FILE_NAME libQa2)
 
@@ -43,7 +47,7 @@ ROOT_GENERATE_DICTIONARY( G__Qa2 ${HEADERS}
 )
 
 add_library(Qa2 SHARED ${SOURCES} G__Qa2.cxx)
-target_link_libraries(Qa2 PRIVATE ${ROOT_LIBRARIES})
+target_link_libraries(Qa2 PRIVATE ${ROOT_LIBRARIES} ROOT::EG ROOT::RooFit ROOT::RooFitCore)
 
 install(TARGETS Qa2 EXPORT Qa2Targets
         LIBRARY DESTINATION lib
@@ -74,6 +78,6 @@ foreach(EXE ${EXECUTABLES})
     # Add the executable
     add_executable(${EXE} tasks/${EXE}.cpp)
     # Link ROOT libraries to the executable
-    target_link_libraries(${EXE} ${ROOT_LIBRARIES} Qa2)
+    target_link_libraries(${EXE} ${ROOT_LIBRARIES} ROOT::EG Qa2)
     install (TARGETS ${EXE} RUNTIME DESTINATION bin)
 endforeach()
