@@ -245,3 +245,9 @@ std::pair<float, float> Helper::EstimateExpoParameters(TH1* h, float lo, float h
   const float A = flo / std::exp(-lo/tau);
   return std::make_pair(A, tau);
 }
+
+void Helper::ScaleCanvasVertically(TCanvas* cTo, const TCanvas* cFrom, double scaleFactor) {
+  cTo->SetCanvasSize(cFrom->GetWw(), cFrom->GetWh()/scaleFactor);
+  cTo->SetBottomMargin(cFrom->GetBottomMargin()*scaleFactor);
+  cTo->SetTopMargin(cFrom->GetTopMargin()*scaleFactor);
+}
