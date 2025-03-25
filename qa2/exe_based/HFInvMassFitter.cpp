@@ -211,6 +211,12 @@ void HFInvMassFitter::doFit(Bool_t draw)
       mass->setRange("SEC", mSecMass + mNSigmaForSidebands * mSecSigma, mMaxMass);
       mass->setRange("signal", mSecMass - mNSigmaForSidebands * mSecSigma, mSecMass + mNSigmaForSidebands * mSecSigma);
     } else { // Single Peak fit range
+      std::cout << "mMinMass = " << mMinMass << "\t";
+      std::cout << "mMass = " << mMass << "\t";
+      std::cout << "mNSigmaForSidebands = " << mNSigmaForSidebands << "\t";
+      std::cout << "mSigmaSgn = " << mSigmaSgn << "\t";
+      std::cout << "mNSigmaForSgn = " << mNSigmaForSgn << "\t";
+      std::cout << "mMaxMass = " << mMaxMass << "\n";
       mass->setRange("SBL", mMinMass, mMass - mNSigmaForSidebands * mSigmaSgn);
       mass->setRange("SBR", mMass + mNSigmaForSidebands * mSigmaSgn, mMaxMass);
       mass->setRange("signal", mMass - mNSigmaForSgn * mSigmaSgn, mMass + mNSigmaForSgn * mSigmaSgn);
@@ -371,7 +377,7 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace)
   RooAbsPdf* bkgFuncPowExpo = new RooGamma("bkgFuncPowExpo", "background pdf", mass, PowExpoParam3, PowExpoParam4, massPi);
   workspace.import(*bkgFuncPowExpo);
   // signal pdf
-  RooRealVar mean("mean", "mean for signal fit", mMass, 1.86, 1.87);
+  RooRealVar mean("mean", "mean for signal fit", mMass, 0, 5);
   if (mBoundMean) {
     mean.setMax(mMassUpLimit);
     mean.setMin(mMassLowLimit);
