@@ -211,12 +211,6 @@ void HFInvMassFitter::doFit(Bool_t draw)
       mass->setRange("SEC", mSecMass + mNSigmaForSidebands * mSecSigma, mMaxMass);
       mass->setRange("signal", mSecMass - mNSigmaForSidebands * mSecSigma, mSecMass + mNSigmaForSidebands * mSecSigma);
     } else { // Single Peak fit range
-      std::cout << "mMinMass = " << mMinMass << "\t";
-      std::cout << "mMass = " << mMass << "\t";
-      std::cout << "mNSigmaForSidebands = " << mNSigmaForSidebands << "\t";
-      std::cout << "mSigmaSgn = " << mSigmaSgn << "\t";
-      std::cout << "mNSigmaForSgn = " << mNSigmaForSgn << "\t";
-      std::cout << "mMaxMass = " << mMaxMass << "\n";
       mass->setRange("SBL", mMinMass, mMass - mNSigmaForSidebands * mSigmaSgn);
       mass->setRange("SBR", mMass + mNSigmaForSidebands * mSigmaSgn, mMaxMass);
       mass->setRange("signal", mMass - mNSigmaForSgn * mSigmaSgn, mMass + mNSigmaForSgn * mSigmaSgn);
@@ -232,7 +226,7 @@ void HFInvMassFitter::doFit(Bool_t draw)
   RooAbsPdf* bkgPdf = createBackgroundFitFunction(mWorkspace);                                                   // Create background pdf
   RooAbsPdf* sgnPdf = createSignalFitFunction(mWorkspace);                                                       // Create signal pdf
 
-  // fir MC or Data
+  // fit MC or Data
   if (mTypeOfBkgPdf == 6) {                                                                                    // MC
     mRooNSgn = new RooRealVar("mRooNSig", "number of signal", 0.3 * mIntegralHisto, 0., 1.2 * mIntegralHisto); // signal yield
     mTotalPdf = new RooAddPdf("mMCFunc", "MC fit function", RooArgList(*sgnPdf), RooArgList(*mRooNSgn));       // create total pdf

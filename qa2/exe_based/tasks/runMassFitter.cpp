@@ -25,9 +25,6 @@
 #include <string>   // std::string
 #include <vector>   // std::vector
 
-#include <Riostream.h>
-#include <TROOT.h>
-
 #include <TDatabasePDG.h>
 #include <TFile.h>
 #include <TH2F.h>
@@ -119,12 +116,11 @@ int runMassFitter(TString configFileName)
   parseStringArray(promptSecPeakHistoNameValue, promptSecPeakHistoName);
 
   const Value& fdSecPeakHistoNameValue = config["FDSecPeakHistoName"];
-  parseStringArray(promptSecPeakHistoNameValue, promptSecPeakHistoName);
+  parseStringArray(fdSecPeakHistoNameValue, fdSecPeakHistoName);
 
   bool fixSigma = config["FixSigma"].GetBool();
   string sigmaFile = config["SigmaFile"].GetString();
-  double sigmaMultFactor =
-    config["SigmaMultFactor"].GetDouble();
+
   bool fixMean = config["FixMean"].GetBool();
   string meanFile = config["MeanFile"].GetString();
 
@@ -132,7 +128,6 @@ int runMassFitter(TString configFileName)
   readArray(fixSigmaManualValue, fixSigmaManual);
   
   sliceVarName = config["SliceVarName"].GetString();
-
   sliceVarUnit = config["SliceVarUnit"].GetString();
   
   const Value& sliceVarMinValue = config["SliceVarMin"];
@@ -151,13 +146,7 @@ int runMassFitter(TString configFileName)
   readArray(rebinValue, nRebin);
 
   bool includeSecPeak = config["InclSecPeak"].GetBool();
-  string sigmaSecPeak = config["SigmaSecPeak"].GetString();
-  string sigmaFileSecPeak =
-    config["SigmaFileSecPeak"].GetString();
-  double sigmaMultFactorSecPeak =
-    config["SigmaMultFactorSecPeak"].GetDouble();
-  bool fixSigmaToFirstPeak =
-    config["FixSigmaToFirstPeak"].GetBool();
+
   bool useLikelihood = config["UseLikelihood"].GetBool();
 
   const Value& bkgFuncValue = config["BkgFunc"];
@@ -166,9 +155,6 @@ int runMassFitter(TString configFileName)
   const Value& sgnFuncValue = config["SgnFunc"];
   readArray(sgnFuncValue, sgnFuncConfig);
 
-  bool fixSigmaRatio = config["FixSigmaRatio"].GetBool();
-  TString sigmaRatioFile = config["SigmaRatioFile"].GetString();
-  bool boundMean = config["BoundMean"].GetBool();
   bool enableRefl = config["EnableRefl"].GetBool();
 
   const unsigned int nSliceVarBins = sliceVarMin.size();

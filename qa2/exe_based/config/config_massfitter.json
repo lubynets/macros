@@ -44,7 +44,7 @@
     0,
     0
   ],
-  "_FixSigmaManual": "fix sigma mannually",
+  "_FixSigmaManual": "fix sigma manually",
   "FixMean": false,
   "MeanFile": "",
   "_MeanFile": "fix mean from file",
@@ -86,13 +86,6 @@
     4
   ],
   "InclSecPeak": false,
-  "SigmaSecPeak": "",
-  "SigmaFileSecPeak": "",
-  "SigmaMultFactor": 0,
-  "SigmaMultFactorSecPeak": 1.0,
-  "FixSigmaRatio": false,
-  "FixSigmaToFirstPeak": false,
-  "SigmaRatioFile": "",
   "UseLikelihood": false,
   "_UseLikelihood": [
     "true: likelihood fit",
@@ -126,10 +119,5 @@
     "1 for DoubleGaus",
     "2 for DoubleGausSigmaRatioPar",
     "3 for GausSec"
-  ],
-  "BoundMean": false,
-  "_BoundMean": [
-    "false: Do not set limits on mean range",
-    "true: the mean is set to be between MassMin[i] and MassMax[i]"
   ]
 }
