@@ -459,7 +459,7 @@ int runMassFitter(TString configFileName)
       massFitter->setInitialGaussianMean(massPDG);
       massFitter->setParticlePdgMass(massPDG);
       massFitter->setBoundGaussianMean(massPDG, 0.8*massPDG, 1.2*massPDG);
-      massFitter->doFit(false);
+      massFitter->doFit();
 
       if (nSliceVarBins > 1) {
         canvasMass[iCanvas]->cd(iSliceVar - nCanvasesMax * iCanvas + 1);
@@ -524,7 +524,7 @@ int runMassFitter(TString configFileName)
         massFitter->setTemplateReflections(hMassRefl[iSliceVar], HFInvMassFitter::DoubleGaus);
       }
 
-      massFitter->doFit(false);
+      massFitter->doFit();
 
       double rawYield = massFitter->getRawYield();
       double rawYieldErr = massFitter->getRawYieldError();

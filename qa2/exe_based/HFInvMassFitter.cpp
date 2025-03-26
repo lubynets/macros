@@ -34,7 +34,6 @@
 #include <RooFitResult.h>
 
 using namespace RooFit;
-using namespace std;
 
 ClassImp(HFInvMassFitter);
 
@@ -168,7 +167,7 @@ HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit, Double_t minValue, Doubl
                                                                                                                                      mHistoTemplateRefl(0x0)
 {
   // standard constructor
-  mHistoInvMass = reinterpret_cast<TH1*>(histoToFit->Clone(histoToFit->GetTitle()));
+  mHistoInvMass = static_cast<TH1*>(histoToFit->Clone(histoToFit->GetTitle()));
   mHistoInvMass->SetDirectory(0);
 }
 
@@ -194,7 +193,7 @@ HFInvMassFitter::~HFInvMassFitter()
   delete mWorkspace;
 }
 
-void HFInvMassFitter::doFit(Bool_t draw)
+void HFInvMassFitter::doFit()
 {
   mIntegralHisto = mHistoInvMass->Integral(mHistoInvMass->FindBin(mMinMass), mHistoInvMass->FindBin(mMaxMass));
   mWorkspace = new RooWorkspace("mWorkspace");
@@ -376,7 +375,7 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace)
     mean.setMax(mMassUpLimit);
     mean.setMin(mMassLowLimit);
   }
-  // signal Guassian
+  // signal Gaussian
   if (mFixedMean) {
     mean.setVal(mMass);
     mean.setConstant(kTRUE);
@@ -392,7 +391,7 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace)
   }
   RooAbsPdf* sgnFuncGaus = new RooGaussian("sgnFuncGaus", "signal pdf", mass, mean, sigma);
   workspace.import(*sgnFuncGaus);
-  // signal double Gaussianaa
+  // signal double Gaussian
   RooRealVar sigmaDoubleGaus("sigmaDoubleGaus", "sigma2Gaus", mSigmaSgn, mSigmaSgn - 0.01, mSigmaSgn + 0.01);
   if (mBoundSigma) {
     sigmaDoubleGaus.setMax(mSigmaSgn * (1 + mParamSgn));
@@ -548,7 +547,7 @@ void HFInvMassFitter::drawFit(TVirtualPad* pad, Int_t writeFitInfo)
   }
 }
 
-// draw redisual distribution on canvas
+// draw residual distribution on canvas
 void HFInvMassFitter::drawResidual(TVirtualPad* pad)
 {
   pad->cd();
@@ -600,7 +599,7 @@ void HFInvMassFitter::calculateSignificance(Double_t& significance, Double_t& er
   errSignificance = significance * std::sqrt((sgnErrSquare + bkgErrSquare) / (mNSigmaForSidebands * totalSgnBkg * totalSgnBkg) + (bkg / totalSgnBkg) * (sgnErrSquare / signal / signal));
 }
 
-// estimate Signnal
+// estimate Signal
 void HFInvMassFitter::checkForSignal(Double_t& estimatedSignal)
 {
   Double_t minForSgn = mMass - 4 * mSigmaSgn;

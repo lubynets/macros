@@ -21,7 +21,6 @@
 #define PWGHF_D2H_MACROS_HFINVMASSFITTER_H_
 
 #include <iostream> // std::cout
-#include <string>   // std::string
 
 #include <RooPlot.h>
 #include <RooRealVar.h>
@@ -35,8 +34,6 @@
 #include <TPaveText.h>
 #include <TStyle.h>
 #include <TVirtualFitter.h>
-
-using namespace RooFit;
 
 class HFInvMassFitter : public TNamed
 {
@@ -119,7 +116,7 @@ class HFInvMassFitter : public TNamed
   {
     if (mean < meanLowLimit ||
         mean > meanUpLimit) {
-      std::cout << "Invalid Gaussian mean limmit!" << std::endl;
+      std::cout << "Invalid Gaussian mean limit!" << std::endl;
     }
     setInitialGaussianMean(mean);
     mMassLowLimit = meanLowLimit;
@@ -130,7 +127,7 @@ class HFInvMassFitter : public TNamed
   {
     if (mean < meanLowLimit ||
         mean > meanUpLimit) {
-      std::cout << "Invalid Gaussian mean limmit for reflection!" << std::endl;
+      std::cout << "Invalid Gaussian mean limit for reflection!" << std::endl;
     }
     setInitialGaussianMean(mean);
     mMassReflLowLimit = meanLowLimit;
@@ -178,7 +175,7 @@ class HFInvMassFitter : public TNamed
   void plotBkg(RooAbsPdf* mFunc);
   void plotRefl(RooAbsPdf* mFunc);
   void setReflFuncFixed();
-  void doFit(Bool_t draw = kTRUE);
+  void doFit();
   void setInitialReflOverSgn(Double_t reflOverSgn) { mReflOverSgn = reflOverSgn; }
   void setFixReflOverSgn(Double_t reflOverSgn)
   {
@@ -281,8 +278,7 @@ class HFInvMassFitter : public TNamed
   RooPlot* mReflFrame;               /// reflection frame
   RooPlot* mReflOnlyFrame;           /// reflection frame plot on reflection only
   RooPlot* mResidualFrame;           /// residual frame
-  RooPlot* mResidualFrameForCalulation;
-  RooRealVar* mass;         /// mass
+  RooPlot* mResidualFrameForCalculation;
   RooWorkspace* mWorkspace; /// workspace
   Double_t mIntegralHisto;  /// integral of histogram to fit
   Double_t mIntegralBkg;    /// integral of background fit function
