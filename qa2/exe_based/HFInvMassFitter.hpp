@@ -40,9 +40,6 @@
 
 using namespace RooFit;
 
-class TF1;
-class TH1F;
-
 class HFInvMassFitter : public TNamed
 {
  public:

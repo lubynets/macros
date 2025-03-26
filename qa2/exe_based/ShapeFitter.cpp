@@ -272,9 +272,3 @@ void ShapeFitter::DefinePeakDSCB(TH1D* histo, float left, float right) {
   peak_fit_->SetParNames("Height", "#mu_{ref}", "#mu - #mu_{ref}", "#sigma", "a_{1}", "log_{10}n_{1}", "a_{2}", "log_{10}n_{2}");
   peak_fit_->SetTitle("DSCB");
 }
-
-ShapeFitter::~ShapeFitter() {
-//  delete peak_fit_cov_;
-//  delete sidebands_fit_cov_;
-//  delete all_refit_cov_;
-}

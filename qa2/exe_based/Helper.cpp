@@ -164,6 +164,15 @@ TPaveText* Helper::AddOneLineText(const std::string& text, const std::array<floa
   return textPtr;
 }
 
+std::vector<TPaveText*> Helper::AddMultiLineText(const std::vector<std::string>& texts, const std::array<float, 4>& xy, const std::string& option, float size) {
+  const float step = xy.at(3) - xy.at(1);
+  std::vector<TPaveText*> ptr;
+  for(int iLine=0, nLines=texts.size(); iLine<nLines; iLine++) {
+    ptr.emplace_back(AddOneLineText(texts.at(iLine), {xy.at(0), xy.at(1)-iLine*step, xy.at(2), xy.at(3)-iLine*step}, option, size));
+  }
+  return ptr;
+}
+
 bool Helper::string_to_bool(const std::string& str) {
   if(str == "true") return true;
   else if(str == "false") return false;

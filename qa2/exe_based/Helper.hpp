@@ -92,6 +92,8 @@ inline std::string to_string_with_significant_figures(const T a_value, const int
 
 TPaveText* AddOneLineText(const std::string& text, const std::array<float, 4>& xy, const std::string& option="brNDC", float size=0.03);
 
+std::vector<TPaveText*> AddMultiLineText(const std::vector<std::string>& texts, const std::array<float, 4>& xy, const std::string& option="brNDC", float size=0.03);
+
 void SlightlyShiftXAxis(TGraph* gr, float value = -1);
 
 template<typename T>

@@ -15,7 +15,7 @@
 class ShapeFitter {
  public:
   explicit ShapeFitter(TH1D* histo) { histo_in_ = histo; }
-  virtual ~ShapeFitter();
+  virtual ~ShapeFitter() = default;
 
   TF1* GetPeakFunc() const { return peak_fit_; }
   TF1* GetPeakReFunc() const { return peak_refit_; }
