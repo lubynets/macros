@@ -104,7 +104,7 @@ HFInvMassFitter::HFInvMassFitter() : TNamed(),
   // default constructor
 }
 
-HFInvMassFitter::HFInvMassFitter(const TH1F* histoToFit, Double_t minValue, Double_t maxValue, Int_t fitTypeBkg, Int_t fitTypeSgn) : TNamed(),
+HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit, Double_t minValue, Double_t maxValue, Int_t fitTypeBkg, Int_t fitTypeSgn) : TNamed(),
                                                                                                                                      mHistoInvMass(0x0),
                                                                                                                                      mFitOption("L,E"),
                                                                                                                                      mMinMass(minValue),
@@ -168,7 +168,7 @@ HFInvMassFitter::HFInvMassFitter(const TH1F* histoToFit, Double_t minValue, Doub
                                                                                                                                      mHistoTemplateRefl(0x0)
 {
   // standard constructor
-  mHistoInvMass = reinterpret_cast<TH1F*>(histoToFit->Clone(histoToFit->GetTitle()));
+  mHistoInvMass = reinterpret_cast<TH1*>(histoToFit->Clone(histoToFit->GetTitle()));
   mHistoInvMass->SetDirectory(0);
 }
 

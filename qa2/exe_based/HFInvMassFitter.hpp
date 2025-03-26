@@ -27,12 +27,10 @@
 #include <RooRealVar.h>
 #include <RooWorkspace.h>
 #include <TCanvas.h>
-#include <TCanvas.h>
 #include <TDatabasePDG.h>
 #include <TF1.h>
 #include <TFitResult.h>
 #include <TH1.h>
-#include <TH1F.h>
 #include <TNamed.h>
 #include <TPaveText.h>
 #include <TStyle.h>
@@ -65,14 +63,14 @@ class HFInvMassFitter : public TNamed
     Poly6Refl = 3
   };
   HFInvMassFitter();
-  HFInvMassFitter(const TH1F* histoToFit, Double_t minValue, Double_t maxValue, Int_t fitTypeBkg = Expo, Int_t fitTypeSgn = SingleGaus);
+  HFInvMassFitter(const TH1* histoToFit, Double_t minValue, Double_t maxValue, Int_t fitTypeBkg = Expo, Int_t fitTypeSgn = SingleGaus);
   ~HFInvMassFitter();
-  void setHistogramForFit(const TH1F* histoToFit)
+  void setHistogramForFit(const TH1* histoToFit)
   {
     if (mHistoInvMass) {
       delete mHistoInvMass;
     }
-    mHistoInvMass = reinterpret_cast<TH1F*>(histoToFit->Clone("mHistoInvMass"));
+    mHistoInvMass = static_cast<TH1*>(histoToFit->Clone("mHistoInvMass"));
     mHistoInvMass->SetDirectory(0);
   }
   void setUseLikelihoodFit() { mFitOption = "L,E"; }
@@ -192,7 +190,7 @@ class HFInvMassFitter : public TNamed
     if (!histoRefl) {
       mEnableReflections = kFALSE;
     }
-    mHistoTemplateRefl = reinterpret_cast<TH1F*>(histoRefl->Clone("mHistoTemplateRefl"));
+    mHistoTemplateRefl = static_cast<TH1*>(histoRefl->Clone("mHistoTemplateRefl"));
   }
   Double_t getChiSquareOverNDF() const { return mChiSquareOverNdf; }
   Double_t getRawYield() const { return mRawYield; }
@@ -226,7 +224,7 @@ class HFInvMassFitter : public TNamed
   HFInvMassFitter& operator=(const HFInvMassFitter& source);
   void fillWorkspace(RooWorkspace& w);
 
-  TH1F* mHistoInvMass; // histogram to fit
+  TH1* mHistoInvMass; // histogram to fit
   TString mFitOption;
   Double_t mMinMass;                 // lower mass limit
   Double_t mMaxMass;                 // upper mass limit
@@ -289,7 +287,7 @@ class HFInvMassFitter : public TNamed
   Double_t mIntegralHisto;  /// integral of histogram to fit
   Double_t mIntegralBkg;    /// integral of background fit function
   Double_t mIntegralSgn;    /// integral of signal fit function
-  TH1F* mHistoTemplateRefl; /// reflection histogram
+  TH1* mHistoTemplateRefl; /// reflection histogram
 
   ClassDef(HFInvMassFitter, 1);
 };

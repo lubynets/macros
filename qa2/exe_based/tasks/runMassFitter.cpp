@@ -239,17 +239,17 @@ int runMassFitter(TString configFileName)
     }
   }
 
-  TH1F* hMassSgn[nSliceVarBins];
-  TH1F* hMassRefl[nSliceVarBins];
-  TH1F* hMass[nSliceVarBins];
+  TH1* hMassSgn[nSliceVarBins];
+  TH1* hMassRefl[nSliceVarBins];
+  TH1* hMass[nSliceVarBins];
 
   for (unsigned int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
     if (!isMc) {
-      hMass[iSliceVar] = static_cast<TH1F*>(inputFile->Get(inputHistoName[iSliceVar].data()));
+      hMass[iSliceVar] = inputFile->Get<TH1>(inputHistoName[iSliceVar].data());
       if (enableRefl) {
-        hMassRefl[iSliceVar] = static_cast<TH1F*>(inputFileRefl->Get(reflHistoName[iSliceVar].data()));
-        hMassSgn[iSliceVar] = static_cast<TH1F*>(inputFileRefl->Get(fdHistoName[iSliceVar].data()));
-        hMassSgn[iSliceVar]->Add(static_cast<TH1F*>(inputFileRefl->Get(promptHistoName[iSliceVar].data())));
+        hMassRefl[iSliceVar] = inputFileRefl->Get<TH1>(reflHistoName[iSliceVar].data());
+        hMassSgn[iSliceVar] = inputFileRefl->Get<TH1>(fdHistoName[iSliceVar].data());
+        hMassSgn[iSliceVar]->Add(inputFileRefl->Get<TH1>(promptHistoName[iSliceVar].data()));
         if (!hMassRefl[iSliceVar]) {
           cerr << "ERROR: MC reflection histogram not found! Exit!" << endl;
           return -1;
@@ -260,11 +260,11 @@ int runMassFitter(TString configFileName)
         }
       }
     } else {
-      hMass[iSliceVar] = static_cast<TH1F*>(inputFile->Get(promptHistoName[iSliceVar].data()));
-      hMass[iSliceVar]->Add(static_cast<TH1F*>(inputFile->Get(fdHistoName[iSliceVar].data())));
+      hMass[iSliceVar] = inputFile->Get<TH1>(promptHistoName[iSliceVar].data());
+      hMass[iSliceVar]->Add(inputFile->Get<TH1>(fdHistoName[iSliceVar].data()));
       if (includeSecPeak) {
-        hMass[iSliceVar]->Add(static_cast<TH1F*>(inputFile->Get(promptSecPeakHistoName[iSliceVar].data())));
-        hMass[iSliceVar]->Add(static_cast<TH1F*>(inputFile->Get(fdSecPeakHistoName[iSliceVar].data())));
+        hMass[iSliceVar]->Add(inputFile->Get<TH1>(promptSecPeakHistoName[iSliceVar].data()));
+        hMass[iSliceVar]->Add(inputFile->Get<TH1>(fdSecPeakHistoName[iSliceVar].data()));
       }
     }
     if (!hMass[iSliceVar]) {
@@ -404,9 +404,9 @@ int runMassFitter(TString configFileName)
 
   // fit histograms
 
-  TH1F* hMassForFit[nSliceVarBins];
-  TH1F* hMassForRefl[nSliceVarBins];
-  TH1F* hMassForSgn[nSliceVarBins];
+  TH1* hMassForFit[nSliceVarBins];
+  TH1* hMassForRefl[nSliceVarBins];
+  TH1* hMassForSgn[nSliceVarBins];
 
   Int_t canvasSize[2] = {1920, 1080};
   if (nSliceVarBins == 1) {
@@ -434,7 +434,7 @@ int runMassFitter(TString configFileName)
   for (unsigned int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
     Int_t iCanvas = floor((float)iSliceVar / nCanvasesMax);
 
-    hMassForFit[iSliceVar] = reinterpret_cast<TH1F*>(hMass[iSliceVar]->Rebin(nRebin[iSliceVar]));
+    hMassForFit[iSliceVar] = static_cast<TH1*>(hMass[iSliceVar]->Rebin(nRebin[iSliceVar]));
     TString ptTitle =
       Form("%0.2f < " + sliceVarName + " < %0.2f " + sliceVarUnit, sliceVarMin[iSliceVar], sliceVarMax[iSliceVar]);
     hMassForFit[iSliceVar]->SetTitle(Form("%s;%s;Counts per %0.1f MeV/#it{c}^{2}",
@@ -443,10 +443,8 @@ int runMassFitter(TString configFileName)
     hMassForFit[iSliceVar]->SetName(Form("MassForFit%d", iSliceVar));
 
     if (enableRefl) {
-      hMassForRefl[iSliceVar] =
-        reinterpret_cast<TH1F*>(hMassRefl[iSliceVar]->Rebin(nRebin[iSliceVar]));
-      hMassForSgn[iSliceVar] =
-        reinterpret_cast<TH1F*>(hMassSgn[iSliceVar]->Rebin(nRebin[iSliceVar]));
+      hMassForRefl[iSliceVar] = static_cast<TH1*>(hMassRefl[iSliceVar]->Rebin(nRebin[iSliceVar]));
+      hMassForSgn[iSliceVar] = static_cast<TH1*>(hMassSgn[iSliceVar]->Rebin(nRebin[iSliceVar]));
     }
 
     Double_t reflOverSgn = 0;
