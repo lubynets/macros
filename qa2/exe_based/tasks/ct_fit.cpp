@@ -10,7 +10,7 @@
 
 using namespace Helper;
 
-void ct_mcfit(const std::string& fileNameYield, const std::string& fileNameEff, const std::string& mcOrData) {
+void ct_mcfit(const std::string& fileNameYield, const std::string& fileNameEff, const std::string& histoNameEff, const std::string& mcOrData) {
   TString currentMacroPath = __FILE__;
   TString directory = currentMacroPath(0, currentMacroPath.Last('/'));
   gROOT->Macro( directory + "/../styles/mc_qa2.style.cc" );
@@ -25,7 +25,7 @@ void ct_mcfit(const std::string& fileNameYield, const std::string& fileNameEff, 
 
   const std::string fileOutNamePrefix = "ct_fit";
 
-  TH1D* histoEff = GetObjectWithNullptrCheck<TH1D>(fileInEff, "hEffPromptT");
+  TH1D* histoEff = GetObjectWithNullptrCheck<TH1D>(fileInEff, histoNameEff);
 
   // original yield histogram
   TH1D* histoYield = GetObjectWithNullptrCheck<TH1D>(fileInYield, "hRawYields");
@@ -123,15 +123,16 @@ void ct_mcfit(const std::string& fileNameYield, const std::string& fileNameEff, 
 int main(int argc, char* argv[]) {
   if (argc < 4) {
     std::cout << "Error! Please use " << std::endl;
-    std::cout << " ./ct_mcfit fileNameYield fileNameEff mcOrData" << std::endl;
+    std::cout << " ./ct_mcfit fileNameYield fileNameEff histoNameEff (mcOrData=MC)" << std::endl;
     exit(EXIT_FAILURE);
   }
 
   const std::string fileNameYield = argv[1];
   const std::string fileNameEff = argv[2];
-  const std::string mcOrData = argv[3];
+  const std::string histoNameEff = argv[3];
+  const std::string mcOrData = argc > 4 ? argv[4] : "MC";
 
-  ct_mcfit(fileNameYield, fileNameEff, mcOrData);
+  ct_mcfit(fileNameYield, fileNameEff, histoNameEff, mcOrData);
 
   return 0;
 }

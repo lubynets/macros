@@ -127,6 +127,7 @@ template<typename T1, typename T2>
 void ScalePlotVertically(T1* plotTo, const T2* plotFrom, double scaleFactor) {
   plotTo->GetXaxis()->SetTitleSize(plotFrom->GetXaxis()->GetTitleSize()*scaleFactor);
   plotTo->GetXaxis()->SetLabelSize(plotFrom->GetXaxis()->GetLabelSize()*scaleFactor);
+  plotTo->GetXaxis()->SetTickLength(plotFrom->GetXaxis()->GetTickLength()*scaleFactor);
   plotTo->GetYaxis()->SetTitleSize(plotFrom->GetYaxis()->GetTitleSize()*scaleFactor);
   plotTo->GetYaxis()->SetLabelSize(plotFrom->GetYaxis()->GetLabelSize()*scaleFactor);
   plotTo->GetYaxis()->SetTitleOffset(plotFrom->GetYaxis()->GetTitleOffset()/scaleFactor);
