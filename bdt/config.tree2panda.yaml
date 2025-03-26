@@ -1,0 +1,4 @@
+input_files: ["/lustre/alice/users/lubynets/WORKDIR/tree2pandas/PlainTree.small.root"]
+input_tree: "pTree"
+output_path: "/lustre/alice/users/lubynets/WORKDIR/tree2pandas"
+output_file_key: "fileOut"

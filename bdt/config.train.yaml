@@ -1,0 +1,12 @@
+input_files_mc: ["/lustre/alice/users/lubynets/WORKDIR/tree2pandas/fileOut.parquet.small.gzip"]
+input_files_data: ["/lustre/alice/users/lubynets/WORKDIR/tree2pandas/fileOut.parquet.small.gzip"]
+output_directory: "/lustre/alice/users/lubynets/WORKDIR/tree2pandas/out1"
+model_directory: "/lustre/alice/users/lubynets/WORKDIR/tree2pandas/model1"
+hyperpar_study_file: ""
+hyperpar_study_ntrials: 15
+hyperpar_study_timeout: 7200
+save_hyperpar_study: True
+model_version: "v1"
+pT_interval: [2.0, 6.0]
+resonance_weights: 1.0
+training_variables: ['fCpa', 'fChi2TopoXicPlusToPVBeforeConstraint', 'fDecayLength', 'fImpactParameterNormalisedPi0', 'fImpactParameterNormalisedPi1', 'fDecayLengthXY', 'fDcaPi0Pi1']
