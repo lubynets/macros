@@ -7,6 +7,10 @@ hyperpar_study_ntrials: 15
 hyperpar_study_timeout: 7200
 save_hyperpar_study: True
 model_version: "v1"
-pT_interval: [2.0, 6.0]
+slice_var_name: "pT"
+slice_var_treename: "fPt"
+slice_var_unit: "GeV/c"
+slice_var_interval: [2.0, 6.0]
+sidebands: [2.12, 2.20, 2.38, 2.42]
 resonance_weights: 1.0
 training_variables: ['fCpa', 'fChi2TopoXicPlusToPVBeforeConstraint', 'fDecayLength', 'fImpactParameterNormalisedPi0', 'fImpactParameterNormalisedPi1', 'fDecayLengthXY', 'fDcaPi0Pi1']
