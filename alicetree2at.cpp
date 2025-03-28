@@ -37,25 +37,23 @@ std::vector<int> findPositions(const std::vector<int>& vec, int M);
 
 void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int maxEntries) {
 
-  std::cout << "AliceTree2AT()\nInput file for conversion: " << fileIn << "\n";
-
-  std::vector<std::string> fields_to_ignore_{"Lite_fChi2PCA",
-                                             "Lite_fCpa",
-                                             "Lite_fCpaXY",
-                                             "Lite_fCt",
-                                             "Lite_fDecayLength",
-                                             "Lite_fDecayLengthXY",
-                                             "Lite_fEta",
-                                             "Lite_fImpactParameter0",
-                                             "Lite_fImpactParameter1",
-                                             "Lite_fImpactParameter2",
-                                             "Lite_fM",
-                                             "Lite_fMassKPi",
-                                             "Lite_fPhi",
-                                             "Lite_fPt",
-                                             "Lite_fPtProng0",
-                                             "Lite_fPtProng1",
-                                             "Lite_fPtProng2"};
+  std::vector<std::string> fields_to_ignore_{"fLiteChi2PCA",
+                                             "fLiteCpa",
+                                             "fLiteCpaXY",
+                                             "fLiteCt",
+                                             "fLiteDecayLength",
+                                             "fLiteDecayLengthXY",
+                                             "fLiteEta",
+                                             "fLiteImpactParameter0",
+                                             "fLiteImpactParameter1",
+                                             "fLiteImpactParameter2",
+                                             "fLiteM",
+                                             "fLiteMassKPi",
+                                             "fLitePhi",
+                                             "fLitePt",
+                                             "fLitePtProng0",
+                                             "fLitePtProng1",
+                                             "fLitePtProng2"};
 
   bool isConfigInitialized{false};
   AnalysisTree::Configuration config_;
@@ -93,14 +91,15 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
     for(int iLeave=0; iLeave<nLeaves; iLeave++) {
       auto leave = lol->At(iLeave);
       const std::string fieldName = leave->GetName();
+      const std::string prefixedFieldName = "f" + prefix + fieldName.substr(1, fieldName.size());
       const std::string fieldType = leave->ClassName();
-      if (std::find(fields_to_ignore_.begin(), fields_to_ignore_.end(), prefix + fieldName) != fields_to_ignore_.end()) continue;
+      if (std::find(fields_to_ignore_.begin(), fields_to_ignore_.end(), prefixedFieldName) != fields_to_ignore_.end()) continue;
       if (fieldType == "TLeafF") {
-        branch_config.AddField<float>(prefix + fieldName);
+        branch_config.AddField<float>(prefixedFieldName);
       } else if (fieldType == "TLeafI" || fieldType == "TLeafB" || fieldType == "TLeafS") {
-        branch_config.AddField<int>(prefix + fieldName);
+        branch_config.AddField<int>(prefixedFieldName);
       }
-      vmap.emplace_back((IndexMap){fieldName, fieldType, branch_config.GetFieldId(prefix + fieldName)});
+      vmap.emplace_back((IndexMap){fieldName, fieldType, branch_config.GetFieldId(prefixedFieldName)});
     }
   };
 
@@ -128,7 +127,7 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
     TTree* treeEvent = fileIn->Get<TTree>((dirname + "/O2hfcandlcfullev").c_str());
 
     if(!isConfigInitialized) {
-      CreateConfiguration(treeEvent, "Ev_", EventsConfig, eventsMap);
+      CreateConfiguration(treeEvent, "Ev", EventsConfig, eventsMap);
       eventValues.resize(eventsMap.size());
       collision_id_field_id_in_evehead = DetermineFieldIdByName(eventsMap, "fIndexCollisions");
       config_.AddBranchConfig(EventsConfig);
@@ -136,9 +135,9 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
       eve_header_->Init(EventsConfig);
       tree_->Branch((EventsConfig.GetName() + ".").c_str(), "AnalysisTree::EventHeader", &eve_header_);
 
-      CreateConfiguration(treeKF, "KF_", CandidatesConfig, candidateMap);
+      CreateConfiguration(treeKF, "KF", CandidatesConfig, candidateMap);
       kfLiteSepar = candidateMap.size();
-      CreateConfiguration(treeLite, "Lite_", CandidatesConfig, candidateMap);
+      CreateConfiguration(treeLite, "Lite", CandidatesConfig, candidateMap);
       candValues.resize(candidateMap.size());
       sb_status_field_id = DetermineFieldIdByName(candidateMap, "fSigBgStatus");
       collision_id_field_id_in_cand = DetermineFieldIdByName(candidateMap, "fIndexCollisions");
@@ -259,6 +258,7 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
     tree_task->SetInputBranchNames({branchname_rec});
     tree_task->AddBranch(branchname_rec);
     tree_task->SetIsIgnoreDefaultFields();
+    tree_task->SetIsPrependLeavesWithBranchName(false);
 
     auto* man = AnalysisTree::TaskManager::GetInstance();
     man->AddTask(tree_task);
