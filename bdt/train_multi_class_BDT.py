@@ -8,9 +8,11 @@ import matplotlib.pyplot as plt
 import xgboost as xgb
 from sklearn.model_selection import train_test_split
 from hipe4ml.model_handler import ModelHandler
-from hipe4ml import plot_utils
-from hipe4ml import analysis_utils
+#from hipe4ml import plot_utils
 import sys
+sys.path.append('my_plot_utils')
+import my_plot_utils as plot_utils
+from hipe4ml import analysis_utils
 sys.path.append('utils')
 import utils as utils
 
