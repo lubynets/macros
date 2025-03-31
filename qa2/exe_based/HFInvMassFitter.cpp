@@ -167,7 +167,7 @@ HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit, Double_t minValue, Doubl
                                                                                                                                      mHistoTemplateRefl(0x0)
 {
   // standard constructor
-  mHistoInvMass = static_cast<TH1*>(histoToFit->Clone(histoToFit->GetTitle()));
+  mHistoInvMass = dynamic_cast<TH1*>(histoToFit->Clone(histoToFit->GetTitle()));
   mHistoInvMass->SetDirectory(0);
 }
 
@@ -234,8 +234,8 @@ void HFInvMassFitter::doFit()
     } else {
       mTotalPdf->fitTo(dataHistogram, Range("signal"));
     }
-    RooAbsReal* signalIntergralMc = mTotalPdf->createIntegral(*mass, NormSet(*mass), Range("signal")); // sig yield from fit
-    mIntegralSgn = signalIntergralMc->getValV();
+    RooAbsReal* signalIntegralMc = mTotalPdf->createIntegral(*mass, NormSet(*mass), Range("signal")); // sig yield from fit
+    mIntegralSgn = signalIntegralMc->getValV();
     calculateSignal(mRawYield, mRawYieldErr);        // calculate signal and signal error
     mTotalPdf->plotOn(mInvMassFrame, Name("Tot_c")); // plot total function
   } else {                                           // data
@@ -315,7 +315,7 @@ void HFInvMassFitter::doFit()
       plotBkg(mTotalPdf);
       mTotalPdf->plotOn(mInvMassFrame, Components("mReflFuncDoubleGaus"), Name("refl_c"), LineColor(kGreen));
       mTotalPdf->plotOn(mInvMassFrame, Name("Tot_c"), LineColor(kBlue));
-      mChiSquareOverNdf = mInvMassFrame->chiSquare("Tot_c", "data_c"); // calculate refuced chi2 / DNF
+      mChiSquareOverNdf = mInvMassFrame->chiSquare("Tot_c", "data_c"); // calculate reduced chi2 / DNF
       // plot residual distribution
       mResidualFrame = mass->frame(Title("Residual Distribution"));
       RooHist* residualHistogram = mInvMassFrame->residHist("data_c", "Bkg_c");
@@ -335,10 +335,10 @@ void HFInvMassFitter::doFit()
   }
 }
 
-void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace)
+void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
 {
   // Declare observable variable
-  RooRealVar mass("mass", "mass", mMinMass, mMaxMass, "GeV/c");
+  RooRealVar mass("mass", "mass", mMinMass, mMaxMass, "GeV/c^{2}");
   // bkg expo
   RooRealVar tau("tau", "tau", -1, -5., 5.);
   RooAbsPdf* bkgFuncExpo = new RooExponential("bkgFuncExpo", "background fit function", mass, tau);
@@ -617,7 +617,7 @@ void HFInvMassFitter::checkForSignal(Double_t& estimatedSignal)
 }
 
 // Create Background Fit Function
-RooAbsPdf* HFInvMassFitter::createBackgroundFitFunction(RooWorkspace* workspace)
+RooAbsPdf* HFInvMassFitter::createBackgroundFitFunction(RooWorkspace* workspace) const
 {
   RooAbsPdf* bkgPdf;
   switch (mTypeOfBkgPdf) {
@@ -681,7 +681,7 @@ RooAbsPdf* HFInvMassFitter::createSignalFitFunction(RooWorkspace* workspace)
 }
 
 // Create Reflection Fit Function
-RooAbsPdf* HFInvMassFitter::createReflectionFitFunction(RooWorkspace* workspace)
+RooAbsPdf* HFInvMassFitter::createReflectionFitFunction(RooWorkspace* workspace) const
 {
   RooAbsPdf* reflPdf;
   switch (mTypeOfReflPdf) {

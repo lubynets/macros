@@ -73,9 +73,9 @@ class HFInvMassFitter : public TNamed
   void setUseLikelihoodFit() { mFitOption = "L,E"; }
   void setUseChi2Fit() { mFitOption = "Chi2"; }
   void setFitOption(TString opt) { mFitOption = opt.Data(); }
-  RooAbsPdf* createBackgroundFitFunction(RooWorkspace* w1);
+  RooAbsPdf* createBackgroundFitFunction(RooWorkspace* w1) const;
   RooAbsPdf* createSignalFitFunction(RooWorkspace* w1);
-  RooAbsPdf* createReflectionFitFunction(RooWorkspace* w1);
+  RooAbsPdf* createReflectionFitFunction(RooWorkspace* w1) const;
 
   void setFitRange(Double_t minValue, Double_t maxValue)
   {
@@ -219,7 +219,7 @@ class HFInvMassFitter : public TNamed
  private:
   HFInvMassFitter(const HFInvMassFitter& source);
   HFInvMassFitter& operator=(const HFInvMassFitter& source);
-  void fillWorkspace(RooWorkspace& w);
+  void fillWorkspace(RooWorkspace& w) const;
 
   TH1* mHistoInvMass; // histogram to fit
   TString mFitOption;

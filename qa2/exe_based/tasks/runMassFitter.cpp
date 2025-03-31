@@ -37,7 +37,7 @@
 
 using namespace rapidjson;
 
-int runMassFitter(TString configFileName = "config_massfitter.json");
+int runMassFitter(const TString& configFileName = "config_massfitter.json");
 
 template <typename ValueType>
 void readArray(const Value& jsonArray, std::vector<ValueType>& output)
@@ -59,9 +59,9 @@ void parseStringArray(const Value& jsonArray, std::vector<std::string>& output)
 }
 
 void divideCanvas(TCanvas* c, int nSliceVarBins);
-void setHistoStyle(TH1* histo, int color = kBlack, double markerSize = 1.);
+void setHistoStyle(TH1* histo, Color_t color = kBlack, Size_t markerSize = 1);
 
-int runMassFitter(TString configFileName)
+int runMassFitter(const TString& configFileName)
 {
   // load config
   FILE* configFile = fopen(configFileName.Data(), "r");
@@ -229,7 +229,7 @@ int runMassFitter(TString configFileName)
     return -1;
   }
 
-  TFile* inputFileRefl = NULL;
+  TFile* inputFileRefl = nullptr;
   if (enableRefl) {
     inputFileRefl = TFile::Open(reflFileName.Data());
     if (!inputFileRefl || !inputFileRefl->IsOpen()) {
@@ -370,14 +370,14 @@ int runMassFitter(TString configFileName)
   setHistoStyle(hRawYieldsBkgSecondPeak, kRed + 1);
   setHistoStyle(hReflectionOverSignal, kRed + 1);
 
-  TH1D* hSigmaToFix = NULL;
+  TH1* hSigmaToFix = nullptr;
   if (fixSigma) {
     if (fixSigmaManual.empty()) {
       auto inputFileSigma = TFile::Open(sigmaFile.data());
       if (!inputFileSigma) {
         return -2;
       }
-      hSigmaToFix = static_cast<TH1D*>(inputFileSigma->Get("hRawYieldsSigma"));
+      hSigmaToFix = inputFileSigma->Get<TH1>("hRawYieldsSigma");
       hSigmaToFix->SetDirectory(0);
       if (static_cast<unsigned int>(hSigmaToFix->GetNbinsX()) != nSliceVarBins) {
         std::cout << "WARNING: Different number of bins for this analysis and histo for fix sigma!" << std::endl;
@@ -386,13 +386,13 @@ int runMassFitter(TString configFileName)
     }
   }
 
-  TH1D* hMeanToFix = NULL;
+  TH1* hMeanToFix = nullptr;
   if (fixMean) {
     auto inputFileMean = TFile::Open(meanFile.data());
     if (!inputFileMean) {
       return -3;
     }
-    hMeanToFix = static_cast<TH1D*>(inputFileMean->Get("hRawYieldsMean"));
+    hMeanToFix = inputFileMean->Get<TH1>("hRawYieldsMean");
     hMeanToFix->SetDirectory(0);
     if (static_cast<unsigned int>(hMeanToFix->GetNbinsX()) != nSliceVarBins) {
       std::cout << "WARNING: Different number of bins for this analysis and histo for fix mean" << std::endl;
@@ -413,7 +413,7 @@ int runMassFitter(TString configFileName)
   }
 
   Int_t nCanvasesMax = 20; // do not put more than 20 bins per canvas to make them visible
-  const Int_t nCanvases = ceil((float)nSliceVarBins / nCanvasesMax);
+  const Int_t nCanvases = ceil(static_cast<float>(nSliceVarBins) / nCanvasesMax);
   TCanvas *canvasMass[nCanvases], *canvasResiduals[nCanvases], *canvasRefl[nCanvases];
   for (int iCanvas = 0; iCanvas < nCanvases; iCanvas++) {
     int nPads = (nCanvases == 1) ? nSliceVarBins : nCanvasesMax;
@@ -430,7 +430,7 @@ int runMassFitter(TString configFileName)
   }
 
   for (unsigned int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
-    Int_t iCanvas = floor((float)iSliceVar / nCanvasesMax);
+    Int_t iCanvas = floor(static_cast<float>(iSliceVar) / nCanvasesMax);
 
     hMassForFit[iSliceVar] = static_cast<TH1*>(hMass[iSliceVar]->Rebin(nRebin[iSliceVar]));
     TString ptTitle =
@@ -659,7 +659,7 @@ int runMassFitter(TString configFileName)
   return 0;
 }
 
-void setHistoStyle(TH1* histo, int color, double markerSize)
+void setHistoStyle(TH1* histo, Color_t color, Size_t markerSize)
 {
   histo->SetStats(kFALSE);
   histo->SetMarkerSize(markerSize);
