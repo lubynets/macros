@@ -257,7 +257,21 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
     std::string branchname_rec = "Candidates";
     tree_task->SetInputBranchNames({branchname_rec});
     tree_task->AddBranch(branchname_rec);
-    tree_task->SetIsIgnoreDefaultFields();
+    const std::vector<std::string> fields_to_preserve {
+        "fKFChi2PrimProton",
+        "fKFChi2PrimKaon",
+        "fKFChi2PrimPion",
+        "fKFChi2Geo",
+        "fKFChi2Topo",
+        "fKFDecayLengthNormalised",
+        "fLiteNSigTpcPr",
+        "fLiteNSigTpcKa",
+        "fLiteNSigTpcPi",
+        "fKFT",
+        "fKFPt",
+        "fKFMassInv"
+    };
+    tree_task->SetFieldsToPreserve(fields_to_preserve);
     tree_task->SetIsPrependLeavesWithBranchName(false);
 
     auto* man = AnalysisTree::TaskManager::GetInstance();
