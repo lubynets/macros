@@ -158,7 +158,7 @@ print(f'Number of non-prompt candidates after preselection: {nNonPrompt}')
 print(f'Number of background candidates after preselection: {nBkg}')
 
 ## Drop all columns which are not needed
-VarsToDrop = ['Candidates_KF_fSigBgStatus', 'Candidates_KF_fPt', 'Candidates_KF_fT']
+VarsToDrop = ['Candidates_KF_fSigBgStatus']
 PromptDf.drop(columns = VarsToDrop, inplace = True)
 NonPromptDf.drop(columns = VarsToDrop, inplace = True)
 BkgDf.drop(columns = VarsToDrop, inplace = True)
@@ -298,10 +298,6 @@ for (shap, label) in zip(FeatImp[:-1], OutputLabels):
 shapSummary = FeatImp[-1]
 shapSummary.savefig(f'{output_directory}/shapSummary_{slice_var_name}{int(slice_var_interval[0])}_{int(slice_var_interval[1])}.png', dpi=300, bbox_inches='tight')
 print('Plotting feature importance: Done.')
-
-# --------------- Combine direct and resonant dataframes ----------------
-PromptDf = pd.concat([PromptDf, PromptResoDf.sample(n=int(np.round(resonance_weights*nPromptReso)), random_state=42)])
-NonPromptDf = pd.concat([NonPromptDf, NonPromptResoDf.sample(n=int(np.round(resonance_weights*nNonPromptReso)), random_state=42)])
 
 # --------------- Plot variable distributions ----------------
 DrawVarsDict = {'Basic': ['Candidates_KF_fMassInv', 'Candidates_KF_fT'],
