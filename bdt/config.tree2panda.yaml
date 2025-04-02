@@ -1,4 +1,6 @@
-input_files: ["/lustre/alice/users/lubynets/WORKDIR/tree2pandas/PlainTree.small.root"]
+input_file_pattern: "/lustre/alice/users/lubynets/plainer/outputs/data/lhc22.apass7/all/noConstr/noSel/loPt/PlainTree"
+input_file_from: 1
+input_file_to: 8
 input_tree: "pTree"
 output_path: "/lustre/alice/users/lubynets/WORKDIR/tree2pandas"
 output_file_key: "fileOut"

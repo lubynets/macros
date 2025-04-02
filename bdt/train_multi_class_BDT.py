@@ -68,13 +68,13 @@ signal_counts = np.zeros(len(selections) + 2)
 bkg_counts = np.zeros(len(selections) + 2)
 
 ## MC
-print('Reading MC dataframes and applying selections...', end='\r')
+print('Reading MC dataframes and applying selections...')
 McDfs = [] # a blank for MC df containing entries from all files
 for input_file_mc in input_files_mc:
     ## read input file
     df = pd.read_parquet(input_file_mc)
     df.drop(columns = skip_variables, inplace = True)   # inplace = True - "void" type instead of returning a new df
-    df.query(f'((Candidates_KF_fPt >= {slice_var_interval[0]}) & (Candidates_KF_fPt < {slice_var_interval[1]}))', inplace=True)   # where is fPt defined? What is its nature, string? Can one generalize it?
+    df.query(f'(({slice_var_treename} >= {slice_var_interval[0]}) & ({slice_var_treename} < {slice_var_interval[1]}))', inplace=True)   # where is fPt defined? What is its nature, string? Can one generalize it?
     signal_counts[0] += len(df) # Original length of the df in the certain fPt interval (sel_variables = 'total')
     ## Check for infinities and NaNs
     if df.isna().any().any():   # isna() converts to a new df with True in place of NaNs and False in place of "normal" values. any().any() finds 2-dimensionally if there is at least one True
@@ -100,13 +100,13 @@ print(f'MC: {signal_counts[-1]} candidates selected out of {signal_counts[0]} ca
       + f'with {int(slice_var_interval[0])} < {slice_var_name} < {int(slice_var_interval[1])} {slice_var_unit} in total.') # signal_counts[-1] is the last element (Cf. std::vector::back())
 
 ## Data
-print('Reading data dataframes and applying selections...', end='\r')
+print('Reading data dataframes and applying selections...')
 BkgDfs = []
 for input_file_data in input_files_data:
     ## read input file
     df = pd.read_parquet(input_file_data)
     df.drop(columns = skip_variables, inplace = True)
-    df.query(f'(({slice_var_treename} >= {slice_var_interval[0]}) & ({slice_var_treename} < {slice_var_interval[1]})) & ((Candidates_KF_fMassInv > {sidebands[0]} & Candidates_KF_fMassInv < {sidebands[1]}) | (Candidates_KF_fMassInv > {sidebands[2]} & Candidates_KF_fMassInv < {sidebands[3]}))', inplace=True)
+    df.query(f'(({slice_var_treename} >= {slice_var_interval[0]}) & ({slice_var_treename} < {slice_var_interval[1]})) & ((fKFMassInv > {sidebands[0]} & fKFMassInv < {sidebands[1]}) | (fKFMassInv > {sidebands[2]} & fKFMassInv < {sidebands[3]}))', inplace=True)
     bkg_counts[0] += len(df)
     ## Check for infinities and NaNs
     if df.isna().any().any():
@@ -145,8 +145,8 @@ PreselEff.savefig(f'{output_directory}/PreselEff_{slice_var_name}_{int(slice_var
 
 #------------ Define prompt/non-prompt/background sets ------------
 ## Split MC set into prompt/non-promt data sets
-PromptDf = McDf.query('Candidates_KF_fSigBgStatus == 1')
-NonPromptDf = McDf.query('Candidates_KF_fSigBgStatus == 2')
+PromptDf = McDf.query('fKFSigBgStatus == 1')
+NonPromptDf = McDf.query('fKFSigBgStatus == 2')
 del McDf
 
 ## print number of candidates
@@ -158,14 +158,14 @@ print(f'Number of non-prompt candidates after preselection: {nNonPrompt}')
 print(f'Number of background candidates after preselection: {nBkg}')
 
 ## Drop all columns which are not needed
-VarsToDrop = ['Candidates_KF_fSigBgStatus']
+VarsToDrop = ['fKFSigBgStatus']
 PromptDf.drop(columns = VarsToDrop, inplace = True)
 NonPromptDf.drop(columns = VarsToDrop, inplace = True)
 BkgDf.drop(columns = VarsToDrop, inplace = True)
 
 #------------ Create training and test set ------------
 ## Combine signal and background data frames
-print('Combining prompt and background data frame...', end='\r')
+print('Combining prompt and background data frame...')
 nBkg = (nPrompt + nNonPrompt)*2 # BG twice as signal ?
 CombDf = pd.concat([BkgDf[:nBkg], PromptDf, NonPromptDf], sort=True) # take not all the BG but only part of it. sort=True sorts columns alphabetically  -why need it?
 LabelsArray = [0 for iCand in range(nBkg)] + [1 for iCand in range(nPrompt)] + [2 for iCand in range(nNonPrompt)] # assign 0 to BGs, 1 for prompts, 2 for nonprompts
@@ -250,14 +250,14 @@ model_hdl.dump_model_handler(f'{model_directory}/BDTmodel_{slice_var_name}_{int(
 #                  Plotting 
 # --------------------------------------------
 # --------------- Plot BDT output probability ----------------
-print('Plotting BDT ouput probability...', end='\r')
+print('Plotting BDT ouput probability...')
 BDTprob = plot_utils.plot_output_train_test(model_hdl, TrainTestData, 100, rawoutput, LegLabels, logscale=True, density=True)
 for (fig, label) in zip(BDTprob, OutputLabels):
     fig.savefig(f'{output_directory}/BDTprob{label}_{slice_var_name}_{int(slice_var_interval[0])}_{int(slice_var_interval[1])}.png', dpi=300, bbox_inches='tight')
 print('Plotting BDT ouput probability: Done.')
 
 # --------------- Plot ROC-AUC curve ----------------
-print('Plotting ROC-AUC curve...', end='\r')
+print('Plotting ROC-AUC curve...')
 ROCcurve = plot_utils.plot_roc_train_test(TrainTestData[3], yTestPred, TrainTestData[1], yTrainPred, labels=LegLabels, average=rocaucAverage,
                                           multi_class_opt=multiClassOpt)
 ROCcurve.savefig(f'{output_directory}/ROCcurve_{slice_var_name}_{int(slice_var_interval[0])}_{int(slice_var_interval[1])}.png', dpi=300, bbox_inches='tight')
@@ -276,20 +276,7 @@ plt.grid()
 BDTEff.savefig(f'{output_directory}/BDTeff_{slice_var_name}_{int(slice_var_interval[0])}_{int(slice_var_interval[1])}.png', dpi=300, bbox_inches='tight')
 
 # --------------- Plot feature importance ----------------
-print('Plotting feature importance...', end='\r')
-# --------------------------------------------------------
-print(f'Number of features in input data: {TrainTestData[0].shape[1]}')
-explainer = shap.Explainer(model_hdl.predict, TrainTestData[0])
-shap_values = explainer(TrainTestData[2])
-# Assuming shap_values is the SHAP values object
-if isinstance(shap_values, list):
-    # If shap_values is a list (common in multiclass scenarios)
-    for i, class_shap_values in enumerate(shap_values):
-        print(f'Class {i} SHAP values shape: {class_shap_values.shape[1]}')
-else:
-    # If shap_values is a single array
-    print(f'SHAP values shape: {shap_values.shape[1]}')
-# --------------------------------------------------------
+print('Plotting feature importance...')
 FeatImp = plot_utils.plot_feature_imp(TrainTestData[0], TrainTestData[1], model_hdl, labels=LegLabels, n_sample=10000, approximate=True)
 ## shap violin plots
 for (shap, label) in zip(FeatImp[:-1], OutputLabels):
@@ -300,9 +287,10 @@ shapSummary.savefig(f'{output_directory}/shapSummary_{slice_var_name}{int(slice_
 print('Plotting feature importance: Done.')
 
 # --------------- Plot variable distributions ----------------
-DrawVarsDict = {'Basic': ['Candidates_KF_fMassInv', 'Candidates_KF_fT'],
-                'Chi2': ['Candidates_KF_fChi2PrimKaon', 'Candidates_KF_fChi2PrimPion', 'Candidates_KF_fChi2PrimProton', 'Candidates_KF_fChi2GeoPionKaon', 'Candidates_KF_fChi2GeoProtonKaon', 'Candidates_KF_fChi2GeoProtonPion', 'Candidates_KF_fChi2Geo']}
-print('Plotting variable distributions...', end='\r')
+DrawVarsDict = {'Basic': ['fKFMassInv', 'fKFT'],
+                'Chi2':  ['fKFChi2PrimProton', 'fKFChi2PrimKaon', 'fKFChi2PrimPion', 'fKFChi2Geo', 'fKFChi2Topo'],
+                'NTpcSigma': ['fLiteNSigTpcPr', 'fLiteNSigTpcKa', 'fLiteNSigTpcPi']}
+print('Plotting variable distributions...')
 for label, VarList in DrawVarsDict.items():
     VarDist = plot_utils.plot_distr([BkgDf, PromptDf, NonPromptDf], VarList, 100, LegLabels, log=True, figsize=(11,7), alpha=0.3, grid=False, density=True)
     plt.tight_layout()
@@ -310,8 +298,8 @@ for label, VarList in DrawVarsDict.items():
 print('Plotting variable distributions: Done.')
 
 # --------------- Plot correlation matrices ----------------
-print('Plotting correlation matrices...', end='\r')
-CorrVars = ['Candidates_KF_fMassInv'] + sorted([x for x in TrainVars], key=str.lower)
+print('Plotting correlation matrices...')
+CorrVars = ['fKFMassInv'] + sorted([x for x in TrainVars], key=str.lower)
 CorrMatr = plot_utils.plot_corr([BkgDf, PromptDf, NonPromptDf], CorrVars, LegLabels)
 for (fig, label) in zip(CorrMatr, OutputLabels):
     fig.tight_layout()

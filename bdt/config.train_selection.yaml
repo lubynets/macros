@@ -1,1 +1,10 @@
-selection: {}
+selection: {'fKFChi2PrimProton': 'abs(fKFChi2PrimProton) < 1000000',
+            'fKFChi2PrimKaon': 'abs(fKFChi2PrimKaon) < 1000000',
+            'fKFChi2PrimPion': 'abs(fKFChi2PrimPion) < 1000000',
+            'fKFChi2Geo': 'abs(fKFChi2Geo) < 1000000',
+            'fKFChi2Topo': 'abs(fKFChi2Topo) < 1000000',
+            'fLiteNSigTpcPr': 'abs(fLiteNSigTpcPr) < 1000000',
+            'fLiteNSigTpcKa': 'abs(fLiteNSigTpcKa) < 1000000',
+            'fLiteNSigTpcPi': 'abs(fLiteNSigTpcPi) < 1000000',
+            'fKFDecayLengthNormalised': 'abs(fKFDecayLengthNormalised) < 1000000',
+            }

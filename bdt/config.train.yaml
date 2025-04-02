@@ -1,24 +1,24 @@
-input_files_mc: ["/lustre/alice/users/lubynets/WORKDIR/tree2pandas/fileOut.parquet.small.gzip"]
-input_files_data: ["/lustre/alice/users/lubynets/WORKDIR/tree2pandas/fileOut.parquet.small.gzip"]
-output_directory: "/lustre/alice/users/lubynets/WORKDIR/tree2pandas/out1"
-model_directory: "/lustre/alice/users/lubynets/WORKDIR/tree2pandas/model1"
+input_files_mc: ["/lustre/alice/users/lubynets/bdt/input/signal.parquet.gzip"]
+input_files_data: ["/lustre/alice/users/lubynets/bdt/input/sideband.loPt.parquet.gzip"]
+output_directory: "/lustre/alice/users/lubynets/bdt/outputs/currentTry/1/out"
+model_directory: "/lustre/alice/users/lubynets/bdt/outputs/currentTry/1/model"
 hyperpar_study_file: ""
 hyperpar_study_ntrials: 15
 hyperpar_study_timeout: 7200
 save_hyperpar_study: True
 model_version: "v1"
 slice_var_name: "pT"
-slice_var_treename: "Candidates_KF_fPt"
+slice_var_treename: "fKFPt"
 slice_var_unit: "GeV/c"
-slice_var_interval: [2.0, 6.0]
+slice_var_interval: [0.0, 2.0]
 sidebands: [2.12, 2.20, 2.38, 2.42]
-training_variables: ['Candidates_KF_fChi2PrimKaon',
-                     'Candidates_KF_fChi2PrimPion',
-                     'Candidates_KF_fChi2PrimProton',
-                     'Candidates_KF_fChi2GeoPionKaon',
-                     'Candidates_KF_fChi2GeoProtonKaon',
-                     'Candidates_KF_fChi2GeoProtonPion',
-                     'Candidates_KF_fChi2Geo',
-                     'Candidates_KF_fDecayLengthNormalised',
-                     'Candidates_KF_fChi2Topo']
-skip_variables: ['Candidates_KF_fDcaPionKaon', 'Candidates_KF_fDcaProtonKaon', 'Candidates_KF_fDcaProtonPion', 'Candidates_KF_fDecayLength', 'Candidates_KF_fDecayLengthError', 'Candidates_KF_fErrP', 'Candidates_KF_fErrPVX', 'Candidates_KF_fErrPVY', 'Candidates_KF_fErrPVZ', 'Candidates_KF_fErrPt', 'Candidates_KF_fErrT', 'Candidates_KF_fErrX', 'Candidates_KF_fErrY', 'Candidates_KF_fErrZ', 'Candidates_KF_fP', 'Candidates_KF_fX', 'Candidates_KF_fY', 'Candidates_KF_fZ', 'Candidates_Lite_fChi2PCA', 'Candidates_Lite_fCpa', 'Candidates_Lite_fCpaXY', 'Candidates_Lite_fCt', 'Candidates_Lite_fDecayLength', 'Candidates_Lite_fDecayLengthXY', 'Candidates_Lite_fEta', 'Candidates_Lite_fImpactParameter0', 'Candidates_Lite_fImpactParameter1', 'Candidates_Lite_fImpactParameter2', 'Candidates_Lite_fM', 'Candidates_Lite_fMassKPi', 'Candidates_Lite_fNSigTofKa1', 'Candidates_Lite_fNSigTofPi0', 'Candidates_Lite_fNSigTofPi2', 'Candidates_Lite_fNSigTofPr0', 'Candidates_Lite_fNSigTofPr2', 'Candidates_Lite_fNSigTpcKa1', 'Candidates_Lite_fNSigTpcPi0', 'Candidates_Lite_fNSigTpcPi2', 'Candidates_Lite_fNSigTpcPr0', 'Candidates_Lite_fNSigTpcPr2', 'Candidates_Lite_fNSigTpcTofKa1', 'Candidates_Lite_fNSigTpcTofPi0', 'Candidates_Lite_fNSigTpcTofPi2', 'Candidates_Lite_fNSigTpcTofPr0', 'Candidates_Lite_fNSigTpcTofPr2', 'Candidates_Lite_fPhi', 'Candidates_Lite_fPosX', 'Candidates_Lite_fPosY', 'Candidates_Lite_fPosZ', 'Candidates_Lite_fPtProng0', 'Candidates_Lite_fPtProng1', 'Candidates_Lite_fPtProng2', 'Candidates_Lite_fY', 'Candidates_KF_fIsSelected', 'Candidates_Lite_fBitmapProngsContributorsPV', 'Candidates_Lite_fCandidateSelFlag', 'Candidates_Lite_fChannel', 'Candidates_Lite_fFlagMc', 'Candidates_Lite_fIsCandidateSwapped', 'Candidates_Lite_fNProngsContributorsPV', 'Candidates_Lite_fOriginMcRec']
+training_variables: ['fKFChi2PrimProton',
+                     'fKFChi2PrimKaon',
+                     'fKFChi2PrimPion',
+                     'fKFChi2Geo',
+                     'fKFChi2Topo',
+                     'fKFDecayLengthNormalised',
+                     'fLiteNSigTpcPr',
+                     'fLiteNSigTpcKa',
+                     'fLiteNSigTpcPi']
+skip_variables: []

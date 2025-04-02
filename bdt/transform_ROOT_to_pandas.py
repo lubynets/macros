@@ -22,7 +22,9 @@ if args.config_file == '':
 ############# Open config files #############
 config_file = open(args.config_file, 'r')
 config = yaml.full_load(config_file)
-input_file_names = config['input_files']
+input_file_pattern = config['input_file_pattern']
+input_file_from = config['input_file_from']
+input_file_to = config['input_file_to']
 input_tree_name = config['input_tree']
 output_path = config['output_path']
 output_file_key = config['output_file_key']
@@ -32,8 +34,10 @@ print(f'')
 print(f'############# MC #############')
 print('Retreiving candidate trees from ROOT files...', end='\r')
 dataframes = []
-for file in input_file_names:
-  root_file = uproot.open(file)
+for filenum in range(input_file_from, input_file_to+1):
+  filename = input_file_pattern + '.' + str(filenum) + '.root'
+  print(f'Add file {filename}')
+  root_file = uproot.open(filename)
   tree = root_file.get(input_tree_name)
   df = tree.arrays(library="pd")
   dataframes.append(df)
