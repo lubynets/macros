@@ -256,10 +256,10 @@ void HFInvMassFitter::doFit()
 
     // estimate signal yield
     RooAbsReal* bkgIntegral = mBkgPdf->createIntegral(*mass, NormSet(*mass), Range("bkg")); // bkg integral
-    mIntegralBkg = bkgIntegral->getValV();
+    mIntegralBkg = bkgIntegral->getValV(); // fraction of BG's integral in "bkg" range out of that in "full" range (which is 1 by construction). Not an absolute value.
     Double_t estimatedSignal;
-    checkForSignal(estimatedSignal);
-    calculateBackground(mBkgYield, mBkgYieldErr);
+    checkForSignal(estimatedSignal); // SIG's absolute integral in "bkg" range
+    calculateBackground(mBkgYield, mBkgYieldErr); // BG's absolute integral in "bkg" range
 
     mRooNSgn = new RooRealVar("mNSgn", "number of signal", 0.3 * estimatedSignal, 0., 1.2 * estimatedSignal); // estimated signal yield
     if (mFixedRawYield > 0) {
@@ -321,7 +321,6 @@ void HFInvMassFitter::doFit()
       RooHist* residualHistogram = mInvMassFrame->residHist("data_c", "Bkg_c");
       mResidualFrame->addPlotable(residualHistogram, "P");
       mSgnPdf->plotOn(mResidualFrame, Normalization(1.0, RooAbsReal::RelativeExpected), LineColor(kBlue));
-      mTotalPdf->plotOn(mResidualFrame, Components(*mSgnPdf), Normalization(1.0, RooAbsReal::RelativeExpected), LineColor(kBlue));
     }
     mass->setRange("bkgForSignificance", mRooMeanSgn->getVal() - mNSigmaForSgn * mRooSigmaSgn->getVal(), mRooMeanSgn->getVal() + mNSigmaForSgn * mRooSigmaSgn->getVal());
     bkgIntegral = mBkgPdf->createIntegral(*mass, NormSet(*mass), Range("bkgForSignificance"));
@@ -343,24 +342,29 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
   RooRealVar tau("tau", "tau", -1, -5., 5.);
   RooAbsPdf* bkgFuncExpo = new RooExponential("bkgFuncExpo", "background fit function", mass, tau);
   workspace.import(*bkgFuncExpo);
+  delete bkgFuncExpo;
   // bkg poly1
   RooRealVar PolyParam0("PolyParam0", "Parameter of Poly function", 0.5, -5., 5.);
   RooRealVar PolyParam1("PolyParam1", "Parameter of Poly function", 0.2, -5., 5.);
   RooAbsPdf* bkgFuncPoly1 = new RooPolynomial("bkgFuncPoly1", "background fit function", mass, RooArgSet(PolyParam0, PolyParam1));
   workspace.import(*bkgFuncPoly1);
+  delete bkgFuncPoly1;
   // bkg poly2
   RooRealVar PolyParam2("PolyParam2", "Parameter of Poly function", 0.2, -5., 5.);
   RooAbsPdf* bkgFuncPoly2 = new RooPolynomial("bkgFuncPoly2", "background fit function", mass, RooArgSet(PolyParam0, PolyParam1, PolyParam2));
   workspace.import(*bkgFuncPoly2);
+  delete bkgFuncPoly2;
   // bkg poly3
   RooRealVar PolyParam3("PolyParam3", "Parameter of Poly function", 0.2, -1., 1.);
   RooAbsPdf* bkgFuncPoly3 = new RooPolynomial("bkgFuncPoly3", "background pdf", mass, RooArgSet(PolyParam0, PolyParam1, PolyParam2, PolyParam3));
   workspace.import(*bkgFuncPoly3);
+  delete bkgFuncPoly3;
   // bkg power law
   RooRealVar PowParam1("PowParam1", "Parameter of Pow function", 0.13957);
   RooRealVar PowParam2("PowParam2", "Parameter of Pow function", 1., -10, 10);
   RooAbsPdf* bkgFuncPow = new RooGenericPdf("bkgFuncPow", "bkgFuncPow", "(mass-PowParam1)^PowParam2", RooArgSet(mass, PowParam1, PowParam2));
   workspace.import(*bkgFuncPow);
+  delete bkgFuncPow;
   // pow * exp
   RooRealVar PowExpoParam1("PowExpoParam1", "Parameter of PowExpo function", 1 / 2);
   RooRealVar PowExpoParam2("PowExpoParam2", "Parameter of PowExpo function", 1, -10, 10);
@@ -369,6 +373,8 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
   RooFormulaVar PowExpoParam4("PowExpoParam4", "1./PowExpoParam2", RooArgList(PowExpoParam2));
   RooAbsPdf* bkgFuncPowExpo = new RooGamma("bkgFuncPowExpo", "background pdf", mass, PowExpoParam3, PowExpoParam4, massPi);
   workspace.import(*bkgFuncPowExpo);
+  delete bkgFuncPowExpo;
+
   // signal pdf
   RooRealVar mean("mean", "mean for signal fit", mMass, 0, 5);
   if (mBoundMean) {
@@ -391,6 +397,7 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
   }
   RooAbsPdf* sgnFuncGaus = new RooGaussian("sgnFuncGaus", "signal pdf", mass, mean, sigma);
   workspace.import(*sgnFuncGaus);
+  delete sgnFuncGaus;
   // signal double Gaussian
   RooRealVar sigmaDoubleGaus("sigmaDoubleGaus", "sigma2Gaus", mSigmaSgn, mSigmaSgn - 0.01, mSigmaSgn + 0.01);
   if (mBoundSigma) {
@@ -414,6 +421,7 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
   }
   RooAbsPdf* sgnFuncDoubleGaus = new RooAddPdf("sgnFuncDoubleGaus", "signal pdf", RooArgList(gaus1, gaus2), fracDoubleGaus);
   workspace.import(*sgnFuncDoubleGaus);
+  delete sgnFuncDoubleGaus;
   // double Gaussian ratio
   RooRealVar ratio("ratio", "ratio of sigma12", mRatioDoubleGausSigma, 0, 10);
   if (mFixedSigma) {
@@ -438,6 +446,7 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
   }
   RooAbsPdf* sgnFuncGausRatio = new RooAddPdf("sgnFuncGausRatio", "signal pdf", RooArgList(gausRatio1, gausRatio2), fracDoubleGausRatio);
   workspace.import(*sgnFuncGausRatio);
+  delete sgnFuncGausRatio;
   // double peak for Ds
   RooRealVar meanSec("meanSec", "mean for second peak fit", mSecMass, mMinMass, mMaxMass);
   RooRealVar sigmaSec("sigmaSec", "sigmaSec", mSecSigma, mSecSigma - 0.005, mSecSigma + 0.01);
@@ -462,6 +471,7 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
   RooRealVar fracSec("fracSec", "frac of two peak", 0.5, 0, 1.);
   RooAbsPdf* sgnFuncDoublePeak = new RooAddPdf("sgnFuncDoublePeak", "signal pdf", RooArgList(gausSec1, gausSec2), fracSec);
   workspace.import(*sgnFuncDoublePeak);
+  delete sgnFuncDoublePeak;
   // reflection Gaussian
   RooRealVar meanRefl("meanRefl", "mean for reflection", mMass, 0.0, mMass + 0.05);
   if (mBoundReflMean) {
@@ -471,6 +481,7 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
   RooRealVar sigmaRefl("sigmaRefl", "sigma for reflection", 0.012, 0, 0.25);
   RooAbsPdf* reflFuncGaus = new RooGaussian("reflFuncGaus", "reflection pdf", mass, meanRefl, sigmaRefl);
   workspace.import(*reflFuncGaus);
+  delete reflFuncGaus;
   // reflection double Gaussian
   RooRealVar meanReflDoubleGaus("meanReflDoubleGaus", "mean for reflection double gaussian", mMass, 0.0, mMass + 0.05);
   if (mBoundReflMean) {
@@ -483,6 +494,7 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
   RooRealVar fracRefl("fracRefl", "frac of two gauss", 0.5, 0, 1.);
   RooAbsPdf* reflFuncDoubleGaus = new RooAddPdf("reflFuncDoubleGaus", "reflection pdf", RooArgList(gausRefl1, gausRefl2), fracRefl);
   workspace.import(*reflFuncDoubleGaus);
+  delete reflFuncDoubleGaus;
   // reflection poly3
   RooRealVar PolyReflParam0("PolyReflParam0", "PolyReflParam0", 0.5, -1., 1.);
   RooRealVar PolyReflParam1("PolyReflParam1", "PolyReflParam1", 0.2, -1., 1.);
@@ -490,12 +502,14 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
   RooRealVar PolyReflParam3("PolyReflParam3", "PolyReflParam3", 0.2, -1., 1.);
   RooAbsPdf* reflFuncPoly3 = new RooPolynomial("reflFuncPoly3", "reflection PDF", mass, RooArgSet(PolyReflParam0, PolyReflParam1, PolyReflParam2, PolyReflParam3));
   workspace.import(*reflFuncPoly3);
+  delete reflFuncPoly3;
   // reflection poly6
   RooRealVar PolyReflParam4("PolyReflParam4", "PolyReflParam4", 0.2, -1., 1.);
   RooRealVar PolyReflParam5("PolyReflParam5", "PolyReflParam5", 0.2, -1., 1.);
   RooRealVar PolyReflParam6("PolyReflParam6", "PolyReflParam6", 0.2, -1., 1.);
   RooAbsPdf* reflFuncPoly6 = new RooPolynomial("reflFuncPoly6", "reflection pdf", mass, RooArgSet(PolyReflParam0, PolyReflParam1, PolyReflParam2, PolyReflParam3, PolyReflParam4, PolyReflParam5, PolyReflParam6));
   workspace.import(*reflFuncPoly6);
+  delete reflFuncPoly6;
 }
 // draw fit output
 void HFInvMassFitter::drawFit(TVirtualPad* pad, Int_t writeFitInfo)

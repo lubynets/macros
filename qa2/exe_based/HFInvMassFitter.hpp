@@ -242,7 +242,7 @@ class HFInvMassFitter : public TNamed
   Int_t mNSigmaForSgn;               /// number of sigmas to veto the signal peak
   Double_t mSigmaSgnErr;             /// uncertainty on signal gaussian sigma
   Double_t mSigmaSgnDoubleGaus;      /// signal 2gaussian sigma
-  Double_t mFixedMean;               /// switch for fix mean of gaussian
+  Bool_t mFixedMean;               /// switch for fix mean of gaussian
   Bool_t mBoundMean;                 /// switch for bound mean of guassian
   Bool_t mBoundReflMean;             /// switch for bound mean of guassian for reflection
   Bool_t mFixedSigma;                /// fix sigma or not
