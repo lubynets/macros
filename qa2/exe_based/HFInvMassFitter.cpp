@@ -256,10 +256,10 @@ void HFInvMassFitter::doFit()
 
     // estimate signal yield
     RooAbsReal* bkgIntegral = mBkgPdf->createIntegral(*mass, NormSet(*mass), Range("bkg")); // bkg integral
-    mIntegralBkg = bkgIntegral->getValV();
+    mIntegralBkg = bkgIntegral->getValV(); // fraction of BG's integral in "bkg" range out of that in "full" range (which is 1 by construction). Not an absolute value.
     Double_t estimatedSignal;
-    checkForSignal(estimatedSignal);
-    calculateBackground(mBkgYield, mBkgYieldErr);
+    checkForSignal(estimatedSignal); // SIG's absolute integral in "bkg" range
+    calculateBackground(mBkgYield, mBkgYieldErr); // BG's absolute integral in "bkg" range
 
     mRooNSgn = new RooRealVar("mNSgn", "number of signal", 0.3 * estimatedSignal, 0., 1.2 * estimatedSignal); // estimated signal yield
     if (mFixedRawYield > 0) {
@@ -321,7 +321,6 @@ void HFInvMassFitter::doFit()
       RooHist* residualHistogram = mInvMassFrame->residHist("data_c", "Bkg_c");
       mResidualFrame->addPlotable(residualHistogram, "P");
       mSgnPdf->plotOn(mResidualFrame, Normalization(1.0, RooAbsReal::RelativeExpected), LineColor(kBlue));
-      mTotalPdf->plotOn(mResidualFrame, Components(*mSgnPdf), Normalization(1.0, RooAbsReal::RelativeExpected), LineColor(kBlue));
     }
     mass->setRange("bkgForSignificance", mRooMeanSgn->getVal() - mNSigmaForSgn * mRooSigmaSgn->getVal(), mRooMeanSgn->getVal() + mNSigmaForSgn * mRooSigmaSgn->getVal());
     bkgIntegral = mBkgPdf->createIntegral(*mass, NormSet(*mass), Range("bkgForSignificance"));
