@@ -1,0 +1,10 @@
+model_path: "/lustre/alice/users/lubynets/bdt/outputs/currentTry/3/model/BDTmodel_pT_5_8_v1.pkl"
+input_files: ["/lustre/alice/users/pstahlhu/Hyperloop/BdtTrainingDF/LHC23Pass4Thin_KF302383_0.parquet.gzip",
+              "/lustre/alice/users/pstahlhu/Hyperloop/BdtTrainingDF/LHC23Pass4Thin_KF302383_1.parquet.gzip",
+              "/lustre/alice/users/pstahlhu/Hyperloop/BdtTrainingDF/LHC23Pass4Thin_KF302383_2.parquet.gzip",
+              "/lustre/alice/users/pstahlhu/Hyperloop/BdtTrainingDF/LHC23Pass4Thin_KF302383_3.parquet.gzip",
+              "/lustre/alice/users/pstahlhu/Hyperloop/BdtTrainingDF/LHC23Pass4Thin_KF302383_4.parquet.gzip",
+              "/lustre/alice/users/pstahlhu/Hyperloop/BdtTrainingDF/LHC23Pass4Thin_KF302383_5.parquet.gzip"]
+output_directory: "/lustre/alice/users/pstahlhu/XicPlusBDTmodels/results"
+output_file_name: "LHC23Pass4Thin_pT_3_4_applied_BDT_v2"
+pT_interval: [3.0, 4.0]
