@@ -313,7 +313,6 @@ void HFInvMassFitter::doFit()
         mTotalPdf->fitTo(dataHistogram);
       }
       plotBkg(mTotalPdf);
-      mTotalPdf->plotOn(mInvMassFrame, Components("mReflFuncDoubleGaus"), Name("refl_c"), LineColor(kGreen));
       mTotalPdf->plotOn(mInvMassFrame, Name("Tot_c"), LineColor(kBlue));
       mChiSquareOverNdf = mInvMassFrame->chiSquare("Tot_c", "data_c"); // calculate reduced chi2 / DNF
       // plot residual distribution
