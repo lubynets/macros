@@ -37,23 +37,29 @@ std::vector<int> findPositions(const std::vector<int>& vec, int M);
 
 void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int maxEntries) {
 
-  std::vector<std::string> fields_to_ignore_{"fLiteChi2PCA",
-                                             "fLiteCpa",
-                                             "fLiteCpaXY",
-                                             "fLiteCt",
-                                             "fLiteDecayLength",
-                                             "fLiteDecayLengthXY",
-                                             "fLiteEta",
-                                             "fLiteImpactParameter0",
-                                             "fLiteImpactParameter1",
-                                             "fLiteImpactParameter2",
-                                             "fLiteM",
-                                             "fLiteMassKPi",
-                                             "fLitePhi",
-                                             "fLitePt",
-                                             "fLitePtProng0",
-                                             "fLitePtProng1",
-                                             "fLitePtProng2"};
+  const std::vector<std::string> fields_to_ignore_{
+    "fLiteChi2PCA",
+    "fLiteCpa",
+    "fLiteCpaXY",
+    "fLiteCt",
+    "fLiteDecayLength",
+    "fLiteDecayLengthXY",
+    "fLiteEta",
+    "fLiteImpactParameter0",
+    "fLiteImpactParameter1",
+    "fLiteImpactParameter2",
+    "fLiteM",
+    "fLiteMassKPi",
+    "fLitePhi",
+    "fLitePt",
+    "fLitePtProng0",
+    "fLitePtProng1",
+    "fLitePtProng2"
+  };
+
+  const std::vector<std::string> fields_to_preserve_ {};
+
+  if(!fields_to_ignore_.empty() && !fields_to_preserve_.empty()) throw std::runtime_error("!fields_to_ignore_.empty() && !fields_to_preserve_.empty()");
 
   bool isConfigInitialized{false};
   AnalysisTree::Configuration config_;
@@ -66,7 +72,7 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
   AnalysisTree::Particles* candidates_{nullptr};
   AnalysisTree::BranchConfig CandidatesConfig("Candidates", AnalysisTree::DetType::kParticle);
   std::vector<IndexMap> candidateMap;
-  int kfLiteSepar;
+  int kfLiteSepar, liteCollIdSepar;
   std::vector<FicCarrier> candValues;
 
   AnalysisTree::Particles* simulated_{nullptr}; // MC matched with reco
@@ -93,7 +99,8 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
       const std::string fieldName = leave->GetName();
       const std::string prefixedFieldName = "f" + prefix + fieldName.substr(1, fieldName.size());
       const std::string fieldType = leave->ClassName();
-      if (std::find(fields_to_ignore_.begin(), fields_to_ignore_.end(), prefixedFieldName) != fields_to_ignore_.end()) continue;
+      if (!fields_to_ignore_.empty() && (std::find(fields_to_ignore_.begin(), fields_to_ignore_.end(), prefixedFieldName) != fields_to_ignore_.end())) continue;
+      if (!fields_to_preserve_.empty() && (std::find(fields_to_preserve_.begin(), fields_to_preserve_.end(), prefixedFieldName) == fields_to_preserve_.end())) continue;
       if (fieldType == "TLeafF") {
         branch_config.AddField<float>(prefixedFieldName);
       } else if (fieldType == "TLeafI" || fieldType == "TLeafB" || fieldType == "TLeafS") {
@@ -122,6 +129,7 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
 
     TTree* treeKF = fileIn->Get<TTree>((dirname + "/O2hfcandlckf").c_str());
     TTree* treeLite = fileIn->Get<TTree>((dirname + "/O2hfcandlclite").c_str());
+    TTree* treeCollId = fileIn->Get<TTree>((dirname + "/O2hfcollidlclite").c_str());
     TTree* treeMC = isMC ? fileIn->Get<TTree>((dirname + "/O2hfcandlcmc").c_str()) : nullptr;
     TTree* treeGen = isMC ? fileIn->Get<TTree>((dirname + "/O2hfcandlcfullp").c_str()) : nullptr;
     TTree* treeEvent = fileIn->Get<TTree>((dirname + "/O2hfcandlcfullev").c_str());
@@ -138,6 +146,8 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
       CreateConfiguration(treeKF, "KF", CandidatesConfig, candidateMap);
       kfLiteSepar = candidateMap.size();
       CreateConfiguration(treeLite, "Lite", CandidatesConfig, candidateMap);
+      liteCollIdSepar = candidateMap.size();
+      CreateConfiguration(treeCollId, "", CandidatesConfig, candidateMap);
       candValues.resize(candidateMap.size());
       sb_status_field_id = DetermineFieldIdByName(candidateMap, "fSigBgStatus");
       collision_id_field_id_in_cand = DetermineFieldIdByName(candidateMap, "fIndexCollisions");
@@ -170,7 +180,7 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
     }
 
     for(int iV=0; iV<candValues.size(); iV++) {
-      auto treeRec = iV<kfLiteSepar ? treeKF : treeLite;
+      auto treeRec = iV<kfLiteSepar ? treeKF : iV<liteCollIdSepar ? treeLite : treeCollId;
       TBranch* branch = treeRec->GetBranch(candidateMap.at(iV).name_.c_str());
       SetAddressFIC(branch, candidateMap.at(iV), candValues.at(iV));
     }
@@ -186,13 +196,18 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
     }
 
     const int nEntriesKF = treeKF->GetEntries();
-    if(treeLite->GetEntries() != nEntriesKF || (isMC && treeMC->GetEntries() != nEntriesKF)) {
-      throw std::runtime_error("treeLite->GetEntries() != nEntriesKF || treeMC->GetEntries() != nEntriesKF");
+    if(treeLite->GetEntries() != nEntriesKF || treeCollId->GetEntries() != nEntriesKF || (isMC && treeMC->GetEntries() != nEntriesKF)) {
+      std::cout << "treeLite->GetEntries() = " << treeLite->GetEntries() << "\n";
+      std::cout << "treeKF->GetEntries() = " << treeKF->GetEntries() << "\n";
+      std::cout << "treeCollId->GetEntries() = " << treeCollId->GetEntries() << "\n";
+      if(isMC) std::cout << "treeMC->GetEntries() = " << treeMC->GetEntries() << "\n";
+      throw std::runtime_error("treeLite->GetEntries() != nEntriesKF || treeCollId->GetEntries() != nEntriesKF || (isMC && treeMC->GetEntries() != nEntriesKF)");
     }
 
     std::vector<int> candidateCollisionIndices;
     for(int iEntryKF = 0; iEntryKF<nEntriesKF; iEntryKF++) {
       treeKF->GetEntry(iEntryKF);
+      treeCollId->GetEntry(iEntryKF);
       candidateCollisionIndices.emplace_back(candValues.at(collision_id_field_id_in_cand).int_);
     }
 
@@ -214,6 +229,7 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
       for(auto& cOTI : candidatesOfThisCollisionIndices) {
         treeKF->GetEntry(cOTI);
         treeLite->GetEntry(cOTI);
+        treeCollId->GetEntry(cOTI);
         if(isMC) treeMC->GetEntry(cOTI);
 
         auto& candidate = candidates_->AddChannel(config_.GetBranchConfig(candidates_->GetId()));
@@ -264,7 +280,7 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
     std::string branchname_rec = "Candidates";
     tree_task->SetInputBranchNames({branchname_rec});
     tree_task->AddBranch(branchname_rec);
-//    tree_task->AddBranchCut(signalCuts);
+//     tree_task->AddBranchCut(signalCuts);
     tree_task->AddBranchCut(sideBandCuts);
     const std::vector<std::string> fields_to_preserve {
       "fKFChi2PrimProton",
@@ -273,9 +289,9 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
       "fKFChi2Geo",
       "fKFChi2Topo",
       "fKFDecayLengthNormalised",
-      "fLiteNSigTpcPr",
-      "fLiteNSigTpcKa",
-      "fLiteNSigTpcPi",
+      "KFNSigTpcPr",
+      "KFNSigTpcKa",
+      "KFNSigTpcPi",
       "fKFT",
       "fKFPt",
       "fKFMassInv",
