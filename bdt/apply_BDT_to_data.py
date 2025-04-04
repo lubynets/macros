@@ -48,18 +48,18 @@ model_hdl = ModelHandler()
 model_hdl.load_model_handler(filename=model_path)
 
 ## Define input files
-BDT_variables = ['fCandidateSelFlag', 'fSign',
-                 'fP', 'fPt', 'fY', 'fEta', 'fPhi', 'fCt',
-                 'fPtXi', 'fPtPi0', 'fPtPi1', 'fPtSumPi0Pi1',
-                 'fM', 'fInvMassXi', 'fInvMassXiPi0', 'fInvMassXiPi1',
-                 'fCpa', 'fCpaXY', 'fCpaXi', 'fCpaXYXi', 'fCpaLam', 'fCpaXYLam', 'fCpaLamToXi', 'fCpaXYLamToXi',
-                 'fDecayLength', 'fDecayLengthNormalised', 'fDecayLengthXY', 'fDecayLengthXYNormalised',
-                 'fImpactParameterXi', 'fImpactParameterNormalisedXi', 'fImpactParameterPi0', 'fImpactParameterNormalisedPi0', 'fImpactParameterPi1', 'fImpactParameterNormalisedPi1', 'fMaxNormalisedDeltaIP',
-                 'fChi2Sv', 'fChi2XiVtx', 'fChi2LamVtx', 'fChi2TopoXicPlusToPVBeforeConstraint', 'fChi2TopoXicPlusToPV', 'fChi2TopoXiToXicPlusBeforeConstraint', 'fChi2TopoXiToXicPlus',
-                 'fDcaPi0Pi1', 'fDcaXYPi0Pi1', 'fDcaPi0Xi', 'fDcaXYPi0Xi', 'fDcaPi1Xi', 'fDcaXYPi1Xi', 'fDcaXiDaughters',
-                 'fPPi0', 'fPPi1', 'fPBachelorPi', 'fPPiFromLambda', 'fPPrFromLambda',
-                 'fNSigTpcPiFromXicPlus0', 'fNSigTpcPiFromXicPlus1', 'fNSigTpcBachelorPi', 'fNSigTpcPiFromLambda', 'fNSigTpcPrFromLambda',
-                 'fNSigTofPiFromXicPlus0', 'fNSigTofPiFromXicPlus1', 'fNSigTofBachelorPi', 'fNSigTofPiFromLambda', 'fNSigTofPrFromLambda']
+BDT_variables = ['fKFChi2PrimProton',
+                 'fKFChi2PrimKaon',
+                 'fKFChi2PrimPion',
+                 'fKFChi2Geo',
+                 'fKFChi2Topo',
+                 'fKFDecayLengthNormalised',
+                 'fLiteNSigTpcPr',
+                 'fLiteNSigTpcKa',
+                 'fLiteNSigTpcPi',
+                 'fKFT',
+                 'fKFPt',
+                 'fKFMassInv']
 
 ## Loop over input files
 applied_dfs = []
@@ -82,7 +82,7 @@ for file in input_files:
     for i_class in range(3):
         df[column_names[i_class]] = prediction[:, i_class]
     
-    applied_df = df[['fSign', 'fPt', 'fM', 'bkg_score', 'prompt_score', 'non_prompt_score']]
+    applied_df = df[['fKFT', 'fKFPt', 'fKFMassInv', 'bkg_score', 'prompt_score', 'non_prompt_score']]
     applied_dfs.append(applied_df)
 
     ## Free memory
