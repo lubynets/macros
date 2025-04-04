@@ -14,13 +14,11 @@ SET(EXECUTABLES
     ct_mcfit
     mass_fit
     ct_fit
-    runMassFitter
 )
 
 SET(SOURCES
     Helper.cpp
     ShapeFitter.cpp
-    HFInvMassFitter.cpp
 )
 
 string(REPLACE ".cpp" ".hpp" HEADERS "${SOURCES}")
@@ -81,3 +79,48 @@ foreach(EXE ${EXECUTABLES})
     target_link_libraries(${EXE} ${ROOT_LIBRARIES} ROOT::EG Qa2)
     install (TARGETS ${EXE} RUNTIME DESTINATION bin)
 endforeach()
+
+# ==================================================================
+set(PCM_FILE_NAME libHFInvMassFitterLib)
+ROOT_GENERATE_DICTIONARY(G__HFInvMassFitterLib "HFInvMassFitter.hpp"
+        LINKDEF HFInvMassFitterLinkDef.h
+        OPTIONS -I ${CMAKE_SOURCE_DIR}
+)
+
+# Define the new library for HFInvMassFitter
+add_library(HFInvMassFitterLib SHARED HFInvMassFitter.cpp G__HFInvMassFitterLib)
+target_include_directories(HFInvMassFitterLib PRIVATE ${CMAKE_SOURCE_DIR})
+target_link_libraries(HFInvMassFitterLib PRIVATE ${ROOT_LIBRARIES} ROOT::EG ROOT::RooFit ROOT::RooFitCore)
+
+# Installation for HFInvMassFitterLib
+install(TARGETS HFInvMassFitterLib EXPORT HFInvMassFitterLibTargets
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        RUNTIME DESTINATION bin
+        INCLUDES DESTINATION include)
+
+install(FILES
+        "HFInvMassFitter.hpp"
+        DESTINATION
+        include
+        COMPONENT
+        Devel)
+
+install(FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/${PCM_FILE_NAME}_rdict.pcm"
+        DESTINATION
+        lib
+        OPTIONAL)
+
+install(FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/${PCM_FILE_NAME}.rootmap"
+        DESTINATION
+        lib
+        OPTIONAL)
+
+install(FILES HFInvMassFitter.hpp DESTINATION include COMPONENT Devel)
+
+add_executable(runMassFitter tasks/runMassFitter.cpp)
+target_link_libraries(runMassFitter PRIVATE HFInvMassFitterLib ${ROOT_LIBRARIES} ROOT::EG)
+install(TARGETS runMassFitter RUNTIME DESTINATION bin)
+# ==================================================================
