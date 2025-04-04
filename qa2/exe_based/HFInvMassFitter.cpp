@@ -19,6 +19,8 @@
 
 #include "HFInvMassFitter.hpp"
 
+#include <TLine.h>
+
 #include <RooRealVar.h>
 #include <RooWorkspace.h>
 #include <RooAddPdf.h>
@@ -48,7 +50,6 @@ HFInvMassFitter::HFInvMassFitter() : TNamed(),
                                      mTypeOfReflPdf(1),
                                      mMass(1.865),
                                      mSecMass(1.969),
-                                     mMassErr(0.),
                                      mSigmaSgn(0.012),
                                      mSecSigma(0.006),
                                      mNSigmaForSidebands(4.),
@@ -114,7 +115,6 @@ HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit, Double_t minValue, Doubl
                                                                                                                                      mTypeOfReflPdf(1),
                                                                                                                                      mMass(1.865),
                                                                                                                                      mSecMass(1.969),
-                                                                                                                                     mMassErr(0.),
                                                                                                                                      mSigmaSgn(0.012),
                                                                                                                                      mSecSigma(0.006),
                                                                                                                                      mNSigmaForSidebands(3.),
@@ -314,6 +314,7 @@ void HFInvMassFitter::doFit()
       }
       plotBkg(mTotalPdf);
       mTotalPdf->plotOn(mInvMassFrame, Name("Tot_c"), LineColor(kBlue));
+      mSgnPdf->plotOn(mInvMassFrame, Normalization(1.0, RooAbsReal::RelativeExpected), DrawOption("F"), FillColor(TColor::GetColorTransparent(kBlue, 0.2)), VLines());
       mChiSquareOverNdf = mInvMassFrame->chiSquare("Tot_c", "data_c"); // calculate reduced chi2 / DNF
       // plot residual distribution
       mResidualFrame = mass->frame(Title("Residual Distribution"));
@@ -556,6 +557,7 @@ void HFInvMassFitter::drawFit(TVirtualPad* pad, Int_t writeFitInfo)
     mInvMassFrame->GetYaxis()->SetTitle(Form("%s", mHistoInvMass->GetYaxis()->GetTitle()));
     mInvMassFrame->GetXaxis()->SetTitle(Form("%s", mHistoInvMass->GetXaxis()->GetTitle()));
     mInvMassFrame->Draw();
+    drawPeakRegion(mInvMassFrame);
     if (mHistoTemplateRefl) {
       mReflFrame->Draw("same");
     }
@@ -577,6 +579,25 @@ void HFInvMassFitter::drawResidual(TVirtualPad* pad)
   textInfo->AddText(Form("sigma = %.3f #pm %.3f", mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
   mResidualFrame->addObject(textInfo);
   mResidualFrame->Draw();
+  drawPeakRegion(mResidualFrame);
+}
+
+// draw peak region with vertical lines
+void HFInvMassFitter::drawPeakRegion(const RooPlot* plot, Color_t color, Width_t width, Style_t style) const {
+  double yMin = plot->GetMinimum();
+  double yMax = plot->GetMaximum();
+  const Double_t mean = mRooMeanSgn->getVal();
+  const Double_t sigma = mRooSigmaSgn->getVal();
+  const Double_t minForSgn = mean - mNSigmaForSidebands * sigma;
+  const Double_t maxForSgn = mean + mNSigmaForSidebands * sigma;
+  TLine* leftLine = new TLine(minForSgn, yMin, minForSgn, yMax);
+  TLine* rightLine = new TLine(maxForSgn, yMin, maxForSgn, yMax);
+  for(const auto& line : std::array<TLine*, 2>{leftLine, rightLine}) {
+    line->SetLineColor(color);
+    line->SetLineWidth(width);
+    line->SetLineStyle(style);
+    line->Draw();
+  }
 }
 
 // draw reflection distribution on canvas

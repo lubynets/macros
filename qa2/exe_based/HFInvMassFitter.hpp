@@ -223,6 +223,7 @@ class HFInvMassFitter : public TNamed
   HFInvMassFitter(const HFInvMassFitter& source);
   HFInvMassFitter& operator=(const HFInvMassFitter& source);
   void fillWorkspace(RooWorkspace& w) const;
+  void drawPeakRegion(const RooPlot* plot, Color_t color=kGray, Width_t width=1, Style_t style=2) const;
 
   TH1* mHistoInvMass; // histogram to fit
   TString mFitOption;
@@ -238,7 +239,6 @@ class HFInvMassFitter : public TNamed
   Double_t mMassReflLowLimit;        /// lower limit of the allowed mass range for reflection
   Double_t mMassReflUpLimit;         /// upper limit of the allowed mass range for reflection
   Double_t mSecMass;                 /// Second peak mean value
-  Double_t mMassErr;                 /// uncertainty on signal gaussian mean value
   Double_t mSigmaSgn;                /// signal gaussian sigma
   Double_t mSecSigma;                /// Second peak gaussian sigma
   Int_t mNSigmaForSidebands;         /// number of sigmas to veto the signal peak
