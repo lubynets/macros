@@ -119,5 +119,7 @@
     "1 for DoubleGaus",
     "2 for DoubleGausSigmaRatioPar",
     "3 for GausSec"
-  ]
+  ],
+  "drawBgPrefit": true,
+  "highlightPeakRegion": true
 }

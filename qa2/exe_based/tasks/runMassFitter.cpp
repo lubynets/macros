@@ -155,6 +155,9 @@ int runMassFitter(const TString& configFileName)
 
   bool enableRefl = config["EnableRefl"].GetBool();
 
+  bool drawBgPrefit = config["drawBgPrefit"].GetBool();
+  bool highlightPeakRegion = config["highlightPeakRegion"].GetBool();
+
   const unsigned int nSliceVarBins = sliceVarMin.size();
   int bkgFunc[nSliceVarBins], sgnFunc[nSliceVarBins];
   double sliceVarLimits[nSliceVarBins + 1];
@@ -276,6 +279,8 @@ int runMassFitter(const TString& configFileName)
   // define output histos
   auto hRawYields = new TH1D("hRawYields", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield",
                              nSliceVarBins, sliceVarLimits);
+  auto hRawYieldsCounted = new TH1D("hRawYieldsCounted", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield via bin count",
+                             nSliceVarBins, sliceVarLimits);
   auto hRawYieldsSigma = new TH1D(
     "hRawYieldsSigma", ";" + sliceVarName + "(" + sliceVarUnit + ");width (GeV/#it{c}^{2})",
     nSliceVarBins, sliceVarLimits);
@@ -351,6 +356,7 @@ int runMassFitter(const TString& configFileName)
   }
 
   setHistoStyle(hRawYields);
+  setHistoStyle(hRawYieldsCounted);
   setHistoStyle(hRawYieldsSigma);
   setHistoStyle(hRawYieldsSigma2);
   setHistoStyle(hRawYieldsMean);
@@ -454,6 +460,8 @@ int runMassFitter(const TString& configFileName)
     if (isMc) {
       HFInvMassFitter* massFitter;
       massFitter = new HFInvMassFitter(hMassForFit[iSliceVar], massMin[iSliceVar], massMax[iSliceVar], HFInvMassFitter::NoBkg, sgnFunc[iSliceVar]);
+      massFitter->setDrawBgPrefit(drawBgPrefit);
+      massFitter->setHighlightPeakRegion(highlightPeakRegion);
       massFitter->setInitialGaussianMean(massPDG);
       massFitter->setParticlePdgMass(massPDG);
       massFitter->setBoundGaussianMean(massPDG, 0.8*massPDG, 1.2*massPDG);
@@ -469,6 +477,8 @@ int runMassFitter(const TString& configFileName)
 
       Double_t rawYield = massFitter->getRawYield();
       Double_t rawYieldErr = massFitter->getRawYieldError();
+      Double_t rawYieldCounted = massFitter->getRawYieldCounted();
+      Double_t rawYieldCountedErr = massFitter->getRawYieldCountedError();
 
       Double_t sigma = massFitter->getSigma();
       Double_t sigmaErr = massFitter->getSigmaUncertainty();
@@ -478,6 +488,8 @@ int runMassFitter(const TString& configFileName)
 
       hRawYields->SetBinContent(iSliceVar + 1, rawYield);
       hRawYields->SetBinError(iSliceVar + 1, rawYieldErr);
+      hRawYieldsCounted->SetBinContent(iSliceVar + 1, rawYieldCounted);
+      hRawYieldsCounted->SetBinError(iSliceVar + 1, rawYieldCountedErr);
       hRawYieldsSigma->SetBinContent(iSliceVar + 1, sigma);
       hRawYieldsSigma->SetBinError(iSliceVar + 1, sigmaErr);
       hRawYieldsMean->SetBinContent(iSliceVar + 1, mean);
@@ -488,6 +500,8 @@ int runMassFitter(const TString& configFileName)
       HFInvMassFitter* massFitter;
       massFitter = new HFInvMassFitter(hMassForFit[iSliceVar], massMin[iSliceVar], massMax[iSliceVar],
                                        bkgFunc[iSliceVar], sgnFunc[iSliceVar]);
+      massFitter->setDrawBgPrefit(drawBgPrefit);
+      massFitter->setHighlightPeakRegion(highlightPeakRegion);
       massFitter->setInitialGaussianMean(massPDG);
       massFitter->setParticlePdgMass(massPDG);
       massFitter->setBoundGaussianMean(massPDG, 0.8*massPDG, 1.2*massPDG);
@@ -526,6 +540,8 @@ int runMassFitter(const TString& configFileName)
 
       double rawYield = massFitter->getRawYield();
       double rawYieldErr = massFitter->getRawYieldError();
+      double rawYieldCounted = massFitter->getRawYieldCounted();
+      double rawYieldCountedErr = massFitter->getRawYieldCountedError();
       double sigma = massFitter->getSigma();
       double sigmaErr = massFitter->getSigmaUncertainty();
       double mean = massFitter->getMean();
@@ -538,6 +554,8 @@ int runMassFitter(const TString& configFileName)
 
       hRawYields->SetBinContent(iSliceVar + 1, rawYield);
       hRawYields->SetBinError(iSliceVar + 1, rawYieldErr);
+      hRawYieldsCounted->SetBinContent(iSliceVar + 1, rawYieldCounted);
+      hRawYieldsCounted->SetBinError(iSliceVar + 1, rawYieldCountedErr);
       hRawYieldsSigma->SetBinContent(iSliceVar + 1, sigma);
       hRawYieldsSigma->SetBinError(iSliceVar + 1, sigmaErr);
       hRawYieldsMean->SetBinContent(iSliceVar + 1, mean);
@@ -614,6 +632,7 @@ int runMassFitter(const TString& configFileName)
     hMass[iSliceVar]->Write();
   }
   hRawYields->Write();
+  hRawYieldsCounted->Write();
   hRawYieldsSigma->Write();
   hRawYieldsMean->Write();
   hRawYieldsSignificance->Write();

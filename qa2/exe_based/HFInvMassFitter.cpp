@@ -19,6 +19,8 @@
 
 #include "HFInvMassFitter.hpp"
 
+#include <TLine.h>
+
 #include <RooRealVar.h>
 #include <RooWorkspace.h>
 #include <RooAddPdf.h>
@@ -48,7 +50,6 @@ HFInvMassFitter::HFInvMassFitter() : TNamed(),
                                      mTypeOfReflPdf(1),
                                      mMass(1.865),
                                      mSecMass(1.969),
-                                     mMassErr(0.),
                                      mSigmaSgn(0.012),
                                      mSecSigma(0.006),
                                      mNSigmaForSidebands(4.),
@@ -98,7 +99,9 @@ HFInvMassFitter::HFInvMassFitter() : TNamed(),
                                      mReflOnlyFrame(0x0),
                                      mResidualFrame(0x0),
                                      mWorkspace(0x0),
-                                     mHistoTemplateRefl(0x0)
+                                     mHistoTemplateRefl(0x0),
+                                     mDrawBgPrefit(kFALSE),
+                                     mHighlightPeakRegion(kFALSE)
 {
   // default constructor
 }
@@ -114,7 +117,6 @@ HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit, Double_t minValue, Doubl
                                                                                                                                      mTypeOfReflPdf(1),
                                                                                                                                      mMass(1.865),
                                                                                                                                      mSecMass(1.969),
-                                                                                                                                     mMassErr(0.),
                                                                                                                                      mSigmaSgn(0.012),
                                                                                                                                      mSecSigma(0.006),
                                                                                                                                      mNSigmaForSidebands(3.),
@@ -164,7 +166,9 @@ HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit, Double_t minValue, Doubl
                                                                                                                                      mReflOnlyFrame(0x0),
                                                                                                                                      mResidualFrame(0x0),
                                                                                                                                      mWorkspace(0x0),
-                                                                                                                                     mHistoTemplateRefl(0x0)
+                                                                                                                                     mHistoTemplateRefl(0x0),
+                                                                                                                                     mDrawBgPrefit(kFALSE),
+                                                                                                                                     mHighlightPeakRegion(kFALSE)
 {
   // standard constructor
   mHistoInvMass = dynamic_cast<TH1*>(histoToFit->Clone(histoToFit->GetTitle()));
@@ -253,6 +257,12 @@ void HFInvMassFitter::doFit()
         mBkgPdf->fitTo(dataHistogram, Range("SBL,SBR"), Save());
       }
     }
+    RooAbsPdf* mBkgPdfPrefit{nullptr};
+    if(mDrawBgPrefit) {
+      mBkgPdfPrefit = dynamic_cast<RooAbsPdf*>(mBkgPdf->Clone());
+      mBkgPdfPrefit->plotOn(mInvMassFrame, Range("full"), Name("Bkg_c_prefit"), LineColor(kGray));
+      delete mBkgPdfPrefit;
+    }
 
     // estimate signal yield
     RooAbsReal* bkgIntegral = mBkgPdf->createIntegral(*mass, NormSet(*mass), Range("bkg")); // bkg integral
@@ -314,6 +324,7 @@ void HFInvMassFitter::doFit()
       }
       plotBkg(mTotalPdf);
       mTotalPdf->plotOn(mInvMassFrame, Name("Tot_c"), LineColor(kBlue));
+      mSgnPdf->plotOn(mInvMassFrame, Normalization(1.0, RooAbsReal::RelativeExpected), DrawOption("F"), FillColor(TColor::GetColorTransparent(kBlue, 0.2)), VLines());
       mChiSquareOverNdf = mInvMassFrame->chiSquare("Tot_c", "data_c"); // calculate reduced chi2 / DNF
       // plot residual distribution
       mResidualFrame = mass->frame(Title("Residual Distribution"));
@@ -329,6 +340,7 @@ void HFInvMassFitter::doFit()
     RooAbsReal* sgnIntegral = mSgnPdf->createIntegral(*mass, NormSet(*mass), Range("signal"));
     mIntegralSgn = sgnIntegral->getValV();
     calculateSignal(mRawYield, mRawYieldErr);
+    countSignal(mRawYieldCounted, mRawYieldCountedErr);
     calculateSignificance(mSignificance, mSignificanceErr);
   }
 }
@@ -526,6 +538,7 @@ void HFInvMassFitter::drawFit(TVirtualPad* pad, Int_t writeFitInfo)
     textInfoRight->SetFillStyle(0);
     textInfoRight->SetTextColor(kBlue);
     textInfoLeft->AddText(Form("S = %.0f #pm %.0f ", mRawYield, mRawYieldErr));
+    textInfoLeft->AddText(Form("S_{count} = %.0f #pm %.0f ", mRawYieldCounted, mRawYieldCountedErr));
     if (mTypeOfBkgPdf != 6) {
       textInfoLeft->AddText(Form("B (%d#sigma) = %.0f #pm %.0f", mNSigmaForSidebands, mBkgYield, mBkgYieldErr));
       textInfoLeft->AddText(Form("S/B (%d#sigma) = %.4g ", mNSigmaForSidebands, mRawYield / mBkgYield));
@@ -554,6 +567,7 @@ void HFInvMassFitter::drawFit(TVirtualPad* pad, Int_t writeFitInfo)
     mInvMassFrame->GetYaxis()->SetTitle(Form("%s", mHistoInvMass->GetYaxis()->GetTitle()));
     mInvMassFrame->GetXaxis()->SetTitle(Form("%s", mHistoInvMass->GetXaxis()->GetTitle()));
     mInvMassFrame->Draw();
+    highlightPeakRegion(mInvMassFrame);
     if (mHistoTemplateRefl) {
       mReflFrame->Draw("same");
     }
@@ -570,10 +584,31 @@ void HFInvMassFitter::drawResidual(TVirtualPad* pad)
   textInfo->SetFillStyle(0);
   textInfo->SetTextColor(kBlue);
   textInfo->AddText(Form("S = %.0f #pm %.0f ", mRawYield, mRawYieldErr));
+  textInfo->AddText(Form("S_{count} = %.0f #pm %.0f ", mRawYieldCounted, mRawYieldCountedErr));
   textInfo->AddText(Form("mean = %.3f #pm %.3f", mRooMeanSgn->getVal(), mRooMeanSgn->getError()));
   textInfo->AddText(Form("sigma = %.3f #pm %.3f", mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
   mResidualFrame->addObject(textInfo);
   mResidualFrame->Draw();
+  highlightPeakRegion(mResidualFrame);
+}
+
+// draw peak region with vertical lines
+void HFInvMassFitter::highlightPeakRegion(const RooPlot* plot, Color_t color, Width_t width, Style_t style) const {
+  if(!mHighlightPeakRegion) return;
+  double yMin = plot->GetMinimum();
+  double yMax = plot->GetMaximum();
+  const Double_t mean = mRooMeanSgn->getVal();
+  const Double_t sigma = mRooSigmaSgn->getVal();
+  const Double_t minForSgn = mean - mNSigmaForSidebands * sigma;
+  const Double_t maxForSgn = mean + mNSigmaForSidebands * sigma;
+  TLine* leftLine = new TLine(minForSgn, yMin, minForSgn, yMax);
+  TLine* rightLine = new TLine(maxForSgn, yMin, maxForSgn, yMax);
+  for(const auto& line : std::array<TLine*, 2>{leftLine, rightLine}) {
+    line->SetLineColor(color);
+    line->SetLineWidth(width);
+    line->SetLineStyle(style);
+    line->Draw();
+  }
 }
 
 // draw reflection distribution on canvas
@@ -582,6 +617,33 @@ void HFInvMassFitter::drawReflection(TVirtualPad* pad)
   pad->cd();
   mReflOnlyFrame->GetYaxis()->SetTitle("");
   mReflOnlyFrame->Draw();
+}
+
+// calculate signal yield via bin counting
+void HFInvMassFitter::countSignal(Double_t& signal, Double_t& signalErr) const {
+  const Double_t mean = mRooMeanSgn->getVal();
+  const Double_t sigma = mRooSigmaSgn->getVal();
+  const Double_t minForSgn = mean - mNSigmaForSidebands * sigma;
+  const Double_t maxForSgn = mean + mNSigmaForSidebands * sigma;
+  const Int_t binForMinSgn = mHistoInvMass->FindBin(minForSgn);
+  const Int_t binForMaxSgn = mHistoInvMass->FindBin(maxForSgn);
+  const Double_t binForMinSgnUpperEdge = mHistoInvMass->GetBinLowEdge(binForMinSgn+1);
+  const Double_t binForMaxSgnLowerEdge = mHistoInvMass->GetBinLowEdge(binForMaxSgn);
+  const Double_t binForMinSgnFraction = (binForMinSgnUpperEdge - minForSgn) / mHistoInvMass->GetBinWidth(binForMinSgn);
+  const Double_t binForMaxSgnFraction = (maxForSgn - binForMaxSgnLowerEdge) / mHistoInvMass->GetBinWidth(binForMaxSgn);
+
+  Double_t sum = 0;
+  sum += mHistoInvMass->GetBinContent(binForMinSgn)*binForMinSgnFraction;
+  for (Int_t iBin = binForMinSgn+1; iBin <= binForMaxSgn-1; iBin++) {
+    sum += mHistoInvMass->GetBinContent(iBin);
+  }
+  sum += mHistoInvMass->GetBinContent(binForMaxSgn)*binForMaxSgnFraction;
+
+  Double_t bkg, errBkg;
+  calculateBackground(bkg, errBkg);
+
+  signal = sum - bkg;
+  signalErr = std::sqrt(sum + errBkg*errBkg); // sum error squared is equal to sum
 }
 
 // calculate signal yield
@@ -717,26 +779,26 @@ RooAbsPdf* HFInvMassFitter::createReflectionFitFunction(RooWorkspace* workspace)
 }
 
 // Plot Bkg components of fTotFunction
-void HFInvMassFitter::plotBkg(RooAbsPdf* pdf)
+void HFInvMassFitter::plotBkg(RooAbsPdf* pdf, Color_t color)
 {
   switch (mTypeOfBkgPdf) {
     case 0:
-      pdf->plotOn(mInvMassFrame, Components("bkgFuncExpo"), Name("Bkg_c"), LineColor(kRed));
+      pdf->plotOn(mInvMassFrame, Components("bkgFuncExpo"), Name("Bkg_c"), LineColor(color));
       break;
     case 1:
-      pdf->plotOn(mInvMassFrame, Components("bkgFuncPoly1"), Name("Bkg_c"), LineColor(kRed));
+      pdf->plotOn(mInvMassFrame, Components("bkgFuncPoly1"), Name("Bkg_c"), LineColor(color));
       break;
     case 2:
-      pdf->plotOn(mInvMassFrame, Components("bkgFuncPoly2"), Name("Bkg_c"), LineColor(kRed));
+      pdf->plotOn(mInvMassFrame, Components("bkgFuncPoly2"), Name("Bkg_c"), LineColor(color));
       break;
     case 3:
-      pdf->plotOn(mInvMassFrame, Components("bkgFuncPow"), Name("Bkg_c"), LineColor(kRed));
+      pdf->plotOn(mInvMassFrame, Components("bkgFuncPow"), Name("Bkg_c"), LineColor(color));
       break;
     case 4:
-      pdf->plotOn(mInvMassFrame, Components("bkgFuncPowExp"), Name("Bkg_c"), LineColor(kRed));
+      pdf->plotOn(mInvMassFrame, Components("bkgFuncPowExp"), Name("Bkg_c"), LineColor(color));
       break;
     case 5:
-      pdf->plotOn(mInvMassFrame, Components("bkgFuncPoly3"), Name("Bkg_c"), LineColor(kRed));
+      pdf->plotOn(mInvMassFrame, Components("bkgFuncPoly3"), Name("Bkg_c"), LineColor(color));
       break;
     case 6:
       break;
