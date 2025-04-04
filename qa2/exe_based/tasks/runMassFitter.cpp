@@ -155,6 +155,9 @@ int runMassFitter(const TString& configFileName)
 
   bool enableRefl = config["EnableRefl"].GetBool();
 
+  bool drawBgPrefit = config["drawBgPrefit"].GetBool();
+  bool highlightPeakRegion = config["highlightPeakRegion"].GetBool();
+
   const unsigned int nSliceVarBins = sliceVarMin.size();
   int bkgFunc[nSliceVarBins], sgnFunc[nSliceVarBins];
   double sliceVarLimits[nSliceVarBins + 1];
@@ -457,6 +460,8 @@ int runMassFitter(const TString& configFileName)
     if (isMc) {
       HFInvMassFitter* massFitter;
       massFitter = new HFInvMassFitter(hMassForFit[iSliceVar], massMin[iSliceVar], massMax[iSliceVar], HFInvMassFitter::NoBkg, sgnFunc[iSliceVar]);
+      massFitter->setDrawBgPrefit(drawBgPrefit);
+      massFitter->setHighlightPeakRegion(highlightPeakRegion);
       massFitter->setInitialGaussianMean(massPDG);
       massFitter->setParticlePdgMass(massPDG);
       massFitter->setBoundGaussianMean(massPDG, 0.8*massPDG, 1.2*massPDG);
@@ -495,6 +500,8 @@ int runMassFitter(const TString& configFileName)
       HFInvMassFitter* massFitter;
       massFitter = new HFInvMassFitter(hMassForFit[iSliceVar], massMin[iSliceVar], massMax[iSliceVar],
                                        bkgFunc[iSliceVar], sgnFunc[iSliceVar]);
+      massFitter->setDrawBgPrefit(drawBgPrefit);
+      massFitter->setHighlightPeakRegion(highlightPeakRegion);
       massFitter->setInitialGaussianMean(massPDG);
       massFitter->setParticlePdgMass(massPDG);
       massFitter->setBoundGaussianMean(massPDG, 0.8*massPDG, 1.2*massPDG);
