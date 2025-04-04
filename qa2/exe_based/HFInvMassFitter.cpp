@@ -329,6 +329,7 @@ void HFInvMassFitter::doFit()
     RooAbsReal* sgnIntegral = mSgnPdf->createIntegral(*mass, NormSet(*mass), Range("signal"));
     mIntegralSgn = sgnIntegral->getValV();
     calculateSignal(mRawYield, mRawYieldErr);
+    calculateSignalViaBinCounting(mRawYieldViaCount, mRawYieldErrViaCount);
     calculateSignificance(mSignificance, mSignificanceErr);
   }
 }
@@ -526,6 +527,7 @@ void HFInvMassFitter::drawFit(TVirtualPad* pad, Int_t writeFitInfo)
     textInfoRight->SetFillStyle(0);
     textInfoRight->SetTextColor(kBlue);
     textInfoLeft->AddText(Form("S = %.0f #pm %.0f ", mRawYield, mRawYieldErr));
+    textInfoLeft->AddText(Form("S_{count} = %.0f #pm %.0f ", mRawYieldViaCount, mRawYieldErrViaCount));
     if (mTypeOfBkgPdf != 6) {
       textInfoLeft->AddText(Form("B (%d#sigma) = %.0f #pm %.0f", mNSigmaForSidebands, mBkgYield, mBkgYieldErr));
       textInfoLeft->AddText(Form("S/B (%d#sigma) = %.4g ", mNSigmaForSidebands, mRawYield / mBkgYield));
@@ -570,6 +572,7 @@ void HFInvMassFitter::drawResidual(TVirtualPad* pad)
   textInfo->SetFillStyle(0);
   textInfo->SetTextColor(kBlue);
   textInfo->AddText(Form("S = %.0f #pm %.0f ", mRawYield, mRawYieldErr));
+  textInfo->AddText(Form("S_{count} = %.0f #pm %.0f ", mRawYieldViaCount, mRawYieldErrViaCount));
   textInfo->AddText(Form("mean = %.3f #pm %.3f", mRooMeanSgn->getVal(), mRooMeanSgn->getError()));
   textInfo->AddText(Form("sigma = %.3f #pm %.3f", mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
   mResidualFrame->addObject(textInfo);
@@ -582,6 +585,27 @@ void HFInvMassFitter::drawReflection(TVirtualPad* pad)
   pad->cd();
   mReflOnlyFrame->GetYaxis()->SetTitle("");
   mReflOnlyFrame->Draw();
+}
+
+// calculate signal yield via bin counting
+void HFInvMassFitter::calculateSignalViaBinCounting(Double_t& signal, Double_t& signalErr) const {
+  const Double_t mean = mRooMeanSgn->getVal();
+  const Double_t sigma = mRooSigmaSgn->getVal();
+  const Double_t minForSgn = mean - mNSigmaForSidebands * sigma;
+  const Double_t maxForSgn = mean + mNSigmaForSidebands * sigma;
+  const Int_t binForMinSgn = mHistoInvMass->FindBin(minForSgn);
+  const Int_t binForMaxSgn = mHistoInvMass->FindBin(maxForSgn);
+
+  Double_t sum = 0;
+  for (Int_t iBin = binForMinSgn; iBin <= binForMaxSgn; iBin++) {
+    sum += mHistoInvMass->GetBinContent(iBin);
+  }
+
+  Double_t bkg, errBkg;
+  calculateBackground(bkg, errBkg);
+
+  signal = sum - bkg;
+  signalErr = std::sqrt(sum + errBkg*errBkg); // sum error squared is equal to sum
 }
 
 // calculate signal yield

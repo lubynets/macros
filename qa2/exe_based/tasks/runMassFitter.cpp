@@ -276,6 +276,8 @@ int runMassFitter(const TString& configFileName)
   // define output histos
   auto hRawYields = new TH1D("hRawYields", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield",
                              nSliceVarBins, sliceVarLimits);
+  auto hRawYieldsViaCount = new TH1D("hRawYieldsViaCount", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield via bin count",
+                             nSliceVarBins, sliceVarLimits);
   auto hRawYieldsSigma = new TH1D(
     "hRawYieldsSigma", ";" + sliceVarName + "(" + sliceVarUnit + ");width (GeV/#it{c}^{2})",
     nSliceVarBins, sliceVarLimits);
@@ -351,6 +353,7 @@ int runMassFitter(const TString& configFileName)
   }
 
   setHistoStyle(hRawYields);
+  setHistoStyle(hRawYieldsViaCount);
   setHistoStyle(hRawYieldsSigma);
   setHistoStyle(hRawYieldsSigma2);
   setHistoStyle(hRawYieldsMean);
@@ -469,6 +472,8 @@ int runMassFitter(const TString& configFileName)
 
       Double_t rawYield = massFitter->getRawYield();
       Double_t rawYieldErr = massFitter->getRawYieldError();
+      Double_t rawYieldViaCount = massFitter->getRawYieldViaCount();
+      Double_t rawYieldErrViaCount = massFitter->getRawYieldErrorViaCount();
 
       Double_t sigma = massFitter->getSigma();
       Double_t sigmaErr = massFitter->getSigmaUncertainty();
@@ -478,6 +483,8 @@ int runMassFitter(const TString& configFileName)
 
       hRawYields->SetBinContent(iSliceVar + 1, rawYield);
       hRawYields->SetBinError(iSliceVar + 1, rawYieldErr);
+      hRawYieldsViaCount->SetBinContent(iSliceVar + 1, rawYieldViaCount);
+      hRawYieldsViaCount->SetBinError(iSliceVar + 1, rawYieldErrViaCount);
       hRawYieldsSigma->SetBinContent(iSliceVar + 1, sigma);
       hRawYieldsSigma->SetBinError(iSliceVar + 1, sigmaErr);
       hRawYieldsMean->SetBinContent(iSliceVar + 1, mean);
@@ -526,6 +533,8 @@ int runMassFitter(const TString& configFileName)
 
       double rawYield = massFitter->getRawYield();
       double rawYieldErr = massFitter->getRawYieldError();
+      double rawYieldViaCount = massFitter->getRawYieldViaCount();
+      double rawYieldErrViaCount = massFitter->getRawYieldErrorViaCount();
       double sigma = massFitter->getSigma();
       double sigmaErr = massFitter->getSigmaUncertainty();
       double mean = massFitter->getMean();
@@ -538,6 +547,8 @@ int runMassFitter(const TString& configFileName)
 
       hRawYields->SetBinContent(iSliceVar + 1, rawYield);
       hRawYields->SetBinError(iSliceVar + 1, rawYieldErr);
+      hRawYieldsViaCount->SetBinContent(iSliceVar + 1, rawYieldViaCount);
+      hRawYieldsViaCount->SetBinError(iSliceVar + 1, rawYieldErrViaCount);
       hRawYieldsSigma->SetBinContent(iSliceVar + 1, sigma);
       hRawYieldsSigma->SetBinError(iSliceVar + 1, sigmaErr);
       hRawYieldsMean->SetBinContent(iSliceVar + 1, mean);
@@ -614,6 +625,7 @@ int runMassFitter(const TString& configFileName)
     hMass[iSliceVar]->Write();
   }
   hRawYields->Write();
+  hRawYieldsViaCount->Write();
   hRawYieldsSigma->Write();
   hRawYieldsMean->Write();
   hRawYieldsSignificance->Write();

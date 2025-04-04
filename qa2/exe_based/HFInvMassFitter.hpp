@@ -192,6 +192,8 @@ class HFInvMassFitter : public TNamed
   Double_t getChiSquareOverNDF() const { return mChiSquareOverNdf; }
   Double_t getRawYield() const { return mRawYield; }
   Double_t getRawYieldError() const { return mRawYieldErr; }
+  Double_t getRawYieldViaCount() const { return mRawYieldViaCount; }
+  Double_t getRawYieldErrorViaCount() const { return mRawYieldErrViaCount; }
   Double_t getBkgYield() const { return mBkgYield; }
   Double_t getBkgYieldError() const { return mBkgYieldErr; }
   Double_t getSignificance() const { return mSignificance; }
@@ -209,6 +211,7 @@ class HFInvMassFitter : public TNamed
     }
   }
   void calculateSignal(Double_t& signal, Double_t& signalErr) const;
+  void calculateSignalViaBinCounting(Double_t& signal, Double_t& signalErr) const;
   void calculateBackground(Double_t& bkg, Double_t& bkgErr) const;
   void calculateSignificance(Double_t& significance, Double_t& significanceErr) const;
   void checkForSignal(Double_t& estimatedSignal);
@@ -259,6 +262,8 @@ class HFInvMassFitter : public TNamed
   Bool_t mEnableReflections;         /// flag use/not use reflections
   Double_t mRawYield;                /// signal gaussian integral
   Double_t mRawYieldErr;             /// err on signal gaussian integral
+  Double_t mRawYieldViaCount;        /// signal gaussian integral
+  Double_t mRawYieldErrViaCount;     /// err on signal gaussian integral
   Double_t mBkgYield;                /// background
   Double_t mBkgYieldErr;             /// err on background
   Double_t mSignificance;            /// significance
