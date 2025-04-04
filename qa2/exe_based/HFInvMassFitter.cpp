@@ -616,11 +616,17 @@ void HFInvMassFitter::calculateSignalViaBinCounting(Double_t& signal, Double_t& 
   const Double_t maxForSgn = mean + mNSigmaForSidebands * sigma;
   const Int_t binForMinSgn = mHistoInvMass->FindBin(minForSgn);
   const Int_t binForMaxSgn = mHistoInvMass->FindBin(maxForSgn);
+  const Double_t binForMinSgnUpperEdge = mHistoInvMass->GetBinLowEdge(binForMinSgn+1);
+  const Double_t binForMaxSgnLowerEdge = mHistoInvMass->GetBinLowEdge(binForMaxSgn);
+  const Double_t binForMinSgnFraction = (binForMinSgnUpperEdge - minForSgn) / mHistoInvMass->GetBinWidth(binForMinSgn);
+  const Double_t binForMaxSgnFraction = (maxForSgn - binForMaxSgnLowerEdge) / mHistoInvMass->GetBinWidth(binForMaxSgn);
 
   Double_t sum = 0;
-  for (Int_t iBin = binForMinSgn; iBin <= binForMaxSgn; iBin++) {
+  sum += mHistoInvMass->GetBinContent(binForMinSgn)*binForMinSgnFraction;
+  for (Int_t iBin = binForMinSgn+1; iBin <= binForMaxSgn-1; iBin++) {
     sum += mHistoInvMass->GetBinContent(iBin);
   }
+  sum += mHistoInvMass->GetBinContent(binForMaxSgn)*binForMaxSgnFraction;
 
   Double_t bkg, errBkg;
   calculateBackground(bkg, errBkg);
