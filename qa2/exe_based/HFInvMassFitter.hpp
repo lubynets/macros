@@ -192,8 +192,8 @@ class HFInvMassFitter : public TNamed
   Double_t getChiSquareOverNDF() const { return mChiSquareOverNdf; }
   Double_t getRawYield() const { return mRawYield; }
   Double_t getRawYieldError() const { return mRawYieldErr; }
-  Double_t getRawYieldViaCount() const { return mRawYieldViaCount; }
-  Double_t getRawYieldErrorViaCount() const { return mRawYieldErrViaCount; }
+  Double_t getRawYieldCounted() const { return mRawYieldCounted; }
+  Double_t getRawYieldCountedError() const { return mRawYieldCountedErr; }
   Double_t getBkgYield() const { return mBkgYield; }
   Double_t getBkgYieldError() const { return mBkgYieldErr; }
   Double_t getSignificance() const { return mSignificance; }
@@ -211,7 +211,7 @@ class HFInvMassFitter : public TNamed
     }
   }
   void calculateSignal(Double_t& signal, Double_t& signalErr) const;
-  void calculateSignalViaBinCounting(Double_t& signal, Double_t& signalErr) const;
+  void countSignal(Double_t& signal, Double_t& signalErr) const;
   void calculateBackground(Double_t& bkg, Double_t& bkgErr) const;
   void calculateSignificance(Double_t& significance, Double_t& significanceErr) const;
   void checkForSignal(Double_t& estimatedSignal);
@@ -245,7 +245,7 @@ class HFInvMassFitter : public TNamed
   Int_t mNSigmaForSgn;               /// number of sigmas to veto the signal peak
   Double_t mSigmaSgnErr;             /// uncertainty on signal gaussian sigma
   Double_t mSigmaSgnDoubleGaus;      /// signal 2gaussian sigma
-  Bool_t mFixedMean;               /// switch for fix mean of gaussian
+  Bool_t mFixedMean;                 /// switch for fix mean of gaussian
   Bool_t mBoundMean;                 /// switch for bound mean of guassian
   Bool_t mBoundReflMean;             /// switch for bound mean of guassian for reflection
   Bool_t mFixedSigma;                /// fix sigma or not
@@ -262,8 +262,8 @@ class HFInvMassFitter : public TNamed
   Bool_t mEnableReflections;         /// flag use/not use reflections
   Double_t mRawYield;                /// signal gaussian integral
   Double_t mRawYieldErr;             /// err on signal gaussian integral
-  Double_t mRawYieldViaCount;        /// signal gaussian integral
-  Double_t mRawYieldErrViaCount;     /// err on signal gaussian integral
+  Double_t mRawYieldCounted;         /// signal gaussian integral evaluated via bin counting
+  Double_t mRawYieldCountedErr;      /// err on signal gaussian integral evaluated via bin counting
   Double_t mBkgYield;                /// background
   Double_t mBkgYieldErr;             /// err on background
   Double_t mSignificance;            /// significance

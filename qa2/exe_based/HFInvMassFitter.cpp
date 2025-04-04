@@ -330,7 +330,7 @@ void HFInvMassFitter::doFit()
     RooAbsReal* sgnIntegral = mSgnPdf->createIntegral(*mass, NormSet(*mass), Range("signal"));
     mIntegralSgn = sgnIntegral->getValV();
     calculateSignal(mRawYield, mRawYieldErr);
-    calculateSignalViaBinCounting(mRawYieldViaCount, mRawYieldErrViaCount);
+    countSignal(mRawYieldCounted, mRawYieldCountedErr);
     calculateSignificance(mSignificance, mSignificanceErr);
   }
 }
@@ -528,7 +528,7 @@ void HFInvMassFitter::drawFit(TVirtualPad* pad, Int_t writeFitInfo)
     textInfoRight->SetFillStyle(0);
     textInfoRight->SetTextColor(kBlue);
     textInfoLeft->AddText(Form("S = %.0f #pm %.0f ", mRawYield, mRawYieldErr));
-    textInfoLeft->AddText(Form("S_{count} = %.0f #pm %.0f ", mRawYieldViaCount, mRawYieldErrViaCount));
+    textInfoLeft->AddText(Form("S_{count} = %.0f #pm %.0f ", mRawYieldCounted, mRawYieldCountedErr));
     if (mTypeOfBkgPdf != 6) {
       textInfoLeft->AddText(Form("B (%d#sigma) = %.0f #pm %.0f", mNSigmaForSidebands, mBkgYield, mBkgYieldErr));
       textInfoLeft->AddText(Form("S/B (%d#sigma) = %.4g ", mNSigmaForSidebands, mRawYield / mBkgYield));
@@ -574,7 +574,7 @@ void HFInvMassFitter::drawResidual(TVirtualPad* pad)
   textInfo->SetFillStyle(0);
   textInfo->SetTextColor(kBlue);
   textInfo->AddText(Form("S = %.0f #pm %.0f ", mRawYield, mRawYieldErr));
-  textInfo->AddText(Form("S_{count} = %.0f #pm %.0f ", mRawYieldViaCount, mRawYieldErrViaCount));
+  textInfo->AddText(Form("S_{count} = %.0f #pm %.0f ", mRawYieldCounted, mRawYieldCountedErr));
   textInfo->AddText(Form("mean = %.3f #pm %.3f", mRooMeanSgn->getVal(), mRooMeanSgn->getError()));
   textInfo->AddText(Form("sigma = %.3f #pm %.3f", mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
   mResidualFrame->addObject(textInfo);
@@ -609,7 +609,7 @@ void HFInvMassFitter::drawReflection(TVirtualPad* pad)
 }
 
 // calculate signal yield via bin counting
-void HFInvMassFitter::calculateSignalViaBinCounting(Double_t& signal, Double_t& signalErr) const {
+void HFInvMassFitter::countSignal(Double_t& signal, Double_t& signalErr) const {
   const Double_t mean = mRooMeanSgn->getVal();
   const Double_t sigma = mRooSigmaSgn->getVal();
   const Double_t minForSgn = mean - mNSigmaForSidebands * sigma;
