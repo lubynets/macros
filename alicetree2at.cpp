@@ -1,8 +1,8 @@
 #include "Configuration.hpp"
+#include "Container.hpp"
 #include "Detector.hpp"
 #include "EventHeader.hpp"
 #include "Matching.hpp"
-#include "Particle.hpp"
 #include "PlainTreeFiller.hpp"
 #include "TaskManager.hpp"
 
@@ -69,19 +69,19 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
   std::vector<IndexMap> eventsMap;
   std::vector<FicCarrier> eventValues;
 
-  AnalysisTree::Particles* candidates_{nullptr};
-  AnalysisTree::BranchConfig CandidatesConfig("Candidates", AnalysisTree::DetType::kParticle);
+  AnalysisTree::GenericDetector* candidates_{nullptr};
+  AnalysisTree::BranchConfig CandidatesConfig("Candidates", AnalysisTree::DetType::kGeneric);
   std::vector<IndexMap> candidateMap;
   int kfLiteSepar, liteCollIdSepar;
   std::vector<FicCarrier> candValues;
 
-  AnalysisTree::Particles* simulated_{nullptr}; // MC matched with reco
-  AnalysisTree::BranchConfig SimulatedConfig("Simulated", AnalysisTree::DetType::kParticle);
+  AnalysisTree::GenericDetector* simulated_{nullptr}; // MC matched with reco
+  AnalysisTree::BranchConfig SimulatedConfig("Simulated", AnalysisTree::DetType::kGeneric);
   std::vector<IndexMap> simulatedMap;
   std::vector<FicCarrier> simValues;
 
-  AnalysisTree::Particles* generated_{nullptr}; // MC all decaying by 3-prong channel
-  AnalysisTree::BranchConfig GeneratedConfig("Generated", AnalysisTree::DetType::kParticle);
+  AnalysisTree::GenericDetector* generated_{nullptr}; // MC all decaying by 3-prong channel
+  AnalysisTree::BranchConfig GeneratedConfig("Generated", AnalysisTree::DetType::kGeneric);
   std::vector<IndexMap> generatedMap;
   std::vector<FicCarrier> genValues;
 
@@ -152,14 +152,14 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
       sb_status_field_id = DetermineFieldIdByName(candidateMap, "fSigBgStatus");
       collision_id_field_id_in_cand = DetermineFieldIdByName(candidateMap, "fIndexCollisions");
       config_.AddBranchConfig(CandidatesConfig);
-      candidates_ = new AnalysisTree::Particles(CandidatesConfig.GetId());
-      tree_->Branch((CandidatesConfig.GetName() + ".").c_str(), "AnalysisTree::Particles", &candidates_);
+      candidates_ = new AnalysisTree::GenericDetector(CandidatesConfig.GetId());
+      tree_->Branch((CandidatesConfig.GetName() + ".").c_str(), "AnalysisTree::GenericDetector", &candidates_);
       if(isMC) {
         CreateConfiguration(treeMC, "Sim_", SimulatedConfig, simulatedMap);
         simValues.resize(simulatedMap.size());
         config_.AddBranchConfig(SimulatedConfig);
-        simulated_ = new AnalysisTree::Particles(SimulatedConfig.GetId());
-        tree_->Branch((SimulatedConfig.GetName() + ".").c_str(), "AnalysisTree::Particles", &simulated_);
+        simulated_ = new AnalysisTree::GenericDetector(SimulatedConfig.GetId());
+        tree_->Branch((SimulatedConfig.GetName() + ".").c_str(), "AnalysisTree::GenericDetector", &simulated_);
         cand2sim_ = new AnalysisTree::Matching(CandidatesConfig.GetId(), SimulatedConfig.GetId());
         config_.AddMatch(cand2sim_);
         tree_->Branch((CandidatesConfig.GetName() + "2" + SimulatedConfig.GetName() + ".").c_str(), "AnalysisTree::Matching", &cand2sim_);
@@ -167,8 +167,8 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
         CreateConfiguration(treeGen, "Gen_", GeneratedConfig, generatedMap);
         genValues.resize(generatedMap.size());
         config_.AddBranchConfig(GeneratedConfig);
-        generated_ = new AnalysisTree::Particles(GeneratedConfig.GetId());
-        tree_->Branch((GeneratedConfig.GetName() + ".").c_str(), "AnalysisTree::Particles", &generated_);
+        generated_ = new AnalysisTree::GenericDetector(GeneratedConfig.GetId());
+        tree_->Branch((GeneratedConfig.GetName() + ".").c_str(), "AnalysisTree::GenericDetector", &generated_);
       }
       config_.Print();
       isConfigInitialized = true;
