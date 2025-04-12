@@ -2,6 +2,7 @@
 #include "Container.hpp"
 #include "Detector.hpp"
 #include "EventHeader.hpp"
+#include "HelperFunctions.hpp"
 #include "Matching.hpp"
 #include "PlainTreeFiller.hpp"
 #include "TaskManager.hpp"
@@ -32,7 +33,6 @@ template <typename T>
 void SetFieldsFIC(const std::vector<IndexMap>& imap, T& obj, const std::vector<FicCarrier>& ficc);
 std::vector<std::string> GetDFNames(const std::string& fileName);
 int DetermineFieldIdByName(const std::vector<IndexMap>& iMap, const std::string& name);
-bool string_to_bool(const std::string& str);
 std::vector<int> findPositions(const std::vector<int>& vec, int M);
 
 void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int maxEntries) {
@@ -317,8 +317,8 @@ int main(int argc, char* argv[]) {
   }
 
   const std::string fileName = argv[1];
-  const bool isMC = argc > 2 ? string_to_bool(argv[2]) : true;
-  const bool isDoPlain = argc > 3 ? string_to_bool(argv[3]) : false;
+  const bool isMC = argc > 2 ? HelperFunctions::StringToBool(argv[2]) : true;
+  const bool isDoPlain = argc > 3 ? HelperFunctions::StringToBool(argv[3]) : false;
   const int nEntries = argc > 4 ? atoi(argv[4]) : -1;
   AliceTree2AT(fileName, isMC, isDoPlain, nEntries);
 
@@ -364,12 +364,6 @@ int DetermineFieldIdByName(const std::vector<IndexMap>& iMap, const std::string&
   auto distance = std::distance(iMap.begin(),std::find_if(iMap.begin(), iMap.end(), [&name](const IndexMap& p) { return p.name_ == name; }));
   if(distance == iMap.size()) throw std::runtime_error("DetermineFieldIdByName(): name " + name + " is missing");
   return distance;
-}
-
-bool string_to_bool(const std::string& str) {
-  if(str == "true") return true;
-  else if(str == "false") return false;
-  else throw std::runtime_error("string_to_bool(): argument must be either true or false");
 }
 
 std::vector<int> findPositions(const std::vector<int>& vec, int M) {
