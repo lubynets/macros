@@ -4,6 +4,7 @@
 #include "Helper.hpp"
 
 #include <TCanvas.h>
+#include <TROOT.h>
 
 void Helper::SlightlyShiftXAxis(TGraph* gr, float value) {
   if(value == -1) {
@@ -259,4 +260,10 @@ void Helper::ScaleCanvasVertically(TCanvas* cTo, const TCanvas* cFrom, double sc
   cTo->SetCanvasSize(cFrom->GetWw(), cFrom->GetWh()/scaleFactor);
   cTo->SetBottomMargin(cFrom->GetBottomMargin()*scaleFactor);
   cTo->SetTopMargin(cFrom->GetTopMargin()*scaleFactor);
+}
+
+void Helper::LoadMacro(const std::string& macroName) {
+  TString currentMacroPath = __FILE__;
+  TString directory = currentMacroPath(0, currentMacroPath.Last('/'));
+  gROOT->Macro( directory + "/" + macroName );
 }

@@ -143,5 +143,7 @@ void CloseCanvasPrinting(const std::vector<std::string>& names);
 
 void CheckHistogramsForXaxisIdentity(const TH1* h1, const TH1* h2);
 
+void LoadMacro(const std::string& macroName);
+
 } // namespace Helper
 #endif //QA2_HELPER_HPP

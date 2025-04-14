@@ -14,6 +14,7 @@ SET(EXECUTABLES
     ct_mcfit
     mass_fit
     ct_fit
+    varCorr_qa2
 )
 
 SET(SOURCES
@@ -27,7 +28,7 @@ list(APPEND HEADERS "Shapes.hpp")
 # Specify the C++ standard
 set(CMAKE_CXX_STANDARD 17)
 
-set(QA_RAPIDJSON_INCLUDE_DIRS "" CACHE STRING "Location of rapidjson include directores")
+set(QA_RAPIDJSON_INCLUDE_DIRS "" CACHE STRING "Location of rapidjson include directories")
 
 # Find the ROOT package (you might need to specify the ROOT_DIR if it's not in the default location)
 find_package(ROOT REQUIRED COMPONENTS RooFit RooFitCore)
