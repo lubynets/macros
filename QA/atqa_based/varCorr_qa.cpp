@@ -10,15 +10,15 @@
 
 using namespace AnalysisTree;
 
-void VarCorrQA(QA::Task& task);
+void VarCorrQA(QA::Task& task, const std::string& mcOrData);
 
-void varCorr_qa(const std::string& filelist, int nEntries) {
+void varCorr_qa(const std::string& filelist, const std::string& mcOrData, int nEntries) {
   auto* man = TaskManager::GetInstance();
 
   auto* task = new QA::Task;
   task->SetOutputFileName("varCorr_qa.root");
 
-  VarCorrQA(*task);
+  VarCorrQA(*task, mcOrData);
 
   man->AddTask(task);
   man->Init({filelist}, {"aTree"});
@@ -27,13 +27,15 @@ void varCorr_qa(const std::string& filelist, int nEntries) {
   man->Finish();
 }
 
-void VarCorrQA(QA::Task& task) {
+void VarCorrQA(QA::Task& task, const std::string& mcOrData) {
   const std::array<double, 4> sidebands{2.12, 2.20, 2.38, 2.42};
-  const std::vector<SimpleCut> dataTypes {
-    EqualsCut("Candidates.fKFSigBgStatus", 1, "prompt"),
-    EqualsCut("Candidates.fKFSigBgStatus", 2, "nonPrompt"),
-    SimpleCut({"Candidates.fKFMassInv"}, [&] (const std::vector<double>& par) { return (par[0]>sidebands.at(0) && par[0]<sidebands.at(1)) || (par[0]>sidebands.at(2) && par[0]<sidebands.at(3)); }, "backrgound"),
-  };
+  std::vector<SimpleCut> dataTypes;
+  if(mcOrData == "mc") {
+    dataTypes.emplace_back(EqualsCut("Candidates.fKFSigBgStatus", 1, "prompt"));
+    dataTypes.emplace_back(EqualsCut("Candidates.fKFSigBgStatus", 2, "nonPrompt"));
+  } else if (mcOrData == "data") {
+    dataTypes.emplace_back(SimpleCut({"Candidates.fKFMassInv"}, [=] (const std::vector<double>& par) { return (par[0]>sidebands.at(0) && par[0]<sidebands.at(1)) || (par[0]>sidebands.at(2) && par[0]<sidebands.at(3)); }, "background"));
+  }
 
   auto pTCuts = HelperFunctions::CreateRangeCuts({0.f, 2.f, 5.f, 8.f, 12.f, 20.f}, "pT_", "Candidates.fKFPt", 0);
 
@@ -67,6 +69,7 @@ void VarCorrQA(QA::Task& task) {
         for (int iVar = 0, nVars = vars.size(); iVar < nVars; iVar++) {
           const Quantity& xVar = vars.at(iVar);
           const std::string xVarAxisTitle = xVar.unit_.empty() ? xVar.title_ : xVar.title_ + " (" + xVar.unit_ + ")";
+          task.AddH1(xVar.name_, {xVarAxisTitle, Variable::FromString("Candidates." + xVar.name_in_tree_), xVar.axis_}, cut2D);
           for (int jVar = iVar + 1; jVar < nVars; jVar++) {
             const Quantity& yVar = vars.at(jVar);
             const std::string yVarAxisTitle = yVar.unit_.empty() ? yVar.title_ : yVar.title_ + " (" + yVar.unit_ + ")";
@@ -80,15 +83,17 @@ void VarCorrQA(QA::Task& task) {
 }
 
 int main(int argc, char* argv[]){
-  if (argc < 2) {
+  if (argc < 3) {
     std::cout << "Error! Please use " << std::endl;
-    std::cout << " ./varCorr_qa filelistname (nEntries=ALL)" << std::endl;
+    std::cout << " ./varCorr_qa filelistname mcOrData (nEntries=ALL)" << std::endl;
     exit(EXIT_FAILURE);
   }
 
   const std::string filelistname = argv[1];
-  const int nEntries = argc>2 ? atoi(argv[2]) : -1;
-  varCorr_qa(filelistname, nEntries);
+  const std::string mcOrData = argv[2];
+  if(mcOrData != "mc" && mcOrData != "data") throw std::runtime_error("varCorr_qa::main(): mcOrData must be either 'mc' or 'data'");
+  const int nEntries = argc>3 ? atoi(argv[3]) : -1;
+  varCorr_qa(filelistname, mcOrData, nEntries);
 
   return 0;
 }
