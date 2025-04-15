@@ -17,7 +17,7 @@ using namespace Helper;
 void VarCorrQa2(const std::string& fileName, const std::string& mcOrData) {
   LoadMacro("styles/varCorr.style.cc");
 
-  const std::vector<std::string> vars {"nSigTpcPr", "nSigTpcKa", "nSigTpcPi", "chi2PrimPr", "chi2PrimKa", "chi2PrimPi", "chi2Geo", "chi2Topo", "ldl", "mass"};
+  const std::vector<std::string> vars {"nSigTpcPr", "nSigTpcPi", "nSigTpcKa", "ldl", "chi2Topo", "chi2PrimPr", "chi2PrimPi", "chi2PrimKa", "chi2Geo", "mass"};
   std::vector<std::string> dataTypes;
   if(mcOrData == "mc") {
     dataTypes.emplace_back("prompt");
@@ -47,7 +47,13 @@ void VarCorrQa2(const std::string& fileName, const std::string& mcOrData) {
       for(int iVar=0, nVars=vars.size(); iVar<nVars; iVar++) {
         for(int jVar=iVar+1; jVar<nVars; jVar++) {
           const std::string histoName = dt + "/pT_" + ptCutEdges.at(iPt) + "_" + ptCutEdges.at(iPt+1) + "/" + vars.at(iVar) + "_vs_" + vars.at(jVar);
-          TH2* histo = GetObjectWithNullptrCheck<TH2>(fileIn, histoName);
+          const std::string histoNameInv = dt + "/pT_" + ptCutEdges.at(iPt) + "_" + ptCutEdges.at(iPt+1) + "/" + vars.at(jVar) + "_vs_" + vars.at(iVar);
+          TH2* histo;
+          try {
+            histo = GetObjectWithNullptrCheck<TH2>(fileIn, histoName);
+          } catch (std::exception&) {
+            histo = GetObjectWithNullptrCheck<TH2>(fileIn, histoNameInv);
+          }
           histo->UseCurrentStyle();
           TCanvas cc("cc", "cc", 1200, 800);
           cc.SetLogz(setLogz);
@@ -74,7 +80,7 @@ void VarCorrQa2(const std::string& fileName, const std::string& mcOrData) {
       histoCorr->Draw("colz");
       AddOneLineText(dt, {0.8, 0.95, 0.9, 0.99});
       AddOneLineText("#it{p}_{T}#in (" + ptCutEdges.at(iPt) + "; " + ptCutEdges.at(iPt+1) + ") GeV/#it{c}", {0.2, 0.95, 0.4, 0.99});
-      cc.Print((fileOutName + ".pdf]").c_str(), "pdf");
+      cc.Print((fileOutName + ".pdf)").c_str(), "pdf");
 
       delete histoCorr;
     } // ptCutEdges
