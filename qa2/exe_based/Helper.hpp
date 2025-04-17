@@ -145,5 +145,7 @@ void CheckHistogramsForXaxisIdentity(const TH1* h1, const TH1* h2);
 
 void LoadMacro(const std::string& macroName);
 
+std::pair<double, double> DetermineWorkingRangesTH1(const TH1* histo, double leftMargin=0.0015, double rightMargin=0.0015);
+
 } // namespace Helper
 #endif //QA2_HELPER_HPP

@@ -15,8 +15,6 @@
 using namespace Helper;
 
 void VarCorrQa2(const std::string& fileName, const std::string& mcOrData) {
-  LoadMacro("styles/varCorr.style.cc");
-
   const std::vector<std::string> vars {"nSigTpcPr", "nSigTpcPi", "nSigTpcKa", "ldl", "chi2Topo", "chi2PrimPr", "chi2PrimPi", "chi2PrimKa", "chi2Geo", "mass"};
   std::vector<std::string> dataTypes;
   if(mcOrData == "mc") {
@@ -35,6 +33,7 @@ void VarCorrQa2(const std::string& fileName, const std::string& mcOrData) {
       const std::string fileOutName = dt + ".pT_" + ptCutEdges.at(iPt) + "_" + ptCutEdges.at(iPt+1);
       std::string printingBracket = "(";
 
+      LoadMacro("styles/varCorr.style.cc");
       TH2F* histoCorr = new TH2F("histoCorr", "", vars.size(), 0, vars.size(), vars.size(), 0, vars.size());
       for(int iVar=0, nVars=vars.size(); iVar<nVars; iVar++) {
         histoCorr->GetXaxis()->SetBinLabel(iVar+1, vars.at(nVars-1-iVar).c_str());
@@ -45,24 +44,36 @@ void VarCorrQa2(const std::string& fileName, const std::string& mcOrData) {
       histoCorr->GetXaxis()->SetLabelOffset(0.01);
 
       for(int iVar=0, nVars=vars.size(); iVar<nVars; iVar++) {
+        const std::string histoName1D = dt + "/pT_" + ptCutEdges.at(iPt) + "_" + ptCutEdges.at(iPt+1) + "/" + vars.at(iVar);
+        TH1* histo1D = GetObjectWithNullptrCheck<TH1>(fileIn, histoName1D);
+        LoadMacro("styles/mc_qa2.style.cc");
+        histo1D->UseCurrentStyle();
+        HistoQuantities histo1D_stat = EvaluateHistoQuantities(histo1D);
+        TPaveText histo1D_stat_text = ConvertHistoQuantitiesToText(histo1D_stat, 0.70, 0.6, 0.90, 0.8);
+        TCanvas c1("c1", "");
+        c1.SetCanvasSize(1200, 800);
+        histo1D->Draw();
+        histo1D_stat_text.Draw("same");
+        c1.Print((fileOutName + ".1D.pdf" + printingBracket).c_str(), "pdf");
         for(int jVar=iVar+1; jVar<nVars; jVar++) {
-          const std::string histoName = dt + "/pT_" + ptCutEdges.at(iPt) + "_" + ptCutEdges.at(iPt+1) + "/" + vars.at(iVar) + "_vs_" + vars.at(jVar);
-          const std::string histoNameInv = dt + "/pT_" + ptCutEdges.at(iPt) + "_" + ptCutEdges.at(iPt+1) + "/" + vars.at(jVar) + "_vs_" + vars.at(iVar);
-          TH2* histo;
+          const std::string histoName2D = dt + "/pT_" + ptCutEdges.at(iPt) + "_" + ptCutEdges.at(iPt+1) + "/" + vars.at(iVar) + "_vs_" + vars.at(jVar);
+          const std::string histoNameInv2D = dt + "/pT_" + ptCutEdges.at(iPt) + "_" + ptCutEdges.at(iPt+1) + "/" + vars.at(jVar) + "_vs_" + vars.at(iVar);
+          TH2* histo2D;
           try {
-            histo = GetObjectWithNullptrCheck<TH2>(fileIn, histoName);
+            histo2D = GetObjectWithNullptrCheck<TH2>(fileIn, histoName2D);
           } catch (std::exception&) {
-            histo = GetObjectWithNullptrCheck<TH2>(fileIn, histoNameInv);
+            histo2D = GetObjectWithNullptrCheck<TH2>(fileIn, histoNameInv2D);
           }
-          histo->UseCurrentStyle();
+          LoadMacro("styles/varCorr.style.cc");
+          histo2D->UseCurrentStyle();
           TCanvas cc("cc", "cc", 1200, 800);
           cc.SetLogz(setLogz);
           gStyle->SetPalette(kBird);
-          histo->Draw("colz");
+          histo2D->Draw("colz");
           AddOneLineText(dt, {0.8, 0.95, 0.9, 0.99});
           AddOneLineText("#it{p}_{T}#in (" + ptCutEdges.at(iPt) + "; " + ptCutEdges.at(iPt+1) + ") GeV/#it{c}", {0.2, 0.95, 0.4, 0.99});
-          const double corrCoef = histo->GetCorrelationFactor();
-          const double errCorrCoef = 1./std::sqrt(histo->GetEffectiveEntries());
+          const double corrCoef = histo2D->GetCorrelationFactor();
+          const double errCorrCoef = 1./std::sqrt(histo2D->GetEffectiveEntries());
           histoCorr->SetBinContent(nVars-iVar, nVars-jVar, corrCoef);
           histoCorr->SetBinContent(nVars-jVar, nVars-iVar, corrCoef);
           AddOneLineText("r = (" + to_string_with_significant_figures(corrCoef*100, 2) + " #pm " + to_string_with_significant_figures(errCorrCoef*100, 2) + ")%", {0.6, 0.95, 0.7, 0.99});
@@ -70,6 +81,7 @@ void VarCorrQa2(const std::string& fileName, const std::string& mcOrData) {
           printingBracket = "";
         } // jVar
       } // iVar
+      CloseCanvasPrinting({fileOutName + ".1D"});
       TCanvas cc("cc", "cc");
       cc.SetCanvasSize(1200, 1000);
       cc.SetRightMargin(0.14);

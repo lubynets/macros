@@ -15,6 +15,7 @@ SET(EXECUTABLES
     mass_fit
     ct_fit
     varCorr_qa2
+    dwrth1
 )
 
 SET(SOURCES

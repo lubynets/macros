@@ -18,7 +18,7 @@ void Helper::SlightlyShiftXAxis(TGraph* gr, float value) {
 
 Helper::HistoQuantities Helper::EvaluateHistoQuantities(const TH1* h) {
   HistoQuantities result;
-  const float integral = h->GetEntries();
+  const float integral = h->Integral(0, h->GetNbinsX()+1);
   result.nentries_ = integral;
   result.underflow_ = h->GetBinContent(0) / integral;
   result.overflow_ = h->GetBinContent(h->GetNbinsX() + 1) / integral;
@@ -266,4 +266,32 @@ void Helper::LoadMacro(const std::string& macroName) {
   TString currentMacroPath = __FILE__;
   TString directory = currentMacroPath(0, currentMacroPath.Last('/'));
   gROOT->Macro( directory + "/" + macroName );
+}
+
+std::pair<double, double> Helper::DetermineWorkingRangesTH1(const TH1* histo, double leftMargin, double rightMargin) {
+  double left{-999.};
+  double right = {-999.};
+  double leftTail = 0.;
+  double rightTail = 0.;
+
+  const double integral = histo->Integral(0, histo->GetNbinsX()+1);
+  const int nBins = histo->GetNbinsX();
+
+  for(int iBin=0; iBin<=nBins+1; iBin++) {
+    leftTail += histo->GetBinContent(iBin);
+    if(leftTail > integral*leftMargin) {
+      left = iBin == 0 ? -std::numeric_limits<double>::infinity() : histo->GetBinLowEdge(iBin);
+      break;
+    }
+  }
+
+  for(int iBin=nBins+1; iBin>=0; iBin--) {
+    rightTail += histo->GetBinContent(iBin);
+    if(rightTail > integral*rightMargin) {
+      right = iBin == nBins+1 ? std::numeric_limits<double>::infinity() : histo->GetBinLowEdge(iBin+1);
+      break;
+    }
+  }
+
+  return std::make_pair(left, right);
 }
