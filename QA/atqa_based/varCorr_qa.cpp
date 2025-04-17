@@ -48,16 +48,38 @@ void VarCorrQA(QA::Task& task, const std::string& mcOrData) {
   };
 
   const std::vector<Quantity> vars {
-    {"nSigTpcPr", "fLiteNSigTpcPr", "N#sigma_{TPC} [p]", "", {100, -5, 5}},
-    {"nSigTpcKa", "fLiteNSigTpcKa", "N#sigma_{TPC} [K]", "", {100, -5, 5}},
-    {"nSigTpcPi", "fLiteNSigTpcPi", "N#sigma_{TPC} [#pi]", "", {100, -5, 5}},
-    {"chi2PrimPr", "fKFChi2PrimProton", "#chi^{2}_{prim} [p]", "", {225, -10, 100}},
-    {"chi2PrimKa", "fKFChi2PrimKaon", "#chi^{2}_{prim} [K]", "", {225, -10, 100}},
-    {"chi2PrimPi", "fKFChi2PrimPion", "#chi^{2}_{prim} [#pi]", "", {225, -10, 100}},
-    {"chi2Geo", "fKFChi2Geo", "#chi^{2}_{geo} [pK#pi]", "", {225, -10, 100}},
-    {"chi2Topo", "fKFChi2Topo", "#chi^{2}_{topo} [#Lambda_{c}]", "", {225, -10, 100}},
-    {"ldl", "fKFDecayLengthNormalised", "L/#Delta L", "", {225, -10, 100}},
-    {"mass", "fKFMassInv", "m_{pK#pi}", "GeV/#it{c}^{2}", {300, 2.12, 2.42}}
+//     {"nSigTpcPr", "fLiteNSigTpcPr", "N#sigma_{TPC} [p]", "", {100, -5, 5}},
+//     {"nSigTpcKa", "fLiteNSigTpcKa", "N#sigma_{TPC} [K]", "", {100, -5, 5}},
+//     {"nSigTpcPi", "fLiteNSigTpcPi", "N#sigma_{TPC} [#pi]", "", {100, -5, 5}},
+//     {"chi2PrimPr", "fKFChi2PrimProton", "#chi^{2}_{prim} [p]", "", {225, -10, 100}},
+//     {"chi2PrimKa", "fKFChi2PrimKaon", "#chi^{2}_{prim} [K]", "", {225, -10, 100}},
+//     {"chi2PrimPi", "fKFChi2PrimPion", "#chi^{2}_{prim} [#pi]", "", {225, -10, 100}},
+//     {"chi2Geo", "fKFChi2Geo", "#chi^{2}_{geo} [pK#pi]", "", {225, -10, 100}},
+//     {"chi2Topo", "fKFChi2Topo", "#chi^{2}_{topo} [#Lambda_{c}]", "", {225, -10, 100}},
+//     {"ldl", "fKFDecayLengthNormalised", "L/#Delta L", "", {225, -10, 100}},
+//     {"mass", "fKFMassInv", "m_{pK#pi}", "GeV/#it{c}^{2}", {300, 2.12, 2.42}}
+
+    {"nSigTpcPr", "fLiteNSigTpcPr", "N#sigma_{TPC} [p]", "", {200, -1000000, 1000000}},
+    {"nSigTpcKa", "fLiteNSigTpcKa", "N#sigma_{TPC} [K]", "", {200, -1000000, 1000000}},
+    {"nSigTpcPi", "fLiteNSigTpcPi", "N#sigma_{TPC} [#pi]", "", {200, -1000000, 1000000}},
+    {"chi2PrimPr", "fKFChi2PrimProton", "#chi^{2}_{prim} [p]", "", {200, -1000000, 1000000}},
+    {"chi2PrimKa", "fKFChi2PrimKaon", "#chi^{2}_{prim} [K]", "", {200, -1000000, 1000000}},
+    {"chi2PrimPi", "fKFChi2PrimPion", "#chi^{2}_{prim} [#pi]", "", {200, -1000000, 1000000}},
+    {"chi2Geo", "fKFChi2Geo", "#chi^{2}_{geo} [pK#pi]", "", {200, -1000000, 1000000}},
+    {"chi2Topo", "fKFChi2Topo", "#chi^{2}_{topo} [#Lambda_{c}]", "", {200, -1000000, 1000000}},
+    {"ldl", "fKFDecayLengthNormalised", "L/#Delta L", "", {200, -1000000, 1000000}},
+    {"mass", "fKFMassInv", "m_{pK#pi}", "GeV/#it{c}^{2}", {300, 2.12, 2.42}},
+
+//     {"nSigTpcPr", "fLiteNSigTpcPr", "N#sigma_{TPC} [p]", "", {100000, -100000, 100000}},
+//     {"nSigTpcKa", "fLiteNSigTpcKa", "N#sigma_{TPC} [K]", "", {100000, -1000000, 1000000}},
+//     {"nSigTpcPi", "fLiteNSigTpcPi", "N#sigma_{TPC} [#pi]", "", {100000, -1000000, 1000000}},
+//     {"chi2PrimPr", "fKFChi2PrimProton", "#chi^{2}_{prim} [p]", "", {100000, -1000000, 1000000}},
+//     {"chi2PrimKa", "fKFChi2PrimKaon", "#chi^{2}_{prim} [K]", "", {100000, -1000000, 1000000}},
+//     {"chi2PrimPi", "fKFChi2PrimPion", "#chi^{2}_{prim} [#pi]", "", {100000, -1000000, 1000000}},
+//     {"chi2Geo", "fKFChi2Geo", "#chi^{2}_{geo} [pK#pi]", "", {100000, -1000000, 1000000}},
+//     {"chi2Topo", "fKFChi2Topo", "#chi^{2}_{topo} [#Lambda_{c}]", "", {100000, -1000000, 1000000}},
+//     {"ldl", "fKFDecayLengthNormalised", "L/#Delta L", "", {100000, -1000000, 1000000}},
+//     {"mass", "fKFMassInv", "m_{pK#pi}", "GeV/#it{c}^{2}", {100000, -1000, 1000}},
   };
 
   for(const auto& dt : dataTypes) {
@@ -75,7 +97,7 @@ void VarCorrQA(QA::Task& task, const std::string& mcOrData) {
             const std::string yVarAxisTitle = yVar.unit_.empty() ? yVar.title_ : yVar.title_ + " (" + yVar.unit_ + ")";
             const std::string histoName = xVar.name_ + "_vs_" + yVar.name_;
             task.AddH2(histoName, {xVarAxisTitle, Variable::FromString("Candidates." + xVar.name_in_tree_), xVar.axis_},
-                       {yVarAxisTitle, Variable::FromString("Candidates." + yVar.name_in_tree_), yVar.axis_}, cut2D);
+                                  {yVarAxisTitle, Variable::FromString("Candidates." + yVar.name_in_tree_), yVar.axis_}, cut2D);
           } // jVar : nVars
       } // iVar : nVars
     } // pTCuts
