@@ -10,10 +10,8 @@
 
 using namespace Helper;
 
-void ct_mcfit(const std::string& fileNameYield, const std::string& fileNameEff, const std::string& histoNameEff, const std::string& mcOrData) {
-  TString currentMacroPath = __FILE__;
-  TString directory = currentMacroPath(0, currentMacroPath.Last('/'));
-  gROOT->Macro( directory + "/../styles/mc_qa2.style.cc" );
+void ct_mcfit(const std::string& fileNameYield, const std::string& histoNameYield, const std::string& fileNameEff, const std::string& histoNameEff, const std::string& mcOrData) {
+  LoadMacro("styles/mc_qa2.style.cc");
 
   TFile* fileInYield = OpenFileWithNullptrCheck(fileNameYield);
   TFile* fileInEff = OpenFileWithNullptrCheck(fileNameEff);
@@ -28,7 +26,7 @@ void ct_mcfit(const std::string& fileNameYield, const std::string& fileNameEff, 
   TH1D* histoEff = GetObjectWithNullptrCheck<TH1D>(fileInEff, histoNameEff);
 
   // original yield histogram
-  TH1D* histoYield = GetObjectWithNullptrCheck<TH1D>(fileInYield, "hRawYields");
+  TH1D* histoYield = GetObjectWithNullptrCheck<TH1D>(fileInYield, histoNameYield);
   histoYield->UseCurrentStyle();
 
   // yield histogram corrected for efficiency
@@ -59,9 +57,9 @@ void ct_mcfit(const std::string& fileNameYield, const std::string& fileNameEff, 
   histoYieldDiff->Fit(fitFunc, ("0"+fitIntegralOption).c_str(), "", lo, hi);
 
   const std::string lifetimeFitValue = "#tau_{#Lambda_{c}} [Fit] = (" +
-                                              to_string_with_significant_figures(fitFunc->GetParameter(1)*1000, 3) +
+                                              to_string_with_precision(fitFunc->GetParameter(1)*1000, 1) +
                                               " #pm " +
-                                              to_string_with_significant_figures(fitFunc->GetParError(1)*1000, 2) +
+                                              to_string_with_precision(fitFunc->GetParError(1)*1000, 1) +
                                               ") fs";
   const std::string chi2Value = "#chi^{2} / ndf = " +
                                 to_string_with_significant_figures(fitFunc->GetChisquare(), 3) +
@@ -121,18 +119,19 @@ void ct_mcfit(const std::string& fileNameYield, const std::string& fileNameEff, 
 }
 
 int main(int argc, char* argv[]) {
-  if (argc < 4) {
+  if (argc < 5) {
     std::cout << "Error! Please use " << std::endl;
-    std::cout << " ./ct_mcfit fileNameYield fileNameEff histoNameEff (mcOrData=MC)" << std::endl;
+    std::cout << " ./ct_mcfit fileNameYield histoNameYield fileNameEff histoNameEff (mcOrData=MC)" << std::endl;
     exit(EXIT_FAILURE);
   }
 
   const std::string fileNameYield = argv[1];
-  const std::string fileNameEff = argv[2];
-  const std::string histoNameEff = argv[3];
-  const std::string mcOrData = argc > 4 ? argv[4] : "MC";
+  const std::string histoNameYield = argv[2];
+  const std::string fileNameEff = argv[3];
+  const std::string histoNameEff = argv[4];
+  const std::string mcOrData = argc > 5 ? argv[5] : "MC";
 
-  ct_mcfit(fileNameYield, fileNameEff, histoNameEff, mcOrData);
+  ct_mcfit(fileNameYield, histoNameYield, fileNameEff, histoNameEff, mcOrData);
 
   return 0;
 }
