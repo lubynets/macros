@@ -1,5 +1,0 @@
-model_path: "/lustre/alice/users/lubynets/bdt/outputs/currentTry/3/model/BDTmodel_pT_5_8_v1.pkl"
-input_files: ["/lustre/alice/users/lubynets/WORKDIR/tree2pandas/fileOut.parquet.data.1.gzip"]
-output_directory: "/lustre/alice/users/lubynets/WORKDIR/tree2pandas/application_results"
-output_file_name: "applied_bdt"
-pT_interval: [5.0, 8.0]
