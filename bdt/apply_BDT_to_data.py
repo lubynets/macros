@@ -23,7 +23,7 @@ if args.config_file_selections == '':
     print('** No selections config file provided. Exiting. **')
     exit()
 
-output_file_name='output_file'
+output_file_name='appliedBdt'
 
 #------------ Open config files ------------
 input_file = args.input_file
@@ -60,7 +60,8 @@ BDT_variables = ['fKFChi2PrimProton',
                  'fLiteNSigTpcPi',
                  'fKFT',
                  'fKFPt',
-                 'fKFMassInv']
+                 'fKFMassInv',
+                 'fKFSigBgStatus']
 
 ## Loop over input files
 applied_dfs = []
@@ -78,13 +79,19 @@ elif np.isinf(df).any().any():
     df.replace([np.inf, -np.inf], np.nan, inplace=True)
     df.dropna(inplace=True)
 
+if selections:  # if selections dictionary is not empty
+    for index, (variable, selection) in enumerate(selections.items()): # variable - key, selection - value, index - natural numbers from 0 (Cf. std::iota)
+        df.query(selection, inplace=True)   # applies selection on it
+
+df.query(f'((fKFPt >= {pT_min}) & (fKFPt < {pT_max}))', inplace=True)
+
 ## Calculate model prediction
 prediction = model_hdl.predict(df, output_margin=False)
 column_names =['bkg_score', 'prompt_score', 'non_prompt_score']
 for i_class in range(3):
     df[column_names[i_class]] = prediction[:, i_class]
 
-applied_df = df[['fKFT', 'fKFPt', 'fKFMassInv', 'bkg_score', 'prompt_score', 'non_prompt_score']]
+applied_df = df[['fKFSigBgStatus', 'fKFT', 'fKFPt', 'fKFMassInv', 'bkg_score', 'prompt_score', 'non_prompt_score']]
 applied_dfs.append(applied_df)
 
 ## Free memory
