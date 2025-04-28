@@ -7,7 +7,6 @@ from hipe4ml.model_handler import ModelHandler
 import sys
 sys.path.append('utils')
 import utils as utils
-#from root_pandas import to_root
 
 #------------ Define config files ------------
 parser = argparse.ArgumentParser(description='Configure the parameters of the script.')
@@ -102,6 +101,8 @@ applied_dataframe = pd.concat(applied_dfs, ignore_index=True)
 print(f'Number of Lc candidates in data: {len(applied_dataframe)}')
 del applied_dfs
 
+data_dict = {col: np.array(applied_dataframe[col]) for col in applied_dataframe.columns}
+
 #------------ Save output ------------
 print(f'Saving output file...')
 
@@ -109,6 +110,6 @@ output_file = f"{output_directory}/{output_file_name}.root"
 tree_name = "plainTree"  # Name of the TTree in the ROOT file
 
 with uproot.recreate(output_file) as f:
-    f[tree_name] = applied_dataframe
+    f[tree_name] = data_dict
 
 print(f'Saving output file: Done.')
