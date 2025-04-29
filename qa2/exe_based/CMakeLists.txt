@@ -16,6 +16,7 @@ SET(EXECUTABLES
     ct_fit
     varCorr_qa2
     dwrth1
+    bdt_efficiency
 )
 
 SET(SOURCES
