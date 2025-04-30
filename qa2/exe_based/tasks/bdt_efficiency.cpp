@@ -35,9 +35,16 @@ class BdtEfficiencyCalculator {
         histo_rej_->SetBinContent(iBin, jBin, 1. - eff);
       } // iBin
     } // jBin
+    for(const auto& h : {histo_eff_, histo_rej_}) {
+      h->Scale(100.);
+      h->SetMinimum(0);
+      h->SetMaximum(100);
+    }
   }
 
   TH2D* GetEfficiencyHistogram() const { return histo_eff_; }
+
+  TH2D* GetRejectionHistogram() const { return histo_rej_; }
 
  private:
   void Init() {
@@ -57,14 +64,10 @@ class BdtEfficiencyCalculator {
     else                yTitle += " lower";
     yTitle += " value";
     histo_eff_->GetYaxis()->SetTitle(yTitle.c_str());
-
-    histo_eff_->GetZaxis()->SetTitle("#varepsilon");
-    histo_eff_->GetZaxis()->SetTitleOffset(1.05);
-    histo_eff_->GetZaxis()->SetTitleSize(0.05);
-    histo_eff_->GetZaxis()->SetRangeUser(0, 1);
+    histo_eff_->GetZaxis()->SetTitle("#varepsilon, %");
 
     histo_rej_ = dynamic_cast<TH2D*>(histo_eff_->Clone());
-    histo_rej_->GetZaxis()->SetTitle("1 - #varepsilon");
+    histo_rej_->GetZaxis()->SetTitle("(1 - #varepsilon), %");
   }
 
   double GetEfficiency(int binx, int biny) const {
@@ -90,32 +93,53 @@ class BdtEfficiencyCalculator {
 };
 
 void BdtEfficiency(const std::string& fileNameMc, const std::string& fileNameData, const std::string& xCutDirection, const std::string& yCutDirection) {
-  LoadMacro("styles/treeKF_qa2.style.cc");
+  LoadMacro("styles/bdt_qa.style.cc");
   TFile* fileInMc = OpenFileWithNullptrCheck(fileNameMc);
   TFile* fileInData = OpenFileWithNullptrCheck(fileNameData);
 
-  std::vector<std::string> dataTypes{"prompt", "nonPrompt", "background"};
+  struct DataType {
+    std::string name_;
+    bool is_mc_;
+    bool is_oriented_; // whether we want to maximize its efficiency or minimize
+  };
 
-  const std::string fileOutName = "bdt_efficiency.out";
+  std::vector<DataType> dataTypes {
+    {"prompt", true, true},
+    {"nonPrompt", true, false},
+    {"background", false, false},
+  };
+
+  const std::string fileOutYieldName = "bdt_yield";
+  const std::string fileOutEffName = "bdt_eff";
 
   std::string priBra = "(";
   for(const auto& dt : dataTypes) {
     TH2* histoBdt{nullptr};
-    if(dt == "prompt" || dt == "nonPrompt") histoBdt = GetObjectWithNullptrCheck<TH2>(fileInMc, dt + "/hBdt");
-    else                                    histoBdt = GetObjectWithNullptrCheck<TH2>(fileInData, dt + "/hBdt");
+    if(dt.is_mc_) histoBdt = GetObjectWithNullptrCheck<TH2>(fileInMc, dt.name_ + "/hBdt");
+    else          histoBdt = GetObjectWithNullptrCheck<TH2>(fileInData, dt.name_ + "/hBdt");
+    histoBdt->UseCurrentStyle();
+    histoBdt->GetZaxis()->SetTitleOffset(1.35);
 
     BdtEfficiencyCalculator bec(histoBdt, xCutDirection, yCutDirection);
     bec.Run();
-    TH2D* histoBdtEff = bec.GetEfficiencyHistogram();
-    TCanvas cc("cc", "");
-    cc.SetCanvasSize(1000, 1000);
-    cc.SetRightMargin(0.17);
-    histoBdtEff->Draw("colz");
-    AddOneLineText(dt, {0.8, 0.95, 0.9, 0.99});
-    cc.Print((fileOutName + ".pdf" + priBra).c_str(), "pdf");
+    TH2D* histoBdtOut = dt.is_oriented_ ? bec.GetEfficiencyHistogram() : bec.GetRejectionHistogram();
+    TCanvas ccEff("ccEff", "");
+    TCanvas ccYield("ccYield", "");
+    ccYield.SetLogz();
+    for(const auto& cc : {&ccEff, &ccYield}) {
+      cc->SetCanvasSize(1000, 1000);
+    }
+    ccYield.cd();
+    histoBdt->Draw("colz");
+    AddOneLineText(dt.name_, {0.45, 0.95, 0.55, 0.99});
+    ccEff.cd();
+    histoBdtOut->Draw("colz");
+    AddOneLineText(dt.name_, {0.45, 0.95, 0.55, 0.99});
+    ccYield.Print((fileOutYieldName + ".pdf" + priBra).c_str(), "pdf");
+    ccEff.Print((fileOutEffName + ".pdf" + priBra).c_str(), "pdf");
     priBra = "";
   }
-  CloseCanvasPrinting({fileOutName});
+  CloseCanvasPrinting({fileOutYieldName, fileOutEffName});
 }
 
 
