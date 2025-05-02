@@ -20,7 +20,7 @@ std::vector<SimpleCut> datatypes = PrepareDataTypes(branchName + ".fKFSigBgStatu
 const std::vector<float> lifetimeRanges{0.2, 0.35, 0.5, 0.7, 0.9, 1.6};
 const TAxis massAxis = {600, 1.98, 2.58};
 const std::string massAxisTitle = "m_{pK#pi} (GeV/#it{c}^{2})";
-const std::string massVarName = "Mass";
+const std::string massVarName = "hMass";
 
 void mass_qa(const std::string& filelistname, bool isMc) {
   if(isMc) datatypes.pop_back();
@@ -37,7 +37,7 @@ void mass_qa(const std::string& filelistname, bool isMc) {
   man->AddTask(task);
   man->Init({filelistname}, {"aTree"});
   man->SetVerbosityFrequency(100);
-  man->Run(100000);
+  man->Run();
   man->Finish();
 }
 
@@ -64,25 +64,33 @@ void MassQABdt(QA::Task& task) {
   const std::string varNameInTree = branchName + ".fKFMassInv";
 
   std::vector<SimpleCut> bdtBgCuts;
-  std::vector<SimpleCut> bdtPromptCuts;
-  for(const auto& iv : std::vector<int>{2, 5, 8}) {
-    bdtBgCuts.emplace_back(RangeCut(branchName + ".bkg_score", -HugeNumber, 1.*iv/10, "b" + std::to_string(iv)));
-    bdtPromptCuts.emplace_back(RangeCut(branchName + ".prompt_score", 1.*iv/10, HugeNumber, "p" + std::to_string(iv)));
+  std::vector<SimpleCut> bdtNonPromptCuts;
+  const std::vector<float> cutValuesBg{0.003, 0.005, 0.008, 0.01, 0.012, 0.015, 0.02};
+  for(const auto& cvb : cutValuesBg) {
+    const std::string sCutValueBg = HelperFunctions::ToStringWithPrecision(cvb, 3);
+    bdtBgCuts.emplace_back(RangeCut(branchName + ".bkg_score", -HugeNumber, cvb, "bg" + sCutValueBg));
+  }
+  for(int iv=1; iv<=10; iv++) {
+    const double cutValueNp = 1.*iv/10;
+    const std::string sCutValueNp = HelperFunctions::ToStringWithPrecision(cutValueNp, 1);
+    bdtNonPromptCuts.emplace_back(RangeCut(branchName + ".non_prompt_score", -HugeNumber, cutValueNp, "np" + sCutValueNp));
   }
 
   for(const auto& dt : datatypes) {
     for(const auto& bbc : bdtBgCuts) {
-      for(const auto& bpc : bdtPromptCuts) {
-        task.SetTopLevelDirName(dt.GetTitle());
-        Cuts* cutsTotal = new Cuts(dt.GetTitle() + "_" + bbc.GetTitle() + bpc.GetTitle() + "_total", {dt, bbc, bpc});
-        task.AddH1(massVarName + "_" + bbc.GetTitle() + bpc.GetTitle(), {massAxisTitle, Variable::FromString(varNameInTree), massAxis}, cutsTotal);
+      for(const auto& bnpc : bdtNonPromptCuts) {
+        task.SetTopLevelDirName(dt.GetTitle() + "/" + bbc.GetTitle());
+        Cuts* cutsTotal = new Cuts(dt.GetTitle() + "_" + bbc.GetTitle() + bnpc.GetTitle() + "_total", {dt, bbc, bnpc});
+        const std::string histoName = massVarName + "_" + bbc.GetTitle() + "_" + bnpc.GetTitle();
+        const QA::Axis histoQAAxis = {massAxisTitle, Variable::FromString(varNameInTree), massAxis};
+        task.AddH1(histoName, histoQAAxis, cutsTotal);
 
         for(const auto& slc : TCuts) {
-          task.SetTopLevelDirName(dt.GetTitle() + "/" + slc.GetTitle());
-          Cuts* cutSlice = new Cuts(dt.GetTitle() + "_" + bbc.GetTitle() + bpc.GetTitle() + "_" + slc.GetTitle(), {dt, bbc, bpc, slc});
-          task.AddH1(massVarName + "_" + bbc.GetTitle() + bpc.GetTitle(), {massAxisTitle, Variable::FromString(varNameInTree), massAxis}, cutSlice);
+          task.SetTopLevelDirName(dt.GetTitle() + "/" + bbc.GetTitle() + "/" + slc.GetTitle());
+          Cuts* cutSlice = new Cuts(dt.GetTitle() + "_" + bbc.GetTitle() + bnpc.GetTitle() + "_" + slc.GetTitle(), {dt, bbc, bnpc, slc});
+          task.AddH1(histoName, histoQAAxis, cutSlice);
         } // TCuts
-      } // bdtPromptCuts
+      } // bdtNonPromptCuts
     } // bdtBgCuts
   } // datatypes
 } // void MassQABdt
