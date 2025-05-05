@@ -8,7 +8,7 @@
 using namespace AnalysisTree;
 
 void RunGenericContainerFiller(const std::string& fileName, int nEntries) {
-  GenericContainerFiller gcf(fileName, "pTree");
+  GenericContainerFiller gcf(fileName, "plainTree");
   gcf.SetNChannelsPerEntry(1);
   gcf.Run(nEntries);
 }
