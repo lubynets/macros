@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import xgboost as xgb
+import uproot
 from sklearn.model_selection import train_test_split
 from hipe4ml.model_handler import ModelHandler
 from hipe4ml import plot_utils
@@ -24,6 +25,13 @@ OutputLabels = ['Bkg', 'Prompt', 'NonPrompt']
 parser = argparse.ArgumentParser(description='Configure the parameters of the script.')
 parser.add_argument('--config-file', dest='config_file', help='path to the YAML file with MC configuration.', default='')
 parser.add_argument('--config-file-sel', dest='config_file_selections', help='path to the YAML file with selections.', default='')
+parser.add_argument('--input-files-mc-path', dest='input_files_mc_path', help='input mc file in .root format path up to its number.', default='')
+parser.add_argument('--input-files-data-path', dest='input_files_data_path', help='input data file in .root format path up to its number.', default='')
+parser.add_argument('--input-files-mc-range', nargs=2, type=int, metavar=('files_mc_from', 'files_mc_to'), help='Specify the range of input mc files numbers: file_from file_to.')
+parser.add_argument('--input-files-data-range', nargs=2, type=int, metavar=('files_data_from', 'files_data_to'), help='Specify the range of input data files numbers: file_from file_to.')
+parser.add_argument('--output-directory', dest='output_directory', help='destination directory for the output QA plots.', default='')
+parser.add_argument('--model-directory', dest='model_directory', help='destination directory for the model file in .pkl format.', default='')
+parser.add_argument('--slice-var-interval', nargs=2, type=float, metavar=('slice_var_min', 'slice_var_max'), help='Specify the slice var interval as two floats: min max')
 args = parser.parse_args()
 ## Check if config files are provided
 if args.config_file == '':
@@ -38,11 +46,14 @@ config_file = open(args.config_file, 'r')
 config = yaml.full_load(config_file)
 config_file_selections = open(args.config_file_selections, 'r')
 config_selections = yaml.full_load(config_file_selections)
+input_files_mc_path = args.input_files_mc_path
+input_files_data_path = args.input_files_data_path
+files_mc_from, files_mc_to = args.input_files_mc_range
+files_data_from, files_data_to = args.input_files_data_range
+output_directory = args.output_directory
+model_directory = args.model_directory
+slice_var_min, slice_var_max = args.slice_var_interval
 ## Read config file
-input_files_mc = config['input_files_mc']
-input_files_data = config['input_files_data']
-output_directory = config['output_directory']
-model_directory = config['model_directory']
 hyperpar_study_file = config["hyperpar_study_file"]
 hyperpar_study_ntrials = config["hyperpar_study_ntrials"]
 hyperpar_study_timeout = config["hyperpar_study_timeout"]
@@ -51,11 +62,10 @@ model_version = config['model_version']
 slice_var_name = config['slice_var_name']
 slice_var_treename = config['slice_var_treename']
 slice_var_unit = config['slice_var_unit']
-slice_var_interval = config['slice_var_interval']
 sidebands = config['sidebands']
 training_variables = config['training_variables']
 skip_variables = config['skip_variables']
-print(f'ML analysis for LcToPKPi candidates with {int(slice_var_interval[0])} < {slice_var_name} < {int(slice_var_interval[1])} {slice_var_unit} (model name: {model_version})')
+print(f'ML analysis for LcToPKPi candidates with {int(slice_var_min)} < {slice_var_name} < {int(slice_var_max)} {slice_var_unit} (model name: {model_version})')
 ## Retrieve selections
 selections = config_selections['selection']
 selections_string = utils.convert_sel_to_string(selections)
@@ -70,11 +80,15 @@ bkg_counts = np.zeros(len(selections) + 2)
 ## MC
 print('Reading MC dataframes and applying selections...')
 McDfs = [] # a blank for MC df containing entries from all files
-for input_file_mc in input_files_mc:
+is_first_mc_file = True
+for fileindex in range(files_mc_from, files_mc_to+1):
+    filename = input_files_mc_path + '.' + str(fileindex) + '.root'
     ## read input file
-    df = pd.read_parquet(input_file_mc)
+    with uproot.open(filename) as file:
+        tree = file["pTree"]
+        df = tree.arrays(library="pd")
     df.drop(columns = skip_variables, inplace = True)   # inplace = True - "void" type instead of returning a new df
-    df.query(f'(({slice_var_treename} >= {slice_var_interval[0]}) & ({slice_var_treename} < {slice_var_interval[1]}))', inplace=True)   # where is fPt defined? What is its nature, string? Can one generalize it?
+    df.query(f'(({slice_var_treename} >= {slice_var_min}) & ({slice_var_treename} < {slice_var_max}))', inplace=True)   # where is fPt defined? What is its nature, string? Can one generalize it?
     signal_counts[0] += len(df) # Original length of the df in the certain fPt interval (sel_variables = 'total')
     ## Check for infinities and NaNs
     if df.isna().any().any():   # isna() converts to a new df with True in place of NaNs and False in place of "normal" values. any().any() finds 2-dimensionally if there is at least one True
@@ -88,25 +102,30 @@ for input_file_mc in input_files_mc:
     ## Apply selections
     if selections:  # if selections dictionary is not empty
         for index, (variable, selection) in enumerate(selections.items()): # variable - key, selection - value, index - natural numbers from 0 (Cf. std::iota)
-            sel_variables.append(variable) # reads a certain variable
+            if is_first_mc_file:
+                sel_variables.append(variable) # reads a certain variable
             df.query(selection, inplace=True)   # applies selection on it
             signal_counts[index+2] += len(df)   # write down how many entries in the df remained after this selection
     McDfs.append(df) # write the current df (from a single file) into a common Df
     del df # remove a reference to the current df
+    is_first_mc_file = False
 McDf = pd.concat(McDfs, ignore_index=True)
 del McDfs
 print('Reading MC dataframes and applying selections: Done.')
 print(f'MC: {signal_counts[-1]} candidates selected out of {signal_counts[0]} candidates '
-      + f'with {int(slice_var_interval[0])} < {slice_var_name} < {int(slice_var_interval[1])} {slice_var_unit} in total.') # signal_counts[-1] is the last element (Cf. std::vector::back())
+      + f'with {int(slice_var_min)} < {slice_var_name} < {int(slice_var_max)} {slice_var_unit} in total.') # signal_counts[-1] is the last element (Cf. std::vector::back())
 
 ## Data
 print('Reading data dataframes and applying selections...')
 BkgDfs = []
-for input_file_data in input_files_data:
+for fileindex in range(files_data_from, files_data_to+1):
+    filename = input_files_data_path + '.' + str(fileindex) + '.root'
     ## read input file
-    df = pd.read_parquet(input_file_data)
+    with uproot.open(filename) as file:
+        tree = file["pTree"]
+        df = tree.arrays(library="pd")
     df.drop(columns = skip_variables, inplace = True)
-    df.query(f'(({slice_var_treename} >= {slice_var_interval[0]}) & ({slice_var_treename} < {slice_var_interval[1]})) & ((fKFMassInv > {sidebands[0]} & fKFMassInv < {sidebands[1]}) | (fKFMassInv > {sidebands[2]} & fKFMassInv < {sidebands[3]}))', inplace=True)
+    df.query(f'(({slice_var_treename} >= {slice_var_min}) & ({slice_var_treename} < {slice_var_max})) & ((fKFMassInv > {sidebands[0]} & fKFMassInv < {sidebands[1]}) | (fKFMassInv > {sidebands[2]} & fKFMassInv < {sidebands[3]}))', inplace=True)
     bkg_counts[0] += len(df)
     ## Check for infinities and NaNs
     if df.isna().any().any():
@@ -128,7 +147,7 @@ BkgDf = pd.concat(BkgDfs, ignore_index=True)
 del BkgDfs
 print('Reading data dataframes and applying selections: Done.')
 print(f'Data: {bkg_counts[-1]} candidates selected out of {bkg_counts[0]} candidates '
-      + f'with {int(slice_var_interval[0])} < {slice_var_name} < {int(slice_var_interval[1])} {slice_var_unit} and {sidebands[0]} M < {sidebands[1]} GeV/c² or {sidebands[2]} M < {sidebands[3]} GeV/c² in total.')
+      + f'with {int(slice_var_min)} < {slice_var_name} < {int(slice_var_max)} {slice_var_unit} and {sidebands[0]} M < {sidebands[1]} GeV/c² or {sidebands[2]} M < {sidebands[3]} GeV/c² in total.')
 
 ## Plot counter histogram
 signal_efficiency = signal_counts / signal_counts[0] # element-wise division by the zeroth element, i.e. efficiency of each step relative to the original df
@@ -141,7 +160,7 @@ ax.set_ylim(0, 1.1)
 plt.xticks(rotation=90)
 ax.legend()
 PreselEff.tight_layout() # tries to automatically optimize the layout to make sure that all elements of the plot are visible without clipping
-PreselEff.savefig(f'{output_directory}/PreselEff_{slice_var_name}_{int(slice_var_interval[0])}_{int(slice_var_interval[1])}.png', dpi=300, bbox_inches='tight')
+PreselEff.savefig(f'{output_directory}/PreselEff_{slice_var_name}_{int(slice_var_min)}_{int(slice_var_max)}.png', dpi=300, bbox_inches='tight')
 
 #------------ Define prompt/non-prompt/background sets ------------
 ## Split MC set into prompt/non-promt data sets
@@ -205,7 +224,7 @@ elif (hyperpar_study_file != '') and (save_hyperpar_study == False):
     save_hyperpar_study = None
 elif (hyperpar_study_file == '') and (save_hyperpar_study == True):
     hyperpar_study_file = None
-    save_hyperpar_study = f'{model_directory}/hyperpar_study_file_{slice_var_name}_{int(slice_var_interval[0])}_{int(slice_var_interval[1])}_{model_version}.txt'
+    save_hyperpar_study = f'{model_directory}/hyperpar_study_file_{slice_var_name}_{int(slice_var_min)}_{int(slice_var_max)}_{model_version}.txt'
 elif (hyperpar_study_file == '') and (save_hyperpar_study == False):
     hyperpar_study_file = None
     save_hyperpar_study = None
@@ -244,7 +263,7 @@ else: # return probabilities
     yTestPred = model_hdl.predict(TrainTestData[2], False)
 
 ## Save model handler
-model_hdl.dump_model_handler(f'{model_directory}/BDTmodel_{slice_var_name}_{int(slice_var_interval[0])}_{int(slice_var_interval[1])}_{model_version}.pkl')
+model_hdl.dump_model_handler(f'{model_directory}/BDTmodel_{slice_var_name}_{int(slice_var_min)}_{int(slice_var_max)}_{model_version}.pkl')
 
 # --------------------------------------------
 #                  Plotting 
@@ -253,14 +272,14 @@ model_hdl.dump_model_handler(f'{model_directory}/BDTmodel_{slice_var_name}_{int(
 print('Plotting BDT ouput probability...')
 BDTprob = plot_utils.plot_output_train_test(model_hdl, TrainTestData, 100, rawoutput, LegLabels, logscale=True, density=True)
 for (fig, label) in zip(BDTprob, OutputLabels):
-    fig.savefig(f'{output_directory}/BDTprob{label}_{slice_var_name}_{int(slice_var_interval[0])}_{int(slice_var_interval[1])}.png', dpi=300, bbox_inches='tight')
+    fig.savefig(f'{output_directory}/BDTprob{label}_{slice_var_name}_{int(slice_var_min)}_{int(slice_var_max)}.png', dpi=300, bbox_inches='tight')
 print('Plotting BDT ouput probability: Done.')
 
 # --------------- Plot ROC-AUC curve ----------------
 print('Plotting ROC-AUC curve...')
 ROCcurve = plot_utils.plot_roc_train_test(TrainTestData[3], yTestPred, TrainTestData[1], yTrainPred, labels=LegLabels, average=rocaucAverage,
                                           multi_class_opt=multiClassOpt)
-ROCcurve.savefig(f'{output_directory}/ROCcurve_{slice_var_name}_{int(slice_var_interval[0])}_{int(slice_var_interval[1])}.png', dpi=300, bbox_inches='tight')
+ROCcurve.savefig(f'{output_directory}/ROCcurve_{slice_var_name}_{int(slice_var_min)}_{int(slice_var_max)}.png', dpi=300, bbox_inches='tight')
 print('Plotting ROC-AUC curve: Done.')
 
 # --------------- Plot BDT efficiency --------------------
@@ -273,28 +292,28 @@ plt.xlabel(f'{LegLabels[0]}/{LegLabels[1]}/{LegLabels[2]} score')
 plt.ylabel('Efficiency')
 plt.title('Efficiency vs score')
 plt.grid()
-BDTEff.savefig(f'{output_directory}/BDTeff_{slice_var_name}_{int(slice_var_interval[0])}_{int(slice_var_interval[1])}.png', dpi=300, bbox_inches='tight')
+BDTEff.savefig(f'{output_directory}/BDTeff_{slice_var_name}_{int(slice_var_min)}_{int(slice_var_max)}.png', dpi=300, bbox_inches='tight')
 
 # --------------- Plot feature importance ----------------
 print('Plotting feature importance...')
 FeatImp = plot_utils.plot_feature_imp(TrainTestData[0], TrainTestData[1], model_hdl, labels=LegLabels, n_sample=10000, approximate=True)
 ## shap violin plots
 for (shap, label) in zip(FeatImp[:-1], OutputLabels):
-    shap.savefig(f'{output_directory}/shap_{label}_{slice_var_name}{int(slice_var_interval[0])}_{int(slice_var_interval[1])}.png', dpi=300, bbox_inches='tight')
+    shap.savefig(f'{output_directory}/shap_{label}_{slice_var_name}{int(slice_var_min)}_{int(slice_var_max)}.png', dpi=300, bbox_inches='tight')
 ## shap summary plot
 shapSummary = FeatImp[-1]
-shapSummary.savefig(f'{output_directory}/shapSummary_{slice_var_name}{int(slice_var_interval[0])}_{int(slice_var_interval[1])}.png', dpi=300, bbox_inches='tight')
+shapSummary.savefig(f'{output_directory}/shapSummary_{slice_var_name}{int(slice_var_min)}_{int(slice_var_max)}.png', dpi=300, bbox_inches='tight')
 print('Plotting feature importance: Done.')
 
 # --------------- Plot variable distributions ----------------
-DrawVarsDict = {'Basic': ['fKFMassInv', 'fKFT'],
+DrawVarsDict = {'Basic': [{slice_var_name}, 'fKFMassInv', 'fKFT'],
                 'Chi2':  ['fKFChi2PrimProton', 'fKFChi2PrimKaon', 'fKFChi2PrimPion', 'fKFChi2Geo', 'fKFChi2Topo'],
-                'NTpcSigma': ['fLiteNSigTpcPr', 'fLiteNSigTpcKa', 'fLiteNSigTpcPi']}
+                'NTpcSigma': ['fLiteNSigTpcTofPr', 'fLiteNSigTpcTofKa', 'fLiteNSigTpcTofPi']}
 print('Plotting variable distributions...')
 for label, VarList in DrawVarsDict.items():
     VarDist = plot_utils.plot_distr([BkgDf, PromptDf, NonPromptDf], VarList, 100, LegLabels, log=True, figsize=(11,7), alpha=0.3, grid=False, density=True)
     plt.tight_layout()
-    plt.savefig(f'{output_directory}/{label}_distributions_{slice_var_name}_{int(slice_var_interval[0])}_{int(slice_var_interval[1])}.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'{output_directory}/{label}_distributions_{slice_var_name}_{int(slice_var_min)}_{int(slice_var_max)}.png', dpi=300, bbox_inches='tight')
 print('Plotting variable distributions: Done.')
 
 # --------------- Plot correlation matrices ----------------
@@ -303,7 +322,7 @@ CorrVars = ['fKFMassInv'] + sorted([x for x in TrainVars], key=str.lower)
 CorrMatr = plot_utils.plot_corr([BkgDf, PromptDf, NonPromptDf], CorrVars, LegLabels)
 for (fig, label) in zip(CorrMatr, OutputLabels):
     fig.tight_layout()
-    fig.savefig(f'{output_directory}/CorrMatr{label}_{slice_var_name}_{int(slice_var_interval[0])}_{int(slice_var_interval[1])}.png', dpi=300, bbox_inches='tight')
+    fig.savefig(f'{output_directory}/CorrMatr{label}_{slice_var_name}_{int(slice_var_min)}_{int(slice_var_max)}.png', dpi=300, bbox_inches='tight')
 print('Plotting correlation matrices: Done.')
 
 ## delete dataframes to release memory

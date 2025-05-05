@@ -1,7 +1,3 @@
-input_files_mc: ["/lustre/alice/users/lubynets/bdt/input/signal.parquet.gzip"]
-input_files_data: ["/lustre/alice/users/lubynets/bdt/input/sideband.loPt.parquet.gzip"]
-output_directory: "/lustre/alice/users/lubynets/bdt/outputs/currentTry/1/out"
-model_directory: "/lustre/alice/users/lubynets/bdt/outputs/currentTry/1/model"
 hyperpar_study_file: ""
 hyperpar_study_ntrials: 15
 hyperpar_study_timeout: 7200
@@ -10,7 +6,6 @@ model_version: "v1"
 slice_var_name: "pT"
 slice_var_treename: "fKFPt"
 slice_var_unit: "GeV/c"
-slice_var_interval: [0.0, 2.0]
 sidebands: [2.12, 2.20, 2.38, 2.42]
 training_variables: ['fKFChi2PrimProton',
                      'fKFChi2PrimKaon',
@@ -18,7 +13,7 @@ training_variables: ['fKFChi2PrimProton',
                      'fKFChi2Geo',
                      'fKFChi2Topo',
                      'fKFDecayLengthNormalised',
-                     'fLiteNSigTpcPr',
-                     'fLiteNSigTpcKa',
-                     'fLiteNSigTpcPi']
+                     'fLiteNSigTpcTofPr',
+                     'fLiteNSigTpcTofKa',
+                     'fLiteNSigTpcTofPi']
 skip_variables: []
