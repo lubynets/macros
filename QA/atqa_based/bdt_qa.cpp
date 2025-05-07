@@ -23,7 +23,7 @@ void bdt_qa(const std::string& filelist, const std::string& mcOrData, int nEntri
 
   man->AddTask(task);
   man->Init({filelist}, {"aTree"});
-  man->SetVerbosityPeriod(100000);
+  man->SetVerbosityFrequency(100);
   man->Run(nEntries);
   man->Finish();
 }
@@ -39,6 +39,16 @@ void BDTQA(QA::Task& task, const std::string& mcOrData) {
 
   auto pTCuts = HelperFunctions::CreateRangeCuts({0.f, 2.f, 5.f, 8.f, 12.f, 20.f}, "pT_", "PlainBranch.fKFPt", 0);
   auto TCuts = HelperFunctions::CreateRangeCuts({0.2, 0.35, 0.5, 0.7, 0.9, 1.6}, "T_", "PlainBranch.fKFT", 2);
+  std::vector<SimpleCut> sliceCuts;
+  sliceCuts.reserve(pTCuts.size() + TCuts.size());
+  sliceCuts.insert( sliceCuts.end(), pTCuts.begin(), pTCuts.end() );
+  sliceCuts.insert( sliceCuts.end(), TCuts.begin(), TCuts.end() );
+
+  SimpleCut openCut({"PlainBranch.fKFMassInv"}, [] (const std::vector<double>& par) { return true; }, "alwaystrue");
+  sliceCuts.emplace_back(openCut);
+
+  const std::array<double, 4> sideBands{2.12, 2.20, 2.38, 2.42};
+  SimpleCut sideBandsCut({"PlainBranch.fKFMassInv"}, [=] (const std::vector<double>& par) { return (par[0]>sideBands.at(0) && par[0]<sideBands.at(1)) || (par[0]>sideBands.at(2) && par[0]<sideBands.at(3)); }, "sidebands");
 
   const std::string histoName = "hBdt";
 
@@ -50,25 +60,17 @@ void BDTQA(QA::Task& task, const std::string& mcOrData) {
   const Variable yVar = Variable::FromString("PlainBranch.prompt_score");
   const TAxis yAxis = {102, -0.01, 1.01};
 
-    for(const auto& dt : dataTypes) {
-    for(const auto& ptCut : pTCuts) {
-      const std::string cutName = dt.GetTitle() + "/" + ptCut.GetTitle();
+  for(const auto& dt : dataTypes) {
+    for(const auto& sliceCut : sliceCuts) {
+      std::string cutName = dt.GetTitle();
+      if(sliceCut.GetTitle() != "alwaystrue") cutName += "/" + sliceCut.GetTitle();
       task.SetTopLevelDirName(cutName);
-      Cuts* cut2D = new Cuts(cutName, {dt, ptCut});
-      task.AddH2(histoName,{xTitle, xVar, xAxis}, {yTitle, yVar, yAxis}, cut2D);
-    } // pTCuts
-    for(const auto& tCut : TCuts) {
-      const std::string cutName = dt.GetTitle() + "/" + tCut.GetTitle();
-      task.SetTopLevelDirName(cutName);
-      Cuts* cut2D = new Cuts(cutName, {dt, tCut});
-      task.AddH2(histoName,{xTitle, xVar, xAxis}, {yTitle, yVar, yAxis}, cut2D);
-    } // pTCuts
-    const std::string cutName = dt.GetTitle();
-    task.SetTopLevelDirName(cutName);
-    Cuts* cut2D = new Cuts(cutName, {dt});
-    task.AddH2(histoName,{xTitle, xVar, xAxis}, {yTitle, yVar, yAxis}, cut2D);
+      Cuts* cuts = new Cuts(cutName, {dt, sliceCut});
+      if(dt.GetTitle() == "background") cuts->AddCut(sideBandsCut);
+      task.AddH1(histoName, {xTitle, xVar, xAxis}, cuts);
+      task.AddH2(histoName + "2D",{xTitle, xVar, xAxis}, {yTitle, yVar, yAxis}, cuts);
+    } // sliceCuts
   } // dataTypes
-
 }
 
 int main(int argc, char* argv[]) {

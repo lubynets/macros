@@ -17,6 +17,9 @@ const std::string branchName = "PlainBranch";
 std::vector<SimpleCut> PrepareDataTypes(const std::string& varName);
 std::vector<SimpleCut> datatypes = PrepareDataTypes(branchName + ".fKFSigBgStatus");
 
+std::vector<SimpleCut> PrepareBdtScoreCuts(const std::string& datatype, const std::string& direction, const std::vector<double>& vec, int precision=1);
+std::vector<SimpleCut> PrepareBdtScoreCuts(const std::string& datatype, const std::string& direction, int nCuts, double loCut, double hiCut, int precision=1);
+
 const std::vector<float> lifetimeRanges{0.2, 0.35, 0.5, 0.7, 0.9, 1.6};
 const TAxis massAxis = {600, 1.98, 2.58};
 const std::string massAxisTitle = "m_{pK#pi} (GeV/#it{c}^{2})";
@@ -60,37 +63,27 @@ void MassQA(QA::Task& task) {
 
 void MassQABdt(QA::Task& task) {
   auto TCuts = HelperFunctions::CreateRangeCuts(lifetimeRanges, "T_", branchName + ".fKFT", 2);
+  SimpleCut openCut({branchName + ".fKFT"}, [] (const std::vector<double>& par) { return true; }, "alwaystrue");
+  TCuts.emplace_back(openCut);
 
   const std::string varNameInTree = branchName + ".fKFMassInv";
 
-  std::vector<SimpleCut> bdtBgCuts;
-  std::vector<SimpleCut> bdtNonPromptCuts;
-  const std::vector<float> cutValuesBg{0.003, 0.005, 0.008, 0.01, 0.012, 0.015, 0.02};
-  for(const auto& cvb : cutValuesBg) {
-    const std::string sCutValueBg = HelperFunctions::ToStringWithPrecision(cvb, 3);
-    bdtBgCuts.emplace_back(RangeCut(branchName + ".bkg_score", -HugeNumber, cvb, "bg" + sCutValueBg));
-  }
-  for(int iv=1; iv<=10; iv++) {
-    const double cutValueNp = 1.*iv/10;
-    const std::string sCutValueNp = HelperFunctions::ToStringWithPrecision(cutValueNp, 1);
-    bdtNonPromptCuts.emplace_back(RangeCut(branchName + ".non_prompt_score", -HugeNumber, cutValueNp, "np" + sCutValueNp));
-  }
+  const std::vector<SimpleCut> bdtBgCuts = PrepareBdtScoreCuts("bkg", "lt", 9, 0.1, 0.9);
+  const std::vector<SimpleCut> bdtPromptCuts = PrepareBdtScoreCuts("prompt", "gt", 9, 0.1, 0.9);
 
   for(const auto& dt : datatypes) {
     for(const auto& bbc : bdtBgCuts) {
-      for(const auto& bnpc : bdtNonPromptCuts) {
-        task.SetTopLevelDirName(dt.GetTitle() + "/" + bbc.GetTitle());
-        Cuts* cutsTotal = new Cuts(dt.GetTitle() + "_" + bbc.GetTitle() + bnpc.GetTitle() + "_total", {dt, bbc, bnpc});
-        const std::string histoName = massVarName + "_" + bbc.GetTitle() + "_" + bnpc.GetTitle();
+      for(const auto& bpc : bdtPromptCuts) {
+        const std::string histoName = massVarName + "_" + bbc.GetTitle() + "_" + bpc.GetTitle();
         const QA::Axis histoQAAxis = {massAxisTitle, Variable::FromString(varNameInTree), massAxis};
-        task.AddH1(histoName, histoQAAxis, cutsTotal);
-
         for(const auto& slc : TCuts) {
-          task.SetTopLevelDirName(dt.GetTitle() + "/" + bbc.GetTitle() + "/" + slc.GetTitle());
-          Cuts* cutSlice = new Cuts(dt.GetTitle() + "_" + bbc.GetTitle() + bnpc.GetTitle() + "_" + slc.GetTitle(), {dt, bbc, bnpc, slc});
+          std::string cutName = dt.GetTitle() + "/" + bbc.GetTitle();
+          if(slc.GetTitle() != "alwaystrue") cutName += "/" + slc.GetTitle();
+          task.SetTopLevelDirName(cutName);
+          Cuts* cutSlice = new Cuts(cutName, {dt, bbc, bpc, slc});
           task.AddH1(histoName, histoQAAxis, cutSlice);
         } // TCuts
-      } // bdtNonPromptCuts
+      } // bdtPromptCuts
     } // bdtBgCuts
   } // datatypes
 } // void MassQABdt
@@ -109,6 +102,38 @@ std::vector<SimpleCut> PrepareDataTypes(const std::string& varName) {
   };
 
   return result;
+}
+
+std::vector<SimpleCut> PrepareBdtScoreCuts(const std::string& datatype, const std::string& direction, const std::vector<double>& vec, int precision) {
+  if(datatype != "prompt" && datatype != "non_prompt" && datatype != "bkg") {
+    throw std::runtime_error("mass_qa::PrepareBdtScoreCuts() - datatype must be either prompt, non_prompt or bkg");
+  }
+  if(direction != "gt" && direction != "lt") throw std::runtime_error("mass_qa::PrepareBdtScoreCuts() - direction must be either gt or lt");
+
+  std::string dataLetter;
+  if(datatype == "prompt") dataLetter = "P";
+  if(datatype == "non_prompt") dataLetter = "NP";
+  if(datatype == "bkg") dataLetter = "BG";
+
+  std::vector<SimpleCut> result;
+  for(const auto& value : vec) {
+    const std::string sValue = HelperFunctions::ToStringWithPrecision(value, precision);
+    const double lo = direction == "gt" ? value : -HugeNumber;
+    const double hi = direction == "gt" ? HugeNumber : value;
+    const std::string cutName = dataLetter + direction + sValue;
+    result.emplace_back(RangeCut(branchName + "." + datatype + "_score", lo, hi, cutName));
+  }
+  return result;
+}
+
+std::vector<SimpleCut> PrepareBdtScoreCuts(const std::string& datatype, const std::string& direction, int nCuts, double loCut, double hiCut, int precision) {
+  std::vector<double> vecCuts;
+  const double step = (hiCut - loCut) / (nCuts - 1);
+  for(int iCut=0; iCut<nCuts; iCut++) {
+    const double value = loCut + iCut*step;
+    vecCuts.emplace_back(value);
+  }
+  return PrepareBdtScoreCuts(datatype, direction, vecCuts, precision);
 }
 
 int main(int argc, char* argv[]){
