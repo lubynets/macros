@@ -25,7 +25,7 @@ SET(SOURCES
 )
 
 string(REPLACE ".cpp" ".hpp" HEADERS "${SOURCES}")
-list(APPEND HEADERS "Shapes.hpp")
+list(APPEND HEADERS "BdtEfficiencyCalculator.hpp" "Shapes.hpp")
 
 # Specify the C++ standard
 set(CMAKE_CXX_STANDARD 17)
