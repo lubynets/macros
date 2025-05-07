@@ -283,14 +283,39 @@ ROCcurve.savefig(f'{output_directory}/ROCcurve_{slice_var_name}_{int(slice_var_m
 print('Plotting ROC-AUC curve: Done.')
 
 # --------------- Plot BDT efficiency --------------------
-BDTEffArrays, threshold = analysis_utils.bdt_efficiency_array(TrainTestData[3], yTestPred, n_points=101)
+# Define thresholds based on the 0-th class scores
+thresholds = np.linspace(0, 1, 101)  # Adjust the range if necessary
+
+# Initialize a list to store efficiency arrays for each class
+efficiency_arrays = []
+
+# Loop over each class to compute efficiency
+for class_idx in range(yTestPred.shape[1]):
+    efficiencies = []
+    for thresh in thresholds:
+        # Select instances where the 0-th class score is less than the threshold
+        selected_indices = yTestPred[:, 0] < thresh
+        if np.sum(selected_indices) == 0:
+            efficiency = 0
+        else:
+            # Compute the number of true positives for the current class
+            true_positives = np.sum(np.array(TrainTestData[3])[selected_indices] == class_idx)
+            # Compute the total number of actual positives for the current class
+            true_labels = np.array(TrainTestData[3])
+            total_actual = np.sum(true_labels == class_idx)
+            # Compute efficiency
+            efficiency = true_positives / total_actual if total_actual > 0 else 0
+        efficiencies.append(efficiency)
+    efficiency_arrays.append(efficiencies)
 BDTEff = plt.figure()
-for i in range(len(LegLabels)):
-    plt.plot(threshold, BDTEffArrays[i], label=f'{LegLabels[i]} efficiency')
+for i, efficiencies in enumerate(efficiency_arrays):
+    plt.plot(thresholds, efficiencies, label=f'{LegLabels[i]} efficiency')
 plt.legend()
-plt.xlabel(f'{LegLabels[0]}/{LegLabels[1]}/{LegLabels[2]} score')
+plt.ylim(0.001,1.)
+plt.yscale('log')
+plt.xlabel(f'{LegLabels[0]} score threshold')
 plt.ylabel('Efficiency')
-plt.title('Efficiency vs score')
+plt.title('Efficiency vs. {LegLabels[0]} Score Threshold')
 plt.grid()
 BDTEff.savefig(f'{output_directory}/BDTeff_{slice_var_name}_{int(slice_var_min)}_{int(slice_var_max)}.png', dpi=300, bbox_inches='tight')
 
@@ -306,7 +331,7 @@ shapSummary.savefig(f'{output_directory}/shapSummary_{slice_var_name}{int(slice_
 print('Plotting feature importance: Done.')
 
 # --------------- Plot variable distributions ----------------
-DrawVarsDict = {'Basic': [{slice_var_name}, 'fKFMassInv', 'fKFT'],
+DrawVarsDict = {'Basic': ['fKFPt', 'fKFMassInv', 'fKFT'],
                 'Chi2':  ['fKFChi2PrimProton', 'fKFChi2PrimKaon', 'fKFChi2PrimPion', 'fKFChi2Geo', 'fKFChi2Topo'],
                 'NTpcSigma': ['fLiteNSigTpcTofPr', 'fLiteNSigTpcTofKa', 'fLiteNSigTpcTofPi']}
 print('Plotting variable distributions...')
