@@ -159,6 +159,7 @@ ax.set_ylabel("Preselection efficiency")
 ax.set_ylim(0, 1.1)
 plt.xticks(rotation=90)
 ax.legend()
+PreselEff.text(0.01, 0.99, f'{int(slice_var_min)} < {slice_var_name} < {int(slice_var_max)} {slice_var_unit}')
 PreselEff.tight_layout() # tries to automatically optimize the layout to make sure that all elements of the plot are visible without clipping
 PreselEff.savefig(f'{output_directory}/PreselEff_{slice_var_name}_{int(slice_var_min)}_{int(slice_var_max)}.png', dpi=300, bbox_inches='tight')
 
@@ -272,6 +273,8 @@ model_hdl.dump_model_handler(f'{model_directory}/BDTmodel_{slice_var_name}_{int(
 print('Plotting BDT ouput probability...')
 BDTprob = plot_utils.plot_output_train_test(model_hdl, TrainTestData, 100, rawoutput, LegLabels, logscale=True, density=True)
 for (fig, label) in zip(BDTprob, OutputLabels):
+    fig.text(0.01, 0.99, f'{int(slice_var_min)} < {slice_var_name} < {int(slice_var_max)} {slice_var_unit}')
+    fig.tight_layout()
     fig.savefig(f'{output_directory}/BDTprob{label}_{slice_var_name}_{int(slice_var_min)}_{int(slice_var_max)}.png', dpi=300, bbox_inches='tight')
 print('Plotting BDT ouput probability: Done.')
 
@@ -279,6 +282,8 @@ print('Plotting BDT ouput probability: Done.')
 print('Plotting ROC-AUC curve...')
 ROCcurve = plot_utils.plot_roc_train_test(TrainTestData[3], yTestPred, TrainTestData[1], yTrainPred, labels=LegLabels, average=rocaucAverage,
                                           multi_class_opt=multiClassOpt)
+ROCcurve.text(0.01, 0.99, f'{int(slice_var_min)} < {slice_var_name} < {int(slice_var_max)} {slice_var_unit}')
+ROCcurve.tight_layout()
 ROCcurve.savefig(f'{output_directory}/ROCcurve_{slice_var_name}_{int(slice_var_min)}_{int(slice_var_max)}.png', dpi=300, bbox_inches='tight')
 print('Plotting ROC-AUC curve: Done.')
 
@@ -317,6 +322,8 @@ plt.xlabel(f'{LegLabels[0]} score threshold')
 plt.ylabel('Efficiency')
 plt.title('Efficiency vs. {LegLabels[0]} Score Threshold')
 plt.grid()
+BDTEff.text(0.01, 0.99, f'{int(slice_var_min)} < {slice_var_name} < {int(slice_var_max)} {slice_var_unit}')
+BDTEff.tight_layout()
 BDTEff.savefig(f'{output_directory}/BDTeff_{slice_var_name}_{int(slice_var_min)}_{int(slice_var_max)}.png', dpi=300, bbox_inches='tight')
 
 # --------------- Plot feature importance ----------------
@@ -324,9 +331,13 @@ print('Plotting feature importance...')
 FeatImp = plot_utils.plot_feature_imp(TrainTestData[0], TrainTestData[1], model_hdl, labels=LegLabels, n_sample=10000, approximate=True)
 ## shap violin plots
 for (shap, label) in zip(FeatImp[:-1], OutputLabels):
+    shap.text(0.01, 0.99, f'{int(slice_var_min)} < {slice_var_name} < {int(slice_var_max)} {slice_var_unit}')
+    shap.tight_layout()
     shap.savefig(f'{output_directory}/shap_{label}_{slice_var_name}{int(slice_var_min)}_{int(slice_var_max)}.png', dpi=300, bbox_inches='tight')
 ## shap summary plot
 shapSummary = FeatImp[-1]
+shapSummary.text(0.01, 0.99, f'{int(slice_var_min)} < {slice_var_name} < {int(slice_var_max)} {slice_var_unit}')
+shapSummary.tight_layout()
 shapSummary.savefig(f'{output_directory}/shapSummary_{slice_var_name}{int(slice_var_min)}_{int(slice_var_max)}.png', dpi=300, bbox_inches='tight')
 print('Plotting feature importance: Done.')
 
@@ -337,8 +348,10 @@ DrawVarsDict = {'Basic': ['fKFPt', 'fKFMassInv', 'fKFT'],
 print('Plotting variable distributions...')
 for label, VarList in DrawVarsDict.items():
     VarDist = plot_utils.plot_distr([BkgDf, PromptDf, NonPromptDf], VarList, 100, LegLabels, log=True, figsize=(11,7), alpha=0.3, grid=False, density=True)
-    plt.tight_layout()
-    plt.savefig(f'{output_directory}/{label}_distributions_{slice_var_name}_{int(slice_var_min)}_{int(slice_var_max)}.png', dpi=300, bbox_inches='tight')
+    fig = plt.gcf()
+    fig.text(0.01, 0.99, f'{int(slice_var_min)} < {slice_var_name} < {int(slice_var_max)} {slice_var_unit}')
+    fig.tight_layout()
+    fig.savefig(f'{output_directory}/{label}_distributions_{slice_var_name}_{int(slice_var_min)}_{int(slice_var_max)}.png', dpi=300, bbox_inches='tight')
 print('Plotting variable distributions: Done.')
 
 # --------------- Plot correlation matrices ----------------
@@ -347,6 +360,7 @@ CorrVars = ['fKFMassInv'] + sorted([x for x in TrainVars], key=str.lower)
 CorrMatr = plot_utils.plot_corr([BkgDf, PromptDf, NonPromptDf], CorrVars, LegLabels)
 for (fig, label) in zip(CorrMatr, OutputLabels):
     fig.tight_layout()
+    fig.text(0.01, 0.99, f'{int(slice_var_min)} < {slice_var_name} < {int(slice_var_max)} {slice_var_unit}')
     fig.savefig(f'{output_directory}/CorrMatr{label}_{slice_var_name}_{int(slice_var_min)}_{int(slice_var_max)}.png', dpi=300, bbox_inches='tight')
 print('Plotting correlation matrices: Done.')
 
