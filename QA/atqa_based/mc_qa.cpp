@@ -126,14 +126,12 @@ void PullsAndResidualsQA(QA::Task& task) {
     std::vector<SimpleCut> slice_cuts_;
   };
 
-  auto pTCuts = HelperFunctions::CreateRangeCuts({0.f, 2.f, 4.f, 6.f, 8.f, 12.f, 16.f}, "pTsim_", "Simulated.Sim_fPt", 2);
-  auto pCuts = HelperFunctions::CreateRangeCuts({0.f, 2.f, 4.f, 6.f, 8.f, 12.f, 16.f}, "psim_", "Simulated.Sim_fP", 2);
-  auto lCuts = HelperFunctions::CreateRangeCuts({0.f, 0.02f, 0.04f, 0.06f, 0.08f, 0.12f, 0.16f, 0.20f}, "lsim_", "Simulated.Sim_fLDecay", 2);
-  auto tMcCuts = HelperFunctions::CreateRangeCuts({0.f, 0.2f, 0.4f, 0.6f, 0.8f, 1.2f, 1.6f, 2.f}, "tsim_", "Simulated.Sim_fTDecay", 2);
-  auto tRecCuts = HelperFunctions::CreateRangeCuts({0.f, 0.2f, 0.4f, 0.6f, 0.8f, 1.2f, 1.6f, 2.f}, "trec_", "Candidates.KF_fT", 2);
-  std::vector<SimpleCut> tCuts;
-  tCuts.insert(tCuts.end(), tMcCuts.begin(), tMcCuts.end());
-  tCuts.insert(tCuts.end(), tRecCuts.begin(), tRecCuts.end());
+  auto pTCuts = HelperFunctions::CreateRangeCuts({0.f, 2.f, 4.f, 6.f, 8.f, 12.f, 16.f}, "pTsim_", "Simulated.Sim_fPt");
+  auto pCuts = HelperFunctions::CreateRangeCuts({0.f, 2.f, 4.f, 6.f, 8.f, 12.f, 16.f}, "psim_", "Simulated.Sim_fP");
+  auto lCuts = HelperFunctions::CreateRangeCuts({0.f, 0.02f, 0.04f, 0.06f, 0.08f, 0.12f, 0.16f, 0.20f}, "lsim_", "Simulated.Sim_fLDecay");
+  auto tMcCuts = HelperFunctions::CreateRangeCuts({0.f, 0.2f, 0.4f, 0.6f, 0.8f, 1.2f, 1.6f, 2.f}, "tsim_", "Simulated.Sim_fTDecay");
+  auto tRecCuts = HelperFunctions::CreateRangeCuts({0.f, 0.2f, 0.4f, 0.6f, 0.8f, 1.2f, 1.6f, 2.f}, "trec_", "Candidates.KF_fT");
+  std::vector<SimpleCut> tCuts = HelperFunctions::MergeVectors(tMcCuts, tRecCuts);
 
   const int nbins = 400;
   std::vector<Quantity> varsCand {
@@ -147,7 +145,7 @@ void PullsAndResidualsQA(QA::Task& task) {
   };
 
   constexpr float Shift001 = 0.01;
-  auto nPVCCuts = HelperFunctions::CreateRangeCuts({0, 10-Shift001, 20-Shift001, 40-Shift001, 60-Shift001, 80-Shift001, 100}, "nPVC_", "Events.Ev_fMultNTracksPV", 2);
+  auto nPVCCuts = HelperFunctions::CreateRangeCuts({0, 10-Shift001, 20-Shift001, 40-Shift001, 60-Shift001, 80-Shift001, 100}, "nPVC_", "Events.Ev_fMultNTracksPV");
   std::vector<Quantity> varsEve {
     {"Xpv", "Ev_fPosX", "Ev_fMcPosX", "Ev_fPosXErr", "X_{PV}", "cm", {nbins, -0.1, 0.1}, {nbins, -0.05, 0.05}, {nbins, -5,  5 }, nPVCCuts},
     {"Ypv", "Ev_fPosY", "Ev_fMcPosY", "Ev_fPosYErr", "Y_{PV}", "cm", {nbins, -0.1, 0.1}, {nbins, -0.05, 0.05}, {nbins, -5,  5 }, nPVCCuts},

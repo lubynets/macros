@@ -37,15 +37,9 @@ void BDTQA(QA::Task& task, const std::string& mcOrData) {
     dataTypes.emplace_back(EqualsCut("PlainBranch.fKFSigBgStatus", -999, "background"));
   }
 
-  auto pTCuts = HelperFunctions::CreateRangeCuts({0.f, 2.f, 5.f, 8.f, 12.f, 20.f}, "pT_", "PlainBranch.fKFPt", 0);
-  auto TCuts = HelperFunctions::CreateRangeCuts({0.2, 0.35, 0.5, 0.7, 0.9, 1.6}, "T_", "PlainBranch.fKFT", 2);
-  std::vector<SimpleCut> sliceCuts;
-  sliceCuts.reserve(pTCuts.size() + TCuts.size());
-  sliceCuts.insert( sliceCuts.end(), pTCuts.begin(), pTCuts.end() );
-  sliceCuts.insert( sliceCuts.end(), TCuts.begin(), TCuts.end() );
-
-  SimpleCut openCut({"PlainBranch.fKFMassInv"}, [] (const std::vector<double>& par) { return true; }, "alwaystrue");
-  sliceCuts.emplace_back(openCut);
+  auto pTCuts = HelperFunctions::CreateRangeCuts({0.f, 2.f, 5.f, 8.f, 12.f, 20.f}, "pT_", "PlainBranch.fKFPt");
+  auto TCuts = HelperFunctions::CreateRangeCuts({0.2, 0.35, 0.5, 0.7, 0.9, 1.6}, "T_", "PlainBranch.fKFT", true);
+  auto sliceCuts = HelperFunctions::MergeVectors(pTCuts, TCuts);
 
   const std::array<double, 4> sideBands{2.12, 2.20, 2.38, 2.42};
   SimpleCut sideBandsCut({"PlainBranch.fKFMassInv"}, [=] (const std::vector<double>& par) { return (par[0]>sideBands.at(0) && par[0]<sideBands.at(1)) || (par[0]>sideBands.at(2) && par[0]<sideBands.at(3)); }, "sidebands");
@@ -63,7 +57,7 @@ void BDTQA(QA::Task& task, const std::string& mcOrData) {
   for(const auto& dt : dataTypes) {
     for(const auto& sliceCut : sliceCuts) {
       std::string cutName = dt.GetTitle();
-      if(sliceCut.GetTitle() != "alwaystrue") cutName += "/" + sliceCut.GetTitle();
+      if(sliceCut.GetTitle() != "alwaysTrue") cutName += "/" + sliceCut.GetTitle();
       task.SetTopLevelDirName(cutName);
       Cuts* cuts = new Cuts(cutName, {dt, sliceCut});
       if(dt.GetTitle() == "background") cuts->AddCut(sideBandsCut);

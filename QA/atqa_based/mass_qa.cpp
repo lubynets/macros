@@ -39,13 +39,13 @@ void mass_qa(const std::string& filelistname, bool isMc) {
 
   man->AddTask(task);
   man->Init({filelistname}, {"aTree"});
-  man->SetVerbosityFrequency(100);
-  man->Run();
+  man->SetVerbosityFrequency();
+  man->Run(1000);
   man->Finish();
 }
 
 void MassQA(QA::Task& task) {
-  auto TCuts = HelperFunctions::CreateRangeCuts(lifetimeRanges, "T_", branchName + ".KF_fT", 2);
+  auto TCuts = HelperFunctions::CreateRangeCuts(lifetimeRanges, "T_", branchName + ".KF_fT");
 
   const std::string varNameInTree = branchName + ".KF_fMassInv";
 
@@ -62,9 +62,7 @@ void MassQA(QA::Task& task) {
 } // void MassQA()
 
 void MassQABdt(QA::Task& task) {
-  auto TCuts = HelperFunctions::CreateRangeCuts(lifetimeRanges, "T_", branchName + ".fKFT", 2);
-  SimpleCut openCut({branchName + ".fKFT"}, [] (const std::vector<double>& par) { return true; }, "alwaystrue");
-  TCuts.emplace_back(openCut);
+  auto TCuts = HelperFunctions::CreateRangeCuts(lifetimeRanges, "T_", branchName + ".fKFT", true);
 
   const std::string varNameInTree = branchName + ".fKFMassInv";
 
@@ -78,7 +76,7 @@ void MassQABdt(QA::Task& task) {
         const QA::Axis histoQAAxis = {massAxisTitle, Variable::FromString(varNameInTree), massAxis};
         for(const auto& slc : TCuts) {
           std::string cutName = dt.GetTitle() + "/" + bbc.GetTitle();
-          if(slc.GetTitle() != "alwaystrue") cutName += "/" + slc.GetTitle();
+          if(slc.GetTitle() != "alwaysTrue") cutName += "/" + slc.GetTitle();
           task.SetTopLevelDirName(cutName);
           Cuts* cutSlice = new Cuts(cutName, {dt, bbc, bpc, slc});
           task.AddH1(histoName, histoQAAxis, cutSlice);

@@ -124,7 +124,7 @@ void TopoQA(QA::Task& task) {
     std::vector<SimpleCut> slice_cuts_;
   };
 
-  auto pTCuts = HelperFunctions::CreateRangeCuts({0.f, 2.f, 4.f, 6.f, 8.f, 12.f, 16.f, 24.f}, "pT_", "Candidates.KF_fPt", 2);
+  auto pTCuts = HelperFunctions::CreateRangeCuts({0.f, 2.f, 4.f, 6.f, 8.f, 12.f, 16.f, 24.f}, "pT_", "Candidates.KF_fPt");
 
   std::vector<Quantity> vars {
     {"Mass",         "KF_fMassInv",                 "m_{pK#pi} (GeV/#it{c}^{2})", {600, 1.98, 2.58}, pTCuts},
@@ -159,7 +159,7 @@ void TopoQA(QA::Task& task) {
 
       for(auto& var : vars) {
         task.AddH1(var.name_ + "_" + dt.GetTitle() + "_" + dcaSel.GetTitle(), {var.xaxis_title_, Variable::FromString("Candidates." + var.name_in_tree_), var.xaxis_}, cutsTotal);
-        for(auto& slc : var.slice_cuts_) {
+        for(auto& slc : var.slice_cuts_) { // TODO generalize via adding OpenCut
           std::vector<SimpleCut> allCutsSlice = allCuts;
           allCutsSlice.emplace_back(slc);
           Cuts* cutSlice = new Cuts(dt.GetTitle() + "_" + dcaSel.GetTitle() + "_" + slc.GetTitle(), allCutsSlice);
