@@ -186,7 +186,7 @@ BkgDf.drop(columns = VarsToDrop, inplace = True)
 #------------ Create training and test set ------------
 ## Combine signal and background data frames
 print('Combining prompt and background data frame...')
-nBkg = (nPrompt + nNonPrompt)*2 # BG twice as signal ?
+nBkg = min((nPrompt + nNonPrompt)*2, len(BkgDf)) # BG twice as signal ?
 CombDf = pd.concat([BkgDf[:nBkg], PromptDf, NonPromptDf], sort=True) # take not all the BG but only part of it. sort=True sorts columns alphabetically  -why need it?
 LabelsArray = [0 for iCand in range(nBkg)] + [1 for iCand in range(nPrompt)] + [2 for iCand in range(nNonPrompt)] # assign 0 to BGs, 1 for prompts, 2 for nonprompts
 print('Combining prompt and background data frame: Done.')
@@ -320,7 +320,7 @@ plt.ylim(0.001,1.)
 plt.yscale('log')
 plt.xlabel(f'{LegLabels[0]} score threshold')
 plt.ylabel('Efficiency')
-plt.title('Efficiency vs. {LegLabels[0]} Score Threshold')
+plt.title(f'Efficiency vs. {LegLabels[0]} Score Threshold')
 plt.grid()
 BDTEff.text(0.01, 0.99, f'{int(slice_var_min)} < {slice_var_name} < {int(slice_var_max)} {slice_var_unit}')
 BDTEff.tight_layout()
@@ -342,9 +342,13 @@ shapSummary.savefig(f'{output_directory}/shapSummary_{slice_var_name}{int(slice_
 print('Plotting feature importance: Done.')
 
 # --------------- Plot variable distributions ----------------
-DrawVarsDict = {'Basic': ['fKFPt', 'fKFMassInv', 'fKFT'],
-                'Chi2':  ['fKFChi2PrimProton', 'fKFChi2PrimKaon', 'fKFChi2PrimPion', 'fKFChi2Geo', 'fKFChi2Topo'],
-                'NTpcSigma': ['fLiteNSigTpcTofPr', 'fLiteNSigTpcTofKa', 'fLiteNSigTpcTofPi']}
+DrawVarsDict = {'Basic': ['fKFPt', 'fKFMassInv', 'fKFT', 'fLiteY'],
+                'Chi2Prim': ['fKFChi2PrimProton', 'fKFChi2PrimKaon', 'fKFChi2PrimPion'],
+                'Chi2Geo': ['fKFChi2Geo', 'fKFChi2GeoPionKaon', 'fKFChi2GeoProtonKaon', 'fKFChi2GeoProtonPion',],
+                'DCA': ['fKFDcaPionKaon', 'fKFDcaProtonKaon', 'fKFDcaProtonPion'],
+                'Others': ['fLiteCpa', 'fLiteCpaXY', 'fKFDecayLengthNormalised', 'fKFChi2Topo'],
+                'ImpactParameter': ['fLiteImpactParameter0', 'fLiteImpactParameter1', 'fLiteImpactParameter2'],
+                'NTpcTofSigma': ['fLiteNSigTpcTofPr', 'fLiteNSigTpcTofKa', 'fLiteNSigTpcTofPi']}
 print('Plotting variable distributions...')
 for label, VarList in DrawVarsDict.items():
     VarDist = plot_utils.plot_distr([BkgDf, PromptDf, NonPromptDf], VarList, 100, LegLabels, log=True, figsize=(11,7), alpha=0.3, grid=False, density=True)

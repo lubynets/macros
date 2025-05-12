@@ -11,8 +11,8 @@
 #include "TFile.h"
 #include "TTree.h"
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <string>
 
 struct IndexMap {
@@ -39,15 +39,15 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
 
   const std::vector<std::string> fields_to_ignore_{
     "fLiteChi2PCA",
-    "fLiteCpa",
-    "fLiteCpaXY",
+//     "fLiteCpa",
+//     "fLiteCpaXY",
     "fLiteCt",
     "fLiteDecayLength",
     "fLiteDecayLengthXY",
     "fLiteEta",
-    "fLiteImpactParameter0",
-    "fLiteImpactParameter1",
-    "fLiteImpactParameter2",
+//     "fLiteImpactParameter0",
+//     "fLiteImpactParameter1",
+//     "fLiteImpactParameter2",
     "fLiteM",
     "fLiteMassKPi",
     "fLitePhi",
@@ -129,7 +129,8 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
 
     TTree* treeKF = fileIn->Get<TTree>((dirname + "/O2hfcandlckf").c_str());
     TTree* treeLite = fileIn->Get<TTree>((dirname + "/O2hfcandlclite").c_str());
-    TTree* treeCollId = fileIn->Get<TTree>((dirname + "/O2hfcollidlclite").c_str());
+//     TTree* treeCollId = fileIn->Get<TTree>((dirname + "/O2hfcollidlclite").c_str());
+    TTree* treeCollId = fileIn->Get<TTree>((dirname + "/O2hfcandlclite").c_str());
     TTree* treeMC = isMC ? fileIn->Get<TTree>((dirname + "/O2hfcandlcmc").c_str()) : nullptr;
     TTree* treeGen = isMC ? fileIn->Get<TTree>((dirname + "/O2hfcandlcfullp").c_str()) : nullptr;
     TTree* treeEvent = fileIn->Get<TTree>((dirname + "/O2hfcandlcfullev").c_str());
@@ -146,8 +147,8 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
       CreateConfiguration(treeKF, "KF", CandidatesConfig, candidateMap);
       kfLiteSepar = candidateMap.size();
       CreateConfiguration(treeLite, "Lite", CandidatesConfig, candidateMap);
-      liteCollIdSepar = candidateMap.size();
-      CreateConfiguration(treeCollId, "", CandidatesConfig, candidateMap);
+//       liteCollIdSepar = candidateMap.size();
+//       CreateConfiguration(treeCollId, "Lite", CandidatesConfig, candidateMap);
       candValues.resize(candidateMap.size());
       sb_status_field_id = DetermineFieldIdByName(candidateMap, "fSigBgStatus");
       collision_id_field_id_in_cand = DetermineFieldIdByName(candidateMap, "fIndexCollisions");
@@ -180,7 +181,7 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
     }
 
     for(int iV=0; iV<candValues.size(); iV++) {
-      auto treeRec = iV<kfLiteSepar ? treeKF : iV<liteCollIdSepar ? treeLite : treeCollId;
+      auto treeRec = iV<kfLiteSepar ? treeKF : /*iV<liteCollIdSepar ?*/ treeLite/* : treeCollId*/;
       TBranch* branch = treeRec->GetBranch(candidateMap.at(iV).name_.c_str());
       SetAddressFIC(branch, candidateMap.at(iV), candValues.at(iV));
     }
@@ -262,51 +263,51 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
   tree_->Write();
   out_file_->Close();
 
-  if (isDoPlain) {
-    std::ofstream filelist;
-    filelist.open("filelist.txt");
-    filelist << fileOutName + "\n";
-    filelist.close();
-
-    const std::array<double, 4> sidebands{2.12, 2.20, 2.38, 2.42};
-    AnalysisTree::SimpleCut invMassCut = AnalysisTree::SimpleCut({"Candidates.fKFMassInv"}, [&] (const std::vector<double>& par) { return (par[0]>sidebands.at(0) && par[0]<sidebands.at(1)) || (par[0]>sidebands.at(2) && par[0]<sidebands.at(3)); });
-    AnalysisTree::Cuts* sideBandCuts = new AnalysisTree::Cuts("sideBandCuts", {invMassCut});
-
-    AnalysisTree::SimpleCut signalCut = AnalysisTree::RangeCut("Candidates.fKFSigBgStatus", 0.9, 2.1);
-    AnalysisTree::Cuts* signalCuts = new AnalysisTree::Cuts("signalCuts", {signalCut});
-
-    auto* tree_task = new AnalysisTree::PlainTreeFiller();
-    tree_task->SetOutputName("PlainTree.root", "pTree");
-    std::string branchname_rec = "Candidates";
-    tree_task->SetInputBranchNames({branchname_rec});
-    tree_task->AddBranch(branchname_rec);
-//     tree_task->AddBranchCut(signalCuts);
-    tree_task->AddBranchCut(sideBandCuts);
-    const std::vector<std::string> fields_to_preserve {
-      "fKFChi2PrimProton",
-      "fKFChi2PrimKaon",
-      "fKFChi2PrimPion",
-      "fKFChi2Geo",
-      "fKFChi2Topo",
-      "fKFDecayLengthNormalised",
-      "KFNSigTpcPr",
-      "KFNSigTpcKa",
-      "KFNSigTpcPi",
-      "fKFT",
-      "fKFPt",
-      "fKFMassInv",
-      "fKFSigBgStatus"
-    };
-    tree_task->SetFieldsToPreserve(fields_to_preserve);
-    tree_task->SetIsPrependLeavesWithBranchName(false);
-
-    auto* man = AnalysisTree::TaskManager::GetInstance();
-    man->AddTask(tree_task);
-
-    man->Init({"filelist.txt"}, {"aTree"});
-    man->Run(-1);// -1 = all events
-    man->Finish();
-  } // isDoPlain
+//   if (isDoPlain) {
+//     std::ofstream filelist;
+//     filelist.open("filelist.txt");
+//     filelist << fileOutName + "\n";
+//     filelist.close();
+//
+//     const std::array<double, 4> sidebands{2.12, 2.20, 2.38, 2.42};
+//     AnalysisTree::SimpleCut invMassCut = AnalysisTree::SimpleCut({"Candidates.fKFMassInv"}, [&] (const std::vector<double>& par) { return (par[0]>sidebands.at(0) && par[0]<sidebands.at(1)) || (par[0]>sidebands.at(2) && par[0]<sidebands.at(3)); });
+//     AnalysisTree::Cuts* sideBandCuts = new AnalysisTree::Cuts("sideBandCuts", {invMassCut});
+//
+//     AnalysisTree::SimpleCut signalCut = AnalysisTree::RangeCut("Candidates.fKFSigBgStatus", 0.9, 2.1);
+//     AnalysisTree::Cuts* signalCuts = new AnalysisTree::Cuts("signalCuts", {signalCut});
+//
+//     auto* tree_task = new AnalysisTree::PlainTreeFiller();
+//     tree_task->SetOutputName("PlainTree.root", "pTree");
+//     std::string branchname_rec = "Candidates";
+//     tree_task->SetInputBranchNames({branchname_rec});
+//     tree_task->AddBranch(branchname_rec);
+// //     tree_task->AddBranchCut(signalCuts);
+//     tree_task->AddBranchCut(sideBandCuts);
+//     const std::vector<std::string> fields_to_preserve {
+//       "fKFChi2PrimProton",
+//       "fKFChi2PrimKaon",
+//       "fKFChi2PrimPion",
+//       "fKFChi2Geo",
+//       "fKFChi2Topo",
+//       "fKFDecayLengthNormalised",
+//       "KFNSigTpcPr",
+//       "KFNSigTpcKa",
+//       "KFNSigTpcPi",
+//       "fKFT",
+//       "fKFPt",
+//       "fKFMassInv",
+//       "fKFSigBgStatus"
+//     };
+//     tree_task->SetFieldsToPreserve(fields_to_preserve);
+//     tree_task->SetIsPrependLeavesWithBranchName(false);
+//
+//     auto* man = AnalysisTree::TaskManager::GetInstance();
+//     man->AddTask(tree_task);
+//
+//     man->Init({"filelist.txt"}, {"aTree"});
+//     man->Run(-1);// -1 = all events
+//     man->Finish();
+//   } // isDoPlain
 }
 
 int main(int argc, char* argv[]) {

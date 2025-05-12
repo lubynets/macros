@@ -21,6 +21,7 @@ std::vector<SimpleCut> PrepareBdtScoreCuts(const std::string& datatype, const st
 std::vector<SimpleCut> PrepareBdtScoreCuts(const std::string& datatype, const std::string& direction, int nCuts, double loCut, double hiCut, int precision=1);
 
 const std::vector<float> lifetimeRanges{0.2, 0.35, 0.5, 0.7, 0.9, 1.6};
+const std::vector<float> pTRanges{0.f, 2.f, 5.f, 8.f, 12.f, 20.f};
 const TAxis massAxis = {600, 1.98, 2.58};
 const std::string massAxisTitle = "m_{pK#pi} (GeV/#it{c}^{2})";
 const std::string massVarName = "hMass";
@@ -39,8 +40,8 @@ void mass_qa(const std::string& filelistname, bool isMc) {
 
   man->AddTask(task);
   man->Init({filelistname}, {"aTree"});
-  man->SetVerbosityFrequency();
-  man->Run(1000);
+  man->SetVerbosityFrequency(100);
+  man->Run();
   man->Finish();
 }
 
@@ -62,25 +63,28 @@ void MassQA(QA::Task& task) {
 } // void MassQA()
 
 void MassQABdt(QA::Task& task) {
-  auto TCuts = HelperFunctions::CreateRangeCuts(lifetimeRanges, "T_", branchName + ".fKFT", true);
+  auto TCuts = HelperFunctions::CreateRangeCuts(lifetimeRanges, "T_", branchName + ".fKFT");
+  auto pTCuts = HelperFunctions::CreateRangeCuts(pTRanges, "pT_", branchName + ".fKFPt", true);
+
+  auto sliceCuts = HelperFunctions::MergeVectors(pTCuts, TCuts);
 
   const std::string varNameInTree = branchName + ".fKFMassInv";
 
-  const std::vector<SimpleCut> bdtBgCuts = PrepareBdtScoreCuts("bkg", "lt", 9, 0.1, 0.9);
-  const std::vector<SimpleCut> bdtPromptCuts = PrepareBdtScoreCuts("prompt", "gt", 9, 0.1, 0.9);
+  const std::vector<SimpleCut> bdtBgCuts = PrepareBdtScoreCuts("bkg", "lt", 11, 0., 0.1, 2);
+  const std::vector<SimpleCut> bdtPromptCuts = PrepareBdtScoreCuts("prompt", "gt", 11, 0., 1.);
 
   for(const auto& dt : datatypes) {
     for(const auto& bbc : bdtBgCuts) {
       for(const auto& bpc : bdtPromptCuts) {
         const std::string histoName = massVarName + "_" + bbc.GetTitle() + "_" + bpc.GetTitle();
         const QA::Axis histoQAAxis = {massAxisTitle, Variable::FromString(varNameInTree), massAxis};
-        for(const auto& slc : TCuts) {
+        for(const auto& slc : sliceCuts) {
           std::string cutName = dt.GetTitle() + "/" + bbc.GetTitle();
           if(slc.GetTitle() != "alwaysTrue") cutName += "/" + slc.GetTitle();
           task.SetTopLevelDirName(cutName);
           Cuts* cutSlice = new Cuts(cutName, {dt, bbc, bpc, slc});
           task.AddH1(histoName, histoQAAxis, cutSlice);
-        } // TCuts
+        } // sliceCuts
       } // bdtPromptCuts
     } // bdtBgCuts
   } // datatypes
