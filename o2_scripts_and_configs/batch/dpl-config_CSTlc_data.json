@@ -154,7 +154,7 @@
     "event-selection-task": {
         "muonSelection": "0",
         "maxDiffZvtxFT0vsPV": "1",
-        "isMC": "1",
+        "isMC": "0",
         "confSigmaBCforHighPtTracks": "4",
         "TimeIntervalForOccupancyCalculationMin": "-40",
         "TimeIntervalForOccupancyCalculationMax": "100",
@@ -169,8 +169,8 @@
         "processRun3": "true"
     },
     "pid-multiplicity": {
-        "processIU": "false",
-        "processStandard": "true"
+        "processIU": "true",
+        "processStandard": "false"
     },
     "multiplicity-table": {
         "doVertexZeq": "1",
@@ -251,7 +251,7 @@
         "processRun2": "false",
         "processRun3": "true",
         "processGlobalTrackingCounters": "false",
-        "processMC": "true",
+        "processMC": "false",
         "processMC2Mults": "false",
         "processRun3MFT": "false"
     },
@@ -478,11 +478,11 @@
         "ptCandMin": "0",
         "ptCandMax": "36",
         "usePid": "true",
-        "ptPidTpcMin": "0.40000000000000002",
+        "ptPidTpcMin": "0.4",
         "ptPidTpcMax": "100",
         "nSigmaTpcMax": "3",
         "nSigmaTpcCombinedMax": "3",
-        "ptPidTofMin": "0.40000000000000002",
+        "ptPidTofMin": "0.4",
         "ptPidTofMax": "100",
         "nSigmaTofMax": "3",
         "nSigmaTofCombinedMax": "3",
@@ -491,7 +491,7 @@
         "usePidTpcAndTof": "true",
         "tpcNClustersFoundMin": "70",
         "tpcNCrossedRowsMin": "70",
-        "tpcNCrossedRowsOverFindableClustersMin": "0.800000012",
+        "tpcNCrossedRowsOverFindableClustersMin": "0.8",
         "tpcChi2PerClusterMax": "4",
         "itsNClustersFoundMin": "0",
         "itsChi2PerClusterMax": "1e+10",
@@ -756,149 +756,149 @@
             ],
             "values": [
                 [
-                    "3",
-                    "3",
-                    "3",
-                    "3",
-                    "3",
-                    "3",
-                    "0.01",
-                    "0.01",
-                    "0.01",
-                    "3",
                     "5",
+                    "5",
+                    "5",
+                    "3",
+                    "3",
+                    "3",
+                    "0.01",
+                    "0.01",
+                    "0.01",
+                    "3",
+                    "3",
                     "5"
                 ],
                 [
-                    "3",
-                    "3",
-                    "3",
-                    "3",
-                    "3",
-                    "3",
-                    "0.01",
-                    "0.01",
-                    "0.01",
-                    "3",
                     "5",
+                    "5",
+                    "5",
+                    "3",
+                    "3",
+                    "3",
+                    "0.01",
+                    "0.01",
+                    "0.01",
+                    "3",
+                    "3",
                     "5"
                 ],
                 [
-                    "3",
-                    "3",
-                    "3",
-                    "3",
-                    "3",
-                    "3",
-                    "0.01",
-                    "0.01",
-                    "0.01",
-                    "3",
                     "5",
+                    "5",
+                    "5",
+                    "3",
+                    "3",
+                    "3",
+                    "0.01",
+                    "0.01",
+                    "0.01",
+                    "3",
+                    "3",
                     "5"
                 ],
                 [
-                    "3",
-                    "3",
-                    "3",
-                    "3",
-                    "3",
-                    "3",
-                    "0.01",
-                    "0.01",
-                    "0.01",
-                    "3",
                     "5",
+                    "5",
+                    "5",
+                    "3",
+                    "3",
+                    "3",
+                    "0.01",
+                    "0.01",
+                    "0.01",
+                    "3",
+                    "3",
                     "5"
                 ],
                 [
-                    "3",
-                    "3",
-                    "3",
-                    "3",
-                    "3",
-                    "3",
-                    "0.01",
-                    "0.01",
-                    "0.01",
-                    "3",
                     "5",
+                    "5",
+                    "5",
+                    "3",
+                    "3",
+                    "3",
+                    "0.01",
+                    "0.01",
+                    "0.01",
+                    "3",
+                    "3",
                     "5"
                 ],
                 [
-                    "3",
-                    "3",
-                    "3",
-                    "3",
-                    "3",
-                    "3",
-                    "0.01",
-                    "0.01",
-                    "0.01",
-                    "3",
                     "5",
+                    "5",
+                    "5",
+                    "3",
+                    "3",
+                    "3",
+                    "0.01",
+                    "0.01",
+                    "0.01",
+                    "3",
+                    "3",
                     "5"
                 ],
                 [
-                    "3",
-                    "3",
-                    "3",
-                    "3",
-                    "3",
-                    "3",
-                    "0.01",
-                    "0.01",
-                    "0.01",
-                    "3",
                     "5",
+                    "5",
+                    "5",
+                    "3",
+                    "3",
+                    "3",
+                    "0.01",
+                    "0.01",
+                    "0.01",
+                    "3",
+                    "3",
                     "5"
                 ],
                 [
-                    "3",
-                    "3",
-                    "3",
-                    "3",
-                    "3",
-                    "3",
-                    "0.01",
-                    "0.01",
-                    "0.01",
-                    "3",
                     "5",
+                    "5",
+                    "5",
+                    "3",
+                    "3",
+                    "3",
+                    "0.01",
+                    "0.01",
+                    "0.01",
+                    "3",
+                    "3",
                     "5"
                 ],
                 [
-                    "3",
-                    "3",
-                    "3",
-                    "3",
-                    "3",
-                    "3",
-                    "0.01",
-                    "0.01",
-                    "0.01",
-                    "3",
                     "5",
+                    "5",
+                    "5",
+                    "3",
+                    "3",
+                    "3",
+                    "0.01",
+                    "0.01",
+                    "0.01",
+                    "3",
+                    "3",
                     "5"
                 ],
                 [
-                    "3",
-                    "3",
-                    "3",
-                    "3",
-                    "3",
-                    "3",
-                    "0.01",
-                    "0.01",
-                    "0.01",
-                    "3",
                     "5",
+                    "5",
+                    "5",
+                    "3",
+                    "3",
+                    "3",
+                    "0.01",
+                    "0.01",
+                    "0.01",
+                    "3",
+                    "3",
                     "5"
                 ]
             ]
         },
-        "applyNonKfCuts": "true",
-        "applyKfCuts": "false",
+        "applyNonKfCuts": "false",
+        "applyKfCuts": "true",
         "activateQA": "false",
         "applyMl": "false",
         "binsPtMl": {
@@ -1074,6 +1074,110 @@
         "processDataWithCentralityWithDCAFitterN": "false",
         "processDataNoCentralityWithKFParticle": "true",
         "processDataWithCentralityWithKFParticle": "false"
+    },
+    "hf-task-lc": {
+        "selectionFlagLc": "1",
+        "yCandGenMax": "0.8",
+        "yCandRecoMax": "0.8",
+        "binsPt": {
+            "values": [
+                "0",
+                "1",
+                "2",
+                "3",
+                "4",
+                "5",
+                "6",
+                "8",
+                "16",
+                "24",
+                "36"
+            ]
+        },
+        "enableTHn": "false",
+        "thnConfigAxisPt": {
+            "values": [
+                "72",
+                "0",
+                "72"
+            ]
+        },
+        "thnConfigAxisMass": {
+            "values": [
+                "300",
+                "1.98",
+                "2.5800000000000001"
+            ]
+        },
+        "thnConfigAxisPtProng": {
+            "values": [
+                "100",
+                "0",
+                "20"
+            ]
+        },
+        "thnConfigAxisMultiplicity": {
+            "values": [
+                "100",
+                "0",
+                "1000"
+            ]
+        },
+        "thnConfigAxisChi2PCA": {
+            "values": [
+                "100",
+                "0",
+                "20"
+            ]
+        },
+        "thnConfigAxisDecLength": {
+            "values": [
+                "10",
+                "0",
+                "0.050000000000000003"
+            ]
+        },
+        "thnConfigAxisCPA": {
+            "values": [
+                "20",
+                "0.80000000000000004",
+                "1"
+            ]
+        },
+        "thnConfigAxisBdtScoreBkg": {
+            "values": [
+                "1000",
+                "0",
+                "1"
+            ]
+        },
+        "thnConfigAxisBdtScoreSignal": {
+            "values": [
+                "100",
+                "0",
+                "1"
+            ]
+        },
+        "thnConfigAxisCanType": {
+            "values": [
+                "5",
+                "0",
+                "5"
+            ]
+        },
+        "fillTHn": "false",
+        "processDataStd": "true",
+        "processDataStdWithFT0C": "false",
+        "processDataStdWithFT0M": "false",
+        "processDataWithMl": "false",
+        "processDataWithMlWithFT0C": "false",
+        "processDataWithMlWithFT0M": "false",
+        "processMcStd": "false",
+        "processMcStdWithFT0C": "false",
+        "processMcStdWithFT0M": "false",
+        "processMcWithMl": "false",
+        "processMcWithMlWithFT0C": "false",
+        "processMcWithMlWithFT0M": "false"
     },
     "internal-dpl-aod-writer": "",
     "internal-dpl-aod-global-analysis-file-sink": "",
