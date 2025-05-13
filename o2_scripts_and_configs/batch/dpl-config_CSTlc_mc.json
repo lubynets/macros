@@ -61,7 +61,8 @@
             "nameFileQoverPt": "",
             "usePvRefitCorrections": "false",
             "qOverPtMC": "-1",
-            "qOverPtData": "-1"
+            "qOverPtData": "-1",
+            "nPhiBins": "0"
         },
         "ccdb-url": "http:\/\/alice-ccdb.cern.ch",
         "lutPath": "GLO\/Param\/MatLUT",
@@ -161,7 +162,6 @@
         "TimeRangeVetoOnCollStandard": "10",
         "TimeRangeVetoOnCollNarrow": "4",
         "FT0CamplPerCollCutVetoOnCollInTimeRange": "8000",
-        "EpsilonDistanceForVzDependentVetoTPC": "2.5",
         "FT0CamplPerCollCutVetoOnCollInROF": "5000",
         "EpsilonVzDiffVetoInROF": "0.300000012",
         "UseWeightsForOccupancyEstimator": "true",
@@ -241,13 +241,14 @@
             ]
         },
         "ccdburl": "http:\/\/alice-ccdb.cern.ch",
-        "ccdbpath": "Centrality\/Calibration",
+        "ccdbPath": "Centrality\/Calibration",
         "reconstructionPass": "",
         "produceHistograms": "false",
-        "min_pt_globaltrack": "0.150000006",
-        "max_pt_globaltrack": "1e+10",
-        "min_ncluster_its_globaltrack": "5",
-        "min_ncluster_itsib_globaltrack": "1",
+        "autoSetupFromMetadata": "true",
+        "minPtGlobalTrack": "0.150000006",
+        "maxPtGlobalTrack": "1e+10",
+        "minNclsITSGlobalTrack": "5",
+        "minNclsITSibGlobalTrack": "1",
         "processRun2": "false",
         "processRun3": "true",
         "processGlobalTrackingCounters": "false",
@@ -299,80 +300,6 @@
         "networkBetaGammaCutoff": "0.449999988",
         "processStandard": "false",
         "processMcTuneOnData": "true"
-    },
-    "hf-candidate-creator-3prong": {
-        "propagateToPCA": "true",
-        "useAbsDCA": "false",
-        "useWeightedFinalPCA": "false",
-        "maxR": "200",
-        "maxDZIni": "4",
-        "minParamChange": "0.001",
-        "minRelChi2Change": "0.90000000000000002",
-        "fillHistograms": "true",
-        "isRun2": "false",
-        "ccdbUrl": "http:\/\/alice-ccdb.cern.ch",
-        "ccdbPathGrp": "GLO\/GRP\/GRP",
-        "ccdbPathGrpMag": "GLO\/Config\/GRPMagField",
-        "createDplus": "false",
-        "createDs": "false",
-        "createLc": "true",
-        "createXic": "false",
-        "applyTopoConstraint": "false",
-        "applyInvMassConstraint": "false",
-        "hfEvSel": {
-            "centralityMin": "0",
-            "centralityMax": "100",
-            "useSel8Trigger": "false",
-            "triggerClass": "-1",
-            "useTvxTrigger": "true",
-            "useTimeFrameBorderCut": "false",
-            "useItsRofBorderCut": "false",
-            "useIsGoodZvtxFT0vsPV": "false",
-            "useNoSameBunchPileup": "false",
-            "useOccupancyCut": "false",
-            "occEstimator": "1",
-            "occupancyMin": "0",
-            "occupancyMax": "1000000",
-            "nPvContributorsMin": "0",
-            "chi2PvMax": "-1",
-            "zPvPosMin": "-10",
-            "zPvPosMax": "10",
-            "useNoCollInTimeRangeNarrow": "false",
-            "useNoCollInTimeRangeStandard": "false",
-            "useNoCollInRofStandard": "false",
-            "softwareTrigger": "",
-            "bcMarginForSoftwareTrigger": "100",
-            "ccdbPathSoftwareTrigger": "Users\/m\/mpuccio\/EventFiltering\/OTS\/",
-            "th2ConfigAxisCent": {
-                "values": [
-                    "100",
-                    "0",
-                    "100"
-                ]
-            },
-            "th2ConfigAxisOccupancy": {
-                "values": [
-                    "14",
-                    "0",
-                    "140000"
-                ]
-            }
-        },
-        "processPvRefitWithDCAFitterN": "false",
-        "processNoPvRefitWithDCAFitterN": "false",
-        "processPvRefitWithKFParticle": "false",
-        "processNoPvRefitWithKFParticle": "true",
-        "processPvRefitWithDCAFitterNCentFT0C": "false",
-        "processNoPvRefitWithDCAFitterNCentFT0C": "false",
-        "processPvRefitWithKFParticleCentFT0C": "false",
-        "processNoPvRefitWithKFParticleCentFT0C": "false",
-        "processPvRefitWithDCAFitterNCentFT0M": "false",
-        "processNoPvRefitWithDCAFitterNCentFT0M": "false",
-        "processPvRefitWithKFParticleCentFT0M": "false",
-        "processNoPvRefitWithKFParticleCentFT0M": "false",
-        "processCollisions": "true",
-        "processCollisionsCentFT0C": "false",
-        "processCollisionsCentFT0M": "false"
     },
     "tof-event-time": {
         "inheritFromBaseTask": "true",
@@ -453,14 +380,6 @@
         "processWSlice": "true",
         "processWoSlice": "false"
     },
-    "hf-candidate-creator-3prong-expressions": {
-        "rejectBackground": "false",
-        "matchKinkedDecayTopology": "false",
-        "matchInteractionsWithMaterial": "false",
-        "processMc": "true",
-        "processMcCentFT0C": "false",
-        "processMcCentFT0M": "false"
-    },
     "hf-pid-creator": {
         "processDummy": "false",
         "processFullEl": "false",
@@ -474,15 +393,101 @@
         "processFullPr": "true",
         "processTinyPr": "false"
     },
+    "hf-candidate-creator-3prong": {
+        "propagateToPCA": "true",
+        "useAbsDCA": "false",
+        "useWeightedFinalPCA": "false",
+        "maxR": "200",
+        "maxDZIni": "4",
+        "minParamChange": "0.001",
+        "minRelChi2Change": "0.90000000000000002",
+        "fillHistograms": "true",
+        "isRun2": "false",
+        "ccdbUrl": "http:\/\/alice-ccdb.cern.ch",
+        "ccdbPathGrp": "GLO\/GRP\/GRP",
+        "ccdbPathGrpMag": "GLO\/Config\/GRPMagField",
+        "createDplus": "false",
+        "createDs": "false",
+        "createLc": "true",
+        "createXic": "false",
+        "applyTopoConstraint": "false",
+        "applyInvMassConstraint": "false",
+        "hfEvSel": {
+            "centralityMin": "0",
+            "centralityMax": "100",
+            "useSel8Trigger": "false",
+            "triggerClass": "-1",
+            "useTvxTrigger": "true",
+            "useTimeFrameBorderCut": "false",
+            "useItsRofBorderCut": "false",
+            "useIsGoodZvtxFT0vsPV": "false",
+            "useNoSameBunchPileup": "false",
+            "useOccupancyCut": "false",
+            "occEstimator": "1",
+            "occupancyMin": "0",
+            "occupancyMax": "1000000",
+            "nPvContributorsMin": "0",
+            "chi2PvMax": "-1",
+            "zPvPosMin": "-10",
+            "zPvPosMax": "10",
+            "useNoCollInTimeRangeNarrow": "false",
+            "useNoCollInTimeRangeStandard": "false",
+            "useNoCollInRofStandard": "false",
+            "softwareTrigger": "",
+            "bcMarginForSoftwareTrigger": "100",
+            "ccdbPathSoftwareTrigger": "Users\/m\/mpuccio\/EventFiltering\/OTS\/",
+            "th2ConfigAxisCent": {
+                "values": [
+                    "100",
+                    "0",
+                    "100"
+                ]
+            },
+            "th2ConfigAxisOccupancy": {
+                "values": [
+                    "14",
+                    "0",
+                    "140000"
+                ]
+            },
+            "requireGoodRct": "false",
+            "rctLabel": "CBT_hadronPID",
+            "rctCheckZDC": "false",
+            "rctTreatLimitedAcceptanceAsBad": "false"
+        },
+        "processPvRefitWithDCAFitterN": "false",
+        "processNoPvRefitWithDCAFitterN": "false",
+        "processPvRefitWithKFParticle": "false",
+        "processNoPvRefitWithKFParticle": "true",
+        "processPvRefitWithDCAFitterNCentFT0C": "false",
+        "processNoPvRefitWithDCAFitterNCentFT0C": "false",
+        "processPvRefitWithKFParticleCentFT0C": "false",
+        "processNoPvRefitWithKFParticleCentFT0C": "false",
+        "processPvRefitWithDCAFitterNCentFT0M": "false",
+        "processNoPvRefitWithDCAFitterNCentFT0M": "false",
+        "processPvRefitWithKFParticleCentFT0M": "false",
+        "processNoPvRefitWithKFParticleCentFT0M": "false",
+        "processCollisions": "true",
+        "processCollisionsCentFT0C": "false",
+        "processCollisionsCentFT0M": "false"
+    },
+    "hf-candidate-creator-3prong-expressions": {
+        "rejectBackground": "false",
+        "matchKinkedDecayTopology": "false",
+        "matchInteractionsWithMaterial": "false",
+        "processMc": "true",
+        "processMcCentFT0C": "false",
+        "processMcCentFT0M": "false"
+    },
     "hf-candidate-selector-lc": {
         "ptCandMin": "0",
         "ptCandMax": "36",
         "usePid": "true",
-        "ptPidTpcMin": "0.4",
+        "ptPidTpcMin": "0.40000000000000002",
         "ptPidTpcMax": "100",
         "nSigmaTpcMax": "3",
         "nSigmaTpcCombinedMax": "3",
-        "ptPidTofMin": "0.4",
+        "ptPidTofMin": "0.40000000000000002",
         "ptPidTofMax": "100",
         "nSigmaTofMax": "3",
         "nSigmaTofCombinedMax": "3",
@@ -491,7 +496,7 @@
         "usePidTpcAndTof": "true",
         "tpcNClustersFoundMin": "70",
         "tpcNCrossedRowsMin": "70",
-        "tpcNCrossedRowsOverFindableClustersMin": "0.8",
+        "tpcNCrossedRowsOverFindableClustersMin": "0.800000012",
         "tpcChi2PerClusterMax": "4",
         "itsNClustersFoundMin": "0",
         "itsChi2PerClusterMax": "1e+10",
@@ -1077,8 +1082,8 @@
     },
     "hf-task-lc": {
         "selectionFlagLc": "1",
-        "yCandGenMax": "0.8",
-        "yCandRecoMax": "0.8",
+        "yCandGenMax": "0.80000000000000004",
+        "yCandRecoMax": "0.80000000000000004",
         "binsPt": {
             "values": [
                 "0",
@@ -1094,7 +1099,9 @@
                 "36"
             ]
         },
-        "enableTHn": "false",
+        "fillTHn": "false",
+        "storeOccupancy": "true",
+        "occEstimator": "2",
         "thnConfigAxisPt": {
             "values": [
                 "72",
@@ -1116,11 +1123,11 @@
                 "20"
             ]
         },
-        "thnConfigAxisMultiplicity": {
+        "thnConfigAxisCentrality": {
             "values": [
                 "100",
                 "0",
-                "1000"
+                "100"
             ]
         },
         "thnConfigAxisChi2PCA": {
@@ -1165,18 +1172,45 @@
                 "5"
             ]
         },
-        "fillTHn": "false",
+        "thnAxisRapidity": {
+            "values": [
+                "20",
+                "-1",
+                "1"
+            ]
+        },
+        "thnConfigAxisGenPtB": {
+            "values": [
+                "1000",
+                "0",
+                "100"
+            ]
+        },
+        "thnConfigAxisNumPvContr": {
+            "values": [
+                "200",
+                "-0.5",
+                "199.5"
+            ]
+        },
+        "thnConfigAxisOccupancy": {
+            "values": [
+                "14",
+                "0",
+                "14000"
+            ]
+        },
         "processDataStd": "false",
-        "processDataStdWithFT0C": "false",
-        "processDataStdWithFT0M": "false",
         "processDataWithMl": "false",
+        "processDataStdWithFT0C": "false",
         "processDataWithMlWithFT0C": "false",
+        "processDataStdWithFT0M": "false",
         "processDataWithMlWithFT0M": "false",
         "processMcStd": "true",
-        "processMcStdWithFT0C": "false",
-        "processMcStdWithFT0M": "false",
         "processMcWithMl": "false",
+        "processMcStdWithFT0C": "false",
         "processMcWithMlWithFT0C": "false",
+        "processMcStdWithFT0M": "false",
         "processMcWithMlWithFT0M": "false"
     },
     "internal-dpl-aod-writer": "",
