@@ -9,6 +9,7 @@ import xgboost as xgb
 import uproot
 from sklearn.model_selection import train_test_split
 from hipe4ml.model_handler import ModelHandler
+from hipe4ml_converter.h4ml_converter import H4MLConverter
 from hipe4ml import plot_utils
 from hipe4ml import analysis_utils
 import sys
@@ -265,6 +266,12 @@ else: # return probabilities
 
 ## Save model handler
 model_hdl.dump_model_handler(f'{model_directory}/BDTmodel_{slice_var_name}_{int(slice_var_min)}_{int(slice_var_max)}_{model_version}.pkl')
+model_conv = H4MLConverter(model_hdl)
+model_onnx = model_conv.convert_model_onnx(1)
+metadata = model_onnx.metadata_props.add()
+metadata.key = "feature_names"
+metadata.value = ",".join(TrainVars)
+model_conv.dump_model_onnx(f'{model_directory}/BDTmodel_{slice_var_name}_{int(slice_var_min)}_{int(slice_var_max)}_{model_version}.onnx')
 
 # --------------------------------------------
 #                  Plotting 
