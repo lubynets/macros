@@ -206,10 +206,10 @@ void HFInvMassFitter::doFit()
   RooRealVar* mass = mWorkspace->var("mass");
   RooDataHist dataHistogram("dataHistogram", "data", *mass, Import(*mHistoInvMass));
 
-  if (mTypeOfBkgPdf == 6) { // MC
+  if (mTypeOfBkgPdf == NoBkg) { // MC
     mass->setRange("signal", mMass - 3. * mSigmaSgn, mMass + 3. * mSigmaSgn);
   } else {
-    if (mTypeOfSgnPdf == 3) { // Second Peak fit range
+    if (mTypeOfSgnPdf == GausSec) { // Second Peak fit range
       mass->setRange("SBL", mMinMass, mMass - mNSigmaForSidebands * mSigmaSgn);
       mass->setRange("SBR", mMass + mNSigmaForSidebands * mSigmaSgn, mSecMass - mNSigmaForSidebands * mSecSigma);
       mass->setRange("SEC", mSecMass + mNSigmaForSidebands * mSecSigma, mMaxMass);
@@ -231,7 +231,7 @@ void HFInvMassFitter::doFit()
   RooAbsPdf* sgnPdf = createSignalFitFunction(mWorkspace);                                                       // Create signal pdf
 
   // fit MC or Data
-  if (mTypeOfBkgPdf == 6) {                                                                                    // MC
+  if (mTypeOfBkgPdf == NoBkg) {                                                                                    // MC
     mRooNSgn = new RooRealVar("mRooNSig", "number of signal", 0.3 * mIntegralHisto, 0., 1.2 * mIntegralHisto); // signal yield
     mTotalPdf = new RooAddPdf("mMCFunc", "MC fit function", RooArgList(*sgnPdf), RooArgList(*mRooNSgn));       // create total pdf
     if (!strcmp(mFitOption.Data(), "Chi2")) {
@@ -245,7 +245,7 @@ void HFInvMassFitter::doFit()
     mTotalPdf->plotOn(mInvMassFrame, Name("Tot_c")); // plot total function
   } else {                                           // data
     mBkgPdf = new RooAddPdf("mBkgPdf", "background fit function", RooArgList(*bkgPdf), RooArgList(*mRooNBkg));
-    if (mTypeOfSgnPdf == 3) { // two peak fit
+    if (mTypeOfSgnPdf == GausSec) { // two peak fit
       if (!strcmp(mFitOption.Data(), "Chi2")) {
         mBkgPdf->chi2FitTo(dataHistogram, Range("SBL,SBR,SEC"), Save());
       } else {
@@ -540,14 +540,14 @@ void HFInvMassFitter::drawFit(TVirtualPad* pad, Int_t writeFitInfo)
     textInfoRight->SetTextColor(kBlue);
     textInfoLeft->AddText(Form("S = %.0f #pm %.0f ", mRawYield, mRawYieldErr));
     textInfoLeft->AddText(Form("S_{count} = %.0f #pm %.0f ", mRawYieldCounted, mRawYieldCountedErr));
-    if (mTypeOfBkgPdf != 6) {
+    if (mTypeOfBkgPdf != NoBkg) {
       textInfoLeft->AddText(Form("B (%d#sigma) = %.0f #pm %.0f", mNSigmaForSidebands, mBkgYield, mBkgYieldErr));
       textInfoLeft->AddText(Form("S/B (%d#sigma) = %.4g ", mNSigmaForSidebands, mRawYield / mBkgYield));
     }
     if (mReflPdf) {
       textInfoLeft->AddText(Form("Refl/Sig =  %.3f #pm %.3f ", mReflOverSgn, 0.0));
     }
-    if (mTypeOfBkgPdf != 6) {
+    if (mTypeOfBkgPdf != NoBkg) {
       textInfoLeft->AddText(Form("Signif (%d#sigma) = %.1f #pm %.1f ", mNSigmaForSidebands, mSignificance, mSignificanceErr));
       textInfoLeft->AddText(Form("#chi^{2} / ndf  =  %.3f", mChiSquareOverNdf));
     }
