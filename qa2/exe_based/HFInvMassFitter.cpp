@@ -19,6 +19,7 @@
 
 #include "HFInvMassFitter.hpp"
 
+#include <TDatabasePDG.h>
 #include <TLine.h>
 
 #include <RooRealVar.h>
@@ -45,7 +46,7 @@ HFInvMassFitter::HFInvMassFitter() : TNamed(),
                                      mMinMass(0),
                                      mMaxMass(5),
                                      mTypeOfBkgPdf(Expo),
-                                     mMassParticle(1.864),
+                                     mMassParticle(TDatabasePDG::Instance()->GetParticle("D0")->Mass()),
                                      mTypeOfSgnPdf(SingleGaus),
                                      mTypeOfReflPdf(1),
                                      mMass(1.865),
@@ -112,7 +113,7 @@ HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit, Double_t minValue, Doubl
                                                                                                                                      mMinMass(minValue),
                                                                                                                                      mMaxMass(maxValue),
                                                                                                                                      mTypeOfBkgPdf(fitTypeBkg),
-                                                                                                                                     mMassParticle(1.864),
+                                                                                                                                     mMassParticle(TDatabasePDG::Instance()->GetParticle("D0")->Mass()),
                                                                                                                                      mTypeOfSgnPdf(fitTypeSgn),
                                                                                                                                      mTypeOfReflPdf(1),
                                                                                                                                      mMass(1.865),
@@ -371,7 +372,7 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
   workspace.import(*bkgFuncPoly3);
   delete bkgFuncPoly3;
   // bkg power law
-  RooRealVar PowParam1("PowParam1", "Parameter of Pow function", 0.13957);
+  RooRealVar PowParam1("PowParam1", "Parameter of Pow function", TDatabasePDG::Instance()->GetParticle("pi+")->Mass());
   RooRealVar PowParam2("PowParam2", "Parameter of Pow function", 1., -10, 10);
   RooAbsPdf* bkgFuncPow = new RooGenericPdf("bkgFuncPow", "bkgFuncPow", "(mass-PowParam1)^PowParam2", RooArgSet(mass, PowParam1, PowParam2));
   workspace.import(*bkgFuncPow);
@@ -379,7 +380,7 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
   // pow * exp
   RooRealVar PowExpoParam1("PowExpoParam1", "Parameter of PowExpo function", 1 / 2);
   RooRealVar PowExpoParam2("PowExpoParam2", "Parameter of PowExpo function", 1, -10, 10);
-  RooRealVar massPi("massPi", "mass of pion", 0.13957);
+  RooRealVar massPi("massPi", "mass of pion", TDatabasePDG::Instance()->GetParticle("pi+")->Mass());
   RooFormulaVar PowExpoParam3("PowExpoParam3", "PowExpoParam1 + 1", RooArgList(PowExpoParam1));
   RooFormulaVar PowExpoParam4("PowExpoParam4", "1./PowExpoParam2", RooArgList(PowExpoParam2));
   RooAbsPdf* bkgFuncPowExpo = new RooGamma("bkgFuncPowExpo", "background pdf", mass, PowExpoParam3, PowExpoParam4, massPi);
