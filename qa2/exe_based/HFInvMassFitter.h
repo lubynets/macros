@@ -172,7 +172,7 @@ class HFInvMassFitter : public TNamed
   }
   void setFixSignalYield(Double_t yield) { mFixedRawYield = yield; }
   void setNumberOfSigmaForSidebands(Double_t numberOfSigma) { mNSigmaForSidebands = numberOfSigma; }
-  void plotBkg(RooAbsPdf* mFunc, Color_t color=kRed);
+  void plotBkg(RooAbsPdf* mFunc, Color_t color = kRed);
   void plotRefl(RooAbsPdf* mFunc);
   void setReflFuncFixed();
   void doFit();
@@ -189,8 +189,8 @@ class HFInvMassFitter : public TNamed
     }
     mHistoTemplateRefl = static_cast<TH1*>(histoRefl->Clone("mHistoTemplateRefl"));
   }
-  void setDrawBgPrefit(Bool_t value=true) { mDrawBgPrefit = value; }
-  void setHighlightPeakRegion(Bool_t  value=true) { mHighlightPeakRegion = value; }
+  void setDrawBgPrefit(Bool_t value = true) { mDrawBgPrefit = value; }
+  void setHighlightPeakRegion(Bool_t value = true) { mHighlightPeakRegion = value; }
   Double_t getChiSquareOverNDF() const { return mChiSquareOverNdf; }
   Double_t getRawYield() const { return mRawYield; }
   Double_t getRawYieldError() const { return mRawYieldErr; }
@@ -225,7 +225,7 @@ class HFInvMassFitter : public TNamed
   HFInvMassFitter(const HFInvMassFitter& source);
   HFInvMassFitter& operator=(const HFInvMassFitter& source);
   void fillWorkspace(RooWorkspace& w) const;
-  void highlightPeakRegion(const RooPlot* plot, Color_t color= kGray + 1, Width_t width=1, Style_t style=2) const;
+  void highlightPeakRegion(const RooPlot* plot, Color_t color = kGray + 1, Width_t width = 1, Style_t style = 2) const;
 
   TH1* mHistoInvMass; // histogram to fit
   TString mFitOption;
@@ -286,13 +286,13 @@ class HFInvMassFitter : public TNamed
   RooPlot* mReflOnlyFrame;           /// reflection frame plot on reflection only
   RooPlot* mResidualFrame;           /// residual frame
   RooPlot* mResidualFrameForCalculation;
-  RooWorkspace* mWorkspace; /// workspace
-  Double_t mIntegralHisto;  /// integral of histogram to fit
-  Double_t mIntegralBkg;    /// integral of background fit function
-  Double_t mIntegralSgn;    /// integral of signal fit function
-  TH1* mHistoTemplateRefl; /// reflection histogram
-  Bool_t mDrawBgPrefit;    /// draw background after fitting the sidebands
-  Bool_t mHighlightPeakRegion;  /// draw vertical lines showing the peak region (usually +- 3 sigma)
+  RooWorkspace* mWorkspace;    /// workspace
+  Double_t mIntegralHisto;     /// integral of histogram to fit
+  Double_t mIntegralBkg;       /// integral of background fit function
+  Double_t mIntegralSgn;       /// integral of signal fit function
+  TH1* mHistoTemplateRefl;     /// reflection histogram
+  Bool_t mDrawBgPrefit;        /// draw background after fitting the sidebands
+  Bool_t mHighlightPeakRegion; /// draw vertical lines showing the peak region (usually +- 3 sigma)
 
   ClassDef(HFInvMassFitter, 1);
 };

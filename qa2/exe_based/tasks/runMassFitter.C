@@ -126,10 +126,10 @@ int runMassFitter(const TString& configFileName)
 
   const Value& fixSigmaManualValue = config["FixSigmaManual"];
   readArray(fixSigmaManualValue, fixSigmaManual);
-  
+
   sliceVarName = config["SliceVarName"].GetString();
   sliceVarUnit = config["SliceVarUnit"].GetString();
-  
+
   const Value& sliceVarMinValue = config["SliceVarMin"];
   readArray(sliceVarMinValue, sliceVarMin);
 
@@ -178,8 +178,8 @@ int runMassFitter(const TString& configFileName)
 
     if (sgnFuncConfig[iSliceVar] < HFInvMassFitter::SingleGaus || sgnFuncConfig[iSliceVar] > HFInvMassFitter::DoubleGausSigmaRatioPar) {
       std::cerr << "ERROR: only SingleGaus, DoubleGaus and DoubleGausSigmaRatioPar signal "
-              "functions supported! Exit"
-           << std::endl;
+                   "functions supported! Exit"
+                << std::endl;
       return -1;
     }
     sgnFunc[iSliceVar] = sgnFuncConfig[iSliceVar];
@@ -264,7 +264,7 @@ int runMassFitter(const TString& configFileName)
   auto hRawYields = new TH1D("hRawYields", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield",
                              nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsCounted = new TH1D("hRawYieldsCounted", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield via bin count",
-                             nSliceVarBins, sliceVarLimits.data());
+                                    nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSigma = new TH1D(
     "hRawYieldsSigma", ";" + sliceVarName + "(" + sliceVarUnit + ");width (GeV/#it{c}^{2})",
     nSliceVarBins, sliceVarLimits.data());
@@ -428,8 +428,8 @@ int runMassFitter(const TString& configFileName)
     TString ptTitle =
       Form("%0.2f < " + sliceVarName + " < %0.2f " + sliceVarUnit, sliceVarMin[iSliceVar], sliceVarMax[iSliceVar]);
     hMassForFit[iSliceVar]->SetTitle(Form("%s;%s;Counts per %0.1f MeV/#it{c}^{2}",
-                                    ptTitle.Data(), massAxisTitle.Data(),
-                                    hMassForFit[iSliceVar]->GetBinWidth(1) * 1000));
+                                          ptTitle.Data(), massAxisTitle.Data(),
+                                          hMassForFit[iSliceVar]->GetBinWidth(1) * 1000));
     hMassForFit[iSliceVar]->SetName(Form("MassForFit%d", iSliceVar));
 
     if (enableRefl) {
@@ -439,7 +439,7 @@ int runMassFitter(const TString& configFileName)
 
     Double_t reflOverSgn = 0;
     double markerSize = 1.;
-    const int NSliceVarBinsLarge = 15;
+    constexpr int NSliceVarBinsLarge = 15;
     if (nSliceVarBins > NSliceVarBinsLarge) {
       markerSize = 0.5;
     }
@@ -451,7 +451,7 @@ int runMassFitter(const TString& configFileName)
       massFitter->setHighlightPeakRegion(highlightPeakRegion);
       massFitter->setInitialGaussianMean(massPDG);
       massFitter->setParticlePdgMass(massPDG);
-      massFitter->setBoundGaussianMean(massPDG, 0.8*massPDG, 1.2*massPDG);
+      massFitter->setBoundGaussianMean(massPDG, 0.8 * massPDG, 1.2 * massPDG);
       massFitter->doFit();
 
       if (nSliceVarBins > 1) {
@@ -491,7 +491,7 @@ int runMassFitter(const TString& configFileName)
       massFitter->setHighlightPeakRegion(highlightPeakRegion);
       massFitter->setInitialGaussianMean(massPDG);
       massFitter->setParticlePdgMass(massPDG);
-      massFitter->setBoundGaussianMean(massPDG, 0.8*massPDG, 1.2*massPDG);
+      massFitter->setBoundGaussianMean(massPDG, 0.8 * massPDG, 1.2 * massPDG);
       if (useLikelihood) {
         massFitter->setUseLikelihoodFit();
       }
@@ -502,15 +502,15 @@ int runMassFitter(const TString& configFileName)
         if (fixSigmaManual.empty()) {
           massFitter->setFixGaussianSigma(hSigmaToFix->GetBinContent(iSliceVar + 1));
           std::cout << "*****************************"
-               << "\n"
-               << "FIXED SIGMA: " << hSigmaToFix->GetBinContent(iSliceVar + 1) << "\n"
-               << "*****************************" << std::endl;
+                    << "\n"
+                    << "FIXED SIGMA: " << hSigmaToFix->GetBinContent(iSliceVar + 1) << "\n"
+                    << "*****************************" << std::endl;
         } else if (!fixSigmaManual.empty()) {
           massFitter->setFixGaussianSigma(fixSigmaManual[iSliceVar]);
           std::cout << "*****************************"
-               << "\n"
-               << "FIXED SIGMA: " << fixSigmaManual[iSliceVar] << "\n"
-               << "*****************************" << std::endl;
+                    << "\n"
+                    << "FIXED SIGMA: " << fixSigmaManual[iSliceVar] << "\n"
+                    << "*****************************" << std::endl;
         } else {
           std::cout << "WARNING: impossible to fix sigma! Wrong fix sigma file or value!" << std::endl;
         }
@@ -678,10 +678,10 @@ void setHistoStyle(TH1* histo, Color_t color, Size_t markerSize)
 void divideCanvas(TCanvas* canvas, int nSliceVarBins)
 {
   const int rectangularSideMin = std::floor(std::sqrt(nSliceVarBins));
-  constexpr int rectangularSidesDiffMax = 2;
-  for(int rectangularSidesDiff=0; rectangularSidesDiff < rectangularSidesDiffMax; ++rectangularSidesDiff) {
-    if (rectangularSideMin * (rectangularSideMin+rectangularSidesDiff) >= nSliceVarBins) {
-      canvas->Divide(rectangularSideMin+rectangularSidesDiff, rectangularSideMin);
+  constexpr int RectangularSidesDiffMax = 2;
+  for (int rectangularSidesDiff = 0; rectangularSidesDiff < RectangularSidesDiffMax; ++rectangularSidesDiff) {
+    if (rectangularSideMin * (rectangularSideMin + rectangularSidesDiff) >= nSliceVarBins) {
+      canvas->Divide(rectangularSideMin + rectangularSidesDiff, rectangularSideMin);
     }
   }
 }
