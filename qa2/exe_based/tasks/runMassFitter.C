@@ -19,7 +19,7 @@
 
 #if !defined(__CINT__) || defined(__CLING__)
 
-#include "HFInvMassFitter.hpp"
+#include "HFInvMassFitter.h"
 
 // if .h file not found, please include your local rapidjson/document.h and rapidjson/filereadstream.h here
 #include <rapidjson/document.h>

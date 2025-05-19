@@ -17,7 +17,7 @@
 /// \author Xinye Peng  <xinye.peng@cern.ch>
 /// \author Biao Zhang <biao.zhang@cern.ch>
 
-#include "HFInvMassFitter.hpp"
+#include "HFInvMassFitter.h"
 
 #include <TDatabasePDG.h>
 #include <TLine.h>
