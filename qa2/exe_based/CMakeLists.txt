@@ -86,13 +86,13 @@ endforeach()
 
 # ==================================================================
 set(PCM_FILE_NAME libHFInvMassFitterLib)
-ROOT_GENERATE_DICTIONARY(G__HFInvMassFitterLib "HFInvMassFitter.hpp"
+ROOT_GENERATE_DICTIONARY(G__HFInvMassFitterLib "HFInvMassFitter.h"
         LINKDEF HFInvMassFitterLinkDef.h
         OPTIONS -I ${CMAKE_SOURCE_DIR}
 )
 
 # Define the new library for HFInvMassFitter
-add_library(HFInvMassFitterLib SHARED HFInvMassFitter.cpp G__HFInvMassFitterLib)
+add_library(HFInvMassFitterLib SHARED HFInvMassFitter.cxx G__HFInvMassFitterLib)
 target_include_directories(HFInvMassFitterLib PRIVATE ${CMAKE_SOURCE_DIR})
 target_link_libraries(HFInvMassFitterLib PRIVATE ${ROOT_LIBRARIES} ROOT::EG ROOT::RooFit ROOT::RooFitCore)
 
@@ -104,7 +104,7 @@ install(TARGETS HFInvMassFitterLib EXPORT HFInvMassFitterLibTargets
         INCLUDES DESTINATION include)
 
 install(FILES
-        "HFInvMassFitter.hpp"
+        "HFInvMassFitter.h"
         DESTINATION
         include
         COMPONENT
@@ -122,9 +122,7 @@ install(FILES
         lib
         OPTIONAL)
 
-install(FILES HFInvMassFitter.hpp DESTINATION include COMPONENT Devel)
-
-add_executable(runMassFitter tasks/runMassFitter.cpp)
+add_executable(runMassFitter tasks/runMassFitter.C)
 target_link_libraries(runMassFitter PRIVATE HFInvMassFitterLib ${ROOT_LIBRARIES} ROOT::EG)
 install(TARGETS runMassFitter RUNTIME DESTINATION bin)
 # ==================================================================

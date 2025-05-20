@@ -19,19 +19,20 @@
 
 #if !defined(__CINT__) || defined(__CLING__)
 
-#include "HFInvMassFitter.hpp"
-
-#include <iostream> // std::cout
-#include <string>   // std::string
-#include <vector>   // std::vector
-
-#include <TDatabasePDG.h>
-#include <TFile.h>
-#include <TH2F.h>
+#include "HFInvMassFitter.h"
 
 // if .h file not found, please include your local rapidjson/document.h and rapidjson/filereadstream.h here
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
+
+#include <cstdio> // for fclose
+#include <stdexcept>
+#include <string> // std::string
+#include <vector> // std::vector
+
+#include <TDatabasePDG.h>
+#include <TFile.h>
+#include <TH2F.h>
 
 #endif
 
@@ -66,8 +67,7 @@ int runMassFitter(const TString& configFileName)
   // load config
   FILE* configFile = fopen(configFileName.Data(), "r");
   if (!configFile) {
-    std::cerr << "ERROR: Missing configuration json file: " << configFileName << std::endl;
-    return -1;
+    throw std::runtime_error("ERROR: Missing configuration json file: " + configFileName);
   }
 
   Document config;
@@ -125,10 +125,10 @@ int runMassFitter(const TString& configFileName)
 
   const Value& fixSigmaManualValue = config["FixSigmaManual"];
   readArray(fixSigmaManualValue, fixSigmaManual);
-  
+
   sliceVarName = config["SliceVarName"].GetString();
   sliceVarUnit = config["SliceVarUnit"].GetString();
-  
+
   const Value& sliceVarMinValue = config["SliceVarMin"];
   readArray(sliceVarMinValue, sliceVarMin);
 
@@ -159,46 +159,23 @@ int runMassFitter(const TString& configFileName)
   bool highlightPeakRegion = config["highlightPeakRegion"].GetBool();
 
   const unsigned int nSliceVarBins = sliceVarMin.size();
-  int bkgFunc[nSliceVarBins], sgnFunc[nSliceVarBins];
-  double sliceVarLimits[nSliceVarBins + 1];
+  std::vector<int> bkgFunc(nSliceVarBins);
+  std::vector<int> sgnFunc(nSliceVarBins);
+  std::vector<double> sliceVarLimits(nSliceVarBins + 1);
 
   for (unsigned int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
     sliceVarLimits[iSliceVar] = sliceVarMin[iSliceVar];
     sliceVarLimits[iSliceVar + 1] = sliceVarMax[iSliceVar];
 
-    if (bkgFuncConfig[iSliceVar] == 0) {
-      bkgFunc[iSliceVar] = HFInvMassFitter::Expo;
-    } else if (bkgFuncConfig[iSliceVar] == 1) {
-      bkgFunc[iSliceVar] = HFInvMassFitter::Poly1;
-    } else if (bkgFuncConfig[iSliceVar] == 2) {
-      bkgFunc[iSliceVar] = HFInvMassFitter::Poly2;
-    } else if (bkgFuncConfig[iSliceVar] == 3) {
-      bkgFunc[iSliceVar] = HFInvMassFitter::Pow;
-    } else if (bkgFuncConfig[iSliceVar] == 4) {
-      bkgFunc[iSliceVar] = HFInvMassFitter::PowExpo;
-    } else if (bkgFuncConfig[iSliceVar] == 5) {
-      bkgFunc[iSliceVar] = HFInvMassFitter::Poly3;
-    } else if (bkgFuncConfig[iSliceVar] == 6) {
-      bkgFunc[iSliceVar] = HFInvMassFitter::NoBkg;
-    } else {
-      std::cerr << "ERROR: only Expo, Poly1, Poly2, Pow and PowEx background "
-              "functions supported! Exit"
-           << std::endl;
-      return -1;
+    if (bkgFuncConfig[iSliceVar] < HFInvMassFitter::Expo || bkgFuncConfig[iSliceVar] > HFInvMassFitter::NoBkg) {
+      throw std::runtime_error("ERROR: only Expo, Poly1, Poly2, Pow and PowEx background functions supported! Exit");
     }
+    bkgFunc[iSliceVar] = bkgFuncConfig[iSliceVar];
 
-    if (sgnFuncConfig[iSliceVar] == 0) {
-      sgnFunc[iSliceVar] = HFInvMassFitter::SingleGaus;
-    } else if (sgnFuncConfig[iSliceVar] == 1) {
-      sgnFunc[iSliceVar] = HFInvMassFitter::DoubleGaus;
-    } else if (sgnFuncConfig[iSliceVar] == 2) {
-      sgnFunc[iSliceVar] = HFInvMassFitter::DoubleGausSigmaRatioPar;
-    } else {
-      std::cerr << "ERROR: only SingleGaus, DoubleGaus and DoubleGausSigmaRatioPar signal "
-              "functions supported! Exit"
-           << std::endl;
-      return -1;
+    if (sgnFuncConfig[iSliceVar] < HFInvMassFitter::SingleGaus || sgnFuncConfig[iSliceVar] > HFInvMassFitter::DoubleGausSigmaRatioPar) {
+      throw std::runtime_error("ERROR: only SingleGaus, DoubleGaus and DoubleGausSigmaRatioPar signal functions supported! Exit");
     }
+    sgnFunc[iSliceVar] = sgnFuncConfig[iSliceVar];
   }
 
   TString massAxisTitle = "";
@@ -222,8 +199,7 @@ int runMassFitter(const TString& configFileName)
     massAxisTitle = "#it{M}(pi^{+}) (GeV/#it{c}^{2})";
     massPDG = TDatabasePDG::Instance()->GetParticle("D*+")->Mass();
   } else {
-    std::cerr << "ERROR: only Dplus, D0, Ds, LcToPKPi, LcToPK0s and Dstar particles supported! Exit" << std::endl;
-    return -1;
+    throw std::runtime_error("ERROR: only Dplus, D0, Ds, LcToPKPi, LcToPK0s and Dstar particles supported! Exit");
   }
 
   // load inv-mass histograms
@@ -240,9 +216,9 @@ int runMassFitter(const TString& configFileName)
     }
   }
 
-  TH1* hMassSgn[nSliceVarBins];
-  TH1* hMassRefl[nSliceVarBins];
-  TH1* hMass[nSliceVarBins];
+  std::vector<TH1*> hMassSgn(nSliceVarBins);
+  std::vector<TH1*> hMassRefl(nSliceVarBins);
+  std::vector<TH1*> hMass(nSliceVarBins);
 
   for (unsigned int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
     if (!isMc) {
@@ -252,12 +228,10 @@ int runMassFitter(const TString& configFileName)
         hMassSgn[iSliceVar] = inputFileRefl->Get<TH1>(fdHistoName[iSliceVar].data());
         hMassSgn[iSliceVar]->Add(inputFileRefl->Get<TH1>(promptHistoName[iSliceVar].data()));
         if (!hMassRefl[iSliceVar]) {
-          std::cerr << "ERROR: MC reflection histogram not found! Exit!" << std::endl;
-          return -1;
+          throw std::runtime_error("ERROR: MC reflection histogram not found! Exit!");
         }
         if (!hMassSgn[iSliceVar]) {
-          std::cerr << "ERROR: MC prompt or FD histogram not found! Exit!" << std::endl;
-          return -1;
+          throw std::runtime_error("ERROR: MC prompt or FD histogram not found! Exit!");
         }
       }
     } else {
@@ -269,8 +243,7 @@ int runMassFitter(const TString& configFileName)
       }
     }
     if (!hMass[iSliceVar]) {
-      std::cerr << "ERROR: input histogram for fit not found! Exit!" << std::endl;
-      return -1;
+      throw std::runtime_error("ERROR: input histogram for fit not found! Exit!");
     }
     hMass[iSliceVar]->SetDirectory(nullptr);
   }
@@ -278,74 +251,74 @@ int runMassFitter(const TString& configFileName)
 
   // define output histos
   auto hRawYields = new TH1D("hRawYields", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield",
-                             nSliceVarBins, sliceVarLimits);
+                             nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsCounted = new TH1D("hRawYieldsCounted", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield via bin count",
-                             nSliceVarBins, sliceVarLimits);
+                                    nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSigma = new TH1D(
     "hRawYieldsSigma", ";" + sliceVarName + "(" + sliceVarUnit + ");width (GeV/#it{c}^{2})",
-    nSliceVarBins, sliceVarLimits);
+    nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSigmaRatio = new TH1D(
     "hRawYieldsSigmaRatio",
-    ";" + sliceVarName + "(" + sliceVarUnit + ");ratio #sigma_{1}/#sigma_{2}", nSliceVarBins, sliceVarLimits);
+    ";" + sliceVarName + "(" + sliceVarUnit + ");ratio #sigma_{1}/#sigma_{2}", nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSigma2 = new TH1D(
     "hRawYieldsSigma2", ";" + sliceVarName + "(" + sliceVarUnit + ");width (GeV/#it{c}^{2})",
-    nSliceVarBins, sliceVarLimits);
+    nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsMean = new TH1D(
     "hRawYieldsMean", ";" + sliceVarName + "(" + sliceVarUnit + ");mean (GeV/#it{c}^{2})",
-    nSliceVarBins, sliceVarLimits);
+    nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsFracGaus2 = new TH1D(
     "hRawYieldsFracGaus2",
-    ";" + sliceVarName + "(" + sliceVarUnit + ");second-gaussian fraction", nSliceVarBins, sliceVarLimits);
+    ";" + sliceVarName + "(" + sliceVarUnit + ");second-gaussian fraction", nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSignificance = new TH1D(
     "hRawYieldsSignificance",
-    ";" + sliceVarName + "(" + sliceVarUnit + ");significance (3#sigma)", nSliceVarBins, sliceVarLimits);
+    ";" + sliceVarName + "(" + sliceVarUnit + ");significance (3#sigma)", nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSgnOverBkg =
     new TH1D("hRawYieldsSgnOverBkg", ";" + sliceVarName + "(" + sliceVarUnit + ");S/B (3#sigma)",
-             nSliceVarBins, sliceVarLimits);
+             nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSignal =
     new TH1D("hRawYieldsSignal", ";" + sliceVarName + "(" + sliceVarUnit + ");Signal (3#sigma)",
-             nSliceVarBins, sliceVarLimits);
+             nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsBkg =
     new TH1D("hRawYieldsBkg", ";" + sliceVarName + "(" + sliceVarUnit + ");Background (3#sigma)",
-             nSliceVarBins, sliceVarLimits);
+             nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsChiSquare =
     new TH1D("hRawYieldsChiSquare",
-             ";" + sliceVarName + "(" + sliceVarUnit + ");#chi^{2}/#it{ndf}", nSliceVarBins, sliceVarLimits);
+             ";" + sliceVarName + "(" + sliceVarUnit + ");#chi^{2}/#it{ndf}", nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSecondPeak = new TH1D(
     "hRawYieldsSecondPeak", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield second peak",
-    nSliceVarBins, sliceVarLimits);
+    nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsMeanSecondPeak =
     new TH1D("hRawYieldsMeanSecondPeak",
              ";" + sliceVarName + "(" + sliceVarUnit + ");mean second peak (GeV/#it{c}^{2})",
-             nSliceVarBins, sliceVarLimits);
+             nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSigmaSecondPeak =
     new TH1D("hRawYieldsSigmaSecondPeak",
              ";" + sliceVarName + "(" + sliceVarUnit + ");width second peak (GeV/#it{c}^{2})",
-             nSliceVarBins, sliceVarLimits);
+             nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSignificanceSecondPeak =
     new TH1D("hRawYieldsSignificanceSecondPeak",
              ";" + sliceVarName + "(" + sliceVarUnit + ");signficance second peak (3#sigma)",
-             nSliceVarBins, sliceVarLimits);
+             nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSigmaRatioSecondFirstPeak =
     new TH1D("hRawYieldsSigmaRatioSecondFirstPeak",
              ";" + sliceVarName + "(" + sliceVarUnit + ");width second peak / width first peak",
-             nSliceVarBins, sliceVarLimits);
+             nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSoverBSecondPeak = new TH1D(
     "hRawYieldsSoverBSecondPeak",
-    ";" + sliceVarName + "(" + sliceVarUnit + ");S/B second peak (3#sigma)", nSliceVarBins, sliceVarLimits);
+    ";" + sliceVarName + "(" + sliceVarUnit + ");S/B second peak (3#sigma)", nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSignalSecondPeak = new TH1D(
     "hRawYieldsSignalSecondPeak",
-    ";" + sliceVarName + "(" + sliceVarUnit + ");Signal second peak (3#sigma)", nSliceVarBins, sliceVarLimits);
+    ";" + sliceVarName + "(" + sliceVarUnit + ");Signal second peak (3#sigma)", nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsBkgSecondPeak =
     new TH1D("hRawYieldsBkgSecondPeak",
              ";" + sliceVarName + "(" + sliceVarUnit + ");Background second peak (3#sigma)",
-             nSliceVarBins, sliceVarLimits);
+             nSliceVarBins, sliceVarLimits.data());
   auto hReflectionOverSignal =
     new TH1D("hReflectionOverSignal", ";" + sliceVarName + "(" + sliceVarUnit + ");Refl/Signal",
-             nSliceVarBins, sliceVarLimits);
+             nSliceVarBins, sliceVarLimits.data());
 
   const Int_t nConfigsToSave = 6;
-  auto hFitConfig = new TH2F("hfitConfig", "Fit Configurations", nConfigsToSave, 0, 6, nSliceVarBins, sliceVarLimits);
+  auto hFitConfig = new TH2F("hfitConfig", "Fit Configurations", nConfigsToSave, 0, 6, nSliceVarBins, sliceVarLimits.data());
   const char* hFitConfigXLabel[nConfigsToSave] = {"mass min", "mass max", "rebin num", "fix sigma", "bkg func", "sgn func"};
   hFitConfig->SetStats(0);
   hFitConfig->LabelsDeflate("X");
@@ -386,7 +359,7 @@ int runMassFitter(const TString& configFileName)
       hSigmaToFix = inputFileSigma->Get<TH1>("hRawYieldsSigma");
       hSigmaToFix->SetDirectory(0);
       if (static_cast<unsigned int>(hSigmaToFix->GetNbinsX()) != nSliceVarBins) {
-        std::cout << "WARNING: Different number of bins for this analysis and histo for fix sigma!" << std::endl;
+        printf("WARNING: Different number of bins for this analysis and histo for fix sigma!\n");
       }
       inputFileSigma->Close();
     }
@@ -401,16 +374,16 @@ int runMassFitter(const TString& configFileName)
     hMeanToFix = inputFileMean->Get<TH1>("hRawYieldsMean");
     hMeanToFix->SetDirectory(0);
     if (static_cast<unsigned int>(hMeanToFix->GetNbinsX()) != nSliceVarBins) {
-      std::cout << "WARNING: Different number of bins for this analysis and histo for fix mean" << std::endl;
+      printf("WARNING: Different number of bins for this analysis and histo for fix mean\n");
     }
     inputFileMean->Close();
   }
 
   // fit histograms
 
-  TH1* hMassForFit[nSliceVarBins];
-  TH1* hMassForRefl[nSliceVarBins];
-  TH1* hMassForSgn[nSliceVarBins];
+  std::vector<TH1*> hMassForFit(nSliceVarBins);
+  std::vector<TH1*> hMassForRefl(nSliceVarBins);
+  std::vector<TH1*> hMassForSgn(nSliceVarBins);
 
   Int_t canvasSize[2] = {1920, 1080};
   if (nSliceVarBins == 1) {
@@ -420,7 +393,9 @@ int runMassFitter(const TString& configFileName)
 
   Int_t nCanvasesMax = 20; // do not put more than 20 bins per canvas to make them visible
   const Int_t nCanvases = ceil(static_cast<float>(nSliceVarBins) / nCanvasesMax);
-  TCanvas *canvasMass[nCanvases], *canvasResiduals[nCanvases], *canvasRefl[nCanvases];
+  std::vector<TCanvas*> canvasMass(nCanvases);
+  std::vector<TCanvas*> canvasResiduals(nCanvases);
+  std::vector<TCanvas*> canvasRefl(nCanvases);
   for (int iCanvas = 0; iCanvas < nCanvases; iCanvas++) {
     int nPads = (nCanvases == 1) ? nSliceVarBins : nCanvasesMax;
     canvasMass[iCanvas] = new TCanvas(Form("canvasMass%d", iCanvas), Form("canvasMass%d", iCanvas),
@@ -442,8 +417,8 @@ int runMassFitter(const TString& configFileName)
     TString ptTitle =
       Form("%0.2f < " + sliceVarName + " < %0.2f " + sliceVarUnit, sliceVarMin[iSliceVar], sliceVarMax[iSliceVar]);
     hMassForFit[iSliceVar]->SetTitle(Form("%s;%s;Counts per %0.1f MeV/#it{c}^{2}",
-                                    ptTitle.Data(), massAxisTitle.Data(),
-                                    hMassForFit[iSliceVar]->GetBinWidth(1) * 1000));
+                                          ptTitle.Data(), massAxisTitle.Data(),
+                                          hMassForFit[iSliceVar]->GetBinWidth(1) * 1000));
     hMassForFit[iSliceVar]->SetName(Form("MassForFit%d", iSliceVar));
 
     if (enableRefl) {
@@ -453,7 +428,8 @@ int runMassFitter(const TString& configFileName)
 
     Double_t reflOverSgn = 0;
     double markerSize = 1.;
-    if (nSliceVarBins > 15) {
+    constexpr int NSliceVarBinsLarge = 15;
+    if (nSliceVarBins > NSliceVarBinsLarge) {
       markerSize = 0.5;
     }
 
@@ -464,7 +440,7 @@ int runMassFitter(const TString& configFileName)
       massFitter->setHighlightPeakRegion(highlightPeakRegion);
       massFitter->setInitialGaussianMean(massPDG);
       massFitter->setParticlePdgMass(massPDG);
-      massFitter->setBoundGaussianMean(massPDG, 0.8*massPDG, 1.2*massPDG);
+      massFitter->setBoundGaussianMean(massPDG, 0.8 * massPDG, 1.2 * massPDG);
       massFitter->doFit();
 
       if (nSliceVarBins > 1) {
@@ -504,7 +480,7 @@ int runMassFitter(const TString& configFileName)
       massFitter->setHighlightPeakRegion(highlightPeakRegion);
       massFitter->setInitialGaussianMean(massPDG);
       massFitter->setParticlePdgMass(massPDG);
-      massFitter->setBoundGaussianMean(massPDG, 0.8*massPDG, 1.2*massPDG);
+      massFitter->setBoundGaussianMean(massPDG, 0.8 * massPDG, 1.2 * massPDG);
       if (useLikelihood) {
         massFitter->setUseLikelihoodFit();
       }
@@ -514,18 +490,16 @@ int runMassFitter(const TString& configFileName)
       if (fixSigma) {
         if (fixSigmaManual.empty()) {
           massFitter->setFixGaussianSigma(hSigmaToFix->GetBinContent(iSliceVar + 1));
-          std::cout << "*****************************"
-               << "\n"
-               << "FIXED SIGMA: " << hSigmaToFix->GetBinContent(iSliceVar + 1) << "\n"
-               << "*****************************" << std::endl;
+          printf("*****************************\n");
+          printf("FIXED SIGMA: %f\n", hSigmaToFix->GetBinContent(iSliceVar + 1));
+          printf("*****************************\n");
         } else if (!fixSigmaManual.empty()) {
           massFitter->setFixGaussianSigma(fixSigmaManual[iSliceVar]);
-          std::cout << "*****************************"
-               << "\n"
-               << "FIXED SIGMA: " << fixSigmaManual[iSliceVar] << "\n"
-               << "*****************************" << std::endl;
+          printf("*****************************\n");
+          printf("FIXED SIGMA: %f\n", fixSigmaManual[iSliceVar]);
+          printf("*****************************\n");
         } else {
-          std::cout << "WARNING: impossible to fix sigma! Wrong fix sigma file or value!" << std::endl;
+          printf("WARNING: impossible to fix sigma! Wrong fix sigma file or value!\n");
         }
       }
 
@@ -690,39 +664,19 @@ void setHistoStyle(TH1* histo, Color_t color, Size_t markerSize)
 
 void divideCanvas(TCanvas* canvas, int nSliceVarBins)
 {
-  if (nSliceVarBins < 2) {
-    canvas->cd();
-  } else if (nSliceVarBins == 2 || nSliceVarBins == 3) {
-    canvas->Divide(nSliceVarBins, 1);
-  } else if (nSliceVarBins == 4 || nSliceVarBins == 6 || nSliceVarBins == 8) {
-    canvas->Divide(nSliceVarBins / 2, 2);
-  } else if (nSliceVarBins == 5 || nSliceVarBins == 7) {
-    canvas->Divide((nSliceVarBins + 1) / 2, 2);
-  } else if (nSliceVarBins == 9 || nSliceVarBins == 12 || nSliceVarBins == 15) {
-    canvas->Divide(nSliceVarBins / 3, 3);
-  } else if (nSliceVarBins == 10 || nSliceVarBins == 11) {
-    canvas->Divide(4, 3);
-  } else if (nSliceVarBins == 13 || nSliceVarBins == 14) {
-    canvas->Divide(5, 3);
-  } else if (nSliceVarBins > 15 && nSliceVarBins <= 20 && nSliceVarBins % 4 == 0) {
-    canvas->Divide(nSliceVarBins / 4, 4);
-  } else if (nSliceVarBins > 15 && nSliceVarBins <= 20 && nSliceVarBins % 4 != 0) {
-    canvas->Divide(5, 4);
-  } else if (nSliceVarBins == 21) {
-    canvas->Divide(7, 3);
-  } else if (nSliceVarBins > 21 && nSliceVarBins <= 25) {
-    canvas->Divide(5, 5);
-  } else if (nSliceVarBins > 25 && nSliceVarBins % 2 == 0) {
-    canvas->Divide(nSliceVarBins / 2, 2);
-  } else {
-    canvas->Divide((nSliceVarBins + 1) / 2, 2);
+  const int rectangularSideMin = std::floor(std::sqrt(nSliceVarBins));
+  constexpr int RectangularSidesDiffMax = 2;
+  for (int rectangularSidesDiff = 0; rectangularSidesDiff < RectangularSidesDiffMax; ++rectangularSidesDiff) {
+    if (rectangularSideMin * (rectangularSideMin + rectangularSidesDiff) >= nSliceVarBins) {
+      canvas->Divide(rectangularSideMin + rectangularSidesDiff, rectangularSideMin);
+    }
   }
 }
 
 int main(int argc, char* argv[]) {
   if (argc < 2) {
-    std::cout << "Error! Please use " << std::endl;
-    std::cout << " ./runMassFitter configFileName" << std::endl;
+    printf("Error! Please use \n");
+    printf(" ./runMassFitter configFileName\n");
     exit(EXIT_FAILURE);
   }
 
