@@ -72,7 +72,10 @@ BDT_variables = ['fKFChi2PrimProton',
                  'fKFPt',
                  'fKFMassInv',
                  'fKFSigBgStatus',
-                 'fLiteY']
+                 'fLiteY',
+                 'fLiteMlScoreFirstClass',
+                 'fLiteMlScoreSecondClass',
+                 'fLiteMlScoreThirdClass']
 
 ## Loop over input files
 applied_dfs = []
@@ -102,7 +105,7 @@ column_names =['bkg_score', 'prompt_score', 'non_prompt_score']
 for i_class in range(3):
     df[column_names[i_class]] = prediction[:, i_class]
 
-applied_df = df[['fKFSigBgStatus', 'fLiteNSigTpcTofPr', 'fLiteNSigTpcTofKa', 'fLiteNSigTpcTofPi', 'fKFT', 'fKFPt', 'fKFMassInv', 'bkg_score', 'prompt_score', 'non_prompt_score']]
+applied_df = df[['fKFSigBgStatus', 'fLiteNSigTpcTofPr', 'fLiteNSigTpcTofKa', 'fLiteNSigTpcTofPi', 'fKFT', 'fKFPt', 'fKFMassInv', 'bkg_score', 'prompt_score', 'non_prompt_score', 'fLiteMlScoreFirstClass', 'fLiteMlScoreSecondClass', 'fLiteMlScoreThirdClass']]
 applied_dfs.append(applied_df)
 
 ## Free memory
