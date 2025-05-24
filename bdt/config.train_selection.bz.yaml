@@ -1,0 +1,10 @@
+selection: {'fLiteImpactParameter0': 'fLiteImpactParameter0 > -1 and fLiteImpactParameter0 < 1',
+            'fLiteImpactParameter1': 'fLiteImpactParameter1 > -1 and fLiteImpactParameter1 < 1',
+            'fLiteImpactParameter2': 'fLiteImpactParameter2 > -1 and fLiteImpactParameter2 < 1',
+            'fLiteCpa': 'fLiteCpa > -1 and fLiteCpa < 1',
+            'fLiteCpaXY': 'fLiteCpaXY > -1 and fLiteCpaXY < 1',
+            'fLiteChi2PCA': 'fLiteChi2PCA > -10 and fLiteChi2PCA < 100',
+            'fLiteDecayLengthXY': 'fLiteDecayLengthXY > -10 and fLiteDecayLengthXY < 100',
+            'fLiteDecayLength': 'fLiteDecayLength > -10 and fLiteDecayLength < 100',
+            'fKFMassInv': 'fKFMassInv > 2.12 and fKFMassInv < 2.42'
+            }

@@ -1,18 +1,18 @@
 void ListVarsToSkipWriter(const std::string& fileName, bool eachNewLine=false) {
   const std::vector<std::string> varsToPreserve {
-    "Candidates_KF_fChi2PrimKaon",
-    "Candidates_KF_fChi2PrimPion",
-    "Candidates_KF_fChi2PrimProton",
-    "Candidates_KF_fChi2GeoPionKaon",
-    "Candidates_KF_fChi2GeoProtonKaon",
-    "Candidates_KF_fChi2GeoProtonPion",
-    "Candidates_KF_fChi2Geo",
-    "Candidates_KF_fDecayLengthNormalised",
-    "Candidates_KF_fChi2Topo",
-    "Candidates_KF_fSigBgStatus",
-    "Candidates_KF_fMassInv",
-    "Candidates_Lite_fPt",
-    "Candidates_Lite_fT"
+    "fLiteImpactParameter0",
+    "fLiteImpactParameter1",
+    "fLiteImpactParameter2",
+    "fLiteChi2PCA",
+    "fLiteCpa",
+    "fLiteCpaXY",
+    "fLiteDecayLengthXY",
+    "fLiteDecayLength",
+    "fKFPt",
+    "fKFMassInv",
+    "fKFT",
+    "fLiteY",
+    "fKFSigBgStatus"
   };
 
   TFile* fileIn = TFile::Open(fileName.c_str(), "open");

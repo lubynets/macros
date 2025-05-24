@@ -44,9 +44,9 @@ if args.config_file_selections == '':
 
 #------------ Open config files ------------
 config_file = open(args.config_file, 'r')
-config = yaml.full_load(config_file)
+config = yaml.safe_load(config_file)
 config_file_selections = open(args.config_file_selections, 'r')
-config_selections = yaml.full_load(config_file_selections)
+config_selections = yaml.safe_load(config_file_selections)
 input_files_mc_path = args.input_files_mc_path
 input_files_data_path = args.input_files_data_path
 files_mc_from, files_mc_to = args.input_files_mc_range
@@ -65,7 +65,9 @@ slice_var_treename = config['slice_var_treename']
 slice_var_unit = config['slice_var_unit']
 sidebands = config['sidebands']
 training_variables = config['training_variables']
-skip_variables = config['skip_variables']
+keep_variables = config['keep_variables']
+draw_vars_dict = config['draw_vars_dict']
+keep_variables = list(set(training_variables + keep_variables))
 print(f'ML analysis for LcToPKPi candidates with {int(slice_var_min)} < {slice_var_name} < {int(slice_var_max)} {slice_var_unit} (model name: {model_version})')
 ## Retrieve selections
 selections = config_selections['selection']
@@ -88,7 +90,7 @@ for fileindex in range(files_mc_from, files_mc_to+1):
     with uproot.open(filename) as file:
         tree = file["pTree"]
         df = tree.arrays(library="pd")
-    df.drop(columns = skip_variables, inplace = True)   # inplace = True - "void" type instead of returning a new df
+    df = df[keep_variables]
     df.query(f'(({slice_var_treename} >= {slice_var_min}) & ({slice_var_treename} < {slice_var_max}))', inplace=True)   # where is fPt defined? What is its nature, string? Can one generalize it?
     signal_counts[0] += len(df) # Original length of the df in the certain fPt interval (sel_variables = 'total')
     ## Check for infinities and NaNs
@@ -125,7 +127,7 @@ for fileindex in range(files_data_from, files_data_to+1):
     with uproot.open(filename) as file:
         tree = file["pTree"]
         df = tree.arrays(library="pd")
-    df.drop(columns = skip_variables, inplace = True)
+    df = df[keep_variables]
     df.query(f'(({slice_var_treename} >= {slice_var_min}) & ({slice_var_treename} < {slice_var_max})) & ((fKFMassInv > {sidebands[0]} & fKFMassInv < {sidebands[1]}) | (fKFMassInv > {sidebands[2]} & fKFMassInv < {sidebands[3]}))', inplace=True)
     bkg_counts[0] += len(df)
     ## Check for infinities and NaNs
@@ -349,15 +351,8 @@ shapSummary.savefig(f'{output_directory}/shapSummary_{slice_var_name}{int(slice_
 print('Plotting feature importance: Done.')
 
 # --------------- Plot variable distributions ----------------
-DrawVarsDict = {'Basic': ['fKFPt', 'fKFMassInv', 'fKFT', 'fLiteY'],
-                'Chi2Prim': ['fKFChi2PrimProton', 'fKFChi2PrimKaon', 'fKFChi2PrimPion'],
-                'Chi2Geo': ['fKFChi2Geo', 'fKFChi2GeoPionKaon', 'fKFChi2GeoProtonKaon', 'fKFChi2GeoProtonPion',],
-                'DCA': ['fKFDcaPionKaon', 'fKFDcaProtonKaon', 'fKFDcaProtonPion'],
-                'Others': ['fLiteCpa', 'fLiteCpaXY', 'fKFDecayLengthNormalised', 'fKFChi2Topo'],
-                'ImpactParameter': ['fLiteImpactParameter0', 'fLiteImpactParameter1', 'fLiteImpactParameter2'],
-                'NTpcTofSigma': ['fLiteNSigTpcTofPr', 'fLiteNSigTpcTofKa', 'fLiteNSigTpcTofPi']}
 print('Plotting variable distributions...')
-for label, VarList in DrawVarsDict.items():
+for label, VarList in draw_vars_dict.items():
     VarDist = plot_utils.plot_distr([BkgDf, PromptDf, NonPromptDf], VarList, 100, LegLabels, log=True, figsize=(11,7), alpha=0.3, grid=False, density=True)
     fig = plt.gcf()
     fig.text(0.01, 0.99, f'{int(slice_var_min)} < {slice_var_name} < {int(slice_var_max)} {slice_var_unit}')

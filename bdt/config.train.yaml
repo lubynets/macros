@@ -27,4 +27,37 @@ training_variables: ['fKFChi2PrimProton',
                      'fLiteNSigTpcTofPr',
                      'fLiteNSigTpcTofKa',
                      'fLiteNSigTpcTofPi']
-skip_variables: []
+keep_variables: ['fKFPt', 'fKFMassInv', 'fKFT', 'fLiteY', 'fKFSigBgStatus']
+draw_vars_dict:
+  Basic:
+    - fKFPt
+    - fKFMassInv
+    - fKFT
+    - fLiteY
+  Chi2Prim:
+    - fKFChi2PrimProton
+    - fKFChi2PrimKaon
+    - fKFChi2PrimPion
+  Chi2Geo:
+    - fKFChi2Geo
+    - fKFChi2GeoPionKaon
+    - fKFChi2GeoProtonKaon
+    - fKFChi2GeoProtonPion
+  DCA:
+    - fKFDcaPionKaon
+    - fKFDcaProtonKaon
+    - fKFDcaProtonPion
+  Others:
+    - fLiteCpa
+    - fLiteCpaXY
+    - fKFDecayLengthNormalised
+    - fKFChi2Topo
+  ImpactParameter:
+    - fLiteImpactParameter0
+    - fLiteImpactParameter1
+    - fLiteImpactParameter2
+  NTpcTofSigma:
+    - fLiteNSigTpcTofPr
+    - fLiteNSigTpcTofKa
+    - fLiteNSigTpcTofPi
+
