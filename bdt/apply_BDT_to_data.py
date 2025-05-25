@@ -10,6 +10,7 @@ import utils as utils
 
 #------------ Define config files ------------
 parser = argparse.ArgumentParser(description='Configure the parameters of the script.')
+parser.add_argument('--config-file', dest='config_file', help='path to the YAML file with MC configuration.', default='')
 parser.add_argument('--config-file-sel', dest='config_file_selections', help='path to the YAML file with selections.', default='')
 parser.add_argument('--input-file', dest='input_file', help='input file in parquet.gzip format.', default='')
 parser.add_argument('--tree-name', dest='tree_name', help='tree name inside input file if it is provided in .root format.', default='')
@@ -29,8 +30,10 @@ input_file = args.input_file
 tree_name = args.tree_name
 model_file = args.model_file
 output_directory = args.output_directory
+config_file = open(args.config_file, 'r')
+config = yaml.safe_load(config_file)
 config_file_selections = open(args.config_file_selections, 'r')
-config_selections = yaml.full_load(config_file_selections)
+config_selections = yaml.safe_load(config_file_selections)
 pT_min, pT_max = args.pT_interval
 ## Read config file
 
@@ -48,41 +51,17 @@ model_hdl = ModelHandler()
 model_hdl.load_model_handler(filename=model_file)
 
 ## Define input files
-BDT_variables = ['fKFChi2PrimProton',
-                 'fKFChi2PrimKaon',
-                 'fKFChi2PrimPion',
-                 'fKFChi2Geo',
-                 'fKFChi2Topo',
-                 'fKFChi2GeoPionKaon',
-                 'fKFChi2GeoProtonKaon',
-                 'fKFChi2GeoProtonPion',
-                 'fKFDecayLengthNormalised',
-                 'fLiteNSigTpcTofPr',
-                 'fLiteNSigTpcTofKa',
-                 'fLiteNSigTpcTofPi',
-                 'fKFDcaPionKaon',
-                 'fKFDcaProtonKaon',
-                 'fKFDcaProtonPion',
-                 'fLiteImpactParameter0',
-                 'fLiteImpactParameter1',
-                 'fLiteImpactParameter2',
-                 'fLiteCpa',
-                 'fLiteCpaXY',
-                 'fKFT',
-                 'fKFPt',
-                 'fKFMassInv',
-                 'fKFSigBgStatus',
-                 'fLiteY',
-                 'fLiteMlScoreFirstClass',
-                 'fLiteMlScoreSecondClass',
-                 'fLiteMlScoreThirdClass']
+training_variables = config['training_variables']
+keep_variables = config['keep_variables']
+variables_of_interest = list(set(training_variables + keep_variables))
+variables_of_interest.extend(['fLiteMlScoreFirstClass', 'fLiteMlScoreSecondClass', 'fLiteMlScoreThirdClass'])
 
 ## Loop over input files
 applied_dfs = []
 ## Read pandas DataFrame
 
 with uproot.open(f"{input_file}:{tree_name}") as tree:
-    df = tree.arrays(BDT_variables, library="pd")
+    df = tree.arrays(variables_of_interest, library="pd")
 
 ## Remove candidates with infinite and NaN values
 if df.isna().any().any():
@@ -105,7 +84,7 @@ column_names =['bkg_score', 'prompt_score', 'non_prompt_score']
 for i_class in range(3):
     df[column_names[i_class]] = prediction[:, i_class]
 
-applied_df = df[['fKFSigBgStatus', 'fLiteNSigTpcTofPr', 'fLiteNSigTpcTofKa', 'fLiteNSigTpcTofPi', 'fKFT', 'fKFPt', 'fKFMassInv', 'bkg_score', 'prompt_score', 'non_prompt_score', 'fLiteMlScoreFirstClass', 'fLiteMlScoreSecondClass', 'fLiteMlScoreThirdClass']]
+applied_df = df[['fKFSigBgStatus', 'fKFT', 'fKFPt', 'fKFMassInv', 'bkg_score', 'prompt_score', 'non_prompt_score', 'fLiteMlScoreFirstClass', 'fLiteMlScoreSecondClass', 'fLiteMlScoreThirdClass']]
 applied_dfs.append(applied_df)
 
 ## Free memory
