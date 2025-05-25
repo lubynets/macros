@@ -833,10 +833,7 @@
                 "cpaXY",
                 "kfChi2Geo",
                 "kfChi2Topo",
-                "kfDecayLengthNormalised",
-                "tpcTofNSigmaPrExpPr0",
-                "tpcTofNSigmaKa1",
-                "tpcTofNSigmaPiExpPi2"
+                "kfDecayLengthNormalised"
             ]
         },
         "ccdbUrl": "http:\/\/alice-ccdb.cern.ch",
@@ -855,11 +852,11 @@
         },
         "onnxFileNames": {
             "values": [
-                "/lustre/alice/users/lubynets/bdt/outputs_train/onnx/model/1/BDTmodel_pT_0_2_v1.onnx",
-                "/lustre/alice/users/lubynets/bdt/outputs_train/onnx/model/2/BDTmodel_pT_2_5_v1.onnx",
-                "/lustre/alice/users/lubynets/bdt/outputs_train/onnx/model/3/BDTmodel_pT_5_8_v1.onnx",
-                "/lustre/alice/users/lubynets/bdt/outputs_train/onnx/model/4/BDTmodel_pT_8_12_v1.onnx",
-                "/lustre/alice/users/lubynets/bdt/outputs_train/onnx/model/5/BDTmodel_pT_12_20_v1.onnx"
+                "/lustre/alice/users/lubynets/bdt/outputs_train/moreMoreVarsWoPid/model/1/BDTmodel_pT_0_2_v1.onnx",
+                "/lustre/alice/users/lubynets/bdt/outputs_train/moreMoreVarsWoPid/model/2/BDTmodel_pT_2_5_v1.onnx",
+                "/lustre/alice/users/lubynets/bdt/outputs_train/moreMoreVarsWoPid/model/3/BDTmodel_pT_5_8_v1.onnx",
+                "/lustre/alice/users/lubynets/bdt/outputs_train/moreMoreVarsWoPid/model/4/BDTmodel_pT_8_12_v1.onnx",
+                "/lustre/alice/users/lubynets/bdt/outputs_train/moreMoreVarsWoPid/model/5/BDTmodel_pT_12_20_v1.onnx"
             ]
         },
         "timestampCCDB": "-1",

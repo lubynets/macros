@@ -7,7 +7,8 @@ slice_var_name: "pT"
 slice_var_treename: "fKFPt"
 slice_var_unit: "GeV/c"
 sidebands: [2.12, 2.20, 2.38, 2.42]
-training_variables: ['fKFChi2PrimProton',
+training_variables: [
+                     'fKFChi2PrimProton',
                      'fKFChi2PrimKaon',
                      'fKFChi2PrimPion',
                      'fKFChi2GeoPionKaon',
@@ -23,10 +24,11 @@ training_variables: ['fKFChi2PrimProton',
                      'fLiteCpaXY',
                      'fKFChi2Geo',
                      'fKFChi2Topo',
-                     'fKFDecayLengthNormalised',
-                     'fLiteNSigTpcTofPr',
-                     'fLiteNSigTpcTofKa',
-                     'fLiteNSigTpcTofPi']
+                     'fKFDecayLengthNormalised'
+                     #'fLiteNSigTpcTofPr',
+                     #'fLiteNSigTpcTofKa',
+                     #'fLiteNSigTpcTofPi'
+                     ]
 keep_variables: ['fKFPt', 'fKFMassInv', 'fKFT', 'fLiteY', 'fKFSigBgStatus']
 draw_vars_dict:
   Basic:
@@ -56,8 +58,8 @@ draw_vars_dict:
     - fLiteImpactParameter0
     - fLiteImpactParameter1
     - fLiteImpactParameter2
-  NTpcTofSigma:
-    - fLiteNSigTpcTofPr
-    - fLiteNSigTpcTofKa
-    - fLiteNSigTpcTofPi
+  #NTpcTofSigma:
+    #- fLiteNSigTpcTofPr
+    #- fLiteNSigTpcTofKa
+    #- fLiteNSigTpcTofPi
 

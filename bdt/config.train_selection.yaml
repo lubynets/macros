@@ -14,9 +14,11 @@ selection: {'fKFChi2PrimProton': 'fKFChi2PrimProton > -10 and fKFChi2PrimProton 
             'fKFChi2GeoProtonKaon': 'fKFChi2GeoProtonKaon > -10 and fKFChi2GeoProtonKaon < 100',
             'fKFChi2GeoProtonPion': 'fKFChi2GeoProtonPion > -10 and fKFChi2GeoProtonPion < 100',
             'fKFChi2Topo': 'fKFChi2Topo > -10 and fKFChi2Topo < 100',
-            'fLiteNSigTpcTofPr': 'fLiteNSigTpcTofPr < 5',
-            'fLiteNSigTpcTofKa': 'fLiteNSigTpcTofKa < 5',
-            'fLiteNSigTpcTofPi': 'fLiteNSigTpcTofPi < 5',
             'fKFDecayLengthNormalised': 'fKFDecayLengthNormalised > -10 and fKFDecayLengthNormalised < 100',
             'fKFMassInv': 'fKFMassInv > 2.12 and fKFMassInv < 2.42'
             }
+
+
+#'fLiteNSigTpcTofPr': 'fLiteNSigTpcTofPr < 5',
+#'fLiteNSigTpcTofKa': 'fLiteNSigTpcTofKa < 5',
+#'fLiteNSigTpcTofPi': 'fLiteNSigTpcTofPi < 5',
