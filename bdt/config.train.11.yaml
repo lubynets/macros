@@ -1,0 +1,57 @@
+hyperpar_study_file: ""
+hyperpar_study_ntrials: 15
+hyperpar_study_timeout: 7200
+save_hyperpar_study: True
+model_version: "v1"
+slice_var_name: "pT"
+slice_var_treename: "fKFPt"
+slice_var_unit: "GeV/c"
+sidebands: [2.12, 2.20, 2.38, 2.42]
+training_variables: [
+                     'fLiteImpactParameter0',
+                     'fLiteImpactParameter1',
+                     'fLiteImpactParameter2',
+                     'fLiteCpa',
+                     'fLiteCpaXY',
+                     'fKFChi2PrimProton',
+                     'fKFChi2PrimKaon',
+                     'fKFChi2PrimPion',
+                     'fKFChi2GeoPionKaon',
+                     'fKFChi2GeoProtonPion',
+                     'fKFChi2GeoProtonKaon',
+                     'fKFDcaPionKaon',
+                     'fKFDcaProtonPion',
+                     'fKFDcaProtonKaon',
+                     'fKFChi2Geo',
+                     'fKFChi2Topo',
+                     'fKFDecayLengthNormalised'
+                     ]
+keep_variables: ['fKFPt', 'fKFMassInv', 'fKFT', 'fLiteY', 'fKFSigBgStatus']
+draw_vars_dict:
+  Basic:
+    - fKFPt
+    - fKFMassInv
+    - fKFT
+    - fLiteY
+  Chi2Prim:
+    - fKFChi2PrimProton
+    - fKFChi2PrimKaon
+    - fKFChi2PrimPion
+  Chi2Geo:
+    - fKFChi2Geo
+    - fKFChi2GeoPionKaon
+    - fKFChi2GeoProtonKaon
+    - fKFChi2GeoProtonPion
+  DCA:
+    - fKFDcaPionKaon
+    - fKFDcaProtonKaon
+    - fKFDcaProtonPion
+  Others:
+    - fLiteCpa
+    - fLiteCpaXY
+    - fKFDecayLengthNormalised
+    - fKFChi2Topo
+  ImpactParameter:
+    - fLiteImpactParameter0
+    - fLiteImpactParameter1
+    - fLiteImpactParameter2
