@@ -45,6 +45,10 @@
         "processV000ToV002": "false",
         "processV001ToV002": "true"
     },
+    "lumi-task": {
+        "processRun2": "false",
+        "processRun3": "false"
+    },
     "tracks-extra-spawner": "",
     "track-propagation": {
         "trackTuner": {
