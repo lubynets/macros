@@ -33,6 +33,7 @@
 #include <TDatabasePDG.h>
 #include <TFile.h>
 #include <TH2F.h>
+#include <TCanvas.h>
 
 #endif
 
