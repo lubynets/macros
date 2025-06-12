@@ -13,6 +13,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <numeric>
 #include <string>
 
 struct IndexMap {
@@ -35,7 +36,7 @@ std::vector<std::string> GetDFNames(const std::string& fileName);
 int DetermineFieldIdByName(const std::vector<IndexMap>& iMap, const std::string& name);
 std::vector<int> findPositions(const std::vector<int>& vec, int M);
 
-void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int maxEntries) {
+void AliceTree2AT(const std::string& fileName, bool isMC, bool hasEventInfo, bool isDoPlain, int maxEntries) {
 
   const std::vector<std::string> fields_to_ignore_ {};
 
@@ -111,29 +112,31 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
 
     TTree* treeKF = fileIn->Get<TTree>((dirname + "/O2hfcandlckf").c_str());
     TTree* treeLite = fileIn->Get<TTree>((dirname + "/O2hfcandlclite").c_str());
-    TTree* treeCollId = fileIn->Get<TTree>((dirname + "/O2hfcollidlclite").c_str());
-//     TTree* treeCollId = fileIn->Get<TTree>((dirname + "/O2hfcandlclite").c_str());
+    TTree* treeCollId = hasEventInfo ? fileIn->Get<TTree>((dirname + "/O2hfcollidlclite").c_str()) : nullptr;
+//     TTree* treeCollId = hasEventInfo ? fileIn->Get<TTree>((dirname + "/O2hfcandlclite").c_str()) : nullptr;
     TTree* treeMC = isMC ? fileIn->Get<TTree>((dirname + "/O2hfcandlcmc").c_str()) : nullptr;
     TTree* treeGen = isMC ? fileIn->Get<TTree>((dirname + "/O2hfcandlcfullp").c_str()) : nullptr;
     TTree* treeEvent = fileIn->Get<TTree>((dirname + "/O2hfcandlcfullev").c_str());
 
     if(!isConfigInitialized) {
-      CreateConfiguration(treeEvent, "Ev", EventsConfig, eventsMap);
-      eventValues.resize(eventsMap.size());
-      collision_id_field_id_in_evehead = DetermineFieldIdByName(eventsMap, "fIndexCollisions");
-      config_.AddBranchConfig(EventsConfig);
-      eve_header_ = new AnalysisTree::EventHeader(EventsConfig.GetId());
-      eve_header_->Init(EventsConfig);
-      tree_->Branch((EventsConfig.GetName() + ".").c_str(), "AnalysisTree::EventHeader", &eve_header_);
+      if(hasEventInfo) {
+        CreateConfiguration(treeEvent, "Ev", EventsConfig, eventsMap);
+        eventValues.resize(eventsMap.size());
+        collision_id_field_id_in_evehead = DetermineFieldIdByName(eventsMap, "fIndexCollisions");
+        config_.AddBranchConfig(EventsConfig);
+        eve_header_ = new AnalysisTree::EventHeader(EventsConfig.GetId());
+        eve_header_->Init(EventsConfig);
+        tree_->Branch((EventsConfig.GetName() + ".").c_str(), "AnalysisTree::EventHeader", &eve_header_);
+      }
 
       CreateConfiguration(treeKF, "KF", CandidatesConfig, candidateMap);
       kfLiteSepar = candidateMap.size();
       CreateConfiguration(treeLite, "Lite", CandidatesConfig, candidateMap);
       liteCollIdSepar = candidateMap.size();
-      CreateConfiguration(treeCollId, "Lite", CandidatesConfig, candidateMap);
+      if(hasEventInfo) CreateConfiguration(treeCollId, "Lite", CandidatesConfig, candidateMap);
       candValues.resize(candidateMap.size());
       sb_status_field_id = DetermineFieldIdByName(candidateMap, "fSigBgStatus");
-      collision_id_field_id_in_cand = DetermineFieldIdByName(candidateMap, "fIndexCollisions");
+      collision_id_field_id_in_cand = hasEventInfo ? DetermineFieldIdByName(candidateMap, "fIndexCollisions") : -999;
       config_.AddBranchConfig(CandidatesConfig);
       candidates_ = new AnalysisTree::GenericDetector(CandidatesConfig.GetId());
       tree_->Branch((CandidatesConfig.GetName() + ".").c_str(), "AnalysisTree::GenericDetector", &candidates_);
@@ -179,22 +182,22 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
     }
 
     const int nEntriesKF = treeKF->GetEntries();
-    if(treeLite->GetEntries() != nEntriesKF || treeCollId->GetEntries() != nEntriesKF || (isMC && treeMC->GetEntries() != nEntriesKF)) {
+    if(treeLite->GetEntries() != nEntriesKF || (hasEventInfo && treeCollId->GetEntries() != nEntriesKF) || (isMC && treeMC->GetEntries() != nEntriesKF)) {
       std::cout << "treeLite->GetEntries() = " << treeLite->GetEntries() << "\n";
       std::cout << "treeKF->GetEntries() = " << treeKF->GetEntries() << "\n";
-      std::cout << "treeCollId->GetEntries() = " << treeCollId->GetEntries() << "\n";
+      if(hasEventInfo) std::cout << "treeCollId->GetEntries() = " << treeCollId->GetEntries() << "\n";
       if(isMC) std::cout << "treeMC->GetEntries() = " << treeMC->GetEntries() << "\n";
-      throw std::runtime_error("treeLite->GetEntries() != nEntriesKF || treeCollId->GetEntries() != nEntriesKF || (isMC && treeMC->GetEntries() != nEntriesKF)");
+      throw std::runtime_error("Number of entries in trees do not match");
     }
 
     std::vector<int> candidateCollisionIndices;
-    for(int iEntryKF = 0; iEntryKF<nEntriesKF; iEntryKF++) {
+    for(int iEntryKF = 0; iEntryKF<nEntriesKF && hasEventInfo; iEntryKF++) {
       treeKF->GetEntry(iEntryKF);
       treeCollId->GetEntry(iEntryKF);
       candidateCollisionIndices.emplace_back(candValues.at(collision_id_field_id_in_cand).int_);
     }
 
-    const int nEntriesEve = treeEvent->GetEntries();
+    const int nEntriesEve = hasEventInfo ? treeEvent->GetEntries() : 1;
     for(int iEntryEve=0; iEntryEve<nEntriesEve && (maxEntries<0 || iGlobalEntry<maxEntries); iEntryEve++, iGlobalEntry++) {
       candidates_->ClearChannels();
       if(isMC) {
@@ -203,16 +206,22 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
         generated_->ClearChannels();
       }
 
-      treeEvent->GetEntry(iEntryEve);
-      SetFieldsFIC(eventsMap, *eve_header_, eventValues);
+      if(hasEventInfo) {
+        treeEvent->GetEntry(iEntryEve);
+        SetFieldsFIC(eventsMap, *eve_header_, eventValues);
+      }
 
-      const int indexCollision = eventValues.at(collision_id_field_id_in_evehead).int_;
-      auto candidatesOfThisCollisionIndices = findPositions(candidateCollisionIndices, indexCollision);
+      const int indexCollision = hasEventInfo ? eventValues.at(collision_id_field_id_in_evehead).int_ : -999;
+      std::vector<int> candidatesOfThisCollisionIndices = hasEventInfo ? findPositions(candidateCollisionIndices, indexCollision) : std::vector<int>{};
+      if(!hasEventInfo) {
+        candidatesOfThisCollisionIndices.resize(nEntriesKF);
+        std::iota(candidatesOfThisCollisionIndices.begin(), candidatesOfThisCollisionIndices.end(), 0);
+      }
 
-      for(auto& cOTI : candidatesOfThisCollisionIndices) {
+      for(const auto& cOTI : candidatesOfThisCollisionIndices) {
         treeKF->GetEntry(cOTI);
         treeLite->GetEntry(cOTI);
-        treeCollId->GetEntry(cOTI);
+        if(hasEventInfo) treeCollId->GetEntry(cOTI);
         if(isMC) treeMC->GetEntry(cOTI);
 
         auto& candidate = candidates_->AddChannel(config_.GetBranchConfig(candidates_->GetId()));
@@ -270,15 +279,16 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool isDoPlain, int ma
 int main(int argc, char* argv[]) {
   if (argc < 2) {
     std::cout << "Error! Please use " << std::endl;
-    std::cout << " ./alicetree2at fileName (isMC=true isDoPlain=false nEntries=ALL)" << std::endl;
+    std::cout << " ./alicetree2at fileName (isMC=true hasEventInfo=true isDoPlain=false nEntries=ALL)" << std::endl;
     exit(EXIT_FAILURE);
   }
 
   const std::string fileName = argv[1];
   const bool isMC = argc > 2 ? HelperFunctions::StringToBool(argv[2]) : true;
-  const bool isDoPlain = argc > 3 ? HelperFunctions::StringToBool(argv[3]) : false;
-  const int nEntries = argc > 4 ? atoi(argv[4]) : -1;
-  AliceTree2AT(fileName, isMC, isDoPlain, nEntries);
+  const bool hasEventInfo = argc > 3 ? HelperFunctions::StringToBool(argv[3]) : true;
+  const bool isDoPlain = argc > 4 ? HelperFunctions::StringToBool(argv[4]) : false;
+  const int nEntries = argc > 5 ? atoi(argv[5]) : -1;
+  AliceTree2AT(fileName, isMC, hasEventInfo, isDoPlain, nEntries);
 
   return 0;
 }
