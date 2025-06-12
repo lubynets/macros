@@ -110,13 +110,13 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool hasEventInfo, boo
     TFile* fileIn = TFile::Open(fileName.c_str(), "read");
     bool is_gentree_processed{false};
 
-    TTree* treeKF = fileIn->Get<TTree>((dirname + "/O2hfcandlckf").c_str());
-    TTree* treeLite = fileIn->Get<TTree>((dirname + "/O2hfcandlclite").c_str());
-    TTree* treeCollId = hasEventInfo ? fileIn->Get<TTree>((dirname + "/O2hfcollidlclite").c_str()) : nullptr;
-//     TTree* treeCollId = hasEventInfo ? fileIn->Get<TTree>((dirname + "/O2hfcandlclite").c_str()) : nullptr;
-    TTree* treeMC = isMC ? fileIn->Get<TTree>((dirname + "/O2hfcandlcmc").c_str()) : nullptr;
-    TTree* treeGen = isMC ? fileIn->Get<TTree>((dirname + "/O2hfcandlcfullp").c_str()) : nullptr;
-    TTree* treeEvent = fileIn->Get<TTree>((dirname + "/O2hfcandlcfullev").c_str());
+    TTree* treeKF = HelperFunctions::GetObjectWithNullptrCheck<TTree>(fileIn, dirname + "/O2hfcandlckf");
+    TTree* treeLite = HelperFunctions::GetObjectWithNullptrCheck<TTree>(fileIn, dirname + "/O2hfcandlclite");
+    TTree* treeCollId = hasEventInfo ? HelperFunctions::GetObjectWithNullptrCheck<TTree>(fileIn, dirname + "/O2hfcollidlclite") : nullptr;
+//     TTree* treeCollId = hasEventInfo ? HelperFunctions::GetObjectWithNullptrCheck<TTree>(fileIn, dirname + "/O2hfcandlclite") : nullptr;
+    TTree* treeMC = isMC ? HelperFunctions::GetObjectWithNullptrCheck<TTree>(fileIn, dirname + "/O2hfcandlcmc") : nullptr;
+    TTree* treeGen = isMC ? HelperFunctions::GetObjectWithNullptrCheck<TTree>(fileIn, dirname + "/O2hfcandlcfullp") : nullptr;
+    TTree* treeEvent = hasEventInfo ? HelperFunctions::GetObjectWithNullptrCheck<TTree>(fileIn, dirname + "/O2hfcandlcfullev") : nullptr;
 
     if(!isConfigInitialized) {
       if(hasEventInfo) {
