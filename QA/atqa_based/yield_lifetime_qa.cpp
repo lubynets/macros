@@ -14,8 +14,24 @@
 using namespace AnalysisTree;
 
 const std::vector<float> lifetimeRanges = {0.2, 0.35, 0.5, 0.7, 0.9, 1.6};
+const std::vector<float> pTRanges = {0, 2, 5, 8, 12, 20};
 const TAxis lifetimeAxis = {400, 0, 2};
 const std::string lifetimeAxisTitle = "T (ps)";
+const std::string genBranchName = "Generated";
+const std::pair<float, float> rapidityRanges{-0.8, 0.8};
+
+enum BdtClass : short {
+  kBackground = 0,
+  kPrompt,
+  kNonPrompt,
+  nBdtClasses
+};
+
+const std::string recBranchName = "Candidates";
+const std::vector<std::string> bdtClasses{"fLiteMlScoreFirstClass", "fLiteMlScoreSecondClass", "fLiteMlScoreThirdClass"};
+
+//const std::string recBranchName = "PlainBranch";
+//const std::vector<std::string> bdtClasses{"bkg_score", "prompt_score", "non_prompt_score"};
 
 struct Promptness {
   std::string name_;
@@ -24,55 +40,64 @@ struct Promptness {
 };
 
 const std::vector<Promptness> promptnesses{
-  {"prompt", EqualsCut("PlainBranch.fKFSigBgStatus", 1), EqualsCut("Generated.fGen_OriginMcGen", 1)},
-  {"nonprompt", EqualsCut("PlainBranch.fKFSigBgStatus", 2), EqualsCut("Generated.fGen_OriginMcGen", 2)},
+  {"prompt", EqualsCut(recBranchName + ".fKFSigBgStatus", 1), EqualsCut(genBranchName + ".fGen_OriginMcGen", 1)},
+  {"nonprompt", EqualsCut(recBranchName + ".fKFSigBgStatus", 2), EqualsCut(genBranchName + ".fGen_OriginMcGen", 2)},
 };
 
-void FillYieldRec(QA::Task& task) {
-  const std::string branchName = "PlainBranch";
-  std::vector<SimpleCut> bdtBgCuts;
-  std::vector<SimpleCut> bdtNonPromptCuts;
-  const std::vector<float> cutValuesBg{0.003, 0.005, 0.008, 0.01, 0.012, 0.015, 0.02};
-  for(const auto& cvb : cutValuesBg) {
-    const std::string sCutValueBg = HelperFunctions::ToStringWithPrecision(cvb, 3);
-    bdtBgCuts.emplace_back(RangeCut(branchName + ".bkg_score", -HugeNumber, cvb, "bg" + sCutValueBg));
+void FillYieldRec(QA::Task& task, const std::string& promptOrNonPromptCut) {
+  const short kSignal = promptOrNonPromptCut == "prompt" ? kPrompt : kNonPrompt;
+  const std::string signalShortcut = promptOrNonPromptCut == "prompt" ? "P" : "NP";
+
+  SimpleCut rapidityCut = RangeCut(Variable::FromString(recBranchName + ".fLiteY"), rapidityRanges.first, rapidityRanges.second);
+
+  const std::vector<float> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.05, 0.08};
+  if(bdtBgUpperValuesVsPt.size() != pTRanges.size() - 1) throw std::runtime_error("bdtUpperValuesVsPt.size() != pTRanges.size() - 1");
+  SimpleCut bdtBgScoreCut = SimpleCut({recBranchName + ".fKFPt", recBranchName + "." + bdtClasses.at(kBackground)}, [=] (const std::vector<double>& par) {
+    bool ok{false};
+    for(int iPt=0; iPt<bdtBgUpperValuesVsPt.size(); iPt++) {
+      ok |= (par[0] >= pTRanges.at(iPt) && par[0] < pTRanges.at(iPt+1) && par[1] >= 0 && par[1] < bdtBgUpperValuesVsPt.at(iPt));
+    }
+    return ok;
+  });
+
+  std::vector<float> bdtSignalLowerValues;
+  for(int iB=0; iB<=50; iB++) {
+    bdtSignalLowerValues.emplace_back(0.02 * iB);
   }
-  for(int iv=1; iv<=10; iv++) {
-    const double cutValueNp = 1.*iv/10;
-    const std::string sCutValueNp = HelperFunctions::ToStringWithPrecision(cutValueNp, 1);
-    bdtNonPromptCuts.emplace_back(RangeCut(branchName + ".non_prompt_score", -HugeNumber, cutValueNp, "np" + sCutValueNp));
+
+  std::vector<SimpleCut> bdtSigCuts;
+  for(const auto& bslv : bdtSignalLowerValues) {
+    bdtSigCuts.emplace_back(RangeCut(recBranchName + "." + bdtClasses.at(kSignal), bslv, 1, signalShortcut + "gt" + HelperFunctions::ToStringWithPrecision(bslv, 2)));
   }
 
   for(const auto& promptness : promptnesses) {
     task.SetTopLevelDirName("rec/" + promptness.name_);
-    for(const auto& bbc : bdtBgCuts) {
-      for (const auto& bnpc : bdtNonPromptCuts) {
-        Cuts* cutsRec = new Cuts(promptness.name_, {promptness.cut_rec_, bbc, bnpc});
-        const std::string histoName = "hT_" + bbc.GetTitle() + "_" + bnpc.GetTitle();
-        task.AddH1(histoName, {lifetimeAxisTitle, Variable::FromString("PlainBranch.fKFT"), lifetimeAxis}, cutsRec);
-      } // bdtNonPromptCuts
-    } // bdtBgCuts
+    for (const auto& bsc : bdtSigCuts) {
+      Cuts* cutsRec = new Cuts(promptness.name_, {promptness.cut_rec_, bsc, rapidityCut});
+      const std::string histoName = "hT_" + bsc.GetTitle();
+      task.AddH1(histoName, {lifetimeAxisTitle, Variable::FromString(recBranchName + ".fKFT"), lifetimeAxis}, cutsRec);
+    } // bdtNonPromptCuts
   } // promptnesses
-}
+} // FillYieldRec(QA::Task& task)
 
 void FillYieldGen(QA::Task& task) {
-  SimpleCut rapidityCut = RangeCut(Variable::FromString("Generated.fGen_Y"), -0.8, 0.8);
+  SimpleCut rapidityCut = RangeCut(Variable::FromString(genBranchName + ".fGen_Y"), rapidityRanges.first, rapidityRanges.second);
   for(const auto& promptness : promptnesses) {
     task.SetTopLevelDirName("gen/" + promptness.name_);
     Cuts* cutsGen = new Cuts(promptness.name_, {promptness.cut_gen_});
     const std::string histoName = "hT";
-    task.AddH1(histoName, {lifetimeAxisTitle, Variable::FromString("Generated.fGen_TDecay"), lifetimeAxis}, cutsGen);
+    task.AddH1(histoName, {lifetimeAxisTitle, Variable::FromString(genBranchName + ".fGen_TDecay"), lifetimeAxis}, cutsGen);
   } // promptnesses
-}
+} // FillYieldGen(QA::Task& task)
 
-void yield_lifetime_qa(const std::string& filelistrec, const std::string& filelistgen) {
+void yield_lifetime_qa(const std::string& filelistrec, const std::string& filelistgen, const std::string& promptOrNonPromptCut) {
   auto* man = TaskManager::GetInstance();
   man->SetVerbosityFrequency(100);
 
   auto* taskRec = new QA::Task;
   taskRec->SetOutputFileName("yield_lifetime_qa.root");
 
-  FillYieldRec(*taskRec);
+  FillYieldRec(*taskRec, promptOrNonPromptCut);
 
   man->AddTask(taskRec);
   man->Init({filelistrec}, {"aTree"});
@@ -95,13 +120,17 @@ void yield_lifetime_qa(const std::string& filelistrec, const std::string& fileli
 int main(int argc, char* argv[]) {
   if (argc < 2) {
     std::cout << "Error! Please use " << std::endl;
-    std::cout << " ./yield_lifetime_qa filelistrec filelistgen" << std::endl;
+    std::cout << " ./yield_lifetime_qa filelistrec (filelistgen promptOrNonPromptCut)" << std::endl;
     exit(EXIT_FAILURE);
   }
 
   const std::string filelistrec = argv[1];
-  const std::string filelistgen = argv[2];
-  yield_lifetime_qa(filelistrec, filelistgen);
+  const std::string filelistgen = argc > 2 ? argv[2] : argv[1];
+  const std::string promptOrNonPromptCut = argc > 3 ? argv[3] : "prompt";
+  if(promptOrNonPromptCut != "prompt" && promptOrNonPromptCut != "nonprompt") {
+    throw std::runtime_error("yield_lifetime_qa::main(): promptOrNonPromptCut must be either 'prompt' or 'nonprompt'");
+  }
+  yield_lifetime_qa(filelistrec, filelistgen, promptOrNonPromptCut);
 
   return 0;
 }
