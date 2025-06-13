@@ -2,6 +2,7 @@
 // Created by oleksii on 19.02.25.
 //
 #include "Helper.hpp"
+#include "HelperEfficiency.hpp"
 
 #include <TCanvas.h>
 #include <TFile.h>
@@ -15,8 +16,7 @@
 #include <iostream>
 
 using namespace Helper;
-
-std::pair<TH1D* , TH1D*> EvaluateEfficiencyHisto(TH1D* hNum, TH1D* hDen);
+using namespace HelperEfficiency;
 
 void efficiency(const std::string& fileName, bool isSaveToRoot) {
   TString currentMacroPath = __FILE__;
@@ -135,7 +135,7 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
 
     if(isSaveToRoot) {
       fileOut->cd();
-      for(auto& histo : std::vector<TH1D*>{histoEffPrompt, histoEffNonPrompt, histoRelErrEffPrompt, histoRelErrEffNonPrompt, histoRecPrompt, histoRecNonPrompt, histoGenPrompt, histoGenNonPrompt}) {
+      for(auto& histo : std::vector<TH1*>{histoEffPrompt, histoEffNonPrompt, histoRelErrEffPrompt, histoRelErrEffNonPrompt, histoRecPrompt, histoRecNonPrompt, histoGenPrompt, histoGenNonPrompt}) {
         histo->Write();
       }
     }
@@ -204,56 +204,6 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
 
   if(isSaveToRoot) fileOut->Close();
   fileIn->Close();
-}
-
-std::pair<TH1D* , TH1D*> EvaluateEfficiencyHisto(TH1D* hNum, TH1D* hDen) {
-  const int nBins = hNum->GetNbinsX();
-  CheckHistogramsForXaxisIdentity(hNum, hDen);
-
-  TH1D* hEff = dynamic_cast<TH1D*>(hNum->Clone());
-  TH1D* hRelErr = dynamic_cast<TH1D*>(hNum->Clone());
-  hEff->Reset();
-  hRelErr->Reset();
-
-  auto EvalEfficiency = [] (double num, double den) {
-    if(den == 0.) return 0.;
-    else return num/den;
-  };
-
-  auto EvalRelErrOfEfficiency = [] (double num, double den) {
-    if(num == 0. || den == 0.) return 0.;
-    if(num > den) return 1.;
-
-    return std::sqrt(1./num - 1./den);
-  };
-
-  auto EvalAbsErrOfRelErrOfEfficiency = [&] (double num, double den) {
-    if(num == 0. || den == 0. || num > den) return 0.;
-
-    auto relErr = EvalRelErrOfEfficiency(num, den);
-    return 1./2./relErr * std::sqrt(1./num/num/num + 1./den/den/den - 2./num/den/den);
-  };
-
-  for(int iBin=1; iBin<=nBins; iBin++) {
-    const double num = hNum->GetBinContent(iBin);
-    const double den = hDen->GetBinContent(iBin);
-    const double eff = EvalEfficiency(num, den);
-    const double relErr = EvalRelErrOfEfficiency(num, den);
-    const double absErrOnRelErr = EvalAbsErrOfRelErrOfEfficiency(num, den);
-    hEff->SetBinContent(iBin, eff);
-    hEff->SetBinError(iBin, eff*relErr);
-    hRelErr->SetBinContent(iBin, relErr);
-    hRelErr->SetBinError(iBin, absErrOnRelErr);
-  }
-
-  hEff->GetYaxis()->SetTitle("#varepsilon, %");
-  hEff->Scale(100);
-  hEff->SetTitle("");
-
-  hRelErr->GetYaxis()->SetTitle("#varepsilon_{#varepsilon}");
-  hRelErr->SetTitle("");
-
-  return std::make_pair(hEff, hRelErr);
 }
 
 int main(int argc, char* argv[]) {

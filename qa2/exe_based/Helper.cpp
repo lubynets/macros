@@ -295,3 +295,10 @@ std::pair<double, double> Helper::DetermineWorkingRangesTH1(const TH1* histo, do
 
   return std::make_pair(left, right);
 }
+
+void Helper::CD(TFile* file, const std::string& dirName) {
+  if(file == nullptr) throw std::runtime_error("Helper::CD() - file is nullptr");
+
+  if(file->GetDirectory(dirName.c_str()) == nullptr) file->mkdir(dirName.c_str());
+  file->cd(dirName.c_str());
+}

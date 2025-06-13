@@ -147,5 +147,7 @@ void LoadMacro(const std::string& macroName);
 
 std::pair<double, double> DetermineWorkingRangesTH1(const TH1* histo, double leftMargin=0.0015, double rightMargin=0.0015);
 
+void CD(TFile* file, const std::string& dirName);
+
 } // namespace Helper
 #endif //QA2_HELPER_HPP

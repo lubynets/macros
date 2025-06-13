@@ -18,6 +18,7 @@ SET(EXECUTABLES
     dwrth1
     bdt_efficiency
     mass_bdt_qa
+    efficiency_bdtdiff
 )
 
 SET(SOURCES
@@ -26,7 +27,7 @@ SET(SOURCES
 )
 
 string(REPLACE ".cpp" ".hpp" HEADERS "${SOURCES}")
-list(APPEND HEADERS "BdtEfficiencyCalculator.hpp" "Shapes.hpp")
+list(APPEND HEADERS "BdtEfficiencyCalculator.hpp" "Shapes.hpp" "HelperEfficiency.hpp")
 
 # Specify the C++ standard
 set(CMAKE_CXX_STANDARD 17)
