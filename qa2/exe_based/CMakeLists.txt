@@ -18,7 +18,7 @@ SET(EXECUTABLES
     dwrth1
     bdt_efficiency
     mass_bdt_qa
-    efficiency_bdtdiff
+    efficiency_bdtcutset
 )
 
 SET(SOURCES

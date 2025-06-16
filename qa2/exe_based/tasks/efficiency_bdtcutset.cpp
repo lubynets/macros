@@ -18,12 +18,12 @@ using namespace HelperEfficiency;
 
 void RebinHistoToEdges(TH1*& histo, const std::vector<double>& edges);
 
-void efficiency_bdtdiff(const std::string& fileName, bool isSaveToRoot) {
+void efficiency_bdtcutset(const std::string& fileName, bool isSaveToRoot) {
   LoadMacro("styles/mc_qa2.style.cc");
 
   TFile* fileIn = OpenFileWithNullptrCheck(fileName);
 
-  const std::string fileOutName = "efficiency_bdtdiff";
+  const std::string fileOutName = "efficiency_bdtcutset";
 
   // ========================= Configuration =================================
   const std::string signalShortcut = "P";
@@ -62,42 +62,31 @@ void efficiency_bdtdiff(const std::string& fileName, bool isSaveToRoot) {
       TH1* histoRec = GetObjectWithNullptrCheck<TH1>(fileIn, "rec/" + promptness + "/hT_" + signalShortcut + "gt" + sScore);
       RebinHistoToEdges(histoRec, lifeTimeRanges);
       histoRec->UseCurrentStyle();
-      TCanvas cRec("cRec", "");
-      cRec.SetCanvasSize(1200, 800);
-      histoRec->Draw();
-      AddOneLineText(promptness, {0.35, 0.95, 0.45, 0.99});
-      AddOneLineText("bdt(" + signalShortcut + ") > " + sScore, {0.65, 0.95, 0.75, 0.99});
-      cRec.Print(("yieldRec." + promptness + ".pdf" + priBra).c_str(), "pdf");
+
+      auto PrintCanvas = [&](const std::string& ccName, const std::string& dirName, TH1* histo) {
+        TCanvas cc("cc", "");
+        cc.SetCanvasSize(1200, 800);
+        histo->Draw();
+        AddOneLineText(promptness, {0.35, 0.95, 0.45, 0.99});
+        AddOneLineText("bdt(" + signalShortcut + ") > " + sScore, {0.65, 0.95, 0.75, 0.99});
+        cc.Print((ccName + "." + promptness + ".pdf" + priBra).c_str(), "pdf");
+        if(isSaveToRoot) {
+          CD(fileOut, dirName + "/" + promptness);
+          histoRec->Write((ccName + "_" + signalShortcut + "gt" + sScore).c_str());
+        }
+      };
+
+      PrintCanvas("rec", "yields", histoRec);
 
       auto [histoEff, histoEffRelErr] = EvaluateEfficiencyHisto(histoRec, histoGen);
 
-      TCanvas cEff("cEff", "");
-      cEff.SetCanvasSize(1200, 800);
-      histoEff->Draw();
-      AddOneLineText(promptness, {0.35, 0.95, 0.45, 0.99});
-      AddOneLineText("bdt(" + signalShortcut + ") > " + sScore, {0.65, 0.95, 0.75, 0.99});
-      cEff.Print(("eff." + promptness + ".pdf" + priBra).c_str(), "pdf");
-
-      TCanvas cErr("cErr", "");
-      cErr.SetCanvasSize(1200, 800);
-      histoEffRelErr->Draw();
-      AddOneLineText(promptness, {0.35, 0.95, 0.45, 0.99});
-      AddOneLineText("bdt(" + signalShortcut + ") > " + sScore, {0.65, 0.95, 0.75, 0.99});
-      cErr.Print(("err." + promptness + ".pdf" + priBra).c_str(), "pdf");
-
-      if(isSaveToRoot) {
-        CD(fileOut, "yields/" + promptness);
-        histoRec->Write(("rec_" + signalShortcut + "gt" + sScore).c_str());
-        CD(fileOut, "effs/" + promptness);
-        histoEff->Write(("eff_" + signalShortcut + "gt" + sScore).c_str());
-        CD(fileOut, "errs/" + promptness);
-        histoEffRelErr->Write(("err_" + signalShortcut + "gt" + sScore).c_str());
-      }
+      PrintCanvas("eff", "effs", histoEff);
+      PrintCanvas("err", "errs", histoEffRelErr);
 
       priBra = "";
     } // bdtSignalLowerValues
 
-    CloseCanvasPrinting({"yieldRec." + promptness, "eff." + promptness, "err." + promptness});
+    CloseCanvasPrinting({"rec." + promptness, "eff." + promptness, "err." + promptness});
 
   } // promptnesses
 
@@ -112,14 +101,14 @@ void RebinHistoToEdges(TH1*& histo, const std::vector<double>& edges) {
 int main(int argc, char* argv[]) {
   if (argc < 2) {
     std::cout << "Error! Please use " << std::endl;
-    std::cout << " ./efficiency_bdtdiff fileName (isSaveRoot=false)" << std::endl;
+    std::cout << " ./efficiency_bdtcutset fileName (isSaveRoot=false)" << std::endl;
     exit(EXIT_FAILURE);
   }
 
   const std::string fileName = argv[1];
   const bool isSaveToRoot = argc > 2 ? string_to_bool(argv[2]) : false;
 
-  efficiency_bdtdiff(fileName, isSaveToRoot);
+  efficiency_bdtcutset(fileName, isSaveToRoot);
 
   return 0;
 }
