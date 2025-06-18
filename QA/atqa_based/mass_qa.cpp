@@ -9,24 +9,33 @@
 
 using namespace AnalysisTree;
 
-void MassQA(QA::Task& task);
-void MassQABdt(QA::Task& task);
-
-const std::string branchName = "PlainBranch";
-
-std::vector<SimpleCut> PrepareDataTypes(const std::string& varName);
-std::vector<SimpleCut> datatypes = PrepareDataTypes(branchName + ".fKFSigBgStatus");
-
-std::vector<SimpleCut> PrepareBdtScoreCuts(const std::string& datatype, const std::string& direction, const std::vector<double>& vec, int precision=1);
-std::vector<SimpleCut> PrepareBdtScoreCuts(const std::string& datatype, const std::string& direction, int nCuts, double loCut, double hiCut, int precision=1);
-
-const std::vector<float> lifetimeRanges{0.2, 0.35, 0.5, 0.7, 0.9, 1.6};
-const std::vector<float> pTRanges{0.f, 2.f, 5.f, 8.f, 12.f, 20.f};
+const std::vector<float> lifetimeRanges = {0.2, 0.35, 0.5, 0.7, 0.9, 1.6};
+const std::vector<float> pTRanges = {0, 2, 5, 8, 12, 20};
 const TAxis massAxis = {600, 1.98, 2.58};
 const std::string massAxisTitle = "m_{pK#pi} (GeV/#it{c}^{2})";
 const std::string massVarName = "hMass";
+const std::pair<float, float> rapidityRanges{-0.8, 0.8};
 
-void mass_qa(const std::string& filelistname, bool isMc) {
+enum BdtClass : short {
+  kBackground = 0,
+  kPrompt,
+  kNonPrompt,
+  nBdtClasses
+};
+
+const std::string recBranchName = "PlainBranch";
+const std::vector<std::string> bdtClasses{"fLiteMlScoreFirstClass", "fLiteMlScoreSecondClass", "fLiteMlScoreThirdClass"};
+
+auto TCuts = HelperFunctions::CreateRangeCuts(lifetimeRanges, "T_", recBranchName + ".fKFT");
+SimpleCut rapidityCut = RangeCut(Variable::FromString(recBranchName + ".fLiteY"), rapidityRanges.first, rapidityRanges.second);
+
+void MassQA(QA::Task& task);
+void MassQABdt(QA::Task& task, const std::string& signalTargetAtBdt);
+
+std::vector<SimpleCut> PrepareDataTypes(const std::string& varName);
+std::vector<SimpleCut> datatypes = PrepareDataTypes(recBranchName + ".fKFSigBgStatus");
+
+void mass_qa(const std::string& filelistname, bool isMc, const std::string& signalTargetAtBdt) {
   if(isMc) datatypes.pop_back();
   else     datatypes.erase(datatypes.begin(), datatypes.end()-1);
 
@@ -36,7 +45,7 @@ void mass_qa(const std::string& filelistname, bool isMc) {
   task->SetOutputFileName("mass_qa.root");
 
 //  MassQA(*task);
-  MassQABdt(*task);
+  MassQABdt(*task, signalTargetAtBdt);
 
   man->AddTask(task);
   man->Init({filelistname}, {"aTree"});
@@ -46,9 +55,7 @@ void mass_qa(const std::string& filelistname, bool isMc) {
 }
 
 void MassQA(QA::Task& task) {
-  auto TCuts = HelperFunctions::CreateRangeCuts(lifetimeRanges, "T_", branchName + ".KF_fT");
-
-  const std::string varNameInTree = branchName + ".KF_fMassInv";
+  const std::string varNameInTree = recBranchName + ".KF_fMassInv";
 
   for(const auto& dt : datatypes) {
     task.SetTopLevelDirName(dt.GetTitle());
@@ -62,32 +69,41 @@ void MassQA(QA::Task& task) {
   } // datatypes
 } // void MassQA()
 
-void MassQABdt(QA::Task& task) {
-  auto TCuts = HelperFunctions::CreateRangeCuts(lifetimeRanges, "T_", branchName + ".fKFT");
-  auto pTCuts = HelperFunctions::CreateRangeCuts(pTRanges, "pT_", branchName + ".fKFPt", true);
+void MassQABdt(QA::Task& task, const std::string& signalTargetAtBdt) {
+  const short kSignal = signalTargetAtBdt == "prompt" ? kPrompt : kNonPrompt;
+  const std::string signalShortcut = signalTargetAtBdt == "prompt" ? "P" : "NP";
 
-  auto sliceCuts = HelperFunctions::MergeVectors(pTCuts, TCuts);
+  const std::vector<float> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.05, 0.08};
+  if(bdtBgUpperValuesVsPt.size() != pTRanges.size() - 1) throw std::runtime_error("bdtUpperValuesVsPt.size() != pTRanges.size() - 1");
+  SimpleCut bdtBgScoreCut = SimpleCut({recBranchName + ".fKFPt", recBranchName + "." + bdtClasses.at(kBackground)}, [=] (const std::vector<double>& par) {
+    bool ok{false};
+    for(int iPt=0; iPt<bdtBgUpperValuesVsPt.size(); iPt++) {
+      ok |= (par[0] >= pTRanges.at(iPt) && par[0] < pTRanges.at(iPt+1) && par[1] >= 0 && par[1] < bdtBgUpperValuesVsPt.at(iPt));
+    }
+    return ok;
+  });
 
-  const std::string varNameInTree = branchName + ".fKFMassInv";
+  std::vector<float> bdtSignalLowerValues;
+  for(int iB=0; iB<=50; iB++) {
+    bdtSignalLowerValues.emplace_back(0.02 * iB);
+  }
 
-  const std::vector<SimpleCut> bdtBgCuts = PrepareBdtScoreCuts("bkg", "lt", 11, 0., 0.1, 2);
-  const std::vector<SimpleCut> bdtPromptCuts = PrepareBdtScoreCuts("prompt", "gt", 11, 0., 1.);
+  std::vector<SimpleCut> bdtSigCuts;
+  for(const auto& bslv : bdtSignalLowerValues) {
+    bdtSigCuts.emplace_back(RangeCut(recBranchName + "." + bdtClasses.at(kSignal), bslv, 1, signalShortcut + "gt" + HelperFunctions::ToStringWithPrecision(bslv, 2)));
+  }
 
   for(const auto& dt : datatypes) {
-    for(const auto& bbc : bdtBgCuts) {
-      for(const auto& bpc : bdtPromptCuts) {
-        const std::string histoName = massVarName + "_" + bbc.GetTitle() + "_" + bpc.GetTitle();
-        const QA::Axis histoQAAxis = {massAxisTitle, Variable::FromString(varNameInTree), massAxis};
-        for(const auto& slc : sliceCuts) {
-          std::string cutName = dt.GetTitle() + "/" + bbc.GetTitle();
-          if(slc.GetTitle() != "alwaysTrue") cutName += "/" + slc.GetTitle();
-          task.SetTopLevelDirName(cutName);
-          Cuts* cutSlice = new Cuts(cutName, {dt, bbc, bpc, slc});
-          task.AddH1(histoName, histoQAAxis, cutSlice);
-        } // sliceCuts
-      } // bdtPromptCuts
-    } // bdtBgCuts
+    for(const auto& tCut : TCuts) {
+      task.SetTopLevelDirName(dt.GetTitle() + "/" + tCut.GetTitle());
+      for (const auto& bsc : bdtSigCuts) {
+        Cuts* cutsRec = new Cuts(dt.GetTitle(), {bdtBgScoreCut, bsc, rapidityCut, tCut});
+        const std::string histoName = "hM_" + bsc.GetTitle();
+        task.AddH1(histoName, {massAxisTitle, Variable::FromString(recBranchName + ".fKFMassInv"), massAxis}, cutsRec);
+      } // bdtNonPromptCuts
+    } // TCuts
   } // datatypes
+
 } // void MassQABdt
 
 std::vector<SimpleCut> PrepareDataTypes(const std::string& varName) {
@@ -106,49 +122,21 @@ std::vector<SimpleCut> PrepareDataTypes(const std::string& varName) {
   return result;
 }
 
-std::vector<SimpleCut> PrepareBdtScoreCuts(const std::string& datatype, const std::string& direction, const std::vector<double>& vec, int precision) {
-  if(datatype != "prompt" && datatype != "non_prompt" && datatype != "bkg") {
-    throw std::runtime_error("mass_qa::PrepareBdtScoreCuts() - datatype must be either prompt, non_prompt or bkg");
-  }
-  if(direction != "gt" && direction != "lt") throw std::runtime_error("mass_qa::PrepareBdtScoreCuts() - direction must be either gt or lt");
-
-  std::string dataLetter;
-  if(datatype == "prompt") dataLetter = "P";
-  if(datatype == "non_prompt") dataLetter = "NP";
-  if(datatype == "bkg") dataLetter = "BG";
-
-  std::vector<SimpleCut> result;
-  for(const auto& value : vec) {
-    const std::string sValue = HelperFunctions::ToStringWithPrecision(value, precision);
-    const double lo = direction == "gt" ? value : -HugeNumber;
-    const double hi = direction == "gt" ? HugeNumber : value;
-    const std::string cutName = dataLetter + direction + sValue;
-    result.emplace_back(RangeCut(branchName + "." + datatype + "_score", lo, hi, cutName));
-  }
-  return result;
-}
-
-std::vector<SimpleCut> PrepareBdtScoreCuts(const std::string& datatype, const std::string& direction, int nCuts, double loCut, double hiCut, int precision) {
-  std::vector<double> vecCuts;
-  const double step = (hiCut - loCut) / (nCuts - 1);
-  for(int iCut=0; iCut<nCuts; iCut++) {
-    const double value = loCut + iCut*step;
-    vecCuts.emplace_back(value);
-  }
-  return PrepareBdtScoreCuts(datatype, direction, vecCuts, precision);
-}
-
 int main(int argc, char* argv[]){
   if (argc < 3) {
     std::cout << "Error! Please use " << std::endl;
-    std::cout << " ./mass_qa filelistname mcOrData" << std::endl;
+    std::cout << " ./mass_qa filelistname mcOrData (signalTargetAtBdt=prompt)" << std::endl;
     exit(EXIT_FAILURE);
   }
 
   const std::string filelistname = argv[1];
   const bool isMc = strcmp(argv[2], "mc") == 0 ? true : strcmp(argv[2], "data") == 0 ? false : throw std::runtime_error("mass_qa::main(): argv[2] must be either 'mc' or 'data'");
+  const std::string signalTargetAtBdt = argc > 3 ? argv[3] : "prompt";
+  if(signalTargetAtBdt != "prompt" && signalTargetAtBdt != "nonprompt") {
+    throw std::runtime_error("mass_qa::main(): signalTargetAtBdt must be either 'prompt' or 'nonprompt'");
+  }
 
-  mass_qa(filelistname, isMc);
+  mass_qa(filelistname, isMc, signalTargetAtBdt);
 
   return 0;
 }

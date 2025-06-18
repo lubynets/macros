@@ -44,9 +44,9 @@ const std::vector<Promptness> promptnesses{
   {"nonprompt", EqualsCut(recBranchName + ".fKFSigBgStatus", 2), EqualsCut(genBranchName + ".fGen_OriginMcGen", 2)},
 };
 
-void FillYieldRec(QA::Task& task, const std::string& promptOrNonPromptCut) {
-  const short kSignal = promptOrNonPromptCut == "prompt" ? kPrompt : kNonPrompt;
-  const std::string signalShortcut = promptOrNonPromptCut == "prompt" ? "P" : "NP";
+void FillYieldRec(QA::Task& task, const std::string& signalTargetAtBdt) {
+  const short kSignal = signalTargetAtBdt == "prompt" ? kPrompt : kNonPrompt;
+  const std::string signalShortcut = signalTargetAtBdt == "prompt" ? "P" : "NP";
 
   SimpleCut rapidityCut = RangeCut(Variable::FromString(recBranchName + ".fLiteY"), rapidityRanges.first, rapidityRanges.second);
 
@@ -73,7 +73,7 @@ void FillYieldRec(QA::Task& task, const std::string& promptOrNonPromptCut) {
   for(const auto& promptness : promptnesses) {
     task.SetTopLevelDirName("rec/" + promptness.name_);
     for (const auto& bsc : bdtSigCuts) {
-      Cuts* cutsRec = new Cuts(promptness.name_, {promptness.cut_rec_, bsc, rapidityCut});
+      Cuts* cutsRec = new Cuts(promptness.name_, {promptness.cut_rec_, bdtBgScoreCut, bsc, rapidityCut});
       const std::string histoName = "hT_" + bsc.GetTitle();
       task.AddH1(histoName, {lifetimeAxisTitle, Variable::FromString(recBranchName + ".fKFT"), lifetimeAxis}, cutsRec);
     } // bdtNonPromptCuts
@@ -90,14 +90,14 @@ void FillYieldGen(QA::Task& task) {
   } // promptnesses
 } // FillYieldGen(QA::Task& task)
 
-void yield_lifetime_qa(const std::string& filelistrec, const std::string& filelistgen, const std::string& promptOrNonPromptCut) {
+void yield_lifetime_qa(const std::string& filelistrec, const std::string& filelistgen, const std::string& signalTargetAtBdt) {
   auto* man = TaskManager::GetInstance();
   man->SetVerbosityFrequency(100);
 
   auto* taskRec = new QA::Task;
   taskRec->SetOutputFileName("yield_lifetime_qa.root");
 
-  FillYieldRec(*taskRec, promptOrNonPromptCut);
+  FillYieldRec(*taskRec, signalTargetAtBdt);
 
   man->AddTask(taskRec);
   man->Init({filelistrec}, {"aTree"});
@@ -120,17 +120,17 @@ void yield_lifetime_qa(const std::string& filelistrec, const std::string& fileli
 int main(int argc, char* argv[]) {
   if (argc < 2) {
     std::cout << "Error! Please use " << std::endl;
-    std::cout << " ./yield_lifetime_qa filelistrec (filelistgen promptOrNonPromptCut)" << std::endl;
+    std::cout << " ./yield_lifetime_qa filelistrec (filelistgen=filelistrec signalTargetAtBdt=prompt)" << std::endl;
     exit(EXIT_FAILURE);
   }
 
   const std::string filelistrec = argv[1];
   const std::string filelistgen = argc > 2 ? argv[2] : argv[1];
-  const std::string promptOrNonPromptCut = argc > 3 ? argv[3] : "prompt";
-  if(promptOrNonPromptCut != "prompt" && promptOrNonPromptCut != "nonprompt") {
-    throw std::runtime_error("yield_lifetime_qa::main(): promptOrNonPromptCut must be either 'prompt' or 'nonprompt'");
+  const std::string signalTargetAtBdt = argc > 3 ? argv[3] : "prompt";
+  if(signalTargetAtBdt != "prompt" && signalTargetAtBdt != "nonprompt") {
+    throw std::runtime_error("yield_lifetime_qa::main(): signalTargetAtBdt must be either 'prompt' or 'nonprompt'");
   }
-  yield_lifetime_qa(filelistrec, filelistgen, promptOrNonPromptCut);
+  yield_lifetime_qa(filelistrec, filelistgen, signalTargetAtBdt);
 
   return 0;
 }
