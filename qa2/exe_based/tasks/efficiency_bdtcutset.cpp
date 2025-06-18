@@ -30,8 +30,8 @@ void efficiency_bdtcutset(const std::string& fileName, bool isSaveToRoot) {
   const std::vector<double> lifeTimeRanges = {0.2, 0.35, 0.5, 0.7, 0.9, 1.6};
 
   std::vector<float> bdtSignalLowerValues;
-  for(int iB=0; iB<=50; iB++) {
-    bdtSignalLowerValues.emplace_back(0.02 * iB);
+  for(int iB=0; iB<=15; iB++) {
+    bdtSignalLowerValues.emplace_back(0.06 * iB);
   }
   // ==========================================================================
 
@@ -72,7 +72,7 @@ void efficiency_bdtcutset(const std::string& fileName, bool isSaveToRoot) {
         cc.Print((ccName + "." + promptness + ".pdf" + priBra).c_str(), "pdf");
         if(isSaveToRoot) {
           CD(fileOut, dirName + "/" + promptness);
-          histoRec->Write((ccName + "_" + signalShortcut + "gt" + sScore).c_str());
+          histo->Write((ccName + "_" + signalShortcut + "gt" + sScore).c_str());
         }
       };
 
@@ -82,6 +82,13 @@ void efficiency_bdtcutset(const std::string& fileName, bool isSaveToRoot) {
 
       PrintCanvas("eff", "effs", histoEff);
       PrintCanvas("err", "errs", histoEffRelErr);
+
+      if(isSaveToRoot) {
+        const std::string openOption = promptness == "prompt" ? "recreate" : "update";
+        TFile* fileOutScore = TFile::Open(("Eff_times_Acc_Lc." + signalShortcut + "gt" + sScore + ".root").c_str(), openOption.c_str());
+        histoEff->Write(promptness.c_str());
+        fileOutScore->Close();
+      }
 
       priBra = "";
     } // bdtSignalLowerValues
@@ -101,12 +108,12 @@ void RebinHistoToEdges(TH1*& histo, const std::vector<double>& edges) {
 int main(int argc, char* argv[]) {
   if (argc < 2) {
     std::cout << "Error! Please use " << std::endl;
-    std::cout << " ./efficiency_bdtcutset fileName (isSaveRoot=false)" << std::endl;
+    std::cout << " ./efficiency_bdtcutset fileName (isSaveRoot=true)" << std::endl;
     exit(EXIT_FAILURE);
   }
 
   const std::string fileName = argv[1];
-  const bool isSaveToRoot = argc > 2 ? string_to_bool(argv[2]) : false;
+  const bool isSaveToRoot = argc > 2 ? string_to_bool(argv[2]) : true;
 
   efficiency_bdtcutset(fileName, isSaveToRoot);
 
