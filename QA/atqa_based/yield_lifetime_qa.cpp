@@ -30,7 +30,7 @@ enum BdtClass : short {
 const std::string recBranchName = "Candidates";
 const std::vector<std::string> bdtClasses{"fLiteMlScoreFirstClass", "fLiteMlScoreSecondClass", "fLiteMlScoreThirdClass"};
 
-//const std::string recBranchName = "PlainBranch";
+// const std::string recBranchName = "PlainBranch";
 //const std::vector<std::string> bdtClasses{"bkg_score", "prompt_score", "non_prompt_score"};
 
 struct Promptness {
@@ -44,40 +44,43 @@ const std::vector<Promptness> promptnesses{
   {"nonprompt", EqualsCut(recBranchName + ".fKFSigBgStatus", 2), EqualsCut(genBranchName + ".fGen_OriginMcGen", 2)},
 };
 
-void FillYieldRec(QA::Task& task, const std::string& signalTargetAtBdt) {
-  const short kSignal = signalTargetAtBdt == "prompt" ? kPrompt : kNonPrompt;
-  const std::string signalShortcut = signalTargetAtBdt == "prompt" ? "P" : "NP";
+const std::vector<short> signalTargetsAtBdt {
+  kPrompt,
+  kNonPrompt,
+};
 
+void FillYieldRec(QA::Task& task) {
   SimpleCut rapidityCut = RangeCut(Variable::FromString(recBranchName + ".fLiteY"), rapidityRanges.first, rapidityRanges.second);
-
   const std::vector<float> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.05, 0.08};
-  if(bdtBgUpperValuesVsPt.size() != pTRanges.size() - 1) throw std::runtime_error("bdtUpperValuesVsPt.size() != pTRanges.size() - 1");
-  SimpleCut bdtBgScoreCut = SimpleCut({recBranchName + ".fKFPt", recBranchName + "." + bdtClasses.at(kBackground)}, [=] (const std::vector<double>& par) {
+  if (bdtBgUpperValuesVsPt.size() != pTRanges.size() - 1) throw std::runtime_error("bdtUpperValuesVsPt.size() != pTRanges.size() - 1");
+  SimpleCut bdtBgScoreCut = SimpleCut({recBranchName + ".fKFPt", recBranchName + "." + bdtClasses.at(kBackground)}, [=](const std::vector<double>& par) {
     bool ok{false};
-    for(int iPt=0; iPt<bdtBgUpperValuesVsPt.size(); iPt++) {
-      ok |= (par[0] >= pTRanges.at(iPt) && par[0] < pTRanges.at(iPt+1) && par[1] >= 0 && par[1] < bdtBgUpperValuesVsPt.at(iPt));
+    for (int iPt = 0; iPt < bdtBgUpperValuesVsPt.size(); iPt++) {
+      ok |= (par[0] >= pTRanges.at(iPt) && par[0] < pTRanges.at(iPt + 1) && par[1] >= 0 && par[1] < bdtBgUpperValuesVsPt.at(iPt));
     }
     return ok;
   });
+  for(const auto& kSignal : signalTargetsAtBdt) {
+    const std::string signalShortcut = kSignal == kPrompt ? "P" : "NP";
+    std::vector<float> bdtSignalLowerValues;
+    for (int iB = 0; iB <= 100; iB++) {
+      bdtSignalLowerValues.emplace_back(0.01 * iB);
+    }
 
-  std::vector<float> bdtSignalLowerValues;
-  for(int iB=0; iB<=50; iB++) {
-    bdtSignalLowerValues.emplace_back(0.02 * iB);
-  }
+    std::vector<SimpleCut> bdtSigCuts;
+    for (const auto& bslv : bdtSignalLowerValues) {
+      bdtSigCuts.emplace_back(RangeCut(recBranchName + "." + bdtClasses.at(kSignal), bslv, 1, signalShortcut + "gt" + HelperFunctions::ToStringWithPrecision(bslv, 2)));
+    }
 
-  std::vector<SimpleCut> bdtSigCuts;
-  for(const auto& bslv : bdtSignalLowerValues) {
-    bdtSigCuts.emplace_back(RangeCut(recBranchName + "." + bdtClasses.at(kSignal), bslv, 1, signalShortcut + "gt" + HelperFunctions::ToStringWithPrecision(bslv, 2)));
-  }
-
-  for(const auto& promptness : promptnesses) {
-    task.SetTopLevelDirName("rec/" + promptness.name_);
-    for (const auto& bsc : bdtSigCuts) {
-      Cuts* cutsRec = new Cuts(promptness.name_, {promptness.cut_rec_, bdtBgScoreCut, bsc, rapidityCut});
-      const std::string histoName = "hT_" + bsc.GetTitle();
-      task.AddH1(histoName, {lifetimeAxisTitle, Variable::FromString(recBranchName + ".fKFT"), lifetimeAxis}, cutsRec);
-    } // bdtNonPromptCuts
-  } // promptnesses
+    for (const auto& promptness : promptnesses) {
+      task.SetTopLevelDirName("rec/" + promptness.name_);
+      for (const auto& bsc : bdtSigCuts) {
+        Cuts* cutsRec = new Cuts(promptness.name_, {promptness.cut_rec_, bdtBgScoreCut, bsc, rapidityCut});
+        const std::string histoName = "hT_" + bsc.GetTitle();
+        task.AddH1(histoName, {lifetimeAxisTitle, Variable::FromString(recBranchName + ".fKFT"), lifetimeAxis}, cutsRec);
+      } // bdtSigCuts
+    } // promptnesses
+  } // signalTargetsAtBdt
 } // FillYieldRec(QA::Task& task)
 
 void FillYieldGen(QA::Task& task) {
@@ -90,14 +93,14 @@ void FillYieldGen(QA::Task& task) {
   } // promptnesses
 } // FillYieldGen(QA::Task& task)
 
-void yield_lifetime_qa(const std::string& filelistrec, const std::string& filelistgen, const std::string& signalTargetAtBdt) {
+void yield_lifetime_qa(const std::string& filelistrec, const std::string& filelistgen) {
   auto* man = TaskManager::GetInstance();
   man->SetVerbosityFrequency(100);
 
   auto* taskRec = new QA::Task;
   taskRec->SetOutputFileName("yield_lifetime_qa.root");
 
-  FillYieldRec(*taskRec, signalTargetAtBdt);
+  FillYieldRec(*taskRec);
 
   man->AddTask(taskRec);
   man->Init({filelistrec}, {"aTree"});
@@ -120,17 +123,13 @@ void yield_lifetime_qa(const std::string& filelistrec, const std::string& fileli
 int main(int argc, char* argv[]) {
   if (argc < 2) {
     std::cout << "Error! Please use " << std::endl;
-    std::cout << " ./yield_lifetime_qa filelistrec (filelistgen=filelistrec signalTargetAtBdt=prompt)" << std::endl;
+    std::cout << " ./yield_lifetime_qa filelistrec (filelistgen=filelistrec)" << std::endl;
     exit(EXIT_FAILURE);
   }
 
   const std::string filelistrec = argv[1];
   const std::string filelistgen = argc > 2 ? argv[2] : argv[1];
-  const std::string signalTargetAtBdt = argc > 3 ? argv[3] : "prompt";
-  if(signalTargetAtBdt != "prompt" && signalTargetAtBdt != "nonprompt") {
-    throw std::runtime_error("yield_lifetime_qa::main(): signalTargetAtBdt must be either 'prompt' or 'nonprompt'");
-  }
-  yield_lifetime_qa(filelistrec, filelistgen, signalTargetAtBdt);
+  yield_lifetime_qa(filelistrec, filelistgen);
 
   return 0;
 }

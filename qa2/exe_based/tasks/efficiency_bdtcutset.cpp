@@ -4,11 +4,8 @@
 #include "Helper.hpp"
 #include "HelperEfficiency.hpp"
 
-#include <TCanvas.h>
 #include <TFile.h>
 #include <TH1.h>
-#include <TLegend.h>
-#include <TLegendEntry.h>
 #include <TString.h>
 
 #include <iostream>
@@ -17,87 +14,77 @@ using namespace Helper;
 using namespace HelperEfficiency;
 
 void RebinHistoToEdges(TH1*& histo, const std::vector<double>& edges);
+struct TargetSignal {
+  std::string shortcut_;
+  std::vector<float> bdt_lower_values_;
+};
 
-void efficiency_bdtcutset(const std::string& fileName, bool isSaveToRoot) {
+void efficiency_bdtcutset(const std::string& fileName) {
   LoadMacro("styles/mc_qa2.style.cc");
 
   TFile* fileIn = OpenFileWithNullptrCheck(fileName);
 
-  const std::string fileOutName = "efficiency_bdtcutset";
+  const std::string fileOutName = "efficiency_summary";
 
   // ========================= Configuration =================================
-  const std::string signalShortcut = "P";
   const std::vector<double> lifeTimeRanges = {0.2, 0.35, 0.5, 0.7, 0.9, 1.6};
 
-  std::vector<float> bdtSignalLowerValues;
-  for(int iB=0; iB<=15; iB++) {
-    bdtSignalLowerValues.emplace_back(0.06 * iB);
+  std::vector<float> targetSignalsFill;
+  for(int i=0; i<=19; i++) {
+    targetSignalsFill.emplace_back(0.05*i);
   }
+
+  const std::vector<TargetSignal> targetSignals {
+    {"P", targetSignalsFill},
+    {"NP", targetSignalsFill},
+  };
   // ==========================================================================
 
   const std::vector<std::string> promptnesses{"prompt", "nonprompt"};
 
-  TFile* fileOut{nullptr};
-  if(isSaveToRoot) fileOut = TFile::Open((fileOutName + ".root").c_str(), "recreate");
+  TFile* fileOut = TFile::Open((fileOutName + ".root").c_str(), "recreate");
 
+  bool isScoresPrinted{false};
   for(const auto& promptness : promptnesses) {
     TH1* histoGen = GetObjectWithNullptrCheck<TH1>(fileIn, "gen/" + promptness + "/hT");
     RebinHistoToEdges(histoGen, lifeTimeRanges);
     histoGen->UseCurrentStyle();
-    TCanvas cGen("cGen", "");
-    cGen.SetCanvasSize(1200, 800);
-    histoGen->Draw();
-    AddOneLineText(promptness, {0.35, 0.95, 0.45, 0.99});
-    cGen.Print(("yieldGen." + promptness + ".pdf").c_str(), "pdf");
+    CD(fileOut, "yields/" + promptness);
+    histoGen->Write("gen");
 
-    if(isSaveToRoot) {
-      CD(fileOut, "yields/" + promptness);
-      histoGen->Write("gen");
-    }
+    for(const auto& tarSig : targetSignals) {
+      if(!isScoresPrinted) std::cout << "SCORES_" << tarSig.shortcut_ << "=\"";
+      for (const auto& score: tarSig.bdt_lower_values_) {
+        if(!isScoresPrinted) std::cout << to_string_with_precision(score, 2) << " ";
+        const std::string sScore = to_string_with_precision(score, 2);
 
-    std::string priBra = "(";
-    for(const auto& score : bdtSignalLowerValues) {
-      const std::string sScore = to_string_with_precision(score, 2);
+        TH1* histoRec = GetObjectWithNullptrCheck<TH1>(fileIn,"rec/" + promptness + "/hT_" + tarSig.shortcut_ + "gt" + sScore);
+        RebinHistoToEdges(histoRec, lifeTimeRanges);
+        histoRec->UseCurrentStyle();
 
-      TH1* histoRec = GetObjectWithNullptrCheck<TH1>(fileIn, "rec/" + promptness + "/hT_" + signalShortcut + "gt" + sScore);
-      RebinHistoToEdges(histoRec, lifeTimeRanges);
-      histoRec->UseCurrentStyle();
+        CD(fileOut, "yields/" + promptness);
+        histoRec->Write(("rec_" + tarSig.shortcut_ + "gt" + sScore).c_str());
 
-      auto PrintCanvas = [&](const std::string& ccName, const std::string& dirName, TH1* histo) {
-        TCanvas cc("cc", "");
-        cc.SetCanvasSize(1200, 800);
-        histo->Draw();
-        AddOneLineText(promptness, {0.35, 0.95, 0.45, 0.99});
-        AddOneLineText("bdt(" + signalShortcut + ") > " + sScore, {0.65, 0.95, 0.75, 0.99});
-        cc.Print((ccName + "." + promptness + ".pdf" + priBra).c_str(), "pdf");
-        if(isSaveToRoot) {
-          CD(fileOut, dirName + "/" + promptness);
-          histo->Write((ccName + "_" + signalShortcut + "gt" + sScore).c_str());
-        }
-      };
+        auto [histoEff, histoEffRelErr] = EvaluateEfficiencyHisto(histoRec, histoGen);
 
-      PrintCanvas("rec", "yields", histoRec);
+        CD(fileOut, "effs/" + promptness);
+        histoEff->Write(("eff_" + tarSig.shortcut_ + "gt" + sScore).c_str());
 
-      auto [histoEff, histoEffRelErr] = EvaluateEfficiencyHisto(histoRec, histoGen);
+        CD(fileOut, "errs/" + promptness);
+        histoEffRelErr->Write(("err_" + tarSig.shortcut_ + "gt" + sScore).c_str());
 
-      PrintCanvas("eff", "effs", histoEff);
-      PrintCanvas("err", "errs", histoEffRelErr);
-
-      if(isSaveToRoot) {
         const std::string openOption = promptness == "prompt" ? "recreate" : "update";
-        TFile* fileOutScore = TFile::Open(("Eff_times_Acc_Lc." + signalShortcut + "gt" + sScore + ".root").c_str(), openOption.c_str());
+        TFile* fileOutScore = TFile::Open(("Eff_times_Acc_Lc." + tarSig.shortcut_ + "gt" + sScore + ".root").c_str(),
+                                          openOption.c_str());
         histoEff->Write(promptness.c_str());
         fileOutScore->Close();
-      }
-
-      priBra = "";
-    } // bdtSignalLowerValues
-
-    CloseCanvasPrinting({"rec." + promptness, "eff." + promptness, "err." + promptness});
-
+      } // bdtSignalLowerValues
+      if(!isScoresPrinted) std::cout << "\"\n";
+    } // targetSignals
+    isScoresPrinted = true;
   } // promptnesses
 
-  if(isSaveToRoot) fileOut->Close();
+  fileOut->Close();
   fileIn->Close();
 }
 
@@ -108,14 +95,13 @@ void RebinHistoToEdges(TH1*& histo, const std::vector<double>& edges) {
 int main(int argc, char* argv[]) {
   if (argc < 2) {
     std::cout << "Error! Please use " << std::endl;
-    std::cout << " ./efficiency_bdtcutset fileName (isSaveRoot=true)" << std::endl;
+    std::cout << " ./efficiency_bdtcutset fileName" << std::endl;
     exit(EXIT_FAILURE);
   }
 
   const std::string fileName = argv[1];
-  const bool isSaveToRoot = argc > 2 ? string_to_bool(argv[2]) : true;
 
-  efficiency_bdtcutset(fileName, isSaveToRoot);
+  efficiency_bdtcutset(fileName);
 
   return 0;
 }

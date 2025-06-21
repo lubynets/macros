@@ -51,8 +51,7 @@ inline std::pair<TH1*, TH1*> EvaluateEfficiencyHisto(TH1* hNum, TH1* hDen) {
     hRelErr->SetBinError(iBin, absErrOnRelErr);
   }
 
-  hEff->GetYaxis()->SetTitle("#varepsilon, %");
-  hEff->Scale(100);
+  hEff->GetYaxis()->SetTitle("#varepsilon");
   hEff->SetTitle("");
 
   hRelErr->GetYaxis()->SetTitle("#varepsilon_{#varepsilon}");
