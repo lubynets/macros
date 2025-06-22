@@ -19,6 +19,7 @@ SET(EXECUTABLES
     bdt_efficiency
     mass_bdt_qa
     efficiency_bdtcutset
+    raw_yield_vs_bdt_pdfer
 )
 
 SET(SOURCES
