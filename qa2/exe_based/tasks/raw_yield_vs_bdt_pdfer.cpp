@@ -16,8 +16,8 @@ void raw_yield_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::stri
   //=================================================================
   const std::vector<std::string> targetSignals {"P" , "NP"};
   std::vector<float> bdtScores;
-  for(int i=0; i<=19; i++) {
-    bdtScores.emplace_back(0.05*i);
+  for(int i=0; i<=99; i++) {
+    bdtScores.emplace_back(0.01*i);
   }
   //=================================================================
 
@@ -33,6 +33,10 @@ void raw_yield_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::stri
   for(auto& gr : grYield) {
     gr.resize(targetSignals.size());
   }
+  std::vector<std::vector<TGraph*>> grYieldErr(lifeTimeRanges.size()-1);
+  for(auto& gr : grYieldErr) {
+    gr.resize(targetSignals.size());
+  }
 
   int iTargetSignal{0};
   for(const auto& tarSig : targetSignals) {
@@ -43,8 +47,21 @@ void raw_yield_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::stri
       gr->SetTitle(("bin #" + std::to_string(iLifeTimeRange) + "#; T#in (" + to_string_with_precision(lifeTimeRanges.at(iLifeTimeRange), 2) + "#; " + to_string_with_precision(lifeTimeRanges.at(iLifeTimeRange+1), 2) + ") ps").c_str());
       gr->SetMarkerColor(kBlack);
       gr->SetLineColor(kBlack);
+      gr->SetMarkerSize(0.6);
+      gr->SetLineWidth(1);
       gr->GetXaxis()->SetTitle(("bdt score " + tarSig).c_str());
       gr->GetYaxis()->SetTitle("Raw yield");
+      gr->GetXaxis()->SetNdivisions(315);
+
+      grYieldErr.at(iLifeTimeRange).at(iTargetSignal) = new TGraph(bdtScores.size());
+      auto gre = grYieldErr.at(iLifeTimeRange).at(iTargetSignal);
+      gre->SetName(("grYieldErr_vs_" + tarSig + "_T" + std::to_string(iLifeTimeRange)).c_str());
+      gre->SetTitle(("bin #" + std::to_string(iLifeTimeRange) + "#; T#in (" + to_string_with_precision(lifeTimeRanges.at(iLifeTimeRange), 2) + "#; " + to_string_with_precision(lifeTimeRanges.at(iLifeTimeRange+1), 2) + ") ps").c_str());
+      gre->SetMarkerColor(kBlack);
+      gre->SetMarkerSize(0.6);
+      gre->GetXaxis()->SetTitle(("bdt score " + tarSig).c_str());
+      gre->GetYaxis()->SetTitle("Raw yield error");
+      gre->GetXaxis()->SetNdivisions(315);
     } // lifeTimeRanges
     ++iTargetSignal;
   } // targetSignals
@@ -58,6 +75,8 @@ void raw_yield_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::stri
         auto gr = grYield.at(iLifeTimeRange).at(iTargetSignal);
         gr->SetPoint(gr->GetN(), score, histoIn->GetBinContent(iLifeTimeRange+1));
         gr->SetPointError(gr->GetN()-1, 0, histoIn->GetBinError(iLifeTimeRange+1));
+        auto gre = grYieldErr.at(iLifeTimeRange).at(iTargetSignal);
+        gre->SetPoint(gr->GetN(), score, histoIn->GetBinError(iLifeTimeRange+1));
       }
       fileIn->Close();
       ++iTargetSignal;
@@ -67,10 +86,17 @@ void raw_yield_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::stri
   for(int iLifeTimeRange=0; iLifeTimeRange<lifeTimeRanges.size()-1; ++iLifeTimeRange) {
     const std::string priBra = lifeTimeRanges.size()-1 == 1 ? "" : iLifeTimeRange == 0 ? "(" : iLifeTimeRange == lifeTimeRanges.size()-2 ? ")" : "";
     for(int iTargetSignal=0; iTargetSignal<targetSignals.size(); ++iTargetSignal) {
-      TCanvas cc("cc", "");
-      cc.SetCanvasSize(1200, 800);
+      TCanvas ccYield("ccYield", "");
+      ccYield.SetGridx();
+      ccYield.SetCanvasSize(1200, 800);
       grYield.at(iLifeTimeRange).at(iTargetSignal)->Draw("APE");
-      cc.Print(("grRawYield_vs_" + targetSignals.at(iTargetSignal) + ".pdf" + priBra).c_str());
+      ccYield.Print(("grRawYield_vs_" + targetSignals.at(iTargetSignal) + "." + histoName + ".pdf" + priBra).c_str());
+
+      TCanvas ccYieldErr("ccYieldErr", "");
+      ccYieldErr.SetGridx();
+      ccYieldErr.SetCanvasSize(1200, 800);
+      grYieldErr.at(iLifeTimeRange).at(iTargetSignal)->Draw("AP");
+      ccYieldErr.Print(("grErr_vs_" + targetSignals.at(iTargetSignal) + "." + histoName + ".pdf" + priBra).c_str());
     } // targetSignals
   } // lifeTimeRanges
 }
