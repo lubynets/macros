@@ -198,7 +198,7 @@ TFile* Helper::OpenFileWithNullptrCheck(const std::string& fileName, const std::
   return file;
 }
 
-void Helper::CustomizeHistogramsYRange(const std::vector<TH1*>& histos, double lo, double hi, double part) {
+void Helper::CustomizeHistogramsYRange(const std::vector<TH1*>& histos, bool isLog, double lo, double hi, double part) {
   double max = -1e9;
   double min = 1e9;
   for(auto& histo : histos) {
@@ -206,9 +206,17 @@ void Helper::CustomizeHistogramsYRange(const std::vector<TH1*>& histos, double l
     max = std::max(max, hmax);
     min = std::min(min, hmin);
   }
+  if(isLog) {
+    max = std::log10(max);
+    min = std::log10(min);
+  }
   const double diff = max - min;
-  const double up = std::min(hi, max + (1-part)/2*diff/part);
-  const double down = std::max(lo, min - (1-part)/2*diff/part);
+  double up = std::min(hi, max + (1-part)/2*diff/part);
+  double down = std::max(lo, min - (1-part)/2*diff/part);
+  if(isLog) {
+    up = std::pow(10, up);
+    down = std::pow(10, down);
+  }
   for(auto& histo : histos) {
     histo->GetYaxis()->SetRangeUser(down, up);
   }

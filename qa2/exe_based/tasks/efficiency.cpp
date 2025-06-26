@@ -117,7 +117,7 @@ void efficiency(const std::string& fileName, bool isSaveToRoot) {
         histos.at(iH)->SetLineColor(colors.at(iH));
         leg->AddEntry(histos.at(iH), legTexts.at(iH).c_str(), "L");
       }
-      CustomizeHistogramsYRange(histos, yAxisMin, yAxisMax);
+      CustomizeHistogramsYRange(histos,logy,yAxisMin,yAxisMax);
       TCanvas cc("cc", "cc", 1200, 800);
       cc.SetLogy(logy);
       histos.at(0)->Draw("");
