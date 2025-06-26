@@ -20,6 +20,7 @@ SET(EXECUTABLES
     mass_bdt_qa
     efficiency_bdtcutset
     raw_yield_vs_bdt_pdfer
+    cutvar_to_mc_compare
 )
 
 SET(SOURCES
