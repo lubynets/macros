@@ -152,5 +152,12 @@ void CD(TFile* file, const std::string& dirName);
 TGraph* EvaluateMovingAverage(const TGraph* graphIn, int aveLength, bool isExcludeOwnPoint=false);
 void EvaluateMovingAverage(const TGraph* graphIn, TGraph* graphOut, int aveLength, bool isExcludeOwnPoint=false);
 
+void DivideGraph(TGraph* num, const TGraph* den);
+
+template<typename T>
+using tensor2 = std::vector<std::vector<T>>;
+
+template<typename T>
+using tensor3 = std::vector<std::vector<std::vector<T>>>;
 } // namespace Helper
 #endif //QA2_HELPER_HPP

@@ -313,7 +313,6 @@ void Helper::CD(TFile* file, const std::string& dirName) {
 
 TGraph* Helper::EvaluateMovingAverage(const TGraph* graphIn, int aveLength, bool excludeOwnPoint) {
   TGraph* graphOut = new TGraph();
-
   EvaluateMovingAverage(graphIn, graphOut, aveLength);
 
   return graphOut;
@@ -337,4 +336,18 @@ void Helper::EvaluateMovingAverage(const TGraph* graphIn, TGraph* graphOut, int 
     }
     graphOut->SetPoint(iPoint, graphIn->GetPointX(iPoint), value/nLocalPoints);
   } // nPoints
+}
+
+void Helper::DivideGraph(TGraph* num, const TGraph* den) {
+  if(num == nullptr || den == nullptr) throw std::runtime_error("Helper::DivideGraph(): num == nullptr || den == nullptr");
+  const int nPoints = num->GetN();
+  if(den->GetN() != nPoints) throw std::runtime_error("Helper::DivideGraph(): den->GetN() != nPoints");
+  for(int iPoint=0; iPoint<nPoints; ++iPoint) {
+    const double xNum = num->GetPointX(iPoint);
+    const double xDen = den->GetPointX(iPoint);
+    const double yNum = num->GetPointY(iPoint);
+    const double yDen = den->GetPointY(iPoint);
+    if(std::fabs(xNum - xDen)>1e-4) throw std::runtime_error("Helper::DivideGraph(): num and den points X coordinates do not match");
+    num->SetPointY(iPoint, yNum/yDen);
+  }
 }

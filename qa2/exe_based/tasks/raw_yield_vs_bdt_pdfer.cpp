@@ -7,6 +7,7 @@
 #include <TGraphErrors.h>
 
 #include <iostream>
+#include <set>
 #include <vector>
 
 using namespace Helper;
@@ -15,10 +16,13 @@ void raw_yield_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::stri
   LoadMacro("styles/mc_qa2.style.cc");
   //=================================================================
   const std::vector<std::string> targetSignals {/*"P" , */"NP"};
-  std::vector<float> bdtScores;
+  std::vector<double> bdtScores;
   for(int i=0; i<=99; i++) {
     bdtScores.emplace_back(0.01*i);
   }
+  const int moveAverageLength = 5;
+  const int moveAverageExcludeOwnPoint = true;
+  const double ratioTolerance = 0.03;
   //=================================================================
 
   TFile* fileMarkup = OpenFileWithNullptrCheck(fileNameTemplate + "." + targetSignals.at(0) + "gt" + to_string_with_precision(bdtScores.at(0), 2) + ".root");
@@ -34,10 +38,11 @@ void raw_yield_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::stri
     kYieldError,
     kChi2,
     kMoveAve,
+    kRatio,
     nGraphs
   };
 
-  std::vector<std::vector<std::vector<TGraphErrors*>>> graph(nGraphs);
+  Helper::tensor3<TGraphErrors*> graph(nGraphs);
   for(auto& gr1 : graph) {
     gr1.resize(lifeTimeRanges.size()-1);
     for(auto& gr2 : gr1) {
@@ -48,38 +53,24 @@ void raw_yield_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::stri
   int iTargetSignal{0};
   for(const auto& tarSig : targetSignals) {
     for(int iLifeTimeRange = 0; iLifeTimeRange<lifeTimeRanges.size()-1; ++iLifeTimeRange) {
-      graph.at(kYield).at(iLifeTimeRange).at(iTargetSignal) = new TGraphErrors();
-      auto gr = graph.at(kYield).at(iLifeTimeRange).at(iTargetSignal);
-      gr->SetName(("grYield_vs_" + tarSig + "_T" + std::to_string(iLifeTimeRange)).c_str());
-      gr->SetMarkerColor(kBlack);
-      gr->SetLineColor(kBlack);
-      gr->SetLineWidth(1);
-      gr->GetYaxis()->SetTitle("Raw yield");
+      auto InitGraph = [&](TGraphErrors*& gra, const std::string& prefixTitle, const std::string& yAxisTitle, Color_t color) {
+        gra = new TGraphErrors();
+        gra->SetName((prefixTitle + "_vs_" + tarSig + "_T" + std::to_string(iLifeTimeRange)).c_str());
+        gra->SetMarkerColor(color);
+        gra->SetLineColor(color);
+        gra->SetLineWidth(1);
+        gra->GetYaxis()->SetTitle(yAxisTitle.c_str());
+        gra->SetTitle(("bin #" + std::to_string(iLifeTimeRange) + "#; T#in (" + to_string_with_precision(lifeTimeRanges.at(iLifeTimeRange), 2) + "#; " + to_string_with_precision(lifeTimeRanges.at(iLifeTimeRange+1), 2) + ") ps").c_str());
+        gra->SetMarkerSize(0.6);
+        gra->GetXaxis()->SetTitle(("bdt score " + tarSig).c_str());
+        gra->GetXaxis()->SetNdivisions(315);
+      };
 
-      graph.at(kYieldError).at(iLifeTimeRange).at(iTargetSignal) = new TGraphErrors();
-      auto gre = graph.at(kYieldError).at(iLifeTimeRange).at(iTargetSignal);
-      gre->SetName(("grYieldErr_vs_" + tarSig + "_T" + std::to_string(iLifeTimeRange)).c_str());
-      gre->SetMarkerColor(kBlack);
-      gre->GetYaxis()->SetTitle("Raw yield error");
-
-      graph.at(kChi2).at(iLifeTimeRange).at(iTargetSignal) = new TGraphErrors();
-      auto grc = graph.at(kChi2).at(iLifeTimeRange).at(iTargetSignal);
-      grc->SetName(("grChi2_vs_" + tarSig + "_T" + std::to_string(iLifeTimeRange)).c_str());
-      grc->SetMarkerColor(kBlack);
-      grc->GetYaxis()->SetTitle("#chi^{2}/ndf");
-
-      graph.at(kMoveAve).at(iLifeTimeRange).at(iTargetSignal) = new TGraphErrors();
-      auto grm1 = graph.at(kMoveAve).at(iLifeTimeRange).at(iTargetSignal);
-      grm1->SetName(("grMoveAve_vs_" + tarSig + "_T" + std::to_string(iLifeTimeRange)).c_str());
-      grm1->SetMarkerColor(kRed);
-      grm1->GetYaxis()->SetTitle("Raw yield (move ave)");
-
-      for(const auto& g : std::vector<TGraphErrors*>{gr, gre, grc, grm1}) {
-        g->SetTitle(("bin #" + std::to_string(iLifeTimeRange) + "#; T#in (" + to_string_with_precision(lifeTimeRanges.at(iLifeTimeRange), 2) + "#; " + to_string_with_precision(lifeTimeRanges.at(iLifeTimeRange+1), 2) + ") ps").c_str());
-        g->SetMarkerSize(0.6);
-        g->GetXaxis()->SetTitle(("bdt score " + tarSig).c_str());
-        g->GetXaxis()->SetNdivisions(315);
-      }
+      InitGraph(graph.at(kYield).at(iLifeTimeRange).at(iTargetSignal), "grYield", "Raw yield", kBlack);
+      InitGraph(graph.at(kYieldError).at(iLifeTimeRange).at(iTargetSignal), "grYieldErr", "Raw yield error", kBlack);
+      InitGraph(graph.at(kChi2).at(iLifeTimeRange).at(iTargetSignal), "grChi2", "#chi^{2}/ndf", kBlack);
+      InitGraph(graph.at(kMoveAve).at(iLifeTimeRange).at(iTargetSignal), "grMoveAve", "Raw yield (move ave)", kRed);
+      InitGraph(graph.at(kRatio).at(iLifeTimeRange).at(iTargetSignal), "grRatio", "Raw yield / Moving average", kBlack);
     } // lifeTimeRanges
     ++iTargetSignal;
   } // targetSignals
@@ -90,6 +81,7 @@ void raw_yield_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::stri
       TFile* fileIn = OpenFileWithNullptrCheck(fileNameTemplate + "." + tarSig + "gt" + to_string_with_precision(score, 2) + ".root");
       TH1* histoYield = GetObjectWithNullptrCheck<TH1>(fileIn, histoName);
       TH1* histoChi2 = GetObjectWithNullptrCheck<TH1>(fileIn, "hRawYieldsChiSquare");
+      std::set<double> outlierBdts; // TODO fill
       for(int iLifeTimeRange=0; iLifeTimeRange<lifeTimeRanges.size()-1; ++iLifeTimeRange) {
         auto gr = graph.at(kYield).at(iLifeTimeRange).at(iTargetSignal);
         gr->SetPoint(gr->GetN(), score, histoYield->GetBinContent(iLifeTimeRange + 1));
@@ -102,7 +94,12 @@ void raw_yield_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::stri
         grc->SetPoint(grc->GetN(), score, histoChi2->GetBinContent(iLifeTimeRange + 1));
       } // lifeTimeRanges
       for(int iLifeTimeRange=0; iLifeTimeRange<lifeTimeRanges.size()-1; ++iLifeTimeRange) {
-        EvaluateMovingAverage(graph.at(kYield).at(iLifeTimeRange).at(iTargetSignal), graph.at(kMoveAve).at(iLifeTimeRange).at(iTargetSignal), 5, true);
+        EvaluateMovingAverage(graph.at(kYield).at(iLifeTimeRange).at(iTargetSignal), graph.at(kMoveAve).at(iLifeTimeRange).at(iTargetSignal), moveAverageLength, moveAverageExcludeOwnPoint);
+        for(int iPoint=0, nPoints = graph.at(kYield).at(iLifeTimeRange).at(iTargetSignal)->GetN(); iPoint<nPoints; ++iPoint) {
+          graph.at(kRatio).at(iLifeTimeRange).at(iTargetSignal)->SetPoint(iPoint, graph.at(kYield).at(iLifeTimeRange).at(iTargetSignal)->GetPointX(iPoint), graph.at(kYield).at(iLifeTimeRange).at(iTargetSignal)->GetPointY(iPoint));
+        }
+        DivideGraph(graph.at(kRatio).at(iLifeTimeRange).at(iTargetSignal), graph.at(kMoveAve).at(iLifeTimeRange).at(iTargetSignal));
+        graph.at(kRatio).at(iLifeTimeRange).at(iTargetSignal)->GetYaxis()->SetRangeUser(0.9, 1.1);
       }
       fileIn->Close();
       ++iTargetSignal;
@@ -112,7 +109,7 @@ void raw_yield_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::stri
   for(int iLifeTimeRange=0; iLifeTimeRange<lifeTimeRanges.size()-1; ++iLifeTimeRange) {
     const std::string priBra = lifeTimeRanges.size()-1 == 1 ? "" : iLifeTimeRange == 0 ? "(" : iLifeTimeRange == lifeTimeRanges.size()-2 ? ")" : "";
     for(int iTargetSignal=0; iTargetSignal<targetSignals.size(); ++iTargetSignal) {
-      auto PrintCanvas = [&](const std::vector<std::vector<std::vector<TGraphErrors*>>>& gr, const std::string& name) {
+      auto PrintCanvas = [&](const Helper::tensor3<TGraphErrors*>& gr, const std::string& name) {
         TCanvas cc(("cc" + name).c_str(), "");
         cc.SetGridx();
         cc.SetCanvasSize(1200, 800);
@@ -128,6 +125,7 @@ void raw_yield_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::stri
       PrintCanvas({graph.at(kYield), graph.at(kMoveAve)}, "RawYield");
       PrintCanvas({graph.at(kYieldError)}, "Err");
       PrintCanvas({graph.at(kChi2)}, "Chi2");
+      PrintCanvas({graph.at(kRatio)}, "Ratio");
     } // targetSignals
   } // lifeTimeRanges
 }
