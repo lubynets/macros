@@ -13,8 +13,8 @@
 #include <TH1.h>
 #include <TPaveText.h>
 
-#include <string>
 #include <sstream>
+#include <string>
 #include <vector>
 
 namespace Helper {
@@ -148,6 +148,9 @@ void LoadMacro(const std::string& macroName);
 std::pair<double, double> DetermineWorkingRangesTH1(const TH1* histo, double leftMargin=0.0015, double rightMargin=0.0015);
 
 void CD(TFile* file, const std::string& dirName);
+
+TGraph* EvaluateMovingAverage(const TGraph* graphIn, int aveLength, bool isExcludeOwnPoint=false);
+void EvaluateMovingAverage(const TGraph* graphIn, TGraph* graphOut, int aveLength, bool isExcludeOwnPoint=false);
 
 } // namespace Helper
 #endif //QA2_HELPER_HPP
