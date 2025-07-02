@@ -318,19 +318,16 @@ TGraph* Helper::EvaluateMovingAverage(const TGraph* graphIn, int aveLength, bool
   return graphOut;
 }
 
-void Helper::EvaluateMovingAverage(const TGraph* graphIn, TGraph* graphOut, int aveLength, bool isExcludeOwnPoint) {
+void Helper::EvaluateMovingAverage(const TGraph* graphIn, TGraph* graphOut, int radius, bool isExcludeOwnPoint) {
   if(graphIn == nullptr || graphOut == nullptr) throw std::runtime_error("Helper::EvaluateMovingAverage(): graphIn == nullptr || graphOut == nullptr");
 
-  const int leftSide = (aveLength-1)/2;
-  const int rightSide = aveLength/2;
-
   const int nPoints = graphIn->GetN();
-
   for(int iPoint=0; iPoint<nPoints; ++iPoint) {
     int nLocalPoints{0};
     double value{0.};
-    for(int iLocalPoint=std::max(0, iPoint-leftSide); iLocalPoint<=std::min(iPoint+rightSide, nPoints-1); ++iLocalPoint) {
-      if(isExcludeOwnPoint && iLocalPoint == iPoint) continue;
+    const int localRadius = std::min(radius, std::min(iPoint, nPoints-1-iPoint));
+    for(int iLocalPoint=iPoint-localRadius; iLocalPoint<=iPoint+localRadius; ++iLocalPoint) {
+      if(isExcludeOwnPoint && iLocalPoint == iPoint && localRadius!=0) continue;
       value += graphIn->GetPointY(iLocalPoint);
       ++nLocalPoints;
     }

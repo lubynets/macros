@@ -149,8 +149,8 @@ std::pair<double, double> DetermineWorkingRangesTH1(const TH1* histo, double lef
 
 void CD(TFile* file, const std::string& dirName);
 
-TGraph* EvaluateMovingAverage(const TGraph* graphIn, int aveLength, bool isExcludeOwnPoint=false);
-void EvaluateMovingAverage(const TGraph* graphIn, TGraph* graphOut, int aveLength, bool isExcludeOwnPoint=false);
+TGraph* EvaluateMovingAverage(const TGraph* graphIn, int radius, bool isExcludeOwnPoint=false);
+void EvaluateMovingAverage(const TGraph* graphIn, TGraph* graphOut, int radius, bool isExcludeOwnPoint=false);
 
 void DivideGraph(TGraph* num, const TGraph* den);
 
