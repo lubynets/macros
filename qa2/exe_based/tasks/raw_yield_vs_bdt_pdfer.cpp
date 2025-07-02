@@ -52,19 +52,18 @@ void raw_yield_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::stri
     }
   }
 
-  int iTargetSignal{0};
-  for(const auto& tarSig : targetSignals) {
+  for(int iTargetSignal=0; iTargetSignal<targetSignals.size(); ++iTargetSignal) {
     for(int iLifeTimeRange = 0; iLifeTimeRange<lifeTimeRanges.size()-1; ++iLifeTimeRange) {
       auto InitGraph = [&](TGraphErrors*& gra, const std::string& prefixTitle, const std::string& yAxisTitle, Color_t color) {
         gra = new TGraphErrors();
-        gra->SetName((prefixTitle + "_vs_" + tarSig + "_T" + std::to_string(iLifeTimeRange)).c_str());
+        gra->SetName((prefixTitle + "_vs_" + targetSignals.at(iTargetSignal) + "_T" + std::to_string(iLifeTimeRange)).c_str());
         gra->SetMarkerColor(color);
         gra->SetLineColor(color);
         gra->SetLineWidth(1);
         gra->GetYaxis()->SetTitle(yAxisTitle.c_str());
         gra->SetTitle(("bin #" + std::to_string(iLifeTimeRange) + "#; T#in (" + to_string_with_precision(lifeTimeRanges.at(iLifeTimeRange), 2) + "#; " + to_string_with_precision(lifeTimeRanges.at(iLifeTimeRange+1), 2) + ") ps").c_str());
         gra->SetMarkerSize(0.6);
-        gra->GetXaxis()->SetTitle(("bdt score " + tarSig).c_str());
+        gra->GetXaxis()->SetTitle(("bdt score " + targetSignals.at(iTargetSignal)).c_str());
         gra->GetXaxis()->SetNdivisions(315);
       };
 
@@ -75,16 +74,13 @@ void raw_yield_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::stri
       InitGraph(graph.at(kRatio).at(iLifeTimeRange).at(iTargetSignal), "grRatio", "Raw yield / Moving average", kBlack);
       InitGraph(graph.at(kRatioSigma).at(iLifeTimeRange).at(iTargetSignal), "grRatioSigma", "(Ratio-1)/sigma)", kBlack);
     } // lifeTimeRanges
-    ++iTargetSignal;
   } // targetSignals
 
   for(const auto& score : bdtScores) {
-    iTargetSignal = 0;
-    for(const auto& tarSig: targetSignals) {
-      TFile* fileIn = OpenFileWithNullptrCheck(fileNameTemplate + "." + tarSig + "gt" + to_string_with_precision(score, 2) + ".root");
+    for(int iTargetSignal=0; iTargetSignal<targetSignals.size(); ++iTargetSignal) {
+      TFile* fileIn = OpenFileWithNullptrCheck(fileNameTemplate + "." + targetSignals.at(iTargetSignal) + "gt" + to_string_with_precision(score, 2) + ".root");
       TH1* histoYield = GetObjectWithNullptrCheck<TH1>(fileIn, histoName);
       TH1* histoChi2 = GetObjectWithNullptrCheck<TH1>(fileIn, "hRawYieldsChiSquare");
-      std::set<double> outlierBdts;
       for(int iLifeTimeRange=0; iLifeTimeRange<lifeTimeRanges.size()-1; ++iLifeTimeRange) {
         auto gr = graph.at(kYield).at(iLifeTimeRange).at(iTargetSignal);
         gr->SetPoint(gr->GetN(), score, histoYield->GetBinContent(iLifeTimeRange + 1));
@@ -96,34 +92,34 @@ void raw_yield_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::stri
         auto grc = graph.at(kChi2).at(iLifeTimeRange).at(iTargetSignal);
         grc->SetPoint(grc->GetN(), score, histoChi2->GetBinContent(iLifeTimeRange + 1));
       } // lifeTimeRanges
-      for(int iLifeTimeRange=0; iLifeTimeRange<lifeTimeRanges.size()-1; ++iLifeTimeRange) {
-        auto grr = graph.at(kRatio).at(iLifeTimeRange).at(iTargetSignal);
-        auto gry = graph.at(kYield).at(iLifeTimeRange).at(iTargetSignal);
-        auto grm = graph.at(kMoveAve).at(iLifeTimeRange).at(iTargetSignal);
-        auto grs = graph.at(kRatioSigma).at(iLifeTimeRange).at(iTargetSignal);
-        EvaluateMovingAverage(gry, grm, moveAverageRadius, moveAverageExcludeOwnPoint);
-        for(int iPoint=0, nPoints = gry->GetN(); iPoint<nPoints; ++iPoint) {
-          grr->SetPoint(iPoint, gry->GetPointX(iPoint), gry->GetPointY(iPoint));
-        }
-        DivideGraph(grr, grm);
-        grr->GetYaxis()->SetRangeUser(0.9, 1.1);
-        auto [meanRatio, sigmaRatio] = EvaluateMeanAndStdDevOfGraph(grr, 0.03, 0.61);
-        for(int iPoint=0, nPoints = grr->GetN(); iPoint<nPoints; ++iPoint) {
-          const double x = grr->GetPointX(iPoint);
-          const double y = (grr->GetPointY(iPoint) - meanRatio) / sigmaRatio;
-          grs->SetPoint(iPoint, x, y);
-          if(std::fabs(y) > ratioSigmaTolerance) outlierBdts.insert(x);
-        }
-        grs->GetYaxis()->SetRangeUser(-5, 5);
-      } // lifeTimeRanges
       fileIn->Close();
       ++iTargetSignal;
     } // targetSignals
   } // bdtScores
 
-  for(int iLifeTimeRange=0; iLifeTimeRange<lifeTimeRanges.size()-1; ++iLifeTimeRange) {
-    const std::string priBra = lifeTimeRanges.size()-1 == 1 ? "" : iLifeTimeRange == 0 ? "(" : iLifeTimeRange == lifeTimeRanges.size()-2 ? ")" : "";
-    for(int iTargetSignal=0; iTargetSignal<targetSignals.size(); ++iTargetSignal) {
+  for(int iTargetSignal=0; iTargetSignal<targetSignals.size(); ++iTargetSignal) {
+    std::set<double> outlierBdts;
+    for(int iLifeTimeRange=0; iLifeTimeRange<lifeTimeRanges.size()-1; ++iLifeTimeRange) {
+      const std::string priBra = lifeTimeRanges.size()-1 == 1 ? "" : iLifeTimeRange == 0 ? "(" : iLifeTimeRange == lifeTimeRanges.size()-2 ? ")" : "";
+      auto gry = graph.at(kYield).at(iLifeTimeRange).at(iTargetSignal);
+      auto grm = graph.at(kMoveAve).at(iLifeTimeRange).at(iTargetSignal);
+      auto grr = graph.at(kRatio).at(iLifeTimeRange).at(iTargetSignal);
+      auto grs = graph.at(kRatioSigma).at(iLifeTimeRange).at(iTargetSignal);
+      EvaluateMovingAverage(gry, grm, moveAverageRadius, moveAverageExcludeOwnPoint);
+      for(int iPoint=0, nPoints = gry->GetN(); iPoint<nPoints; ++iPoint) {
+        grr->SetPoint(iPoint, gry->GetPointX(iPoint), gry->GetPointY(iPoint));
+      }
+      DivideGraph(grr, grm);
+      grr->GetYaxis()->SetRangeUser(0.9, 1.1);
+      auto [meanRatio, sigmaRatio] = EvaluateMeanAndStdDevOfGraph(grr, 0.03, 0.61);
+      for(int iPoint=0, nPoints = grr->GetN(); iPoint<nPoints; ++iPoint) {
+        const double x = grr->GetPointX(iPoint);
+        const double y = (grr->GetPointY(iPoint) - meanRatio) / sigmaRatio;
+        grs->SetPoint(iPoint, x, y);
+        if(std::fabs(y) > ratioSigmaTolerance) outlierBdts.insert(x);
+      }
+      grs->GetYaxis()->SetRangeUser(-5, 5);
+
       auto PrintCanvas = [&](const Helper::tensor3<TGraphErrors*>& gr, const std::string& name) {
         TCanvas cc(("cc" + name).c_str(), "");
         cc.SetGridx();
@@ -142,8 +138,17 @@ void raw_yield_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::stri
       PrintCanvas({graph.at(kChi2)}, "Chi2");
       PrintCanvas({graph.at(kRatio)}, "Ratio");
       PrintCanvas({graph.at(kRatioSigma)}, "RatioSigma");
-    } // targetSignals
-  } // lifeTimeRanges
+    } // lifeTimeRanges
+    std::cout << "\nOutliers for " << targetSignals.at(iTargetSignal) << " :\n";
+    for(const auto& ob : outlierBdts) {
+      std::cout << ob << ", ";
+    }
+    std::cout << "\n\nGood bdt scores for " << targetSignals.at(iTargetSignal) << " :\n";
+    for(const auto& score : bdtScores) {
+      if(outlierBdts.find(score) == outlierBdts.end()) std::cout << score << ", ";
+    }
+    std::cout << "\n\n";
+  } // targetSignals
 }
 
 std::pair<double, double> EvaluateMeanAndStdDevOfGraph(const TGraph* graph, double from, double to) {
