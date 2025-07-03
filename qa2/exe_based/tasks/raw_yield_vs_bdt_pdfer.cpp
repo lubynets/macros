@@ -27,7 +27,7 @@ void raw_yield_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::stri
   }
   const int moveAverageRadius = 3;
   const int moveAverageExcludeOwnPoint = true;
-  const double ratioSigmaTolerance = 1.;
+  const double ratioSigmaTolerance = 2.;
   //=================================================================
 
   TFile* fileMarkup = OpenFileWithNullptrCheck(fileNameTemplate + "." + targetSignals.at(0) + "gt" + to_string_with_precision(bdtScores.at(0), 2) + ".root");
@@ -148,7 +148,7 @@ void raw_yield_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::stri
       auto grErrorAdv = InitMoveAverageRatioSigma("Raw yield error");
       ProcessMoveAverageRatioSigma(gre, grErrorAdv);
       
-      PrintCanvas({gry/*, grYieldAdv.at(kMoveAve)*/}, "RawYield", priBra);
+      PrintCanvas({gry, grYieldAdv.at(kMoveAve)}, "RawYield", priBra);
       PrintCanvas({grYieldAdv.at(kRatio)}, "RawYieldRatio", priBra);
       PrintCanvas({grYieldAdv.at(kRatioSigma)}, "RawYieldRatioSigma", priBra);
 

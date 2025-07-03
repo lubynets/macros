@@ -252,9 +252,9 @@ int runMassFitter(const TString& configFileName)
   inputFile->Close();
 
   // define output histos
-  auto hRawYields = new TH1D("hRawYields", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield",
+  auto hRawYieldsSignal = new TH1D("hRawYieldsSignal", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield",
                              nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsCounted = new TH1D("hRawYieldsCounted", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield via bin count",
+  auto hRawYieldsSignalCounted = new TH1D("hRawYieldsSignalCounted", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield via bin count",
                                     nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSigma = new TH1D(
     "hRawYieldsSigma", ";" + sliceVarName + "(" + sliceVarUnit + ");width (GeV/#it{c}^{2})",
@@ -289,8 +289,8 @@ int runMassFitter(const TString& configFileName)
     hFitConfig->GetXaxis()->SetBinLabel(i + 1, hFitConfigXLabel[i]);
   }
 
-  setHistoStyle(hRawYields);
-  setHistoStyle(hRawYieldsCounted);
+  setHistoStyle(hRawYieldsSignal);
+  setHistoStyle(hRawYieldsSignalCounted);
   setHistoStyle(hRawYieldsSigma);
   setHistoStyle(hRawYieldsMean);
   setHistoStyle(hRawYieldsSignificance);
@@ -412,10 +412,10 @@ int runMassFitter(const TString& configFileName)
       const Double_t meanErr = massFitter->getMeanUncertainty();
       const Double_t reducedChiSquare = massFitter->getChiSquareOverNDF();
 
-      hRawYields->SetBinContent(iSliceVar + 1, rawYield);
-      hRawYields->SetBinError(iSliceVar + 1, rawYieldErr);
-      hRawYieldsCounted->SetBinContent(iSliceVar + 1, rawYieldCounted);
-      hRawYieldsCounted->SetBinError(iSliceVar + 1, rawYieldCountedErr);
+      hRawYieldsSignal->SetBinContent(iSliceVar + 1, rawYield);
+      hRawYieldsSignal->SetBinError(iSliceVar + 1, rawYieldErr);
+      hRawYieldsSignalCounted->SetBinContent(iSliceVar + 1, rawYieldCounted);
+      hRawYieldsSignalCounted->SetBinError(iSliceVar + 1, rawYieldCountedErr);
       hRawYieldsSigma->SetBinContent(iSliceVar + 1, sigma);
       hRawYieldsSigma->SetBinError(iSliceVar + 1, sigmaErr);
       hRawYieldsMean->SetBinContent(iSliceVar + 1, mean);
@@ -476,10 +476,10 @@ int runMassFitter(const TString& configFileName)
       const double bkg = massFitter->getBkgYield();
       const double bkgErr = massFitter->getBkgYieldError();
 
-      hRawYields->SetBinContent(iSliceVar + 1, rawYield);
-      hRawYields->SetBinError(iSliceVar + 1, rawYieldErr);
-      hRawYieldsCounted->SetBinContent(iSliceVar + 1, rawYieldCounted);
-      hRawYieldsCounted->SetBinError(iSliceVar + 1, rawYieldCountedErr);
+      hRawYieldsSignal->SetBinContent(iSliceVar + 1, rawYield);
+      hRawYieldsSignal->SetBinError(iSliceVar + 1, rawYieldErr);
+      hRawYieldsSignalCounted->SetBinContent(iSliceVar + 1, rawYieldCounted);
+      hRawYieldsSignalCounted->SetBinError(iSliceVar + 1, rawYieldCountedErr);
       hRawYieldsSigma->SetBinContent(iSliceVar + 1, sigma);
       hRawYieldsSigma->SetBinError(iSliceVar + 1, sigmaErr);
       hRawYieldsMean->SetBinContent(iSliceVar + 1, mean);
@@ -553,8 +553,8 @@ int runMassFitter(const TString& configFileName)
   for (unsigned int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
     hMass[iSliceVar]->Write();
   }
-  hRawYields->Write();
-  hRawYieldsCounted->Write();
+  hRawYieldsSignal->Write();
+  hRawYieldsSignalCounted->Write();
   hRawYieldsSigma->Write();
   hRawYieldsMean->Write();
   hRawYieldsSignificance->Write();

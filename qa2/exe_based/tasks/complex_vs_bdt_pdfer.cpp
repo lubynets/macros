@@ -33,7 +33,6 @@ void complex_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::string
     "RawYieldsMean",
     "RawYieldsSignificance",
     "RawYieldsSgnOverBkg",
-    "RawYieldsSignal",
     "RawYieldsBkg",
     "RawYieldsChiSquare"
   };
