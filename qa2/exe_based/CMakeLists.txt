@@ -21,6 +21,7 @@ SET(EXECUTABLES
     efficiency_bdtcutset
     raw_yield_vs_bdt_pdfer
     cutvar_to_mc_compare
+    complex_vs_bdt_pdfer
 )
 
 SET(SOURCES

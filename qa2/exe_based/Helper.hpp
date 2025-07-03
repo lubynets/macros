@@ -161,6 +161,16 @@ template<typename T>
 using tensor3 = std::vector<std::vector<std::vector<T>>>;
 
 template<typename T>
+tensor2<T> CreateTensor2(int size1, int size2) {
+  tensor2<T> tensor(size1);
+  for(auto& t : tensor) {
+    t.resize(size2);
+  }
+
+  return tensor;
+}
+
+template<typename T>
 tensor3<T> CreateTensor3(int size1, int size2, int size3) {
   tensor3<T> tensor(size1);
   for(auto& t1 : tensor) {
