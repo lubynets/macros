@@ -98,7 +98,8 @@ HFInvMassFitter::HFInvMassFitter() : TNamed(),
                                      mBkgYieldErr(0),
                                      mSignificance(0),
                                      mSignificanceErr(0),
-                                     mChiSquareOverNdf(0),
+                                     mChiSquareOverNdfTotal(0),
+                                     mChiSquareOverNdfBg(0),
                                      mSgnPdf(0x0),
                                      mBkgPdf(0x0),
                                      mReflPdf(0x0),
@@ -165,7 +166,8 @@ HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit, Double_t minValue, Doubl
                                                                                                                                     mBkgYieldErr(0),
                                                                                                                                     mSignificance(0),
                                                                                                                                     mSignificanceErr(0),
-                                                                                                                                    mChiSquareOverNdf(0),
+                                                                                                                                    mChiSquareOverNdfTotal(0),
+                                                                                                                                    mChiSquareOverNdfBg(0),
                                                                                                                                     mSgnPdf(0x0),
                                                                                                                                     mBkgPdf(0x0),
                                                                                                                                     mReflPdf(0x0),
@@ -278,6 +280,7 @@ void HFInvMassFitter::doFit()
       mBkgPdfPrefit->plotOn(mInvMassFrame, Range("full"), Name("Bkg_c_prefit"), LineColor(kGray));
       delete mBkgPdfPrefit;
     }
+    std::cout << "mChiSquareOverNdfBg = " << mChiSquareOverNdfBg << "\n";
 
     // estimate signal yield
     RooAbsReal* bkgIntegral = mBkgPdf->createIntegral(*mass, NormSet(*mass), Range("bkg")); // bkg integral
@@ -323,7 +326,7 @@ void HFInvMassFitter::doFit()
       reflBkgPdf.plotOn(mInvMassFrame, Normalization(1.0, RooAbsReal::RelativeExpected), LineStyle(7), LineColor(kRed + 1), Name("ReflBkg_c"));
       plotBkg(mTotalPdf);                                              // plot bkg pdf in total pdf
       plotRefl(mTotalPdf);                                             // plot reflection in total pdf
-      mChiSquareOverNdf = mInvMassFrame->chiSquare("Tot_c", "data_c"); // calculate reduced chi2 / NDF
+      mChiSquareOverNdfTotal = mInvMassFrame->chiSquare("Tot_c", "data_c"); // calculate reduced chi2 / NDF
 
       // plot residual distribution
       RooHist* residualHistogram = mInvMassFrame->residHist("data_c", "ReflBkg_c");
@@ -340,13 +343,14 @@ void HFInvMassFitter::doFit()
       plotBkg(mTotalPdf);
       mTotalPdf->plotOn(mInvMassFrame, Name("Tot_c"), LineColor(kBlue));
       mSgnPdf->plotOn(mInvMassFrame, Normalization(1.0, RooAbsReal::RelativeExpected), DrawOption("F"), FillColor(TColor::GetColorTransparent(kBlue, 0.2)), VLines());
-      mChiSquareOverNdf = mInvMassFrame->chiSquare("Tot_c", "data_c"); // calculate reduced chi2 / DNF
+      mChiSquareOverNdfTotal = mInvMassFrame->chiSquare("Tot_c", "data_c"); // calculate reduced chi2 / DNF
       // plot residual distribution
       mResidualFrame = mass->frame(Title("Residual Distribution"));
       RooHist* residualHistogram = mInvMassFrame->residHist("data_c", "Bkg_c");
       mResidualFrame->addPlotable(residualHistogram, "P");
       mSgnPdf->plotOn(mResidualFrame, Normalization(1.0, RooAbsReal::RelativeExpected), LineColor(kBlue));
     }
+    std::cout << "mChiSquareOverNdfTotal = " << mChiSquareOverNdfTotal << "\n";
     mass->setRange("bkgForSignificance", mRooMeanSgn->getVal() - mNSigmaForSgn * mRooSigmaSgn->getVal(), mRooMeanSgn->getVal() + mNSigmaForSgn * mRooSigmaSgn->getVal());
     bkgIntegral = mBkgPdf->createIntegral(*mass, NormSet(*mass), Range("bkgForSignificance"));
     mIntegralBkg = bkgIntegral->getValV();
@@ -563,7 +567,7 @@ void HFInvMassFitter::drawFit(TVirtualPad* pad, Int_t writeFitInfo)
     }
     if (mTypeOfBkgPdf != NoBkg) {
       textInfoLeft->AddText(Form("Signif (%d#sigma) = %.1f #pm %.1f ", mNSigmaForSidebands, mSignificance, mSignificanceErr));
-      textInfoLeft->AddText(Form("#chi^{2} / ndf  =  %.3f", mChiSquareOverNdf));
+      textInfoLeft->AddText(Form("#chi^{2} / ndf  =  %.3f", mChiSquareOverNdfTotal));
     }
     if (mFixedMean) {
       textInfoRight->AddText(Form("mean(fixed) = %.3f #pm %.3f", mRooMeanSgn->getVal(), mRooMeanSgn->getError()));

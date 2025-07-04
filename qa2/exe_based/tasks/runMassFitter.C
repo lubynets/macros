@@ -155,10 +155,10 @@ int runMassFitter(const TString& configFileName)
   const Value& sgnFuncValue = config["SgnFunc"];
   readArray(sgnFuncValue, sgnFuncConfig);
 
-  bool enableRefl = config["EnableRefl"].GetBool();
+  const bool enableRefl = config["EnableRefl"].GetBool();
 
-  bool drawBgPrefit = config["drawBgPrefit"].GetBool();
-  bool highlightPeakRegion = config["highlightPeakRegion"].GetBool();
+  const bool drawBgPrefit = config["drawBgPrefit"].GetBool();
+  const bool highlightPeakRegion = config["highlightPeakRegion"].GetBool();
 
   const unsigned int nSliceVarBins = sliceVarMin.size();
   std::vector<int> bkgFunc(nSliceVarBins);
@@ -342,12 +342,12 @@ int runMassFitter(const TString& configFileName)
   }
 
   Int_t nCanvasesMax = 20; // do not put more than 20 bins per canvas to make them visible
-  const Int_t nCanvases = ceil(static_cast<float>(nSliceVarBins) / nCanvasesMax);
+  const Int_t nCanvases = std::ceil(static_cast<float>(nSliceVarBins) / nCanvasesMax);
   std::vector<TCanvas*> canvasMass(nCanvases);
   std::vector<TCanvas*> canvasResiduals(nCanvases);
   std::vector<TCanvas*> canvasRefl(nCanvases);
   for (int iCanvas = 0; iCanvas < nCanvases; iCanvas++) {
-    int nPads = (nCanvases == 1) ? nSliceVarBins : nCanvasesMax;
+    const int nPads = (nCanvases == 1) ? nSliceVarBins : nCanvasesMax;
     canvasMass[iCanvas] = new TCanvas(Form("canvasMass%d", iCanvas), Form("canvasMass%d", iCanvas),
                                       canvasSize[0], canvasSize[1]);
     divideCanvas(canvasMass[iCanvas], nPads);
@@ -361,7 +361,7 @@ int runMassFitter(const TString& configFileName)
   }
 
   for (unsigned int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
-    Int_t iCanvas = floor(static_cast<float>(iSliceVar) / nCanvasesMax);
+    const Int_t iCanvas = std::floor(static_cast<float>(iSliceVar) / nCanvasesMax);
 
     hMassForFit[iSliceVar] = static_cast<TH1*>(hMass[iSliceVar]->Rebin(nRebin[iSliceVar]));
     TString ptTitle =
@@ -410,7 +410,7 @@ int runMassFitter(const TString& configFileName)
       const Double_t sigmaErr = massFitter->getSigmaUncertainty();
       const Double_t mean = massFitter->getMean();
       const Double_t meanErr = massFitter->getMeanUncertainty();
-      const Double_t reducedChiSquare = massFitter->getChiSquareOverNDF();
+      const Double_t reducedChiSquare = massFitter->getChiSquareOverNDFTotal();
 
       hRawYieldsSignal->SetBinContent(iSliceVar + 1, rawYield);
       hRawYieldsSignal->SetBinError(iSliceVar + 1, rawYieldErr);
@@ -470,7 +470,7 @@ int runMassFitter(const TString& configFileName)
       const double sigmaErr = massFitter->getSigmaUncertainty();
       const double mean = massFitter->getMean();
       const double meanErr = massFitter->getMeanUncertainty();
-      const double reducedChiSquare = massFitter->getChiSquareOverNDF();
+      const double reducedChiSquare = massFitter->getChiSquareOverNDFTotal();
       const double significance = massFitter->getSignificance();
       const double significanceErr = massFitter->getSignificanceError();
       const double bkg = massFitter->getBkgYield();
