@@ -27,8 +27,8 @@ void complex_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::string
   //=================================================================
 
   const std::vector<std::string> variables {
-    "RawYields",
-    "RawYieldsCounted",
+    "RawYieldsSignal",
+    "RawYieldsSignalCounted",
     "RawYieldsSigma",
     "RawYieldsMean",
     "RawYieldsSignificance",

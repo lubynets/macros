@@ -193,12 +193,12 @@ std::pair<double, double> EvaluateMeanAndStdDevOfGraph(const TGraph* graph, doub
 int main(int argc, char* argv[]) {
   if (argc < 2) {
     std::cout << "Error! Please use " << std::endl;
-    std::cout << " ./raw_yield_vs_bdt_pdfer fileNameTemplate (histoName=hRawYields)" << std::endl;
+    std::cout << " ./raw_yield_vs_bdt_pdfer fileNameTemplate (histoName=hRawYieldsSignal)" << std::endl;
     exit(EXIT_FAILURE);
   }
 
   const std::string fileNameTemplate = argv[1];
-  const std::string histoName = argc > 2 ? argv[2] : "hRawYields";
+  const std::string histoName = argc > 2 ? argv[2] : "hRawYieldsSignal";
 
   raw_yield_vs_bdt_pdfer(fileNameTemplate, histoName);
 
