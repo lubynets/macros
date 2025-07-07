@@ -20,7 +20,7 @@ SET(EXECUTABLES
     mass_bdt_qa
     efficiency_bdtcutset
     raw_yield_vs_bdt_pdfer
-    cutvar_to_mc_compare
+    corrected_yields_qa2
     complex_vs_bdt_pdfer
 )
 

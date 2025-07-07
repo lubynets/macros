@@ -34,7 +34,8 @@ void complex_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::string
     "RawYieldsSignificance",
     "RawYieldsSgnOverBkg",
     "RawYieldsBkg",
-    "RawYieldsChiSquare"
+    "RawYieldsChiSquareBkg",
+    "RawYieldsChiSquareTotal"
   };
 
   TFile* fileMarkup = OpenFileWithNullptrCheck(fileNameTemplate + "." + targetSignal + "gt" + to_string_with_precision(bdtScores.at(0), 2) + ".root");
