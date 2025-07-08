@@ -348,3 +348,33 @@ void Helper::DivideGraph(TGraph* num, const TGraph* den) {
     num->SetPointY(iPoint, yNum/yDen);
   }
 }
+
+TF1* Helper::FitLifetimeHisto(TH1* histo, const std::string& option) {
+  const double lo = histo->GetBinLowEdge(1) + 1e-3;
+  const double hi = histo->GetBinLowEdge(histo->GetNbinsX()+1) - 1e-3;
+  auto parEst = Helper::EstimateExpoParameters(histo, lo, hi);
+  TF1* fitFunc = new TF1("fitFunc", "[0]*TMath::Exp(-x/[1])", lo, hi);
+  fitFunc->SetParameters(parEst.first, parEst.second);
+  histo->Fit(fitFunc, ("0"+option).c_str(), "", lo, hi);
+  fitFunc->SetLineColor(histo->GetLineColor());
+
+  return fitFunc;
+}
+
+void Helper::DivideFunctionByHisto(TH1* histo, TF1* func, const std::string& option) {
+  if(option.empty()) {
+    histo->Divide(func);
+  } else if(option == "I") {
+    for(int iBin=1, nBins=histo->GetNbinsX(); iBin<=nBins; iBin++) {
+      const double histoValue = histo->GetBinContent(iBin);
+      const double histoError = histo->GetBinError(iBin);
+      const double lo = histo->GetBinLowEdge(iBin);
+      const double hi = histo->GetBinLowEdge(iBin+1);
+      const double funcAverage = func->Integral(lo, hi) / (hi-lo);
+      histo->SetBinContent(iBin, histoValue/funcAverage);
+      histo->SetBinError(iBin, histoError/funcAverage);
+    }
+  } else {
+    throw std::runtime_error("Helper::DivideFunctionByHisto() - 'option' must be either empty string or I");
+  }
+}

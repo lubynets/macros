@@ -40,7 +40,7 @@ void ct_mcfit(const std::string& fileNameYield, const std::string& histoNameYiel
   }
   histoYieldCorr4Eff->Scale(100);
 
-  // differential (per x-axis unit) yield histogram
+  // differential (per x-axis unit) yield histogram // TODO use ROOT::TH1::Scale(1.0, "width"), don't invent a wheel
   TH1D* histoYieldDiff = dynamic_cast<TH1D*>(histoYieldCorr4Eff->Clone());
   histoYieldDiff->SetName((static_cast<std::string>(histoYield->GetName()) + "_diff").c_str());
   histoYieldDiff->GetYaxis()->SetTitle("dN/dT (ps^{-1})");
@@ -52,7 +52,7 @@ void ct_mcfit(const std::string& fileNameYield, const std::string& histoNameYiel
   const double lo = histoYieldDiff->GetBinLowEdge(1) + 1e-3;
   const double hi = histoYieldDiff->GetBinLowEdge(histoYieldDiff->GetNbinsX()+1) - 1e-3;
   auto parEst = EstimateExpoParameters(histoYieldDiff, lo, hi);
-  TF1* fitFunc = new TF1("fitFunc", "[0]*TMath::Exp(-x/[1])", lo, hi);
+  TF1* fitFunc = new TF1("fitFunc", "[0]*TMath::Exp(-x/[1])", lo, hi); // TODO Use Helper's implementation
   fitFunc->SetParameters(parEst.first, parEst.second);
   histoYieldDiff->Fit(fitFunc, ("0"+fitIntegralOption).c_str(), "", lo, hi);
 

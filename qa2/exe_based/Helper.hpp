@@ -61,7 +61,7 @@ bool string_to_bool(const std::string& str);
 TFile* OpenFileWithNullptrCheck(const std::string& fileName, const std::string& option = "read");
 
 template<typename T>
-T* GetObjectWithNullptrCheck(TFile* fileIn, const std::string& objectName) {
+inline T* GetObjectWithNullptrCheck(TFile* fileIn, const std::string& objectName) {
   T* ptr = fileIn->Get<T>(objectName.c_str());
   if(ptr == nullptr) {
     throw std::runtime_error("GetObjectWithNullptrCheck() - object " + objectName + " in file " + fileIn->GetName() + " is missing");
@@ -124,7 +124,7 @@ inline void RemoveEdgeLabelFromAxis(T* obj, const std::string& edge, const std::
 }
 
 template<typename T1, typename T2>
-void ScalePlotVertically(T1* plotTo, const T2* plotFrom, double scaleFactor) {
+inline void ScalePlotVertically(T1* plotTo, const T2* plotFrom, double scaleFactor) {
   plotTo->GetXaxis()->SetTitleSize(plotFrom->GetXaxis()->GetTitleSize()*scaleFactor);
   plotTo->GetXaxis()->SetLabelSize(plotFrom->GetXaxis()->GetLabelSize()*scaleFactor);
   plotTo->GetXaxis()->SetTickLength(plotFrom->GetXaxis()->GetTickLength()*scaleFactor);
@@ -161,7 +161,7 @@ template<typename T>
 using tensor3 = std::vector<std::vector<std::vector<T>>>;
 
 template<typename T>
-tensor2<T> CreateTensor2(int size1, int size2) {
+inline tensor2<T> CreateTensor2(int size1, int size2) {
   tensor2<T> tensor(size1);
   for(auto& t : tensor) {
     t.resize(size2);
@@ -171,7 +171,7 @@ tensor2<T> CreateTensor2(int size1, int size2) {
 }
 
 template<typename T>
-tensor3<T> CreateTensor3(int size1, int size2, int size3) {
+inline tensor3<T> CreateTensor3(int size1, int size2, int size3) {
   tensor3<T> tensor(size1);
   for(auto& t1 : tensor) {
     t1.resize(size2);
@@ -182,6 +182,20 @@ tensor3<T> CreateTensor3(int size1, int size2, int size3) {
 
   return tensor;
 }
+
+inline std::string EvaluatePrintingBracket(size_t vecSize, size_t index) {
+  return vecSize == 1 ? "" : index == 0 ? "(" : index == vecSize-1 ? ")" : "";
+}
+
+template <typename T>
+inline std::string EvaluatePrintingBracket(const std::vector<T>& vec, size_t index) {
+  size_t vecSize = vec.size();
+  return EvaluatePrintingBracket(vecSize, index);
+}
+
+TF1* FitLifetimeHisto(TH1* histo, const std::string& option="");
+
+void DivideFunctionByHisto(TH1* histo, TF1* func, const std::string& option="");
 
 } // namespace Helper
 #endif //QA2_HELPER_HPP
