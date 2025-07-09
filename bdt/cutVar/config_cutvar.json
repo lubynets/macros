@@ -1,0 +1,36 @@
+{
+    "rawyields": {
+        "inputdir": "/home/oleksii/alidir/working/cutVar/data/minv/gaus_poly2_fixPars/RawYields_Lc",
+        "inputfiles": [
+            "RAW_YIELD_FILES"
+        ],
+        "histoname": "hRawYieldsSignal"
+    },
+    "efficiencies": {
+        "inputdir": "/home/oleksii/alidir/working/cutVar/data/efficiency",
+        "inputfiles": [
+            "EFFICIENCY_FILES"
+        ],
+        "histonames": {
+            "prompt": "prompt",
+            "nonprompt": "nonprompt"
+        }
+    },
+    "pt_bin_to_process": "PT_BIN_TO_PROCESS",
+    "minimisation": {
+        "correlated": true
+    },
+    "central_efficiency": {
+        "computerawfrac": false,
+        "inputdir": "",
+        "inputfile": "",
+        "histonames": {
+            "prompt": "",
+            "nonprompt": ""
+        }
+    },
+    "output": {
+        "directory": ".",
+        "file": "CutVarLc.root"
+    }
+}

@@ -60,7 +60,7 @@ void raw_yield_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::stri
         gra = new TGraphErrors();
         gra->SetName((prefixTitle + "_vs_" + targetSignals.at(iTargetSignal) + "_T" + std::to_string(iLifeTimeRange)).c_str());
         gra->GetYaxis()->SetTitle(yAxisTitle.c_str());
-        gra->SetTitle(("bin #" + std::to_string(iLifeTimeRange) + "#; T#in (" + to_string_with_precision(lifeTimeRanges.at(iLifeTimeRange), 2) + "#; " + to_string_with_precision(lifeTimeRanges.at(iLifeTimeRange+1), 2) + ") ps").c_str());
+        gra->SetTitle(("bin #" + std::to_string(iLifeTimeRange+1) + "#; T#in (" + to_string_with_precision(lifeTimeRanges.at(iLifeTimeRange), 2) + "#; " + to_string_with_precision(lifeTimeRanges.at(iLifeTimeRange+1), 2) + ") ps").c_str());
         gra->GetXaxis()->SetTitle(("bdt score " + targetSignals.at(iTargetSignal)).c_str());
       };
 

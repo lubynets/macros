@@ -53,7 +53,7 @@ void complex_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::string
       graphVar.at(iVar).at(iT) = new TGraphErrors();
       auto gra = graphVar.at(iVar).at(iT);
       gra->SetName(("gr" + variables.at(iVar) + "_" + + "_T" + std::to_string(iT)).c_str());
-      gra->SetTitle(("bin #" + std::to_string(iT) + "#; T#in (" + to_string_with_precision(lifeTimeRanges.at(iT), 2) + "#; " + to_string_with_precision(lifeTimeRanges.at(iT+1), 2) + ") ps").c_str());
+      gra->SetTitle(("bin #" + std::to_string(iT+1) + "#; T#in (" + to_string_with_precision(lifeTimeRanges.at(iT), 2) + "#; " + to_string_with_precision(lifeTimeRanges.at(iT+1), 2) + ") ps").c_str());
       gra->GetXaxis()->SetTitle(("bdt score " + targetSignal).c_str());
       gra->GetYaxis()->SetTitle(yAxisTitle.c_str());
     } // lifeTimeRanges
