@@ -154,33 +154,52 @@ void EvaluateMovingAverage(const TGraph* graphIn, TGraph* graphOut, int radius, 
 
 void DivideGraph(TGraph* num, const TGraph* den);
 
-template<typename T>
-using tensor2 = std::vector<std::vector<T>>;
+template <typename T, size_t N>
+struct nested_vector {
+  using type = std::vector<typename nested_vector<T, N - 1>::type>;
+};
+// Base case
+template <typename T>
+struct nested_vector<T, 0> {
+  using type = T;
+};
+
+template <typename T, std::size_t N>
+using tensor = typename nested_vector<T, N>::type;
+
+template <typename T, std::size_t N>
+tensor<T, N> make_tensor(std::array<std::size_t, N> const& dims, T const& init = {}) {
+  if constexpr (N == 0) {
+    return init;
+  } else {
+    tensor<T, N> v;
+    v.resize(dims[0]);
+    auto subdims = [&] {
+        std::array<std::size_t, N - 1> tail{};
+        std::copy(dims.begin() + 1, dims.end(), tail.begin());
+        return tail;
+    }();
+    for (auto& sub : v) {
+      sub = make_tensor<T, N - 1>(subdims, init);
+    }
+    return v;
+  }
+}
 
 template<typename T>
-using tensor3 = std::vector<std::vector<std::vector<T>>>;
+using tensor2 = tensor<T, 2>;
+
+template<typename T>
+using tensor3 = tensor<T, 3>;
 
 template<typename T>
 inline tensor2<T> CreateTensor2(int size1, int size2) {
-  tensor2<T> tensor(size1);
-  for(auto& t : tensor) {
-    t.resize(size2);
-  }
-
-  return tensor;
+  return make_tensor<T, 2>({size1, size2});
 }
 
 template<typename T>
 inline tensor3<T> CreateTensor3(int size1, int size2, int size3) {
-  tensor3<T> tensor(size1);
-  for(auto& t1 : tensor) {
-    t1.resize(size2);
-    for(auto& t2 : t1) {
-      t2.resize(size3);
-    }
-  }
-
-  return tensor;
+  return make_tensor<T, 3>({size1, size2, size3});
 }
 
 inline std::string EvaluatePrintingBracket(size_t vecSize, size_t index) {

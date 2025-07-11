@@ -74,7 +74,7 @@ void raw_yield_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::stri
     for(int iTargetSignal=0; iTargetSignal<targetSignals.size(); ++iTargetSignal) {
       TFile* fileIn = OpenFileWithNullptrCheck(fileNameTemplate + "." + targetSignals.at(iTargetSignal) + "gt" + to_string_with_precision(score, 2) + ".root");
       TH1* histoYield = GetObjectWithNullptrCheck<TH1>(fileIn, histoName);
-      TH1* histoChi2 = GetObjectWithNullptrCheck<TH1>(fileIn, "hRawYieldsChiSquare");
+      TH1* histoChi2 = GetObjectWithNullptrCheck<TH1>(fileIn, "hRawYieldsChiSquareTotal");
       for(int iLifeTimeRange=0; iLifeTimeRange<lifeTimeRanges.size()-1; ++iLifeTimeRange) {
         auto gr = graph.at(kYield).at(iLifeTimeRange).at(iTargetSignal);
         gr->SetPoint(gr->GetN(), score, histoYield->GetBinContent(iLifeTimeRange + 1));
@@ -148,11 +148,11 @@ void raw_yield_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::stri
       auto grErrorAdv = InitMoveAverageRatioSigma("Raw yield error");
       ProcessMoveAverageRatioSigma(gre, grErrorAdv);
       
-      PrintCanvas({gry, grYieldAdv.at(kMoveAve)}, "RawYield", priBra);
+      PrintCanvas({gry/*, grYieldAdv.at(kMoveAve)*/}, "RawYield", priBra);
       PrintCanvas({grYieldAdv.at(kRatio)}, "RawYieldRatio", priBra);
       PrintCanvas({grYieldAdv.at(kRatioSigma)}, "RawYieldRatioSigma", priBra);
 
-      PrintCanvas({gre, grErrorAdv.at(kMoveAve)}, "Err", priBra);
+      PrintCanvas({gre/*, grErrorAdv.at(kMoveAve)*/}, "Err", priBra);
       PrintCanvas({grErrorAdv.at(kRatio)}, "ErrRatio", priBra);
       PrintCanvas({grErrorAdv.at(kRatioSigma)}, "ErrRatioSigma", priBra);
 

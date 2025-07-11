@@ -10,4 +10,5 @@ for PRE in "${FILE_NAME_PREFIXES[@]}"; do
     INPUT_FILES="${INPUT_FILES}${PRE}${FILE_NAME_TEMPLATE}_bin_${index}.pdf "
   done
   pdftk ${INPUT_FILES}cat output ${PRE}${FILE_NAME_TEMPLATE}.merged.pdf
+  rm $INPUT_FILES
 done
