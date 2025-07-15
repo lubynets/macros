@@ -33,6 +33,8 @@
 #include <RtypesCore.h>
 
 #include <cstdio>
+#include <string>
+#include <vector>
 
 class HFInvMassFitter : public TNamed
 {
@@ -275,7 +277,7 @@ class HFInvMassFitter : public TNamed
   Double_t mBkgYieldErr;             /// err on background
   Double_t mSignificance;            /// significance
   Double_t mSignificanceErr;         /// err on significance
-  Double_t mChiSquareOverNdfTotal;        /// chi2/ndf of the total fit
+  Double_t mChiSquareOverNdfTotal;   /// chi2/ndf of the total fit
   Double_t mChiSquareOverNdfBkg;     /// chi2/ndf of the background (sidebands) pre-fit
   Bool_t mFixReflOverSgn;            /// switch for fix refl/signal
   RooRealVar* mRooMeanSgn;           /// mean for gaussian of signal

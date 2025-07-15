@@ -32,8 +32,10 @@
 #include <rapidjson/filereadstream.h>
 
 #include <cstdio> // for fclose
+#include <map>
 #include <stdexcept>
 #include <string> // std::string
+#include <utility>
 #include <vector> // std::vector
 
 #endif
@@ -180,15 +182,14 @@ int runMassFitter(const TString& configFileName)
     sgnFunc[iSliceVar] = sgnFuncConfig[iSliceVar];
   }
 
-  std::map<std::string, std::pair<std::string, std::string>> particles {
+  std::map<std::string, std::pair<std::string, std::string>> particles{
     {"Dplus", {"K#pi#pi", "D+"}},
     {"D0", {"K#pi", "D0"}},
     {"Ds", {"KK#pi", "D_s+"}},
     {"LcToPKPi", {"pK#pi", "Lambda_c+"}},
     {"LcToPK0s", {"pK^{0}_{s}", "Lambda_c+"}},
-    {"Dstar", {"D^{0}pi^{+}", "D*+"}}
-  };
-  if(particles.find(particleName.Data()) == particles.end()) {
+    {"Dstar", {"D^{0}pi^{+}", "D*+"}}};
+  if (particles.find(particleName.Data()) == particles.end()) {
     throw std::runtime_error("ERROR: only Dplus, D0, Ds, LcToPKPi, LcToPK0s and Dstar particles supported! Exit");
   }
   const TString massAxisTitle = "#it{M}(" + particles[particleName.Data()].first + ") (GeV/#it{c}^{2})";
@@ -243,9 +244,9 @@ int runMassFitter(const TString& configFileName)
 
   // define output histos
   auto hRawYieldsSignal = new TH1D("hRawYieldsSignal", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield",
-                             nSliceVarBins, sliceVarLimits.data());
+                                   nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSignalCounted = new TH1D("hRawYieldsSignalCounted", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield via bin count",
-                                    nSliceVarBins, sliceVarLimits.data());
+                                          nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSigma = new TH1D(
     "hRawYieldsSigma", ";" + sliceVarName + "(" + sliceVarUnit + ");width (GeV/#it{c}^{2})",
     nSliceVarBins, sliceVarLimits.data());
@@ -262,12 +263,12 @@ int runMassFitter(const TString& configFileName)
     new TH1D("hRawYieldsBkg", ";" + sliceVarName + "(" + sliceVarUnit + ");Background (3#sigma)",
              nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsChiSquareBkg =
-          new TH1D("hRawYieldsChiSquareBkg",
-                   ";" + sliceVarName + "(" + sliceVarUnit + ");#chi^{2}/#it{ndf}", nSliceVarBins, sliceVarLimits.data());
+    new TH1D("hRawYieldsChiSquareBkg",
+             ";" + sliceVarName + "(" + sliceVarUnit + ");#chi^{2}/#it{ndf}", nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsChiSquareTotal =
     new TH1D("hRawYieldsChiSquareTotal",
              ";" + sliceVarName + "(" + sliceVarUnit + ");#chi^{2}/#it{ndf}", nSliceVarBins, sliceVarLimits.data());
-    auto hReflectionOverSignal =
+  auto hReflectionOverSignal =
     new TH1D("hReflectionOverSignal", ";" + sliceVarName + "(" + sliceVarUnit + ");Refl/Signal",
              nSliceVarBins, sliceVarLimits.data());
 
@@ -562,7 +563,7 @@ int runMassFitter(const TString& configFileName)
   hRawYieldsBkg->Write();
   hRawYieldsChiSquareBkg->Write();
   hRawYieldsChiSquareTotal->Write();
-  if(enableRefl) {
+  if (enableRefl) {
     hReflectionOverSignal->Write();
   }
   hFitConfig->Write();

@@ -49,6 +49,8 @@
 #include <array>
 #include <cmath>
 #include <cstring>
+#include <stdexcept>
+#include <string>
 
 using namespace RooFit;
 
@@ -337,8 +339,8 @@ void HFInvMassFitter::doFit()
       mReflPdf = new RooAddPdf("mReflPdf", "reflection fit function", RooArgList(*reflPdf), RooArgList(*mRooNRefl));
       RooAddPdf reflBkgPdf("reflBkgPdf", "reflBkgPdf", RooArgList(*bkgPdf, *reflPdf), RooArgList(*mRooNBkg, *mRooNRefl));
       reflBkgPdf.plotOn(mInvMassFrame, Normalization(1.0, RooAbsReal::RelativeExpected), LineStyle(7), LineColor(kRed + 1), Name("ReflBkg_c"));
-      plotBkg(mTotalPdf);                                              // plot bkg pdf in total pdf
-      plotRefl(mTotalPdf);                                             // plot reflection in total pdf
+      plotBkg(mTotalPdf);                                                   // plot bkg pdf in total pdf
+      plotRefl(mTotalPdf);                                                  // plot reflection in total pdf
       mChiSquareOverNdfTotal = mInvMassFrame->chiSquare("Tot_c", "data_c"); // calculate reduced chi2 / NDF
 
       // plot residual distribution
@@ -729,10 +731,10 @@ void HFInvMassFitter::checkForSignal(Double_t& estimatedSignal)
 RooAbsPdf* HFInvMassFitter::createBackgroundFitFunction(RooWorkspace* workspace) const
 {
   RooAbsPdf* bkgPdf{nullptr};
-  if(mTypeOfBkgPdf == NoBkg) {
+  if (mTypeOfBkgPdf == NoBkg) {
     return bkgPdf;
   }
-  if(mTypeOfBkgPdf<0 || mTypeOfBkgPdf>=NTypesOfBkgPdf) {
+  if (mTypeOfBkgPdf < 0 || mTypeOfBkgPdf >= NTypesOfBkgPdf) {
     throw std::runtime_error("createBackgroundFitFunction(): mTypeOfBkgPdf must be within [0; " + std::to_string(NTypesOfBkgPdf) + ") range");
   }
   bkgPdf = workspace->pdf(namesOfBkgPdf.at(mTypeOfBkgPdf));
@@ -774,7 +776,7 @@ RooAbsPdf* HFInvMassFitter::createSignalFitFunction(RooWorkspace* workspace)
 // Create Reflection Fit Function
 RooAbsPdf* HFInvMassFitter::createReflectionFitFunction(RooWorkspace* workspace) const
 {
-  if(mTypeOfReflPdf<0 || mTypeOfReflPdf>=NTypesOfReflPdf) {
+  if (mTypeOfReflPdf < 0 || mTypeOfReflPdf >= NTypesOfReflPdf) {
     throw std::runtime_error("createReflectionFitFunction(): mTypeOfReflPdf must be within [0; " + std::to_string(NTypesOfReflPdf) + ") range");
   }
   RooAbsPdf* reflPdf = workspace->pdf(namesOfReflPdf.at(mTypeOfReflPdf));
@@ -785,10 +787,10 @@ RooAbsPdf* HFInvMassFitter::createReflectionFitFunction(RooWorkspace* workspace)
 // Plot Bkg components of fTotFunction
 void HFInvMassFitter::plotBkg(RooAbsPdf* pdf, Color_t color)
 {
-  if(mTypeOfBkgPdf == NoBkg) {
+  if (mTypeOfBkgPdf == NoBkg) {
     return;
   }
-  if(mTypeOfBkgPdf<0 || mTypeOfBkgPdf>=NTypesOfBkgPdf) {
+  if (mTypeOfBkgPdf < 0 || mTypeOfBkgPdf >= NTypesOfBkgPdf) {
     throw std::runtime_error("plotBkg(): mTypeOfBkgPdf must be within [0; " + std::to_string(NTypesOfBkgPdf) + ") range");
   }
   pdf->plotOn(mInvMassFrame, Components(namesOfBkgPdf.at(mTypeOfBkgPdf).c_str()), Name("Bkg_c"), LineColor(color));
@@ -797,7 +799,7 @@ void HFInvMassFitter::plotBkg(RooAbsPdf* pdf, Color_t color)
 // Plot Refl distribution on canvas
 void HFInvMassFitter::plotRefl(RooAbsPdf* pdf)
 {
-  if(mTypeOfReflPdf<0 || mTypeOfReflPdf>=NTypesOfReflPdf) {
+  if (mTypeOfReflPdf < 0 || mTypeOfReflPdf >= NTypesOfReflPdf) {
     throw std::runtime_error("plotRefl(): mTypeOfReflPdf must be within [0; " + std::to_string(NTypesOfReflPdf) + ") range");
   }
   pdf->plotOn(mInvMassFrame, Components(namesOfReflPdf.at(mTypeOfReflPdf).c_str()), Name("Refl_c"), LineColor(kGreen));
