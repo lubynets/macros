@@ -34,12 +34,14 @@ template <typename T>
 void SetFieldsFIC(const std::vector<IndexMap>& imap, T& obj, const std::vector<FicCarrier>& ficc);
 std::vector<std::string> GetDFNames(const std::string& fileName);
 int DetermineFieldIdByName(const std::vector<IndexMap>& iMap, const std::string& name);
-std::vector<int> findPositions(const std::vector<int>& vec, int M);
+std::vector<int> FindPositionsInVector(const std::vector<int>& vec, int M);
+std::string ReadNthLine(const std::string& fileName);
 
-void AliceTree2AT(const std::string& fileName, bool isMC, bool hasEventInfo, bool isDoPlain, int maxEntries) {
+void AliceTree2AT(const std::string& fileNameIn, bool isMC, bool hasEventInfo, bool isDoPlain, int maxEntries) {
+
+  const std::string fileName = ReadNthLine(fileNameIn);
 
   const std::vector<std::string> fields_to_ignore_ {};
-
   const std::vector<std::string> fields_to_preserve_ {};
 
   if(!fields_to_ignore_.empty() && !fields_to_preserve_.empty()) throw std::runtime_error("!fields_to_ignore_.empty() && !fields_to_preserve_.empty()");
@@ -75,10 +77,10 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool hasEventInfo, boo
                                  AnalysisTree::BranchConfig& branch_config,
                                  std::vector<IndexMap>& vmap
                              ) {
-    auto lol = t->GetListOfLeaves();
+    const auto& lol = t->GetListOfLeaves();
     const int nLeaves = lol->GetEntries();
     for(int iLeave=0; iLeave<nLeaves; iLeave++) {
-      auto leave = lol->At(iLeave);
+      const auto& leave = lol->At(iLeave);
       const std::string fieldName = leave->GetName();
       const std::string prefixedFieldName = "f" + prefix + fieldName.substr(1, fieldName.size());
       const std::string fieldType = leave->ClassName();
@@ -98,16 +100,17 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool hasEventInfo, boo
   int collision_id_field_id_in_cand;
   int iGlobalEntry{0};
 
-  auto dirNames = GetDFNames(fileName);
+  const auto dirNames = GetDFNames(fileName);
+  std::cout << "Processing input file " << fileName << "\n";
   std::cout << "dirNames.size() = " << dirNames.size() << "\n";
 
-  std::string fileOutName = "AnalysisTree.root";
+  const std::string fileOutName = "AnalysisTree.root";
   TFile* out_file_ = new TFile(fileOutName.c_str(), "recreate");
   TTree* tree_ = new TTree("aTree", "Analysis Tree");
   tree_->SetAutoSave(0);
 
   for(auto& dirname : dirNames) {
-    TFile* fileIn = TFile::Open(fileName.c_str(), "read");
+    TFile* fileIn = HelperFunctions::OpenFileWithNullptrCheck(fileName);
     bool is_gentree_processed{false};
 
     TTree* treeKF = HelperFunctions::GetObjectWithNullptrCheck<TTree>(fileIn, dirname + "/O2hfcandlckf");
@@ -166,7 +169,7 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool hasEventInfo, boo
     }
 
     for(int iV=0; iV<candValues.size(); iV++) {
-      auto treeRec = iV<kfLiteSepar ? treeKF : iV<liteCollIdSepar ? treeLite : treeCollId;
+      const auto& treeRec = iV<kfLiteSepar ? treeKF : iV<liteCollIdSepar ? treeLite : treeCollId;
       TBranch* branch = treeRec->GetBranch(candidateMap.at(iV).name_.c_str());
       SetAddressFIC(branch, candidateMap.at(iV), candValues.at(iV));
     }
@@ -212,7 +215,7 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool hasEventInfo, boo
       }
 
       const int indexCollision = hasEventInfo ? eventValues.at(collision_id_field_id_in_evehead).int_ : -999;
-      std::vector<int> candidatesOfThisCollisionIndices = hasEventInfo ? findPositions(candidateCollisionIndices, indexCollision) : std::vector<int>{};
+      std::vector<int> candidatesOfThisCollisionIndices = hasEventInfo ? FindPositionsInVector(candidateCollisionIndices, indexCollision) : std::vector<int>{};
       if(!hasEventInfo) {
         candidatesOfThisCollisionIndices.resize(nEntriesKF);
         std::iota(candidatesOfThisCollisionIndices.begin(), candidatesOfThisCollisionIndices.end(), 0);
@@ -262,7 +265,7 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool hasEventInfo, boo
 
     auto* tree_task = new AnalysisTree::PlainTreeFiller();
     tree_task->SetOutputName("PlainTree.root", "pTree");
-    std::string branchname_rec = "Candidates";
+    const std::string branchname_rec = "Candidates";
     tree_task->SetInputBranchNames({branchname_rec});
     tree_task->AddBranch(branchname_rec);
     tree_task->SetIsPrependLeavesWithBranchName(false);
@@ -271,7 +274,7 @@ void AliceTree2AT(const std::string& fileName, bool isMC, bool hasEventInfo, boo
     man->AddTask(tree_task);
 
     man->Init({"filelist.txt"}, {"aTree"});
-    man->Run(-1);// -1 = all events
+    man->Run();// -1 = all events
     man->Finish();
   } // isDoPlain
 }
@@ -311,10 +314,7 @@ void SetFieldsFIC(const std::vector<IndexMap>& imap, T& obj, const std::vector<F
 }
 
 std::vector<std::string> GetDFNames(const std::string& fileName) {
-  TFile* fileIn = TFile::Open(fileName.c_str(), "read");
-  if(fileIn == nullptr) {
-    throw std::runtime_error("fileIn == nullptr");
-  }
+  TFile* fileIn = HelperFunctions::OpenFileWithNullptrCheck(fileName);
 
   std::vector<std::string> result;
   auto lok = fileIn->GetListOfKeys();
@@ -334,7 +334,7 @@ int DetermineFieldIdByName(const std::vector<IndexMap>& iMap, const std::string&
   return distance;
 }
 
-std::vector<int> findPositions(const std::vector<int>& vec, int M) {
+std::vector<int> FindPositionsInVector(const std::vector<int>& vec, int M) {
   std::vector<int> positions;
   for (int i = 0; i < vec.size(); ++i) {
     if (vec[i] == M) {
@@ -342,4 +342,23 @@ std::vector<int> findPositions(const std::vector<int>& vec, int M) {
     }
   }
   return positions;
+}
+
+std::string ReadNthLine(const std::string& fileName) {
+  if(fileName.find(':') == std::string::npos) return fileName;
+
+  std::string result;
+  const size_t colonPosition = fileName.find(':');
+  const std::string fileListName = fileName.substr(0, colonPosition);
+  const std::string fileLineNumberStr = fileName.substr(colonPosition + 1);
+  const int fileLineNumberInt = std::stoi(fileLineNumberStr);
+
+  std::ifstream fileList(fileListName);
+  if (!fileList.is_open()) throw std::runtime_error("ReadNthLine() - the fileList " + fileListName + " is missing!");
+
+  for(size_t iLine=0; iLine<fileLineNumberInt; ++iLine) {
+    if (!std::getline(fileList, result)) throw std::runtime_error("ReadNthLine() - the EOF of fileList " + fileListName + " reached before line " + fileLineNumberStr);
+  }
+
+  return result;
 }
