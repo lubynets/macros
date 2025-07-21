@@ -1,7 +1,8 @@
 //
 // Created by oleksii on 10.02.25.
 //
-#include "Helper.hpp"
+#include "HelperGeneral.hpp"
+#include "HelperPlot.hpp"
 
 #include <TCanvas.h>
 #include <TFile.h>
@@ -14,7 +15,8 @@
 #include <string>
 #include <iostream>
 
-using namespace Helper;
+using namespace HelperGeneral;
+using namespace HelperPlot;
 
 void pid_qa2(const std::string& fileName) {
 

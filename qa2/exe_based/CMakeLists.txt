@@ -25,7 +25,9 @@ SET(EXECUTABLES
 )
 
 SET(SOURCES
-    Helper.cpp
+    HelperGeneral.cpp
+    HelperMath.cpp
+    HelperPlot.cpp
     ShapeFitter.cpp
 )
 

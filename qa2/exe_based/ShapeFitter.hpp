@@ -5,7 +5,7 @@
 #ifndef QA2_SHAPEFITTER_HPP
 #define QA2_SHAPEFITTER_HPP
 
-#include "Helper.hpp"
+#include "HelperGeneral.hpp"
 
 #include <TF1.h>
 #include <TFitResult.h>
@@ -97,18 +97,18 @@ class ShapeFitter {
   TF1* sidebands_refit_{nullptr};
   TF1* all_refit_{nullptr};
 
-  double peak_sigma_{Helper::UndefValueDouble};
-  double peak_integral_3s_{Helper::UndefValueDouble};
-  double bg_integral_3s_{Helper::UndefValueDouble};
-  double peak_errintegral_3s_{Helper::UndefValueDouble};
-  double bg_errintegral_3s_{Helper::UndefValueDouble};
+  double peak_sigma_{HelperGeneral::UndefValueDouble};
+  double peak_integral_3s_{HelperGeneral::UndefValueDouble};
+  double bg_integral_3s_{HelperGeneral::UndefValueDouble};
+  double peak_errintegral_3s_{HelperGeneral::UndefValueDouble};
+  double bg_errintegral_3s_{HelperGeneral::UndefValueDouble};
 
-  double expected_mu_{Helper::UndefValueDouble};
-  double expected_sigma_{Helper::UndefValueDouble};
-  double left_sideband_external_{Helper::UndefValueDouble};
-  double left_sideband_internal_{Helper::UndefValueDouble};
-  double right_sideband_external_{Helper::UndefValueDouble};
-  double right_sideband_internal_{Helper::UndefValueDouble};
+  double expected_mu_{HelperGeneral::UndefValueDouble};
+  double expected_sigma_{HelperGeneral::UndefValueDouble};
+  double left_sideband_external_{HelperGeneral::UndefValueDouble};
+  double left_sideband_internal_{HelperGeneral::UndefValueDouble};
+  double right_sideband_external_{HelperGeneral::UndefValueDouble};
+  double right_sideband_internal_{HelperGeneral::UndefValueDouble};
 
   std::string peak_shape_{"Gaus"};
   int bg_pol_n_{2};

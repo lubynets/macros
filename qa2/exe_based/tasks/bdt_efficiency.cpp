@@ -2,14 +2,17 @@
 // Created by oleksii on 29.04.25.
 //
 #include "BdtEfficiencyCalculator.hpp"
-#include "Helper.hpp"
+
+#include "HelperGeneral.hpp"
+#include "HelperPlot.hpp"
 
 #include <TFile.h>
 #include <TH2.h>
 
 #include <iostream>
 
-using namespace Helper;
+using namespace HelperGeneral;
+using namespace HelperPlot;
 
 void BdtEfficiency(const std::string& fileNameMc, const std::string& fileNameData, const std::string& xCutDirection, const std::string& yCutDirection) {
   LoadMacro("styles/bdt_qa.style.cc");

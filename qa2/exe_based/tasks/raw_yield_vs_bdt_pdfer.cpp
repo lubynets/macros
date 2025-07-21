@@ -1,7 +1,9 @@
 //
 // Created by oleksii on 22.06.25.
 //
-#include "Helper.hpp"
+#include "HelperGeneral.hpp"
+#include "HelperMath.hpp"
+#include "HelperPlot.hpp"
 
 #include <TFile.h>
 #include <TGraphErrors.h>
@@ -11,7 +13,10 @@
 #include <set>
 #include <vector>
 
-using namespace Helper;
+using namespace HelperGeneral;
+using namespace HelperMath;
+using namespace HelperPlot;
+
 std::pair<double, double> EvaluateMeanAndStdDevOfGraph(const TGraph* graph, double from=-1e9, double to=1e9);
 
 void raw_yield_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::string& histoName) {
@@ -52,7 +57,7 @@ void raw_yield_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::stri
     nAdvancedGraphs
   };
 
-  Helper::tensor3<TGraphErrors*> graph = Helper::CreateTensor3<TGraphErrors*>(nGraphs, lifeTimeRanges.size()-1, targetSignals.size());
+  HelperMath::tensor3<TGraphErrors*> graph = HelperMath::make_tensor<TGraphErrors*, 3>({nGraphs, lifeTimeRanges.size()-1, targetSignals.size()}, nullptr);
 
   for(int iTargetSignal=0; iTargetSignal<targetSignals.size(); ++iTargetSignal) {
     for(int iLifeTimeRange = 0; iLifeTimeRange<lifeTimeRanges.size()-1; ++iLifeTimeRange) {

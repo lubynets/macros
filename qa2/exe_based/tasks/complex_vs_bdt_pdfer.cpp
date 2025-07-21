@@ -1,14 +1,20 @@
 //
 // Created by oleksii on 03.07.25.
 //
-#include "Helper.hpp"
+#include "HelperGeneral.hpp"
+#include "HelperMath.hpp"
+#include "HelperPlot.hpp"
 
+#include <TGraphErrors.h>
+#include <TH1.h>
 #include <TStyle.h>
 
 #include <iostream>
 #include <numeric>
 
-using namespace Helper;
+using namespace HelperGeneral;
+using namespace HelperMath;
+using namespace HelperPlot;
 
 double EvaluateAverageExcludingOutliers(const std::vector<double>& values, const std::vector<double>& errors, double chi2Max = 1.);
 double EvaluateAverageExcludingOutliers(const TGraphErrors* graph, double from=-1e9, double to=1e9, double chi2Max=1.);
@@ -45,7 +51,7 @@ void complex_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::string
     lifeTimeRanges.emplace_back(histoMarkup->GetBinLowEdge(iBin));
   }
 
-  Helper::tensor2<TGraphErrors*> graphVar = Helper::CreateTensor2<TGraphErrors*>(variables.size(), lifeTimeRanges.size()-1);
+  HelperMath::tensor2<TGraphErrors*> graphVar = HelperMath::make_tensor<TGraphErrors*, 2>({variables.size(), lifeTimeRanges.size()-1}, nullptr);
   for(int iVar=0, nVars=variables.size(); iVar<nVars; ++iVar) {
     histoMarkup = GetObjectWithNullptrCheck<TH1>(fileMarkup, "h" + variables.at(iVar));
     const std::string yAxisTitle = histoMarkup->GetYaxis()->GetTitle();

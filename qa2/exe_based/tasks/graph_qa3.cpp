@@ -1,16 +1,19 @@
 //
 // Created by oleksii on 10.02.25.
 //
-#include "Helper.hpp"
+#include "HelperGeneral.hpp"
+#include "HelperPlot.hpp"
 
 #include <TCanvas.h>
+#include <TGraphErrors.h>
 #include <TLegend.h>
 #include <TMultiGraph.h>
 #include <TROOT.h>
 
 #include <iostream>
 
-using namespace Helper;
+using namespace HelperGeneral;
+using namespace HelperPlot;
 
 void graph_qa3(const std::string& fileName1, const std::string& fileName2, const std::string& promptness, const std::string& constraint, bool drawLeg=true) {
 

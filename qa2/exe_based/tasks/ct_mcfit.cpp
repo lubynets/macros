@@ -1,7 +1,9 @@
 //
 // Created by oleksii on 04.03.25.
 //
-#include "Helper.hpp"
+#include "HelperGeneral.hpp"
+#include "HelperMath.hpp"
+#include "HelperPlot.hpp"
 
 #include <TCanvas.h>
 #include <TLegend.h>
@@ -9,7 +11,9 @@
 
 #include <iostream>
 
-using namespace Helper;
+using namespace HelperGeneral;
+using namespace HelperMath;
+using namespace HelperPlot;
 
 void ct_mcfit(const std::string& fileNameEff, const std::string& fileNameYield, bool isSaveToRoot) {
   TString currentMacroPath = __FILE__;

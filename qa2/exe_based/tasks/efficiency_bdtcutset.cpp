@@ -1,17 +1,22 @@
 //
 // Created by oleksii on 13.06.25.
 //
-#include "Helper.hpp"
+#include "HelperGeneral.hpp"
+#include "HelperMath.hpp"
+#include "HelperPlot.hpp"
 #include "HelperEfficiency.hpp"
 
 #include <TFile.h>
+#include <TGraphErrors.h>
 #include <TH1.h>
 #include <TLegend.h>
 #include <TString.h>
 
 #include <iostream>
 
-using namespace Helper;
+using namespace HelperGeneral;
+using namespace HelperMath;
+using namespace HelperPlot;
 using namespace HelperEfficiency;
 
 void RebinHistoToEdges(TH1*& histo, const std::vector<double>& edges);
@@ -38,11 +43,10 @@ void efficiency_bdtcutset(const std::string& fileName) {
   const std::vector<std::string> promptnesses{"prompt", "nonprompt"};
 
   TFile* fileOut = TFile::Open((fileOutName + ".root").c_str(), "recreate");
-//  Helper::tensor<TGraphErrors*, 2> grEff = CreateTensor2<TGraphErrors*>(lifeTimeRanges.size()-1, promptnesses.size());
-  Helper::tensor<TGraphErrors*, 2> grEff = make_tensor<TGraphErrors*, 2>({lifeTimeRanges.size()-1, promptnesses.size()}, nullptr);
+  HelperMath::tensor<TGraphErrors*, 2> grEff = make_tensor<TGraphErrors*, 2>({lifeTimeRanges.size()-1, promptnesses.size()}, nullptr);
 
   auto PtRangeString = [&] (size_t iPt) {
-    return "pT_" + Helper::to_string_with_precision(pTRanges.at(iPt), 0) + "_" + Helper::to_string_with_precision(pTRanges.at(iPt+1), 0);
+    return "pT_" + HelperGeneral::to_string_with_precision(pTRanges.at(iPt), 0) + "_" + HelperGeneral::to_string_with_precision(pTRanges.at(iPt+1), 0);
   };
 
   int iPromptness{0};

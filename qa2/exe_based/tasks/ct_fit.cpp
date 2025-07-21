@@ -1,14 +1,17 @@
 //
 // Created by oleksii on 19.03.25.
 //
-#include "Helper.hpp"
+#include "HelperGeneral.hpp"
+#include "HelperMath.hpp"
+#include "HelperPlot.hpp"
 
 #include <TCanvas.h>
-#include <TROOT.h>
 
 #include <iostream>
 
-using namespace Helper;
+using namespace HelperGeneral;
+using namespace HelperMath;
+using namespace HelperPlot;
 
 void ct_mcfit(const std::string& fileNameYield, const std::string& histoNameYield, const std::string& fileNameEff, const std::string& histoNameEff, const std::string& mcOrData) {
   LoadMacro("styles/mc_qa2.style.cc");

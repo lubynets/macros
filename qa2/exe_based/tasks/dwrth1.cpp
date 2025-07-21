@@ -2,7 +2,9 @@
 // Created by oleksii on 15.04.25.
 //
 
-#include "Helper.hpp"
+#include "HelperGeneral.hpp"
+#include "HelperMath.hpp"
+#include "HelperPlot.hpp"
 
 #include <TFile.h>
 
@@ -10,7 +12,9 @@
 #include <string>
 #include <vector>
 
-using namespace Helper;
+using namespace HelperGeneral;
+using namespace HelperMath;
+using namespace HelperPlot;
 
 void DWRTH1(const std::string& fileName, const std::string& mcOrData) {
   const std::vector<std::string> vars {"nSigTpcPr", "nSigTpcPi", "nSigTpcKa", "ldl", "chi2Topo", "chi2PrimPr", "chi2PrimPi", "chi2PrimKa", "chi2Geo", "mass"};

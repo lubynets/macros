@@ -2,7 +2,8 @@
 // Created by oleksii on 31.01.25.
 //
 
-#include "Helper.hpp"
+#include "HelperGeneral.hpp"
+#include "HelperPlot.hpp"
 #include "ShapeFitter.hpp"
 
 #include <TCanvas.h>
@@ -14,7 +15,8 @@
 
 #include <iostream>
 
-using namespace Helper;
+using namespace HelperGeneral;
+using namespace HelperPlot;
 
 void treeKF_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool isDoFit, bool isSaveRoot) {
   TString currentMacroPath = __FILE__;

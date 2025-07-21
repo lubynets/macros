@@ -1,4 +1,5 @@
-#include "Helper.hpp"
+#include "HelperGeneral.hpp"
+#include "HelperPlot.hpp"
 #include "ShapeFitter.hpp"
 
 #include <TArrow.h>
@@ -15,7 +16,8 @@
 
 #include <vector>
 
-using namespace Helper;
+using namespace HelperGeneral;
+using namespace HelperPlot;
 
 void mc_qa2diff(const std::string& fileName, int prompt_or_nonprompt, bool isDoFit, bool isSaveRoot) {
   TString currentMacroPath = __FILE__;

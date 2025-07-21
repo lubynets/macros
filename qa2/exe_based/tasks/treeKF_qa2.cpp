@@ -1,4 +1,5 @@
-#include "Helper.hpp"
+#include "HelperGeneral.hpp"
+#include "HelperMath.hpp"
 
 #include <TFile.h>
 #include <TH1D.h>
@@ -9,7 +10,8 @@
 #include <iostream>
 #include <vector>
 
-using namespace Helper;
+using namespace HelperGeneral;
+using namespace HelperMath;
 
 void treeKF_qa2(const std::string& fileName) {
   TString currentMacroPath = __FILE__;

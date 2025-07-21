@@ -1,7 +1,8 @@
 //
 // Created by oleksii on 19.02.25.
 //
-#include "Helper.hpp"
+#include "HelperGeneral.hpp"
+#include "HelperPlot.hpp"
 #include "HelperEfficiency.hpp"
 
 #include <TCanvas.h>
@@ -15,7 +16,8 @@
 
 #include <iostream>
 
-using namespace Helper;
+using namespace HelperGeneral;
+using namespace HelperPlot;
 using namespace HelperEfficiency;
 
 void efficiency(const std::string& fileName, bool isSaveToRoot) {

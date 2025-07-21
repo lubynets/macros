@@ -5,7 +5,7 @@
 #ifndef QA2_HELPEREFFICIENCY_HPP
 #define QA2_HELPEREFFICIENCY_HPP
 
-#include "Helper.hpp"
+#include "HelperGeneral.hpp"
 
 #include <TH1.h>
 
@@ -13,7 +13,7 @@ namespace HelperEfficiency {
 
 inline std::pair<TH1*, TH1*> EvaluateEfficiencyHisto(TH1* hNum, TH1* hDen) {
   const int nBins = hNum->GetNbinsX();
-  Helper::CheckHistogramsForXaxisIdentity(hNum, hDen);
+  HelperGeneral::CheckHistogramsForXaxisIdentity(hNum, hDen);
 
   TH1* hEff = dynamic_cast<TH1*>(hNum->Clone());
   TH1* hRelErr = dynamic_cast<TH1*>(hNum->Clone());
