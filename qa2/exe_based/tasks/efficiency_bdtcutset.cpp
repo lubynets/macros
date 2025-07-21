@@ -4,7 +4,6 @@
 #include "HelperGeneral.hpp"
 #include "HelperMath.hpp"
 #include "HelperPlot.hpp"
-#include "HelperEfficiency.hpp"
 
 #include <TFile.h>
 #include <TGraphErrors.h>
@@ -17,7 +16,6 @@
 using namespace HelperGeneral;
 using namespace HelperMath;
 using namespace HelperPlot;
-using namespace HelperEfficiency;
 
 void RebinHistoToEdges(TH1*& histo, const std::vector<double>& edges);
 

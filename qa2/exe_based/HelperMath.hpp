@@ -60,6 +60,8 @@ TF1* FitLifetimeHisto(TH1* histo, const std::string& option="");
 
 void DivideFunctionByHisto(TH1* histo, TF1* func, const std::string& option="");
 
+std::pair<TH1*, TH1*> EvaluateEfficiencyHisto(TH1* hNum, TH1* hDen);
+
 };
 
 
