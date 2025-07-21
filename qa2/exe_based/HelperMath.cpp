@@ -165,3 +165,18 @@ std::pair<TH1*, TH1*> HelperMath::EvaluateEfficiencyHisto(TH1* hNum, TH1* hDen) 
 
   return std::make_pair(hEff, hRelErr);
 }
+
+TH1* HelperMath::MergeHistograms(const std::vector<TH1*>& histos) {
+  for(const auto& h : histos) {
+    HelperGeneral::CheckHistogramsForXaxisIdentity(h, histos.at(0));
+  }
+
+  TH1* hResult = dynamic_cast<TH1*>(histos.at(0)->Clone("merged"));
+  hResult->Sumw2();
+  hResult->SetDirectory(nullptr);
+  for(size_t iH=1, nHs=histos.size(); iH<nHs; ++iH) {
+    hResult->Add(histos.at(iH));
+  }
+
+  return hResult;
+}

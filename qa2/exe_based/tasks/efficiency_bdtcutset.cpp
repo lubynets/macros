@@ -41,15 +41,17 @@ void efficiency_bdtcutset(const std::string& fileName) {
   const std::vector<std::string> promptnesses{"prompt", "nonprompt"};
 
   TFile* fileOut = TFile::Open((fileOutName + ".root").c_str(), "recreate");
-  HelperMath::tensor<TGraphErrors*, 2> grEff = make_tensor<TGraphErrors*, 2>({lifeTimeRanges.size()-1, promptnesses.size()}, nullptr);
+  HelperMath::tensor<TGraphErrors*, 3> grEff = make_tensor<TGraphErrors*, 3>({promptnesses.size(), pTRanges.size(), lifeTimeRanges.size()-1}, nullptr);
 
   auto PtRangeString = [&] (size_t iPt) {
     return "pT_" + HelperGeneral::to_string_with_precision(pTRanges.at(iPt), 0) + "_" + HelperGeneral::to_string_with_precision(pTRanges.at(iPt+1), 0);
   };
 
-  int iPromptness{0};
-  for(const auto& promptness : promptnesses) {
+  for(size_t iPromptness=0, nPromptnesses=promptnesses.size(); iPromptness<nPromptnesses; ++iPromptness) {
+    const std::string& promptness = promptnesses.at(iPromptness);
+    std::cout << "Processing " << promptness << "\n";
     for(size_t iPt=0, nPts=pTRanges.size()-1; iPt<nPts; ++iPt) {
+      std::cout << "Processing iPt = " << iPt << "\t" << PtRangeString(iPt) << "\n";
       TH1* histoGen = GetObjectWithNullptrCheck<TH1>(fileIn, "gen/" + promptness + "/" + PtRangeString(iPt) + "/hT");
       RebinHistoToEdges(histoGen, lifeTimeRanges);
       histoGen->UseCurrentStyle();
@@ -59,9 +61,10 @@ void efficiency_bdtcutset(const std::string& fileName) {
         for (const auto& score : bdtScores) {
           const std::string sScore = to_string_with_precision(score, 2);
           for (int iLifeTimeRange = 0; iLifeTimeRange < lifeTimeRanges.size() - 1 && score == bdtScores.at(0); ++iLifeTimeRange) {
+            std::cout << "Processing iLifeTimeRange " << iLifeTimeRange << "\n";
             const Color_t grColor = promptness == "prompt" ? kRed : kBlue;
-            grEff.at(iLifeTimeRange).at(iPromptness) = new TGraphErrors();
-            auto gr = grEff.at(iLifeTimeRange).at(iPromptness);
+            grEff.at(iPromptness).at(iPt).at(iLifeTimeRange) = new TGraphErrors();
+            auto gr = grEff.at(iPromptness).at(iPt).at(iLifeTimeRange);
             gr->SetName(("grEff_" + promptness + "_vs_" + tarSigShortcut + "_T" +
                          std::to_string(iLifeTimeRange)).c_str());
             gr->SetTitle(("bin #" + std::to_string(iLifeTimeRange + 1) + "#; T#in (" +
@@ -95,20 +98,19 @@ void efficiency_bdtcutset(const std::string& fileName) {
           CD(fileOutScore, PtRangeString(iPt));
           histoEff->Write(promptness.c_str());
           for (int iLifeTimeRange = 0; iLifeTimeRange < lifeTimeRanges.size() - 1; ++iLifeTimeRange) {
-            auto gr = grEff.at(iLifeTimeRange).at(iPromptness);
+            auto gr = grEff.at(iPromptness).at(iPt).at(iLifeTimeRange);
             gr->SetPoint(gr->GetN(), score, histoEff->GetBinContent(iLifeTimeRange + 1));
             gr->SetPointError(gr->GetN() - 1, 0, histoEff->GetBinError(iLifeTimeRange + 1));
           }
           fileOutScore->Close();
         } // bdtSignalLowerValues
-      ++iPromptness;
     } // pTRanges
   } // promptnesses
 
   TLegend leg(0.7, 0.7, 0.9, 0.9);
-  iPromptness = 0;
+  size_t iPromptness = 0;
   for(const auto& promptness : promptnesses) {
-    leg.AddEntry(grEff.at(0).at(iPromptness), promptness.c_str(), "PL");
+    leg.AddEntry(grEff.at(iPromptness).at(0).at(0), promptness.c_str(), "PL");
     ++iPromptness;
   }
 
@@ -118,10 +120,10 @@ void efficiency_bdtcutset(const std::string& fileName) {
       TCanvas cc("cc", "");
       cc.SetCanvasSize(1200, 800);
       cc.SetLogy();
-      grEff.at(iLifeTimeRange).at(0)->Draw("APE");
-      grEff.at(iLifeTimeRange).at(1)->Draw("PE same");
+      grEff.at(0).at(iPt).at(iLifeTimeRange)->Draw("APE"); // 0 stands for prompt
+      grEff.at(1).at(iPt).at(iLifeTimeRange)->Draw("PE same"); // 1 stands for nonprompt
       leg.Draw("same");
-      cc.Print(("grEff_vs_" + tarSigShortcut + ".pdf" + priBra).c_str());
+      cc.Print(("grEff_vs_" + tarSigShortcut + "_" + PtRangeString(iPt) + ".pdf" + priBra).c_str());
     } // lifeTimeRanges
   } // pTRanges
   fileOut->Close();

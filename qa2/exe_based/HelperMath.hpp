@@ -33,21 +33,21 @@ using tensor = typename nested_vector<T, N>::type;
 
 template <typename T, std::size_t N>
 tensor<T, N> make_tensor(std::array<std::size_t, N> const& dims, T const& init = {}) {
-if constexpr (N == 0) {
-return init;
-} else {
-tensor<T, N> v;
-v.resize(dims[0]);
-auto subdims = [&] {
-    std::array<std::size_t, N - 1> tail{};
-    std::copy(dims.begin() + 1, dims.end(), tail.begin());
-    return tail;
-}();
-for (auto& sub : v) {
-sub = make_tensor<T, N - 1>(subdims, init);
-}
-return v;
-}
+  if constexpr (N == 0) {
+    return init;
+  } else {
+  tensor<T, N> v;
+  v.resize(dims[0]);
+  auto subdims = [&] {
+      std::array<std::size_t, N - 1> tail{};
+      std::copy(dims.begin() + 1, dims.end(), tail.begin());
+      return tail;
+  }();
+  for (auto& sub : v) {
+    sub = make_tensor<T, N - 1>(subdims, init);
+  }
+  return v;
+  }
 }
 
 template<typename T>
@@ -61,6 +61,8 @@ TF1* FitLifetimeHisto(TH1* histo, const std::string& option="");
 void DivideFunctionByHisto(TH1* histo, TF1* func, const std::string& option="");
 
 std::pair<TH1*, TH1*> EvaluateEfficiencyHisto(TH1* hNum, TH1* hDen);
+
+TH1* MergeHistograms(const std::vector<TH1*>& histos);
 
 };
 
