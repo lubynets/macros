@@ -21,6 +21,11 @@ const std::string lifetimeAxisTitle = "T (ps)";
 const std::string genBranchName = "Generated";
 const std::pair<float, float> rapidityRanges{-0.8, 0.8};
 
+std::string GetPtCutName(size_t iPt) {
+  std::pair<size_t, size_t> iPTMinMax = (iPt == pTRanges.size()-1) ? std::pair<size_t, size_t>{0, pTRanges.size()-1} : std::pair<size_t, size_t>{iPt, iPt+1};
+  return "pT_" + HelperFunctions::ToStringWithPrecision(pTRanges.at(iPTMinMax.first), 0) + "_" + HelperFunctions::ToStringWithPrecision(pTRanges.at(iPTMinMax.second), 0);
+}
+
 enum BdtClass : short {
   kBackground = 0,
   kPrompt,
@@ -54,7 +59,7 @@ void FillYieldRec(QA::Task& task) {
   SimpleCut rapidityCut = RangeCut(Variable::FromString(recBranchName + ".fLiteY"), rapidityRanges.first, rapidityRanges.second);
   if (bdtBgUpperValuesVsPt.size() != pTRanges.size() - 1) throw std::runtime_error("bdtUpperValuesVsPt.size() != pTRanges.size() - 1");
   for(size_t iPt=0, nPts=pTRanges.size()-1; iPt<nPts; ++iPt) {
-    const std::string pTCutName = "pT_" + HelperFunctions::ToStringWithPrecision(pTRanges.at(iPt), 0) + "_" + HelperFunctions::ToStringWithPrecision(pTRanges.at(iPt+1), 0);
+    const std::string pTCutName = GetPtCutName(iPt);
     SimpleCut bdtBgScoreCut = SimpleCut({recBranchName + ".fKFPt", recBranchName + "." + bdtClasses.at(kBackground)}, [=](const std::vector<double>& par) {
       return par[0] >= pTRanges.at(iPt) && par[0] < pTRanges.at(iPt + 1) && par[1] >= 0 && par[1] < bdtBgUpperValuesVsPt.at(iPt);
     }, pTCutName);
@@ -85,7 +90,7 @@ void FillYieldRec(QA::Task& task) {
 void FillYieldGen(QA::Task& task) {
   SimpleCut rapidityCut = RangeCut(Variable::FromString(genBranchName + ".fGen_Y"), rapidityRanges.first, rapidityRanges.second);
   for(size_t iPt=0, nPts=pTRanges.size()-1; iPt<nPts; ++iPt) {
-    const std::string pTCutName = "pT_" + HelperFunctions::ToStringWithPrecision(pTRanges.at(iPt), 0) + "_" + HelperFunctions::ToStringWithPrecision(pTRanges.at(iPt+1), 0);
+    const std::string pTCutName = GetPtCutName(iPt);
     SimpleCut pTCut = RangeCut({genBranchName + ".fGen_Pt"}, pTRanges.at(iPt), pTRanges.at(iPt+1), pTCutName);
     for (const auto& promptness : promptnesses) {
       task.SetTopLevelDirName("gen/" + promptness.name_ + "/" + pTCutName);
@@ -99,9 +104,10 @@ void FillYieldGen(QA::Task& task) {
 void yield_lifetime_qa(const std::string& filelistrec, const std::string& filelistgen) {
   auto* man = TaskManager::GetInstance();
   man->SetVerbosityFrequency(100);
+  const std::string fileOutName = "yield_lifetime_qa.root";
 
   auto* taskRec = new QA::Task;
-  taskRec->SetOutputFileName("yield_lifetime_qa.root");
+  taskRec->SetOutputFileName(fileOutName);
 
   FillYieldRec(*taskRec);
 
@@ -113,7 +119,7 @@ void yield_lifetime_qa(const std::string& filelistrec, const std::string& fileli
   man->ClearTasks();
 
   auto* taskGen = new QA::Task;
-  taskGen->SetOutputFileName("yield_lifetime_qa.root", "update");
+  taskGen->SetOutputFileName(fileOutName, "update");
 
   FillYieldGen(*taskGen);
 
@@ -121,6 +127,39 @@ void yield_lifetime_qa(const std::string& filelistrec, const std::string& fileli
   man->Init({filelistgen}, {"aTree"});
   man->Run();
   man->Finish();
+
+  std::vector<std::string> pTCutNames;
+  for(size_t iPt=0, nPts=pTRanges.size()-1; iPt<nPts; ++iPt) {
+    pTCutNames.emplace_back(GetPtCutName(iPt));
+  }
+  TFile* fileOut = HelperFunctions::OpenFileWithNullptrCheck(fileOutName, "update");
+  for(const auto& promptness : promptnesses) {
+    std::vector<std::string> histoGenNames;
+    for(const auto& ptcn : pTCutNames) {
+      histoGenNames.emplace_back("gen/" + promptness.name_ + "/" + ptcn + "/hT");
+    }
+    TH1* histoGenMerged = HelperFunctions::MergeHistograms(fileOut, histoGenNames);
+    HelperFunctions::CD(fileOut, "gen/" + promptness.name_ + "/" + GetPtCutName(pTRanges.size()-1));
+    histoGenMerged->Write("hT");
+
+    std::vector<float> bdtSignalLowerValues;
+    for (int iB = 0; iB <= 99; iB++) {
+      bdtSignalLowerValues.emplace_back(0.01 * iB);
+    }
+    for (const auto& kSignal : signalTargetsAtBdt) {
+      const std::string signalShortcut = kSignal == kPrompt ? "P" : "NP";
+      for (const auto& bslv : bdtSignalLowerValues) {
+        std::vector<std::string> histoRecNames;
+        for(const auto& ptcn : pTCutNames) {
+          histoRecNames.emplace_back("rec/" + promptness.name_ + "/" + ptcn + "/hT_" + signalShortcut + "gt" + HelperFunctions::ToStringWithPrecision(bslv, 2));
+        }
+        TH1* histoRecMerged = HelperFunctions::MergeHistograms(fileOut, histoRecNames);
+        HelperFunctions::CD(fileOut, "rec/" + promptness.name_ + "/" + GetPtCutName(pTRanges.size()-1));
+        histoRecMerged->Write(("hT_" + signalShortcut + "gt" + HelperFunctions::ToStringWithPrecision(bslv, 2)).c_str());
+      } // bdtSignalLowerValues
+    } // signalTargetsAtBdt
+  } // promptnesses
+  fileOut->Close();
 }
 
 int main(int argc, char* argv[]) {

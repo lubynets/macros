@@ -44,7 +44,15 @@ void efficiency_bdtcutset(const std::string& fileName) {
   HelperMath::tensor<TGraphErrors*, 3> grEff = make_tensor<TGraphErrors*, 3>({promptnesses.size(), pTRanges.size(), lifeTimeRanges.size()-1}, nullptr);
 
   auto PtRangeString = [&] (size_t iPt) {
-    return "pT_" + HelperGeneral::to_string_with_precision(pTRanges.at(iPt), 0) + "_" + HelperGeneral::to_string_with_precision(pTRanges.at(iPt+1), 0);
+    std::pair<size_t, size_t> iPTMinMax = (iPt == pTRanges.size()-1) ? std::pair<size_t, size_t>{0, pTRanges.size()-1} : std::pair<size_t, size_t>{iPt, iPt+1};
+    return "pT_" + HelperGeneral::to_string_with_precision(pTRanges.at(iPTMinMax.first), 0) + "_" + HelperGeneral::to_string_with_precision(pTRanges.at(iPTMinMax.second), 0);
+  };
+
+  auto PtRangeTitle = [&] (size_t iPt) {
+    std::pair<size_t, size_t> iPTMinMax = (iPt == pTRanges.size()-1) ? std::pair<size_t, size_t>{0, pTRanges.size()-1} : std::pair<size_t, size_t>{iPt, iPt+1};
+    return "#it{p}_{T}#in (" +
+           HelperGeneral::to_string_with_precision(pTRanges.at(iPTMinMax.first), 0) + "#; " +
+           HelperGeneral::to_string_with_precision(pTRanges.at(iPTMinMax.second), 0) + ") GeV/#it{c}";
   };
 
   for(size_t iPromptness=0, nPromptnesses=promptnesses.size(); iPromptness<nPromptnesses; ++iPromptness) {
@@ -69,7 +77,10 @@ void efficiency_bdtcutset(const std::string& fileName) {
                          std::to_string(iLifeTimeRange)).c_str());
             gr->SetTitle(("bin #" + std::to_string(iLifeTimeRange + 1) + "#; T#in (" +
                           to_string_with_precision(lifeTimeRanges.at(iLifeTimeRange), 2) + "#; " +
-                          to_string_with_precision(lifeTimeRanges.at(iLifeTimeRange + 1), 2) + ") ps").c_str());
+                          to_string_with_precision(lifeTimeRanges.at(iLifeTimeRange + 1), 2) + ") ps#; " +
+                          PtRangeTitle(iPt)).c_str());
+            std::cout << PtRangeTitle(iPt) << "\t";
+            std::cout << gr->GetTitle() << "\n";
             gr->SetMarkerColor(grColor);
             gr->SetLineColor(grColor);
             gr->GetXaxis()->SetTitle(("bdt score " + tarSigShortcut).c_str());
