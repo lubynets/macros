@@ -12,3 +12,8 @@ for PRE in "${FILE_NAME_PREFIXES[@]}"; do
   pdftk ${INPUT_FILES}cat output ${PRE}${FILE_NAME_TEMPLATE}.merged.pdf
   rm $INPUT_FILES
 done
+
+if [ -f $FILE_NAME_TEMPLATE.merged.root ]; then
+rm $FILE_NAME_TEMPLATE.merged.root
+fi
+hadd $FILE_NAME_TEMPLATE.merged.root ${FILE_NAME_TEMPLATE}*bin*root
