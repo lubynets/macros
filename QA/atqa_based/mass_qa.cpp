@@ -13,8 +13,12 @@ const std::vector<float> lifetimeRanges = {0.2, 0.35, 0.5, 0.7, 0.9, 1.6};
 const std::vector<float> pTRanges = {0, 2, 5, 8, 12, 20};
 const TAxis massAxis = {600, 1.98, 2.58};
 const std::string massAxisTitle = "m_{pK#pi} (GeV/#it{c}^{2})";
-const std::string massVarName = "hMass";
 const std::pair<float, float> rapidityRanges{-0.8, 0.8};
+
+std::string GetPtCutName(size_t iPt) {
+  std::pair<size_t, size_t> iPTMinMax = (iPt == pTRanges.size()-1) ? std::pair<size_t, size_t>{0, pTRanges.size()-1} : std::pair<size_t, size_t>{iPt, iPt+1};
+  return "pT_" + HelperFunctions::ToStringWithPrecision(pTRanges.at(iPTMinMax.first), 0) + "_" + HelperFunctions::ToStringWithPrecision(pTRanges.at(iPTMinMax.second), 0);
+}
 
 enum BdtClass : short {
   kBackground = 0,
@@ -34,22 +38,23 @@ const std::vector<std::string> bdtClasses{"fLiteMlScoreFirstClass", "fLiteMlScor
 auto TCuts = HelperFunctions::CreateRangeCuts(lifetimeRanges, "T_", recBranchName + ".fKFT");
 SimpleCut rapidityCut = RangeCut(Variable::FromString(recBranchName + ".fLiteY"), rapidityRanges.first, rapidityRanges.second);
 
-void MassQA(QA::Task& task);
 void MassQABdt(QA::Task& task);
 
 std::vector<SimpleCut> PrepareDataTypes(const std::string& varName);
 std::vector<SimpleCut> datatypes = PrepareDataTypes(recBranchName + ".fKFSigBgStatus");
+
+const short kSignal = kNonPrompt; const std::string signalShortcut = "NP";
 
 void mass_qa(const std::string& filelistname, bool isMc) {
   if(isMc) datatypes.pop_back();
   else     datatypes.erase(datatypes.begin(), datatypes.end()-1);
 
   auto* man = TaskManager::GetInstance();
+  const std::string fileOutName = "mass_qa.root";
 
   auto* task = new QA::Task;
-  task->SetOutputFileName("mass_qa.root");
+  task->SetOutputFileName(fileOutName);
 
-//  MassQA(*task);
   MassQABdt(*task);
 
   man->AddTask(task);
@@ -57,41 +62,45 @@ void mass_qa(const std::string& filelistname, bool isMc) {
   man->SetVerbosityFrequency(100);
   man->Run();
   man->Finish();
-}
 
-void MassQA(QA::Task& task) {
-  const std::string varNameInTree = recBranchName + ".KF_fMassInv";
-
+  std::vector<std::string> pTCutNames;
+  for(size_t iPt=0, nPts=pTRanges.size()-1; iPt<nPts; ++iPt) {
+    pTCutNames.emplace_back(GetPtCutName(iPt));
+  }
+  std::vector<float> bdtSignalLowerValues;
+  for (int iB = 0; iB <= 99; iB++) {
+    bdtSignalLowerValues.emplace_back(0.01 * iB);
+  }
+  TFile* fileOut = HelperFunctions::OpenFileWithNullptrCheck(fileOutName, "update");
   for(const auto& dt : datatypes) {
-    task.SetTopLevelDirName(dt.GetTitle());
-    Cuts* cutsTotal = new Cuts(dt.GetTitle() + "_total", {dt});
-    task.AddH1(massVarName + "_" + dt.GetTitle(), {massAxisTitle, Variable::FromString(varNameInTree), massAxis}, cutsTotal);
-
-    for(const auto& slc : TCuts) {
-      Cuts* cutSlice = new Cuts(dt.GetTitle() + "_" + slc.GetTitle(), {dt, slc});
-      task.AddH1(massVarName + "_" + dt.GetTitle() + "_" + slc.GetTitle(), {massAxisTitle, Variable::FromString(varNameInTree), massAxis}, cutSlice);
+    for (const auto& tCut : TCuts) {
+      for (const auto& bslv : bdtSignalLowerValues) {
+        std::vector<std::string> histoNames;
+        for (const auto& ptcn : pTCutNames) {
+          histoNames.emplace_back(dt.GetTitle() + "/" + ptcn + "/" + tCut.GetTitle() + "/hM_" + signalShortcut + "gt" + HelperFunctions::ToStringWithPrecision(bslv, 2));
+        }
+        TH1* histoMerged = HelperFunctions::MergeHistograms(fileOut, histoNames);
+        HelperFunctions::CD(fileOut, dt.GetTitle() + "/" + GetPtCutName(pTRanges.size()-1) + "/" + tCut.GetTitle());
+        histoMerged->Write(("/hM_" + signalShortcut + "gt" + HelperFunctions::ToStringWithPrecision(bslv, 2)).c_str());
+      } // bdtSignalLowerValues
     } // TCuts
   } // datatypes
-} // void MassQA()
+  fileOut->Close();
+}
 
 void MassQABdt(QA::Task& task) {
   const std::vector<float> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.05, 0.08};
   if(bdtBgUpperValuesVsPt.size() != pTRanges.size() - 1) throw std::runtime_error("bdtUpperValuesVsPt.size() != pTRanges.size() - 1");
-  SimpleCut bdtBgScoreCut = SimpleCut({recBranchName + ".fKFPt", recBranchName + "." + bdtClasses.at(kBackground)}, [=] (const std::vector<double>& par) {
-    bool ok{false};
-    for(int iPt=0; iPt<bdtBgUpperValuesVsPt.size(); iPt++) {
-      ok |= (par[0] >= pTRanges.at(iPt) && par[0] < pTRanges.at(iPt+1) && par[1] >= 0 && par[1] < bdtBgUpperValuesVsPt.at(iPt));
+
+  for(size_t iPt=0, nPts=pTRanges.size()-1; iPt<nPts; ++iPt) {
+    const std::string pTCutName = GetPtCutName(iPt);
+    SimpleCut bdtBgScoreCut = SimpleCut({recBranchName + ".fKFPt", recBranchName + "." + bdtClasses.at(kBackground)}, [=](const std::vector<double>& par) {
+      return par[0] >= pTRanges.at(iPt) && par[0] < pTRanges.at(iPt + 1) && par[1] >= 0 && par[1] < bdtBgUpperValuesVsPt.at(iPt);
+    }, pTCutName);
+    std::vector<float> bdtSignalLowerValues;
+    for (int iB = 0; iB <= 99; iB++) {
+      bdtSignalLowerValues.emplace_back(0.01 * iB);
     }
-    return ok;
-  });
-
-  std::vector<float> bdtSignalLowerValues;
-  for(int iB=0; iB<=100; iB++) {
-    bdtSignalLowerValues.emplace_back(0.01 * iB);
-  }
-
-  for(const auto& kSignal : signalTargetsAtBdt) {
-    const std::string signalShortcut = kSignal == kPrompt ? "P" : "NP";
     std::vector<SimpleCut> bdtSigCuts;
     for (const auto& bslv : bdtSignalLowerValues) {
       bdtSigCuts.emplace_back(RangeCut(recBranchName + "." + bdtClasses.at(kSignal), bslv, 1, signalShortcut + "gt" + HelperFunctions::ToStringWithPrecision(bslv, 2)));
@@ -99,16 +108,16 @@ void MassQABdt(QA::Task& task) {
 
     for (const auto& dt : datatypes) {
       for (const auto& tCut : TCuts) {
-        task.SetTopLevelDirName(dt.GetTitle() + "/" + tCut.GetTitle());
+        task.SetTopLevelDirName(dt.GetTitle() + "/" + pTCutName + "/" + tCut.GetTitle());
         for (const auto& bsc : bdtSigCuts) {
-          Cuts* cutsRec = new Cuts(dt.GetTitle(), {bdtBgScoreCut, bsc, rapidityCut, tCut});
+          Cuts* cutsRec = new Cuts(dt.GetTitle() + "_" + tCut.GetTitle(), {bdtBgScoreCut, bsc, rapidityCut, tCut});
           const std::string histoName = "hM_" + bsc.GetTitle();
           task.AddH1(histoName, {massAxisTitle, Variable::FromString(recBranchName + ".fKFMassInv"), massAxis}, cutsRec);
         }// bdtNonPromptCuts
-      }// TCuts
-    }// datatypes
-  } // signalTargetsAtBdt
-} // void MassQABdt
+      } // TCuts
+    } // datatypes
+  } // pTRanges
+} // void MassQABdt()
 
 std::vector<SimpleCut> PrepareDataTypes(const std::string& varName) {
   std::vector<SimpleCut> result {

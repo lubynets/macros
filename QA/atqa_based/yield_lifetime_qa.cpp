@@ -22,8 +22,8 @@ const std::string genBranchName = "Generated";
 const std::pair<float, float> rapidityRanges{-0.8, 0.8};
 
 std::string GetPtCutName(size_t iPt) {
-  std::pair<size_t, size_t> iPTMinMax = (iPt == pTRanges.size()-1) ? std::pair<size_t, size_t>{0, pTRanges.size()-1} : std::pair<size_t, size_t>{iPt, iPt+1};
-  return "pT_" + HelperFunctions::ToStringWithPrecision(pTRanges.at(iPTMinMax.first), 0) + "_" + HelperFunctions::ToStringWithPrecision(pTRanges.at(iPTMinMax.second), 0);
+  if(iPt == pTRanges.size()-1) return "pT_" + HelperFunctions::ToStringWithPrecision(pTRanges.front(), 0) + "_" + HelperFunctions::ToStringWithPrecision(pTRanges.back(), 0);
+  return "pT_" + HelperFunctions::ToStringWithPrecision(pTRanges.at(iPt), 0) + "_" + HelperFunctions::ToStringWithPrecision(pTRanges.at(iPt+1), 0);
 }
 
 enum BdtClass : short {
