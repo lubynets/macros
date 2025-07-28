@@ -22,6 +22,7 @@ SET(EXECUTABLES
     raw_yield_vs_bdt_pdfer
     corrected_yields_qa2
     complex_vs_bdt_pdfer
+    tsallis_fit_pt
 )
 
 SET(SOURCES
