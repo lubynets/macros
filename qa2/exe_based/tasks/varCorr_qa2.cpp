@@ -2,7 +2,8 @@
 // Created by oleksii on 14.04.25.
 //
 
-#include "Helper.hpp"
+#include "HelperGeneral.hpp"
+#include "HelperPlot.hpp"
 
 #include <TExec.h>
 #include <TFile.h>
@@ -12,7 +13,8 @@
 #include <iostream>
 #include <string>
 
-using namespace Helper;
+using namespace HelperGeneral;
+using namespace HelperPlot;
 
 void VarCorrQa2(const std::string& fileName, const std::string& mcOrData) {
   const std::vector<std::string> vars {"nSigTpcPr", "nSigTpcPi", "nSigTpcKa", "ldl", "chi2Topo", "chi2PrimPr", "chi2PrimPi", "chi2PrimKa", "chi2Geo", "mass"};

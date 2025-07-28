@@ -32,8 +32,10 @@
 #include <rapidjson/filereadstream.h>
 
 #include <cstdio> // for fclose
+#include <map>
 #include <stdexcept>
 #include <string> // std::string
+#include <utility>
 #include <vector> // std::vector
 
 #endif
@@ -97,6 +99,8 @@ int runMassFitter(const TString& configFileName)
   std::vector<double> massMin;
   std::vector<double> massMax;
   std::vector<double> fixSigmaManual;
+  std::vector<double> fixSecondSigmaManual;
+  std::vector<double> fixMeanManual;
   std::vector<int> nRebin;
   std::vector<int> bkgFuncConfig;
   std::vector<int> sgnFuncConfig;
@@ -119,14 +123,23 @@ int runMassFitter(const TString& configFileName)
   const Value& fdSecPeakHistoNameValue = config["FDSecPeakHistoName"];
   parseStringArray(fdSecPeakHistoNameValue, fdSecPeakHistoName);
 
-  bool fixSigma = config["FixSigma"].GetBool();
-  std::string sigmaFile = config["SigmaFile"].GetString();
+  const bool fixSigma = config["FixSigma"].GetBool();
+  const std::string sigmaFile = config["SigmaFile"].GetString();
 
-  bool fixMean = config["FixMean"].GetBool();
-  std::string meanFile = config["MeanFile"].GetString();
+  const bool fixMean = config["FixMean"].GetBool();
+  const std::string meanFile = config["MeanFile"].GetString();
 
   const Value& fixSigmaManualValue = config["FixSigmaManual"];
   readArray(fixSigmaManualValue, fixSigmaManual);
+
+  const bool fixSecondSigma = config["FixSecondSigma"].GetBool();
+  const std::string secondSigmaFile = config["SecondSigmaFile"].GetString();
+
+  const Value& fixSecondSigmaManualValue = config["FixSecondSigmaManual"];
+  readArray(fixSecondSigmaManualValue, fixSecondSigmaManual);
+
+  const Value& fixMeanManualValue = config["FixMeanManual"];
+  readArray(fixMeanManualValue, fixMeanManual);
 
   sliceVarName = config["SliceVarName"].GetString();
   sliceVarUnit = config["SliceVarUnit"].GetString();
@@ -180,16 +193,16 @@ int runMassFitter(const TString& configFileName)
     sgnFunc[iSliceVar] = sgnFuncConfig[iSliceVar];
   }
 
-  std::map<std::string, std::pair<std::string, std::string>> particles {
+  std::map<std::string, std::pair<std::string, std::string>> particles{
     {"Dplus", {"K#pi#pi", "D+"}},
     {"D0", {"K#pi", "D0"}},
     {"Ds", {"KK#pi", "D_s+"}},
     {"LcToPKPi", {"pK#pi", "Lambda_c+"}},
     {"LcToPK0s", {"pK^{0}_{s}", "Lambda_c+"}},
-    {"Dstar", {"D^{0}pi^{+}", "D*+"}}
-  };
-  if(particles.find(particleName.Data()) == particles.end()) {
-    throw std::runtime_error("ERROR: only Dplus, D0, Ds, LcToPKPi, LcToPK0s and Dstar particles supported! Exit");
+    {"Dstar", {"D^{0}pi^{+}", "D*+"}},
+    {"XicToXiPiPi", {"#Xi#pi#pi", "Xi_c+"}}};
+  if (particles.find(particleName.Data()) == particles.end()) {
+    throw std::runtime_error("ERROR: only Dplus, D0, Ds, LcToPKPi, LcToPK0s, Dstar and XicToXiPiPi particles supported! Exit");
   }
   const TString massAxisTitle = "#it{M}(" + particles[particleName.Data()].first + ") (GeV/#it{c}^{2})";
   const double massPDG = TDatabasePDG::Instance()->GetParticle(particles[particleName.Data()].second.c_str())->Mass();
@@ -243,9 +256,9 @@ int runMassFitter(const TString& configFileName)
 
   // define output histos
   auto hRawYieldsSignal = new TH1D("hRawYieldsSignal", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield",
-                             nSliceVarBins, sliceVarLimits.data());
+                                   nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSignalCounted = new TH1D("hRawYieldsSignalCounted", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield via bin count",
-                                    nSliceVarBins, sliceVarLimits.data());
+                                          nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsSigma = new TH1D(
     "hRawYieldsSigma", ";" + sliceVarName + "(" + sliceVarUnit + ");width (GeV/#it{c}^{2})",
     nSliceVarBins, sliceVarLimits.data());
@@ -262,12 +275,12 @@ int runMassFitter(const TString& configFileName)
     new TH1D("hRawYieldsBkg", ";" + sliceVarName + "(" + sliceVarUnit + ");Background (3#sigma)",
              nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsChiSquareBkg =
-          new TH1D("hRawYieldsChiSquareBkg",
-                   ";" + sliceVarName + "(" + sliceVarUnit + ");#chi^{2}/#it{ndf}", nSliceVarBins, sliceVarLimits.data());
+    new TH1D("hRawYieldsChiSquareBkg",
+             ";" + sliceVarName + "(" + sliceVarUnit + ");#chi^{2}/#it{ndf}", nSliceVarBins, sliceVarLimits.data());
   auto hRawYieldsChiSquareTotal =
     new TH1D("hRawYieldsChiSquareTotal",
              ";" + sliceVarName + "(" + sliceVarUnit + ");#chi^{2}/#it{ndf}", nSliceVarBins, sliceVarLimits.data());
-    auto hReflectionOverSignal =
+  auto hReflectionOverSignal =
     new TH1D("hReflectionOverSignal", ";" + sliceVarName + "(" + sliceVarUnit + ");Refl/Signal",
              nSliceVarBins, sliceVarLimits.data());
 
@@ -293,35 +306,29 @@ int runMassFitter(const TString& configFileName)
   setHistoStyle(hRawYieldsChiSquareTotal);
   setHistoStyle(hReflectionOverSignal, kRed + 1);
 
-  TH1* hSigmaToFix = nullptr;
-  if (fixSigma) {
-    if (fixSigmaManual.empty()) {
-      auto inputFileSigma = TFile::Open(sigmaFile.data());
-      if (!inputFileSigma) {
-        return -2;
+  auto getHistToFix = [&nSliceVarBins](bool const& isFix, std::vector<double> const& fixManual, std::string const& fixFileName, std::string const& var) -> TH1* {
+    TH1* histToFix = nullptr;
+    if (isFix) {
+      if (fixManual.empty()) {
+        auto fixInputFile = TFile::Open(fixFileName.data());
+        if (!fixInputFile) {
+          throw std::runtime_error("Cannot open file for fixed " + var);
+        }
+        const std::string histName = "hRawYields" + var;
+        histToFix = fixInputFile->Get<TH1>(histName.data());
+        histToFix->SetDirectory(nullptr);
+        if (static_cast<unsigned int>(histToFix->GetNbinsX()) != nSliceVarBins) {
+          throw std::runtime_error("Different number of bins for this analysis and histo for fixed " + var);
+        }
+        fixInputFile->Close();
       }
-      hSigmaToFix = inputFileSigma->Get<TH1>("hRawYieldsSigma");
-      hSigmaToFix->SetDirectory(0);
-      if (static_cast<unsigned int>(hSigmaToFix->GetNbinsX()) != nSliceVarBins) {
-        printf("WARNING: Different number of bins for this analysis and histo for fix sigma!\n");
-      }
-      inputFileSigma->Close();
     }
-  }
+    return histToFix;
+  };
 
-  TH1* hMeanToFix = nullptr;
-  if (fixMean) {
-    auto inputFileMean = TFile::Open(meanFile.data());
-    if (!inputFileMean) {
-      return -3;
-    }
-    hMeanToFix = inputFileMean->Get<TH1>("hRawYieldsMean");
-    hMeanToFix->SetDirectory(0);
-    if (static_cast<unsigned int>(hMeanToFix->GetNbinsX()) != nSliceVarBins) {
-      printf("WARNING: Different number of bins for this analysis and histo for fix mean\n");
-    }
-    inputFileMean->Close();
-  }
+  TH1* hSigmaToFix = getHistToFix(fixSigma, fixSigmaManual, sigmaFile, "Sigma");
+  TH1* hMeanToFix = getHistToFix(fixMean, fixMeanManual, meanFile, "Mean");
+  TH1* hSecondSigmaToFix = getHistToFix(fixSecondSigma, fixSecondSigmaManual, secondSigmaFile, "Sigma");
 
   // fit histograms
 
@@ -431,24 +438,26 @@ int runMassFitter(const TString& configFileName)
       if (useLikelihood) {
         massFitter->setUseLikelihoodFit();
       }
-      if (fixMean) {
-        massFitter->setFixGaussianMean(hMeanToFix->GetBinContent(iSliceVar + 1));
-      }
-      if (fixSigma) {
-        if (fixSigmaManual.empty()) {
-          massFitter->setFixGaussianSigma(hSigmaToFix->GetBinContent(iSliceVar + 1));
-          printf("*****************************\n");
-          printf("FIXED SIGMA: %f\n", hSigmaToFix->GetBinContent(iSliceVar + 1));
-          printf("*****************************\n");
-        } else if (!fixSigmaManual.empty()) {
-          massFitter->setFixGaussianSigma(fixSigmaManual[iSliceVar]);
-          printf("*****************************\n");
-          printf("FIXED SIGMA: %f\n", fixSigmaManual[iSliceVar]);
-          printf("*****************************\n");
-        } else {
-          printf("WARNING: impossible to fix sigma! Wrong fix sigma file or value!\n");
+
+      auto setFixedValue = [&massFitter, &iSliceVar](bool const& isFix, std::vector<double> const& fixManual, const TH1* histToFix, std::function<void(Double_t)> setFunc, std::string const& var) -> void {
+        if (isFix) {
+          if (fixManual.empty()) {
+            setFunc(histToFix->GetBinContent(iSliceVar + 1));
+            printf("*****************************\n");
+            printf("FIXED %s: %f\n", var.data(), histToFix->GetBinContent(iSliceVar + 1));
+            printf("*****************************\n");
+          } else {
+            setFunc(fixManual[iSliceVar]);
+            printf("*****************************\n");
+            printf("FIXED %s: %f\n", var.data(), fixManual[iSliceVar]);
+            printf("*****************************\n");
+          }
         }
-      }
+      };
+
+      setFixedValue(fixMean, fixMeanManual, hMeanToFix, std::bind(&HFInvMassFitter::setFixGaussianMean, massFitter, std::placeholders::_1), "MEAN");
+      setFixedValue(fixSigma, fixSigmaManual, hSigmaToFix, std::bind(&HFInvMassFitter::setFixGaussianSigma, massFitter, std::placeholders::_1), "SIGMA");
+      setFixedValue(fixSecondSigma, fixSecondSigmaManual, hSecondSigmaToFix, std::bind(&HFInvMassFitter::setFixSecondGaussianSigma, massFitter, std::placeholders::_1), "SECOND SIGMA");
 
       if (enableRefl) {
         reflOverSgn = hMassForSgn[iSliceVar]->Integral(hMassForSgn[iSliceVar]->FindBin(massMin[iSliceVar] * 1.0001), hMassForSgn[iSliceVar]->FindBin(massMax[iSliceVar] * 0.999));
@@ -562,7 +571,7 @@ int runMassFitter(const TString& configFileName)
   hRawYieldsBkg->Write();
   hRawYieldsChiSquareBkg->Write();
   hRawYieldsChiSquareTotal->Write();
-  if(enableRefl) {
+  if (enableRefl) {
     hReflectionOverSignal->Write();
   }
   hFitConfig->Write();

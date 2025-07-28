@@ -1,4 +1,6 @@
-#include "Helper.hpp"
+#include "HelperGeneral.hpp"
+#include "HelperMath.hpp"
+#include "HelperPlot.hpp"
 
 #include <TPaveText.h>
 #include <TFile.h>
@@ -8,7 +10,9 @@
 
 #include <iostream>
 
-using namespace Helper;
+using namespace HelperGeneral;
+using namespace HelperMath;
+using namespace HelperPlot;
 
 void mc_qa2(const std::string& fileName) {
   TString currentMacroPath = __FILE__;

@@ -1,13 +1,17 @@
 //
 // Created by oleksii on 12.05.25.
 //
-#include "Helper.hpp"
+#include "HelperGeneral.hpp"
+#include "HelperMath.hpp"
+#include "HelperPlot.hpp"
 
 #include <TLegend.h>
 
 #include <iostream>
 
-using namespace Helper;
+using namespace HelperGeneral;
+using namespace HelperMath;
+using namespace HelperPlot;
 
 void MassBdtQa(const std::string& fileName, const std::string& dataType) {
   LoadMacro("styles/mc_qa2.style.cc");
@@ -20,22 +24,22 @@ void MassBdtQa(const std::string& fileName, const std::string& dataType) {
   std::vector<float> pTRanges{0.f, 2.f, 5.f, 8.f, 12.f, 20.f};
   std::vector<float> lifetimeRanges{0.2, 0.35, 0.5, 0.7, 0.9, 1.6};
 
-  const std::string promptBdtCut = Helper::to_string_with_precision(0., 1);
+  const std::string promptBdtCut = HelperGeneral::to_string_with_precision(0., 1);
 
   std::string priBra;
   auto PrintCanvases = [&] (const std::vector<float>& sliceRanges, const std::string& sliceVarName, const int precision) {
     priBra = "(";
     const std::string fileOutName = sliceVarName + "_Pgt" + promptBdtCut;
     for (int iSlice = 0; iSlice < sliceRanges.size() - 1; iSlice++) {
-      const std::string sliceVarLow = Helper::to_string_with_precision(sliceRanges.at(iSlice), precision);
-      const std::string sliceVarUp = Helper::to_string_with_precision(sliceRanges.at(iSlice + 1), precision);
+      const std::string sliceVarLow = HelperGeneral::to_string_with_precision(sliceRanges.at(iSlice), precision);
+      const std::string sliceVarUp = HelperGeneral::to_string_with_precision(sliceRanges.at(iSlice + 1), precision);
       const std::string pTName = sliceVarName + "_" + sliceVarLow + "_" + sliceVarUp;
       TCanvas cc("cc", "");
       cc.SetCanvasSize(1200, 800);
       TLegend* leg = new TLegend(0.8, 0.4, 0.95, 0.8);
       leg->SetHeader(("bdt(prompt) > " + promptBdtCut).c_str());
       for (int iBg = 1; iBg <= 10; iBg++) {
-        const std::string sBgCut = Helper::to_string_with_precision((11 - iBg) * 0.01, 2);
+        const std::string sBgCut = HelperGeneral::to_string_with_precision((11 - iBg) * 0.01, 2);
         const std::string histoName =
                 dataType + "/BGlt" + sBgCut + "/" + pTName + "/hMass_BGlt" + sBgCut + "_Pgt" + promptBdtCut;
         TH1* h = GetObjectWithNullptrCheck<TH1>(fileIn, histoName);
@@ -62,7 +66,7 @@ void MassBdtQa(const std::string& fileName, const std::string& dataType) {
   TLegend* leg = new TLegend(0.8, 0.4, 0.95, 0.8);
   leg->SetHeader(("bdt(prompt) > " + promptBdtCut).c_str());
   for (int iBg = 1; iBg <= 10; iBg++) {
-    const std::string sBgCut = Helper::to_string_with_precision((11 - iBg) * 0.01, 2);
+    const std::string sBgCut = HelperGeneral::to_string_with_precision((11 - iBg) * 0.01, 2);
     const std::string histoName =
             dataType + "/BGlt" + sBgCut + "/hMass_BGlt" + sBgCut + "_Pgt" + promptBdtCut;
     TH1* h = GetObjectWithNullptrCheck<TH1>(fileIn, histoName);

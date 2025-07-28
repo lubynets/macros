@@ -49,6 +49,8 @@
 #include <array>
 #include <cmath>
 #include <cstring>
+#include <stdexcept>
+#include <string>
 
 using namespace RooFit;
 
@@ -337,8 +339,8 @@ void HFInvMassFitter::doFit()
       mReflPdf = new RooAddPdf("mReflPdf", "reflection fit function", RooArgList(*reflPdf), RooArgList(*mRooNRefl));
       RooAddPdf reflBkgPdf("reflBkgPdf", "reflBkgPdf", RooArgList(*bkgPdf, *reflPdf), RooArgList(*mRooNBkg, *mRooNRefl));
       reflBkgPdf.plotOn(mInvMassFrame, Normalization(1.0, RooAbsReal::RelativeExpected), LineStyle(7), LineColor(kRed + 1), Name("ReflBkg_c"));
-      plotBkg(mTotalPdf);                                              // plot bkg pdf in total pdf
-      plotRefl(mTotalPdf);                                             // plot reflection in total pdf
+      plotBkg(mTotalPdf);                                                   // plot bkg pdf in total pdf
+      plotRefl(mTotalPdf);                                                  // plot reflection in total pdf
       mChiSquareOverNdfTotal = mInvMassFrame->chiSquare("Tot_c", "data_c"); // calculate reduced chi2 / NDF
 
       // plot residual distribution
@@ -586,7 +588,16 @@ void HFInvMassFitter::drawFit(TVirtualPad* pad, Int_t writeFitInfo)
     } else {
       textInfoRight->AddText(Form("mean(free) = %.3f #pm %.3f", mRooMeanSgn->getVal(), mRooMeanSgn->getError()));
     }
-    if (mFixedSigma) {
+    if (mTypeOfSgnPdf == DoubleGaus) {
+      auto const& baseSigmaSgn = mWorkspace->var("sigma");
+      if (mFixedSigmaDoubleGaus) {
+        textInfoRight->AddText(Form("sigma(fixed) = %.3f #pm %.3f", baseSigmaSgn->getVal(), baseSigmaSgn->getError()));
+        textInfoRight->AddText(Form("sigma 2(fixed) = %.3f #pm %.3f", mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
+      } else {
+        textInfoRight->AddText(Form("sigma(free) = %.3f #pm %.3f", baseSigmaSgn->getVal(), baseSigmaSgn->getError()));
+        textInfoRight->AddText(Form("sigma 2(free) = %.3f #pm %.3f", mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
+      }
+    } else if (mFixedSigma) {
       textInfoRight->AddText(Form("sigma(fixed) = %.3f #pm %.3f", mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
     } else {
       textInfoRight->AddText(Form("sigma(free) = %.3f #pm %.3f", mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
@@ -617,7 +628,13 @@ void HFInvMassFitter::drawResidual(TVirtualPad* pad)
   textInfo->AddText(Form("S = %.0f #pm %.0f ", mRawYield, mRawYieldErr));
   textInfo->AddText(Form("S_{count} = %.0f #pm %.0f ", mRawYieldCounted, mRawYieldCountedErr));
   textInfo->AddText(Form("mean = %.3f #pm %.3f", mRooMeanSgn->getVal(), mRooMeanSgn->getError()));
-  textInfo->AddText(Form("sigma = %.3f #pm %.3f", mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
+  if (mTypeOfSgnPdf == DoubleGaus) {
+    auto const& baseSigmaSgn = mWorkspace->var("sigma");
+    textInfo->AddText(Form("sigma = %.3f #pm %.3f", baseSigmaSgn->getVal(), baseSigmaSgn->getError()));
+    textInfo->AddText(Form("sigma 2 = %.3f #pm %.3f", mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
+  } else {
+    textInfo->AddText(Form("sigma = %.3f #pm %.3f", mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
+  }
   mResidualFrame->addObject(textInfo);
   mResidualFrame->Draw();
   highlightPeakRegion(mResidualFrame);
@@ -729,10 +746,10 @@ void HFInvMassFitter::checkForSignal(Double_t& estimatedSignal)
 RooAbsPdf* HFInvMassFitter::createBackgroundFitFunction(RooWorkspace* workspace) const
 {
   RooAbsPdf* bkgPdf{nullptr};
-  if(mTypeOfBkgPdf == NoBkg) {
+  if (mTypeOfBkgPdf == NoBkg) {
     return bkgPdf;
   }
-  if(mTypeOfBkgPdf<0 || mTypeOfBkgPdf>=NTypesOfBkgPdf) {
+  if (mTypeOfBkgPdf < 0 || mTypeOfBkgPdf >= NTypesOfBkgPdf) {
     throw std::runtime_error("createBackgroundFitFunction(): mTypeOfBkgPdf must be within [0; " + std::to_string(NTypesOfBkgPdf) + ") range");
   }
   bkgPdf = workspace->pdf(namesOfBkgPdf.at(mTypeOfBkgPdf));
@@ -774,7 +791,7 @@ RooAbsPdf* HFInvMassFitter::createSignalFitFunction(RooWorkspace* workspace)
 // Create Reflection Fit Function
 RooAbsPdf* HFInvMassFitter::createReflectionFitFunction(RooWorkspace* workspace) const
 {
-  if(mTypeOfReflPdf<0 || mTypeOfReflPdf>=NTypesOfReflPdf) {
+  if (mTypeOfReflPdf < 0 || mTypeOfReflPdf >= NTypesOfReflPdf) {
     throw std::runtime_error("createReflectionFitFunction(): mTypeOfReflPdf must be within [0; " + std::to_string(NTypesOfReflPdf) + ") range");
   }
   RooAbsPdf* reflPdf = workspace->pdf(namesOfReflPdf.at(mTypeOfReflPdf));
@@ -785,10 +802,10 @@ RooAbsPdf* HFInvMassFitter::createReflectionFitFunction(RooWorkspace* workspace)
 // Plot Bkg components of fTotFunction
 void HFInvMassFitter::plotBkg(RooAbsPdf* pdf, Color_t color)
 {
-  if(mTypeOfBkgPdf == NoBkg) {
+  if (mTypeOfBkgPdf == NoBkg) {
     return;
   }
-  if(mTypeOfBkgPdf<0 || mTypeOfBkgPdf>=NTypesOfBkgPdf) {
+  if (mTypeOfBkgPdf < 0 || mTypeOfBkgPdf >= NTypesOfBkgPdf) {
     throw std::runtime_error("plotBkg(): mTypeOfBkgPdf must be within [0; " + std::to_string(NTypesOfBkgPdf) + ") range");
   }
   pdf->plotOn(mInvMassFrame, Components(namesOfBkgPdf.at(mTypeOfBkgPdf).c_str()), Name("Bkg_c"), LineColor(color));
@@ -797,7 +814,7 @@ void HFInvMassFitter::plotBkg(RooAbsPdf* pdf, Color_t color)
 // Plot Refl distribution on canvas
 void HFInvMassFitter::plotRefl(RooAbsPdf* pdf)
 {
-  if(mTypeOfReflPdf<0 || mTypeOfReflPdf>=NTypesOfReflPdf) {
+  if (mTypeOfReflPdf < 0 || mTypeOfReflPdf >= NTypesOfReflPdf) {
     throw std::runtime_error("plotRefl(): mTypeOfReflPdf must be within [0; " + std::to_string(NTypesOfReflPdf) + ") range");
   }
   pdf->plotOn(mInvMassFrame, Components(namesOfReflPdf.at(mTypeOfReflPdf).c_str()), Name("Refl_c"), LineColor(kGreen));

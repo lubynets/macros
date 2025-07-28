@@ -1,7 +1,9 @@
 //
 // Created by oleksii on 26.06.25.
 //
-#include "Helper.hpp"
+#include "HelperGeneral.hpp"
+#include "HelperMath.hpp"
+#include "HelperPlot.hpp"
 
 #include <TFile.h>
 #include <TLegend.h>
@@ -9,7 +11,9 @@
 #include <iostream>
 #include <string>
 
-using namespace Helper;
+using namespace HelperGeneral;
+using namespace HelperMath;
+using namespace HelperPlot;
 
 void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& fileNameMC) {
   LoadMacro("styles/mc_qa2.style.cc");

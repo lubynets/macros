@@ -4,10 +4,9 @@
 
 #include "ShapeFitter.hpp"
 
-#include "Helper.hpp"
 #include "Shapes.hpp"
 
-using namespace Helper;
+using namespace HelperGeneral;
 
 void ShapeFitter::SetSideBands(double le, double li, double ri, double re) {
   left_sideband_external_ = le;

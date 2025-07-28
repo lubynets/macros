@@ -25,12 +25,14 @@ SET(EXECUTABLES
 )
 
 SET(SOURCES
-    Helper.cpp
+    HelperGeneral.cpp
+    HelperMath.cpp
+    HelperPlot.cpp
     ShapeFitter.cpp
 )
 
 string(REPLACE ".cpp" ".hpp" HEADERS "${SOURCES}")
-list(APPEND HEADERS "BdtEfficiencyCalculator.hpp" "Shapes.hpp" "HelperEfficiency.hpp")
+list(APPEND HEADERS "BdtEfficiencyCalculator.hpp" "Shapes.hpp")
 
 # Specify the C++ standard
 set(CMAKE_CXX_STANDARD 17)

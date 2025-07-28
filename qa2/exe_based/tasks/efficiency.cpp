@@ -1,8 +1,9 @@
 //
 // Created by oleksii on 19.02.25.
 //
-#include "Helper.hpp"
-#include "HelperEfficiency.hpp"
+#include "HelperGeneral.hpp"
+#include "HelperMath.hpp"
+#include "HelperPlot.hpp"
 
 #include <TCanvas.h>
 #include <TFile.h>
@@ -15,8 +16,9 @@
 
 #include <iostream>
 
-using namespace Helper;
-using namespace HelperEfficiency;
+using namespace HelperGeneral;
+using namespace HelperMath;
+using namespace HelperPlot;
 
 void efficiency(const std::string& fileName, bool isSaveToRoot) {
   TString currentMacroPath = __FILE__;

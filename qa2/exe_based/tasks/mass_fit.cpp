@@ -2,7 +2,9 @@
 // Created by oleksii on 18.03.25.
 //
 
-#include "Helper.hpp"
+#include "HelperGeneral.hpp"
+#include "HelperMath.hpp"
+#include "HelperPlot.hpp"
 #include "ShapeFitter.hpp"
 
 #include <TCanvas.h>
@@ -11,7 +13,9 @@
 
 #include <iostream>
 
-using namespace Helper;
+using namespace HelperGeneral;
+using namespace HelperMath;
+using namespace HelperPlot;
 
 std::vector<double> EvaluateLifetimeBinRanges(const std::vector<std::pair<std::string, std::string>>& sliceCuts, bool doPrint=false);
 
