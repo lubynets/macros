@@ -9,7 +9,9 @@
 #include <TCanvas.h>
 #include <TF1.h>
 #include <TFile.h>
+#include <TFitResult.h>
 #include <TH1.h>
+#include <TMatrixD.h>
 
 #include <array>
 
@@ -24,9 +26,10 @@ struct DataPoint {
     double syst_error_down_;
 };
 
-double evalError(const DataPoint& datapoint, bool isIncludeSysError=true);
+double EvalErrorDataPoint(const DataPoint& datapoint, bool isIncludeSysError= true);
+double EvalErrorFitFunction(double x, TF1* func, const TMatrixDSym& cov);
 
-void pt_fit(bool isIncludeSysErr) {
+void pt_fit(bool isIncludeSysErr, bool isCalculateFitFuncError) {
   LoadMacro("styles/mc_qa2.style.cc");
 
   // =========================================================================================
@@ -55,24 +58,25 @@ void pt_fit(bool isIncludeSysErr) {
   TH1D* histoCrossSec = new TH1D("histoCrossSec", "", nPoints, pTEdges.data());
   for(int iBin=0; iBin<nPoints; ++iBin) {
     histoCrossSec->SetBinContent(iBin+1, sigmas.at(iBin).cross_section_);
-    histoCrossSec->SetBinError(iBin+1, evalError(sigmas.at(iBin), isIncludeSysErr));
+    histoCrossSec->SetBinError(iBin+1, EvalErrorDataPoint(sigmas.at(iBin), isIncludeSysErr));
   }
   histoCrossSec->GetXaxis()->SetTitle("#it{p}_{T} (GeV/#it{c})");
   histoCrossSec->GetYaxis()->SetTitle("d^{2}#sigma / d#it{p}_{T}dy (#mub#upoint#it{c}/GeV)");
   histoCrossSec->SetLineColor(kBlue);
   histoCrossSec->SetMarkerColor(kBlue);
 
-  TF1* tsallisFit = new TF1("tsallisFit","[0]*x*TMath::Sqrt([1]*[1]+x*x)*TMath::Power(1+ ([2]-1) * (TMath::Sqrt([1]*[1]+x*x))/[3],-[2]/([2]-1))", 0., 24.);
+  TF1* tsallisFit = new TF1("tsallisFit","[0]*x*TMath::Sqrt([1]*[1]+x*x)*TMath::Power(1 + ([2]-1)*TMath::Sqrt([1]*[1]+x*x)/[3],-[2]/([2]-1))", 0., 24.);
   tsallisFit->SetNpx(2400);
-  tsallisFit->SetParameters(2.9e+03, 2.2e+00, 1.1e+00, 3.6e-01);
-  const std::array<std::string, 4> parNames{"C_{q}", "q", "p_{0}", "ff"};
+  tsallisFit->SetParameters(1.2e+05, 2.28e+00, 1.1e+00, 0.07);
+  const std::array<std::string, 4> parNames{"A", "m", "q", "T"};
   for(int iPar=0; iPar<4; ++iPar) {
     tsallisFit->SetParName(iPar, parNames.at(iPar).c_str());
   }
   tsallisFit->SetLineColor(kRed);
-  histoCrossSec->Fit(tsallisFit, "REMI0");
+  TFitResultPtr tsallisFitResPtr = histoCrossSec->Fit(tsallisFit, "RIS0");
+  TMatrixDSym tsallisFitCov = tsallisFitResPtr->GetCovarianceMatrix();
 
-  const float textX1 = 0.65;
+  const float textX1 = 0.62;
   const float textX2 = 0.9;
   const float textY2 = 0.78;
   const float textYStep = 0.04;
@@ -84,13 +88,13 @@ void pt_fit(bool isIncludeSysErr) {
   tsallisFit->Draw("same");
   auto hepDataText = AddOneLineText("#it{" + hepDataName + "}", {0.3, 0.85, 0.55, 0.90});
   hepDataText->SetTextColor(kGray+2);
-  AddOneLineText((parNames.at(0) + ptString + "#sqrt{q^{2} + " + ptString + "^{2}} (1 + (" + parNames.at(2) + " - " + ptString + ")#sqrt{q^{2} + " + ptString + "^{2}}/" + parNames.at(3) + ")^{#minus #frac{" + parNames.at(2) + "}{" + parNames.at(2) + " - " + ptString + "}}").c_str(), {textX1, textY2 + textYStep, textX2, textY2 + 2*textYStep});
+  AddOneLineText(parNames.at(0) + ptString + "#sqrt{" + parNames.at(1) + "^{2} + " + ptString + "^{2}} (1 + (" + parNames.at(2) + " - 1)#sqrt{" + parNames.at(1) + "^{2} + " + ptString + "^{2}} / " + parNames.at(3) + ")^{#minus #frac{" + parNames.at(2) + "}{" + parNames.at(2) + " - 1}}", {textX1, textY2 + textYStep, textX2, textY2 + 2*textYStep});
   for(int iPar=0, nPars=tsallisFit->GetNpar(); iPar<nPars; ++iPar) {
-    AddOneLineText((static_cast<std::string>(parNames.at(iPar)) + " = " +
+    AddOneLineText(static_cast<std::string>(parNames.at(iPar)) + " = " +
                     HelperGeneral::to_string_with_significant_figures(tsallisFit->GetParameter(iPar), 3) + " #pm " +
-                    HelperGeneral::to_string_with_significant_figures(tsallisFit->GetParError(iPar), 3)).c_str(), {textX1, textY2 - (iPar+1)*textYStep, textX2, textY2 - iPar*textYStep});
+                    HelperGeneral::to_string_with_significant_figures(tsallisFit->GetParError(iPar), 3), {textX1, textY2 - (iPar+1)*textYStep, textX2, textY2 - iPar*textYStep});
   }
-  AddOneLineText(("#chi^{2}/ndf = " + HelperGeneral::to_string_with_significant_figures(tsallisFit->GetChisquare()/tsallisFit->GetNDF(), 3)).c_str(), {textX1, textY2 - 5*textYStep, textX2, textY2 - 4*textYStep});
+  AddOneLineText("#chi^{2}/ndf = " + HelperGeneral::to_string_with_significant_figures(tsallisFit->GetChisquare()/tsallisFit->GetNDF(), 3), {textX1, textY2 - 5*textYStep, textX2, textY2 - 4*textYStep});
   ccFit.Print("tsallisFitPt.pdf(", "pdf");
 
   TH1* hRatio = dynamic_cast<TH1*>(histoCrossSec->Clone());
@@ -111,8 +115,11 @@ void pt_fit(bool isIncludeSysErr) {
   TH1D* tsallisFitHisto = new TH1D("tsallisFitHisto", "", 2000, 0, 20);
   tsallisFitHisto->GetXaxis()->SetTitle(histoCrossSec->GetXaxis()->GetTitle());
   tsallisFitHisto->GetYaxis()->SetTitle(histoCrossSec->GetYaxis()->GetTitle());
+  tsallisFitHisto->SetMarkerStyle(0);
   for(int iBin=1, nBins=tsallisFitHisto->GetNbinsX(); iBin<=nBins; ++iBin) {
     tsallisFitHisto->SetBinContent(iBin, tsallisFit->Eval(tsallisFitHisto->GetBinCenter(iBin)));
+    const double err = isCalculateFitFuncError ? EvalErrorFitFunction(tsallisFitHisto->GetBinCenter(iBin), tsallisFit, tsallisFitCov) : 0.;
+    tsallisFitHisto->SetBinError(iBin, err);
   }
 
   TFile* fileOut = TFile::Open("pTFit.root", "recreate");
@@ -125,14 +132,37 @@ void pt_fit(bool isIncludeSysErr) {
 }
 
 int main(int argc, char* argv[]) {
-  const bool isIncludeSysErr = argc > 1 ? HelperGeneral::string_to_bool(argv[1]) : true;
+  if(argc > 1 && std::strcmp(argv[1], "--help") == 0) {
+    std::cout << "./tsallis_pt_fit (isIncludeSysErr=true isCalculateFitFuncError=false)\n";
+    return 0;
+  }
 
-  pt_fit(isIncludeSysErr);
+  const bool isIncludeSysErr = argc > 1 ? HelperGeneral::string_to_bool(argv[1]) : true;
+  const bool isCalculateFitFuncError = argc > 2 ? HelperGeneral::string_to_bool(argv[2]) : false;
+
+  pt_fit(isIncludeSysErr, isCalculateFitFuncError);
 
   return 0;
 }
 
-double evalError(const DataPoint& datapoint, bool isIncludeSysError) {
+double EvalErrorDataPoint(const DataPoint& datapoint, bool isIncludeSysError) {
   const double syst_error_ave = isIncludeSysError ? (datapoint.syst_error_up_ + datapoint.syst_error_down_) / 2. : 0.;
   return std::sqrt(datapoint.stat_error_*datapoint.stat_error_ + syst_error_ave*syst_error_ave);
+}
+
+double EvalErrorFitFunction(double x, TF1* func, const TMatrixDSym& cov) {
+  const int nPars = func->GetNpar();
+  TMatrixD dfdp(nPars, 1);
+  for (int iPar = 0; iPar < nPars; iPar++) {
+    dfdp[iPar][0] = func->GradientPar(iPar, &x);
+  }
+  TMatrixD dfdp_T = dfdp;
+  dfdp_T.T();
+
+  double result = std::sqrt((dfdp_T * cov * dfdp)[0][0]);
+  if(!std::isfinite(result)) {
+    result = 0.;
+  }
+
+  return result;
 }
