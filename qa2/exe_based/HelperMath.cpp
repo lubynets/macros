@@ -8,6 +8,7 @@
 
 #include <TF1.h>
 #include <TH1.h>
+#include <TMatrixD.h>
 
 #include <stdexcept>
 
@@ -99,7 +100,7 @@ TF1* HelperMath::FitLifetimeHisto(TH1* histo, const std::string& option) {
   return fitFunc;
 }
 
-void HelperMath::DivideFunctionByHisto(TH1* histo, TF1* func, const std::string& option) {
+void HelperMath::DivideHistoByFunction(TH1* histo, TF1* func, const std::string& option) {
   if(option.empty()) {
     histo->Divide(func);
   } else if(option == "I") {
@@ -113,7 +114,17 @@ void HelperMath::DivideFunctionByHisto(TH1* histo, TF1* func, const std::string&
       histo->SetBinError(iBin, histoError/funcAverage);
     }
   } else {
-    throw std::runtime_error("HelperMath::DivideFunctionByHisto() - 'option' must be either empty string or I");
+    throw std::runtime_error("HelperMath::DivideHistoByFunction() - 'option' must be either empty string or I");
+  }
+}
+
+void HelperMath::InvertHisto(TH1* histo) {
+  histo->Sumw2();
+  for(int iBin=1, nBins=histo->GetNbinsX(); iBin<nBins; ++iBin) {
+    const double value = histo->GetBinContent(iBin);
+    const double error = histo->GetBinError(iBin);
+    histo->SetBinContent(iBin, 1./value);
+    histo->SetBinError(iBin, error / value / value);
   }
 }
 
@@ -179,4 +190,21 @@ TH1* HelperMath::MergeHistograms(const std::vector<TH1*>& histos) {
   }
 
   return hResult;
+}
+
+double HelperMath::EvalErrorFitFunction(double x, TF1* func, const TMatrixDSym& cov) {
+  const int nPars = func->GetNpar();
+  TMatrixD dfdp(nPars, 1);
+  for (int iPar = 0; iPar < nPars; iPar++) {
+    dfdp[iPar][0] = func->GradientPar(iPar, &x);
+  }
+  TMatrixD dfdp_T = dfdp;
+  dfdp_T.T();
+
+  double result = std::sqrt((dfdp_T * cov * dfdp)[0][0]);
+  if(!std::isfinite(result)) {
+    result = 0.;
+  }
+
+  return result;
 }

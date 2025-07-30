@@ -136,11 +136,11 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
     TH1* hMcRatio = isMc ? dynamic_cast<TH1*>(hMcDiff->Clone()) : nullptr;
     ScalePlotVertically(hCutVarRatio, hCutVarDiff, 2);
     hCutVarRatio->GetYaxis()->SetTitle("Data / Fit");
-    DivideFunctionByHisto(hCutVarRatio, fitCutVar, integralOption);
+    DivideHistoByFunction(hCutVarRatio, fitCutVar, integralOption);
     if(isMc) {
       ScalePlotVertically(hMcRatio, hMcDiff, 2);
       hMcRatio->GetYaxis()->SetTitle("Data / Fit");
-      DivideFunctionByHisto(hMcRatio, fitMc, integralOption);
+      DivideHistoByFunction(hMcRatio, fitMc, integralOption);
       CustomizeHistogramsYRange({hCutVarRatio, hMcRatio});
     }
     TCanvas ccRatio("ccRatio", "");

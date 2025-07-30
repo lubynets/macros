@@ -6,6 +6,7 @@
 #define QA2_HELPERMATH_HPP
 
 #include <TGraph.h>
+#include <TMatrixDSym.h>
 
 namespace HelperMath {
 
@@ -58,11 +59,15 @@ using tensor3 = tensor<T, 3>;
 
 TF1* FitLifetimeHisto(TH1* histo, const std::string& option="");
 
-void DivideFunctionByHisto(TH1* histo, TF1* func, const std::string& option="");
+void DivideHistoByFunction(TH1* histo, TF1* func, const std::string& option="");
+
+void InvertHisto(TH1* histo);
 
 std::pair<TH1*, TH1*> EvaluateEfficiencyHisto(TH1* hNum, TH1* hDen);
 
 TH1* MergeHistograms(const std::vector<TH1*>& histos);
+
+double EvalErrorFitFunction(double x, TF1* func, const TMatrixDSym& cov);
 
 };
 

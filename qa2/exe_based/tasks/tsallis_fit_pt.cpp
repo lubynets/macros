@@ -27,7 +27,6 @@ struct DataPoint {
 };
 
 double EvalErrorDataPoint(const DataPoint& datapoint, bool isIncludeSysError= true);
-double EvalErrorFitFunction(double x, TF1* func, const TMatrixDSym& cov);
 
 void pt_fit(bool isIncludeSysErr, bool isCalculateFitFuncError) {
   LoadMacro("styles/mc_qa2.style.cc");
@@ -100,7 +99,7 @@ void pt_fit(bool isIncludeSysErr, bool isCalculateFitFuncError) {
   TH1* hRatio = dynamic_cast<TH1*>(histoCrossSec->Clone());
   ScalePlotVertically(hRatio, histoCrossSec, 2);
   hRatio->GetYaxis()->SetTitle("Data / Fit");
-  DivideFunctionByHisto(hRatio, tsallisFit, "I");
+  DivideHistoByFunction(hRatio, tsallisFit, "I");
 
   TCanvas ccRatio("ccRatio", "");
   ScaleCanvasVertically(&ccRatio, &ccFit, 2);
@@ -112,22 +111,12 @@ void pt_fit(bool isIncludeSysErr, bool isCalculateFitFuncError) {
   oneline.Draw("same");
   ccRatio.Print("tsallisFitPt.pdf)", "pdf");
 
-  TH1D* tsallisFitHisto = new TH1D("tsallisFitHisto", "", 2000, 0, 20);
-  tsallisFitHisto->GetXaxis()->SetTitle(histoCrossSec->GetXaxis()->GetTitle());
-  tsallisFitHisto->GetYaxis()->SetTitle(histoCrossSec->GetYaxis()->GetTitle());
-  tsallisFitHisto->SetMarkerStyle(0);
-  for(int iBin=1, nBins=tsallisFitHisto->GetNbinsX(); iBin<=nBins; ++iBin) {
-    tsallisFitHisto->SetBinContent(iBin, tsallisFit->Eval(tsallisFitHisto->GetBinCenter(iBin)));
-    const double err = isCalculateFitFuncError ? EvalErrorFitFunction(tsallisFitHisto->GetBinCenter(iBin), tsallisFit, tsallisFitCov) : 0.;
-    tsallisFitHisto->SetBinError(iBin, err);
-  }
-
   TFile* fileOut = TFile::Open("pTFit.root", "recreate");
   histoCrossSec->Write("hepData");
   tsallisFit->Write("tsallisFit");
+  tsallisFitCov.Write("tsallisFitCov");
   ccFit.Write("ccFit");
   ccRatio.Write("ccRatio");
-  tsallisFitHisto->Write("tsallisFitHisto");
   fileOut->Close();
 }
 
@@ -150,19 +139,3 @@ double EvalErrorDataPoint(const DataPoint& datapoint, bool isIncludeSysError) {
   return std::sqrt(datapoint.stat_error_*datapoint.stat_error_ + syst_error_ave*syst_error_ave);
 }
 
-double EvalErrorFitFunction(double x, TF1* func, const TMatrixDSym& cov) {
-  const int nPars = func->GetNpar();
-  TMatrixD dfdp(nPars, 1);
-  for (int iPar = 0; iPar < nPars; iPar++) {
-    dfdp[iPar][0] = func->GradientPar(iPar, &x);
-  }
-  TMatrixD dfdp_T = dfdp;
-  dfdp_T.T();
-
-  double result = std::sqrt((dfdp_T * cov * dfdp)[0][0]);
-  if(!std::isfinite(result)) {
-    result = 0.;
-  }
-
-  return result;
-}
