@@ -5,12 +5,20 @@
 #   AO2Ds are supposed to be stored                                                                      #
 ##########################################################################################################
 
+export HYPERLOOP_OUTPUT_DIRECTORIES="$1"
+
+if [[ -z "$HYPERLOOP_OUTPUT_DIRECTORIES" ]]; then
+   echo "Not enough arguments! Please use"
+   echo "./copyStandardDerivedData.sh HyperloopOutputDirectories.txt"
+   exit 1
+fi
+
 source /lustre/alice/users/lubynets/.export_tokens.sh
 
 apptainer shell -B /lustre -B /scratch /lustre/alice/containers/singularity_base_o2compatibility.sif << \EOF
 alienv -w /scratch/alice/lubynets/alice/sw enter O2Physics/latest
 
-for path in `sed 's/,/\n/g' HyperloopOutputDirectories.txt`; do
+for path in `sed 's/,/\n/g' ${HYPERLOOP_OUTPUT_DIRECTORIES}`; do
    # Extract last directory name from $path
    last_dir=$(basename $path)
 
