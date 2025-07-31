@@ -19,22 +19,38 @@ apptainer shell -B /lustre -B /scratch /lustre/alice/containers/singularity_base
 alienv -w /scratch/alice/lubynets/alice/sw enter O2Physics/latest
 
 for path in `sed 's/,/\n/g' ${HYPERLOOP_OUTPUT_DIRECTORIES}`; do
-   # Extract last directory name from $path
-   last_dir=$(basename $path)
+   parent_dir=$(dirname "$path")
 
-   if [[ $(alien_find -r $path AOD/[0-9]*/AO2D.root) ]]; then
-      echo "found merged files in AOD subfolder for $path, starting copy"
-      alien_cp -f -parent 0 -name ends_AOD/[0-9]*/AO2D.root  $path file:.
-      alien_cp -f -parent 0 -name ends_AOD/[0-9]*/AnalysisResults.root  $path file:.
+   # Define patterns to search and copy
+   patterns_aod=( "AOD/[0-9]*/AO2D.root" "AOD/[0-9]*/AnalysisResults.root" )
+   patterns_fallback=( "[0-9]*/AO2D.root" "[0-9]*/AnalysisResults.root" )
+
+   if alien_find -r "$path" AOD/[0-9]*/AO2D.root >/dev/null; then
+      echo "Found merged files under AOD for $path - starting copy"
+      patterns=("${patterns_aod[@]}")
    else
-      echo "No AOD subfolder found in $path, falling back to parent directory"
-      alien_cp -f -parent 0 -name ends_[0-9]*/AO2D.root $path file:.
-      alien_cp -f -parent 0 -name ends_[0-9]*/AnalysisResults.root $path file:.
+      echo "No AOD folder found in $path - falling back to parent"
+      patterns=("${patterns_fallback[@]}")
    fi
+
+   for pattern in "${patterns[@]}"; do
+      # Get list of remote files
+      remote_files=$(alien_find -r "$path" "$pattern")
+      while read -r remote; do
+      # Extract basename (filename)
+      fname="${remote#"$parent_dir"/}"
+      if [[ -f "$fname" ]]; then
+         echo "Skipping $fname - already exists"
+      else
+         echo "Copying $fname from $remote"
+         alien_cp $remote file:./$fname
+      fi
+      done <<< "$remote_files"
+   done
 done
 
 # cleanup existing AO2D list if present
-if [ -f "localAO2DList.txt" ]; then 
+if [ -f "localAO2DList.txt" ]; then
    echo "removing previous AO2D list"
    rm localAO2DList.txt
 fi
