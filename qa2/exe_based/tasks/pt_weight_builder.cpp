@@ -53,7 +53,6 @@ void pt_weight_builder(const std::string& fileNamePtGen, const std::string& file
   ccShapes.SetLogy();
   histoGenNorm->Draw("HIST");
   funcFitNorm->Draw("same");
-
   TLegend leg(0.7, 0.82, 0.9, 0.9);
   leg.AddEntry(histoGenNorm, "Pythia", "L");
   leg.AddEntry(funcFitNorm, "Tsallis", "L");

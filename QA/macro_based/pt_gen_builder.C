@@ -10,7 +10,19 @@ void pt_gen_builder(const std::string fileListName) {
 
   treeIn->SetBranchAddress("Generated.", &genParticles);
 
-  TH1D* histoPtGen = new TH1D("histoPtGen", "", 2000, 0, 20);
+  // TH1D* histoPtGen = new TH1D("histoPtGen", "", 2000, 0, 20);
+
+  // ================ custom binning ================================
+  std::vector<double> binEdges;
+  double pt{0.};
+  while(pt <= 20) {
+    binEdges.emplace_back(pt);
+    if(pt < 10) pt += 0.01;
+    else        pt += 0.1;
+  }
+  TH1D* histoPtGen = new TH1D("histoPtGen", "", binEdges.size()-1, binEdges.data());
+  // ================================================================
+
   histoPtGen->GetXaxis()->SetTitle("#it{p}_{T} (GeV/#it{c})");
   histoPtGen->GetYaxis()->SetTitle("Entries");
 
