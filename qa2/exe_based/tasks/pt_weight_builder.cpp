@@ -27,53 +27,64 @@ void pt_weight_builder(const std::string& fileNamePtGen, const std::string& file
   histoGen->UseCurrentStyle();
   funcFit->UseCurrentStyle();
 
-  if(isGenHistoAccumulated) histoGen->Scale(1., "width");
-
-  const double integralGen = histoGen->Integral("width");
-  const double integralFit = funcFit->Integral(funcFit->GetXmin(), funcFit->GetXmax());
-
-  TH1* histoGenNorm = dynamic_cast<TH1*>(histoGen->Clone());
-  histoGenNorm->GetYaxis()->SetTitle("d^{2}#sigma / d#it{p}_{T}dy (a.u.)");
-  histoGenNorm->Sumw2();
-  histoGenNorm->SetMarkerStyle(0);
-  histoGenNorm->SetLineWidth(2);
-
-  TF1* funcFitNorm = dynamic_cast<TF1*>(funcFit->Clone());
-  histoGenNorm->Scale(1./integralGen);
-  funcFitNorm->SetParameter(0, funcFitNorm->GetParameter(0) / integralFit); // FIXME function implementation-defined, relies on the [0] parameter to be a common factor
-
-  TH1* histoWeight = dynamic_cast<TH1*>( histoGenNorm->Clone());
-  histoWeight->GetYaxis()->SetTitle("weight, Tsallis / Pythia");
-  histoWeight->GetYaxis()->SetRangeUser(0.5, 2);
-  DivideHistoByFunction(histoWeight, funcFitNorm, "I");
-  InvertHisto(histoWeight);
-
-  TCanvas ccShapes("ccShapes", "");
-  ccShapes.SetCanvasSize(1200, 800);
-  ccShapes.SetLogy();
-  histoGenNorm->Draw("HIST");
-  funcFitNorm->Draw("same");
-  TLegend leg(0.7, 0.82, 0.9, 0.9);
-  leg.AddEntry(histoGenNorm, "Pythia", "L");
-  leg.AddEntry(funcFitNorm, "Tsallis", "L");
-  leg.Draw("same");
-  ccShapes.Print((fileOutName + ".pdf(").c_str(), "pdf");
-
-  TCanvas ccWeight("ccWeight", "");
-  ccWeight.SetCanvasSize(1200, 800);
-  histoWeight->Draw();
-  TF1 oneline("oneline", "[0]", 0, 24);
-  oneline.SetParameter(0, 1);
-  oneline.SetLineColor(kBlack);
-  oneline.SetLineStyle(7);
-  oneline.Draw("same");
-  ccWeight.Print((fileOutName + ".pdf)").c_str(), "pdf");
-
   TFile* fileOut = TFile::Open((fileOutName + ".root").c_str(), "recreate");
   histoGen->Write();
-  histoGenNorm->Write("histoPtGenNorm");
-  funcFitNorm->Write("tsallisFitNorm");
-  histoWeight->Write("histoWeight");
+
+  auto ProcessPtRange = [&] (double loPt, double hiPt) {
+    const std::string ptRangeString = "pT_" + HelperGeneral::to_string_with_precision(loPt, 0) + "_" + HelperGeneral::to_string_with_precision(hiPt, 0);
+
+    TH1* histoCut = CutSubHistogram(histoGen, loPt, hiPt);
+
+    if(isGenHistoAccumulated) histoCut->Scale(1., "width");
+
+    if(loPt < funcFit->GetXmin() || hiPt > funcFit->GetXmax()) throw std::runtime_error("loPt < funcFit->GetXmin() || hiPt > funcFit->GetXmax()");
+  
+    const double integralGen = histoCut->Integral("width");
+    const double integralFit = funcFit->Integral(loPt, hiPt);
+  
+    TH1* histoCutNorm = dynamic_cast<TH1*>(histoCut->Clone());
+    histoCutNorm->GetYaxis()->SetTitle("d^{2}#sigma / d#it{p}_{T}dy (a.u.)");
+    Sumw2IfNotYet(histoCutNorm);
+    histoCutNorm->SetMarkerStyle(0);
+    histoCutNorm->SetLineWidth(2);
+  
+    TF1* funcFitNorm = dynamic_cast<TF1*>(funcFit->Clone());
+    histoCutNorm->Scale(1./integralGen);
+    funcFitNorm->SetParameter(0, funcFitNorm->GetParameter(0) / integralFit); // FIXME function implementation-defined, relies on the [0] parameter to be a common factor
+
+    TH1* histoWeight = dynamic_cast<TH1*>( histoCutNorm->Clone());
+    histoWeight->GetYaxis()->SetTitle("weight, Tsallis / Pythia");
+    histoWeight->GetYaxis()->SetRangeUser(0.5, 2);
+    DivideHistoByFunction(histoWeight, funcFitNorm, "I");
+    InvertHisto(histoWeight);
+  
+    TCanvas ccShapes("ccShapes", "");
+    ccShapes.SetCanvasSize(1200, 800);
+    ccShapes.SetLogy();
+    histoCutNorm->Draw("HIST");
+    funcFitNorm->Draw("same");
+    TLegend leg(0.7, 0.82, 0.9, 0.9);
+    leg.AddEntry(histoCutNorm, "Pythia", "L");
+    leg.AddEntry(funcFitNorm, "Tsallis", "L");
+    leg.Draw("same");
+    ccShapes.Print((fileOutName + "_" + ptRangeString + ".pdf(").c_str(), "pdf");
+  
+    TCanvas ccWeight("ccWeight", "");
+    ccWeight.SetCanvasSize(1200, 800);
+    histoWeight->Draw();
+    TF1 oneline("oneline", "[0]", loPt, hiPt);
+    oneline.SetParameter(0, 1);
+    oneline.SetLineColor(kBlack);
+    oneline.SetLineStyle(7);
+    oneline.Draw("same");
+    ccWeight.Print((fileOutName + "_" + ptRangeString + ".pdf)").c_str(), "pdf");
+  
+    histoCutNorm->Write(("histoPtGenNorm_" + ptRangeString).c_str());
+    funcFitNorm->Write(("tsallisFitNorm_" + ptRangeString).c_str());
+    histoWeight->Write(("histoWeight_" + ptRangeString).c_str());
+  };
+
+  ProcessPtRange(0., 20.);
 
   fileGen->Close();
   fileFit->Close();

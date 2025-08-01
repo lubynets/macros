@@ -119,7 +119,7 @@ void HelperMath::DivideHistoByFunction(TH1* histo, TF1* func, const std::string&
 }
 
 void HelperMath::InvertHisto(TH1* histo) {
-  histo->Sumw2();
+  Sumw2IfNotYet(histo);
   for(int iBin=1, nBins=histo->GetNbinsX(); iBin<nBins; ++iBin) {
     const double value = histo->GetBinContent(iBin);
     const double error = histo->GetBinError(iBin);
@@ -183,7 +183,7 @@ TH1* HelperMath::MergeHistograms(const std::vector<TH1*>& histos) {
   }
 
   TH1* hResult = dynamic_cast<TH1*>(histos.at(0)->Clone("merged"));
-  hResult->Sumw2();
+  Sumw2IfNotYet(hResult);
   hResult->SetDirectory(nullptr);
   for(size_t iH=1, nHs=histos.size(); iH<nHs; ++iH) {
     hResult->Add(histos.at(iH));
@@ -207,4 +207,44 @@ double HelperMath::EvalErrorFitFunction(double x, TF1* func, const TMatrixDSym& 
   }
 
   return result;
+}
+
+TH1* HelperMath::CutSubHistogram(const TH1* histoIn, double lo, double hi) {
+  if(lo >= hi) throw std::runtime_error("HelperMath::CutSubHistogram(): lo >= hi");
+
+  const double tolerance = 1e-6;
+  int binLoIn{-999};
+  bool isEndReached{false};
+  std::vector<double> binEdges;
+  for(int iBin=1, nBins=histoIn->GetNbinsX(); iBin<=nBins+1; ++iBin) {
+    const double binLowEdge = histoIn->GetBinLowEdge(iBin);
+    if(std::fabs(binLowEdge - lo) < tolerance) binLoIn = iBin;
+    if(binLoIn != -999) binEdges.emplace_back(binLowEdge);
+    if(std::fabs(binLowEdge - hi) < tolerance) {
+      isEndReached = true;
+      break;
+    }
+  } // histoIn bins
+  if(binLoIn == -999 || !isEndReached) throw std::runtime_error("HelperMath::CutSubHistogram(): either lo or hi does not match any of histoIn bin edges");
+
+  TH1* histoOut = new TH1D("", "", binEdges.size()-1, binEdges.data());
+  histoOut->SetDirectory(nullptr);
+  if(histoIn->GetSumw2N() > 0) histoOut->Sumw2();
+  histoOut->GetXaxis()->SetTitle(histoIn->GetXaxis()->GetTitle());
+  histoOut->GetYaxis()->SetTitle(histoIn->GetYaxis()->GetTitle());
+  histoOut->SetName(histoIn->GetName());
+  histoOut->SetTitle(histoIn->GetTitle());
+  for(int iBin=1, nBins=binEdges.size()-1; iBin<=nBins; ++iBin) {
+    const double value = histoIn->GetBinContent(binLoIn-1 + iBin);
+    const double error = histoIn->GetBinError(binLoIn-1 + iBin);
+    histoOut->SetBinContent(iBin, value);
+    histoOut->SetBinError(iBin, error);
+  }
+
+  return histoOut;
+}
+
+void HelperMath::Sumw2IfNotYet(TH1* histo, bool value) {
+  const bool isSumw2Already = histo->GetSumw2N() > 0;
+  if (isSumw2Already != value) histo->Sumw2(value);
 }

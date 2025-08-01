@@ -67,8 +67,11 @@ std::pair<TH1*, TH1*> EvaluateEfficiencyHisto(TH1* hNum, TH1* hDen);
 
 TH1* MergeHistograms(const std::vector<TH1*>& histos);
 
+TH1* CutSubHistogram(const TH1* histoIn, double lo, double hi);
+
 double EvalErrorFitFunction(double x, TF1* func, const TMatrixDSym& cov);
 
+void Sumw2IfNotYet(TH1* histo, bool value = true);
 };
 
 
