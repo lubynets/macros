@@ -16,7 +16,7 @@ fi
 source /lustre/alice/users/lubynets/.export_tokens.sh
 
 apptainer shell -B /lustre -B /scratch /lustre/alice/containers/singularity_base_o2compatibility.sif << \EOF
-alienv -w /scratch/alice/lubynets/alice/sw enter O2Physics/latest
+alienv -w /scratch/alice/lubynets/alice/sw enter O2/latest
 
 for path in `sed 's/,/\n/g' ${HYPERLOOP_OUTPUT_DIRECTORIES}`; do
    parent_dir=$(dirname "$path")
@@ -25,7 +25,7 @@ for path in `sed 's/,/\n/g' ${HYPERLOOP_OUTPUT_DIRECTORIES}`; do
    patterns_aod=( "AOD/[0-9]*/AO2D.root" "AOD/[0-9]*/AnalysisResults.root" )
    patterns_fallback=( "[0-9]*/AO2D.root" "[0-9]*/AnalysisResults.root" )
 
-   if alien_find -r "$path" AOD/[0-9]*/AO2D.root >/dev/null; then
+   if [[ $(alien_find -r "$path" AOD/[0-9]*/AO2D.root) ]]; then
       echo "Found merged files under AOD for $path - starting copy"
       patterns=("${patterns_aod[@]}")
    else
