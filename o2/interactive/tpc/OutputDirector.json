@@ -4,8 +4,28 @@
   "OutputDescriptors": [
     {
       "table": "AOD/TPCSKIMV0TREE/0"
+    },
+    {
+      "table": "AOD/V0INDEX/0"
+    },
+    {
+      "table": "AOD/V0TRACKX/0"
+    },
+    {
+      "table": "AOD/V0CORE/0"
+    },
+    {
+      "table": "AOD/V0MAPID/0"
+    },
+    {
+      "table": "AOD/CascINDEX/0"
+    },
+    {
+      "table": "AOD/CASCCORE/0"
+    },
+    {
+      "table": "AOD/CASCBB/0"
     }
-
   ],
   "ntfmerge": 1
 } }
