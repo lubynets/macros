@@ -15,13 +15,6 @@ fi
 
 source /lustre/alice/users/lubynets/.export_tokens.sh
 
-echo "Init apptainer session - start"
-apptainer shell -B /lustre -B /scratch /lustre/alice/containers/singularity_base_o2compatibility.sif << \EOF
-echo "Init apptainer session - done"
-echo "Enter the ALICE software environment - start"
-alienv -w /scratch/alice/lubynets/alice/sw enter O2/latest
-echo "Enter the ALICE software environment - done"
-
 for path in `sed 's/,/\n/g' ${HYPERLOOP_OUTPUT_DIRECTORIES}`; do
    parent_dir=$(dirname "$path")
 
@@ -30,15 +23,18 @@ for path in `sed 's/,/\n/g' ${HYPERLOOP_OUTPUT_DIRECTORIES}`; do
    patterns_numerated=( "[0-9]*/AO2D.root" "[0-9]*/AnalysisResults.root" )
    patterns_single_file=( "AO2D.root" "AnalysisResults.root" )
 
-   if [[ $(alien_find -r "$path" $patterns_single_file[0]) ]]; then
+   if [[ $(alien_find -r "$path" ${patterns_single_file[0]}) ]]; then
       echo "Found single (slim) file at $path - starting copy"
       patterns=("${patterns_single_file[@]}")
-   else if [[ $(alien_find -r "$path" $patterns_aod[0]) ]]; then
+   elif [[ $(alien_find -r "$path" ${patterns_aod[0]}) ]]; then
       echo "Found merged files under AOD at $path - starting copy"
       patterns=("${patterns_aod[@]}")
-   else if [[ $(alien_find -r "$path" $patterns_numerated[0]) ]]; then
+   elif [[ $(alien_find -r "$path" ${patterns_numerated[0]}) ]]; then
       echo "Found unmerged files in numerated directories at $path - starting copy"
       patterns=("${patterns_numerated[@]}")
+   else
+      echo "Nothing was found at $path. Exit"
+      exit
    fi
 
    for pattern in "${patterns[@]}"; do
@@ -70,7 +66,5 @@ fi
 echo "creating new AO2D list"
 find ./ -name "AO2D.root" -exec readlink -f {} \; > localAO2DList.txt
 
-
 echo "creating new AnalysisResults list"
 find ./ -name "AnalysisResults.root" -exec readlink -f {} \; > localAnalysisResultsList.txt
-EOF
