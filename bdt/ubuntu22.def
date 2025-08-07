@@ -1,0 +1,15 @@
+Bootstrap: docker
+From: ubuntu:22.04
+
+%post
+    apt-get update && apt-get install -y python3 python3-pip
+    apt-get install -y sudo
+    # Add additional setup commands as needed
+    mkdir -p /u
+    mkdir -p /lustre
+    mkdir -p /scratch
+    chown root:users /u /lustre /scratch
+    chmod 775 /u /lustre /scratch
+
+%runscript
+    echo "Container is running"

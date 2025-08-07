@@ -6,9 +6,10 @@ void AO2DFileReducer() {
   TFile* fileIn = TFile::Open(fileInName.c_str(), "open");
   TFile* fileOut = TFile::Open(fileOutName.c_str(), "recreate");
 
-//   TMap* tmap = (TMap*)fileIn->Get<TMap>("metaData")->Clone();
-//   fileOut->cd();
-//   tmap->Write("metaData", 1);
+  TMap* tmap = (TMap*)fileIn->Get<TMap>("metaData")->Clone();
+  fileOut->cd();
+  if(tmap != nullptr) tmap->Write("metaData", 1);
+  else std::cout << "metaData is absent\n";
 
   for(auto& dFN : dataFrameNames) {
     TDirectoryFile* tdf = fileIn->Get<TDirectoryFile>(dFN.c_str());

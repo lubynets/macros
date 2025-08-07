@@ -4,7 +4,7 @@ SCORES_NP=$SCORES_P
 
 FILENAME=$1
 
-for tarsig in 'P' 'NP'
+for tarsig in 'NP'
 do
 if [ tarsig == "P" ]; then
 SCORES=$SCORES_P
