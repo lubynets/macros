@@ -3,12 +3,13 @@ enum Particles : short {
   kProton = 0,
   kPion,
   kElectorn,
+  kKaon,
   kAll,
   nParticles
 };
 };
 
-const std::array<std::string, Particles::nParticles> particleNames{"proton", "pion", "electorn", "all"};
+const std::array<std::string, Particles::nParticles> particleNames{"proton", "pion", "electorn", "kaon", "all"};
 
 std::vector<std::string> GetDFNames(const std::string& fileName);
 float calcBetaFromBetaGamma(float betaGamma);
@@ -82,6 +83,7 @@ short GetParicleByfPidIndex(UChar_t fPidIndex) {
   switch(fPidIndex) {
     case static_cast<UChar_t>(0): return Particles::kElectorn;
     case static_cast<UChar_t>(2): return Particles::kPion;
+    case static_cast<UChar_t>(3): return Particles::kKaon;
     case static_cast<UChar_t>(4): return Particles::kProton;
     default: return -1;
   }
