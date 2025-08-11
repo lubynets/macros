@@ -16,6 +16,10 @@ fi
 source /lustre/alice/users/lubynets/.export_tokens.sh
 
 for path in `sed 's/,/\n/g' ${HYPERLOOP_OUTPUT_DIRECTORIES}`; do
+   if [[ $path == *"/AOD" ]]; then
+      path="${path%"/AOD"}"
+   fi
+
    parent_dir=$(dirname "$path")
 
    # Define patterns to search and copy
