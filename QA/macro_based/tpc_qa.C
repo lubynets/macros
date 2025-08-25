@@ -26,7 +26,9 @@ void tpc_qa(const std::string& fileName) {
   std::array<TH2D*, Particles::nParticles> hPdEdx;
 
   for(int kParticle=0; kParticle<Particles::nParticles; ++kParticle) {
-    hPdEdx.at(kParticle) = new TH2D(("hPdEdx_" + particleNames.at(kParticle)).c_str(), "", 100, 0.01, 10, 100, 0, 150);
+    hPdEdx.at(kParticle) = new TH2D(("hPdEdx_" + particleNames.at(kParticle)).c_str(), particleNames.at(kParticle).c_str(), 100, 0.01, 10, 100, 0, 150);
+    hPdEdx.at(kParticle)->GetXaxis()->SetTitle("#it{p} (GeV/#it{c})");
+    hPdEdx.at(kParticle)->GetYaxis()->SetTitle("dE/dx (a.u.)");
   }
 
   for(const auto& dirName : dirNames) {
