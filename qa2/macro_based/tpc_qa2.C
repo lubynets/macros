@@ -7,6 +7,7 @@ void tpc_qa2(const std::string& fileName) {
     TH1* h = fileIn->Get<TH1>(("hPdEdx_" + paName).c_str());
     TCanvas cc("cc", "");
     cc.SetCanvasSize(1200, 800);
+    cc.SetLogz();
     h->Draw("colz");
     cc.Print(("hPdEdx.pdf" + priBra).c_str(), "pdf");
   }
