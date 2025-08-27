@@ -81,7 +81,7 @@ void mass_qa(const std::string& filelistname, bool isMc) {
         }
         TH1* histoMerged = HelperFunctions::MergeHistograms(fileOut, histoNames);
         HelperFunctions::CD(fileOut, dt.GetTitle() + "/" + GetPtCutName(pTRanges.size()-1) + "/" + tCut.GetTitle());
-        histoMerged->Write(("/hM_" + signalShortcut + "gt" + HelperFunctions::ToStringWithPrecision(bslv, 2)).c_str());
+        histoMerged->Write(("hM_" + signalShortcut + "gt" + HelperFunctions::ToStringWithPrecision(bslv, 2)).c_str());
       } // bdtSignalLowerValues
     } // TCuts
   } // datatypes
@@ -122,13 +122,13 @@ void MassQABdt(QA::Task& task) {
 std::vector<SimpleCut> PrepareDataTypes(const std::string& varName) {
   std::vector<SimpleCut> result {
     RangeCut(varName, -0.1, 3.1, "all"),
-    SimpleCut({varName}, [](std::vector<double> par){ return par[0] == 0 || par[0] == 1 || par[0] == 3; }, "all_wononprompt"),
-    SimpleCut({varName}, [](std::vector<double> par){ return par[0] == 0 || par[0] == 2 || par[0] == 3; }, "all_woprompt"),
-    SimpleCut({varName}, [](std::vector<double> par){ return par[0] == 0 || par[0] == 3; }, "background"),
-    EqualsCut(varName, 1,"prompt"),
-    EqualsCut(varName, 2,"nonprompt"),
-    RangeCut(varName,  0.9, 2.1, "signal"),
-    EqualsCut(varName, 3,"wrongswap"),
+//     SimpleCut({varName}, [](std::vector<double> par){ return par[0] == 0 || par[0] == 1 || par[0] == 3; }, "all_wononprompt"),
+//     SimpleCut({varName}, [](std::vector<double> par){ return par[0] == 0 || par[0] == 2 || par[0] == 3; }, "all_woprompt"),
+//     SimpleCut({varName}, [](std::vector<double> par){ return par[0] == 0 || par[0] == 3; }, "background"),
+//     EqualsCut(varName, 1,"prompt"),
+//     EqualsCut(varName, 2,"nonprompt"),
+//     RangeCut(varName,  0.9, 2.1, "signal"),
+//     EqualsCut(varName, 3,"wrongswap"),
     EqualsCut(varName, -999, "data"),
   };
 
