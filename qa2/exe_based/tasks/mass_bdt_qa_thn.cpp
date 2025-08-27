@@ -6,6 +6,7 @@
 
 #include <TAxis.h>
 #include <THnSparse.h>
+#include <TH1.h>
 
 #include <iostream>
 
@@ -17,14 +18,18 @@ const std::string pTAxisTitle = "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})";
 const std::vector<float> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.05, 0.08};
 const std::string bgAxisTitle = "BDT bkg score (Lc)";
 const std::string npAxisTitle = "BDT non-prompt score (Lc)";
+const std::string massAxisTitle = "inv. mass (p K #pi) (GeV/#it{c}^{2})";
 
-std::map<std::string, int> MapAxesIndices(THnSparse* histo);
+std::map<std::string, int> MapAxesIndices(const THnSparse* histo);
 void CheckAxisForRanges(const TAxis& axis, const std::vector<float>& ranges);
+std::string GetPtCutName(size_t iPt);
+void SetRanges(THnSparse* histo, int axisNum, float lo=-999., float hi=-999.);
 
 void MassBdtQaThn(const std::string& fileName) {
   LoadMacro("styles/mc_qa2.style.cc");
 
   TFile* fileIn = OpenFileWithNullptrCheck(fileName);
+  TFile* fileOut = TFile::Open("mass_bdt_qa_thn.root", "recreate");
 
   THnSparse* histoIn = GetObjectWithNullptrCheck<THnSparse>(fileIn, "hf-task-lc/hnLcVarsWithBdt");
   const std::map<std::string, int> axesIndices = MapAxesIndices(histoIn);
@@ -33,12 +38,33 @@ void MassBdtQaThn(const std::string& fileName) {
   CheckAxisForRanges(*histoIn->GetAxis(axesIndices.at(bgAxisTitle)), bdtBgUpperValuesVsPt);
   if(bdtBgUpperValuesVsPt.size() != pTRanges.size() - 1) throw std::runtime_error("bdtUpperValuesVsPt.size() != pTRanges.size() - 1");
 
+  std::vector<float> bdtSignalLowerValues;
+  for (int iB = 0; iB <= 99; iB++) {
+    bdtSignalLowerValues.emplace_back(0.01 * iB);
+  }
+
+  for(size_t iPt=0, nPts=pTRanges.size()-1; iPt<nPts; ++iPt) {
+    const std::string pTCutName = GetPtCutName(iPt);
+    const std::string dirName = pTCutName;
+    SetRanges(histoIn, axesIndices.at(pTAxisTitle), pTRanges.at(iPt), pTRanges.at(iPt+1));
+    SetRanges(histoIn, axesIndices.at(bgAxisTitle), 0., bdtBgUpperValuesVsPt.at(iPt));
+    for(const auto& bdtSig : bdtSignalLowerValues) {
+      SetRanges(histoIn, axesIndices.at(npAxisTitle), bdtSig, 1.);
+      TH1D* histoMass = histoIn->Projection(axesIndices.at(massAxisTitle));
+      histoMass->SetDirectory(nullptr);
+      const std::string histoName = "hM_NPgt" + to_string_with_precision(bdtSig, 2);
+      CD(fileOut, dirName);
+      histoMass->Write(histoName.c_str());
+    }
+  } // pTRanges
+
+  fileOut->Close();
   fileIn->Close();
 }
 
-std::map<std::string, int> MapAxesIndices(THnSparse* histo) {
+std::map<std::string, int> MapAxesIndices(const THnSparse* histo) {
   std::map<std::string, int> result;
-  const short nDims = histo->GetNdimensions();
+  const int nDims = histo->GetNdimensions();
   for(int iDim=0; iDim<nDims; ++iDim) {
     result.insert({histo->GetAxis(iDim)->GetTitle(), iDim});
   }
@@ -60,6 +86,33 @@ void CheckAxisForRanges(const TAxis& axis, const std::vector<float>& ranges) {
       throw std::runtime_error("CheckAxisForRanges() - the range " + std::to_string(range) + " is missing");
     }
   }
+}
+
+std::string GetPtCutName(size_t iPt) {
+  std::pair<size_t, size_t> iPTMinMax = (iPt == pTRanges.size()-1) ? std::pair<size_t, size_t>{0, pTRanges.size()-1} : std::pair<size_t, size_t>{iPt, iPt+1};
+  return "pT_" + to_string_with_precision(pTRanges.at(iPTMinMax.first), 0) + "_" + to_string_with_precision(pTRanges.at(iPTMinMax.second), 0);
+}
+
+void SetRanges(THnSparse* histo, int axisNum, float lo, float hi) {
+  constexpr double tolerance = 1e-6;
+
+  if(std::abs(lo+999)<tolerance && std::abs(hi+999)<tolerance) {
+    histo->GetAxis(axisNum)->SetRange();
+    return;
+  }
+
+  if(lo >= hi) throw std::runtime_error("SetRanges(): lo >= hi");
+
+  const TAxis* axis = histo->GetAxis(axisNum);
+  int binLo{-999}, binHi{-999};
+  for(int iBin=1, nBins=axis->GetNbins(); iBin<=nBins+1; ++iBin) {
+    const float binLowEdge = axis->GetBinLowEdge(iBin);
+    if(std::abs(binLowEdge - lo)<tolerance) binLo = iBin;
+    if(std::abs(binLowEdge - hi)<tolerance) binHi = iBin-1;
+    if(binLo != -999 && binHi != -999) break;
+  }
+  if(binLo == -999 || binHi == -999) throw std::runtime_error("SetRanges(): binLo == -999 || binHi == -999");
+  histo->GetAxis(axisNum)->SetRange(binLo, binHi);
 }
 
 int main(int argc, char* argv[]) {
