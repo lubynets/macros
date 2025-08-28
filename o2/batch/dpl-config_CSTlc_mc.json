@@ -45,6 +45,10 @@
         "processV000ToV002": "false",
         "processV001ToV002": "true"
     },
+    "lumi-task": {
+        "processRun2": "false",
+        "processRun3": "true"
+    },
     "tracks-extra-spawner": "",
     "track-propagation": {
         "trackTuner": {
@@ -252,7 +256,7 @@
         "processRun2": "false",
         "processRun3": "true",
         "processGlobalTrackingCounters": "false",
-        "processMC": "false",
+        "processMC": "true",
         "processMC2Mults": "false",
         "processRun3MFT": "false"
     },
@@ -788,27 +792,27 @@
             ],
             "values": [
                 [
-                    "1",
+                    "0.15",
                     "0",
                     "0"
                 ],
                 [
-                    "1",
+                    "0.15",
                     "0",
                     "0"
                 ],
                 [
-                    "1",
+                    "0.15",
                     "0",
                     "0"
                 ],
                 [
-                    "1",
+                    "0.15",
                     "0",
                     "0"
                 ],
                 [
-                    "1",
+                    "0.15",
                     "0",
                     "0"
                 ]
@@ -833,7 +837,10 @@
                 "cpaXY",
                 "kfChi2Geo",
                 "kfChi2Topo",
-                "kfDecayLengthNormalised"
+                "kfDecayLengthNormalised",
+                "tpcTofNSigmaPrExpPr0",
+                "tpcTofNSigmaKa1",
+                "tpcTofNSigmaPiExpPi2"
             ]
         },
         "ccdbUrl": "http:\/\/alice-ccdb.cern.ch",
@@ -852,11 +859,11 @@
         },
         "onnxFileNames": {
             "values": [
-                "/lustre/alice/users/lubynets/bdt/outputs_train/moreMoreVarsWoPid/model/1/BDTmodel_pT_0_2_v1.onnx",
-                "/lustre/alice/users/lubynets/bdt/outputs_train/moreMoreVarsWoPid/model/2/BDTmodel_pT_2_5_v1.onnx",
-                "/lustre/alice/users/lubynets/bdt/outputs_train/moreMoreVarsWoPid/model/3/BDTmodel_pT_5_8_v1.onnx",
-                "/lustre/alice/users/lubynets/bdt/outputs_train/moreMoreVarsWoPid/model/4/BDTmodel_pT_8_12_v1.onnx",
-                "/lustre/alice/users/lubynets/bdt/outputs_train/moreMoreVarsWoPid/model/5/BDTmodel_pT_12_20_v1.onnx"
+                "/lustre/alice/users/lubynets/bdt/outputs_train/moreMoreVars/model/1/BDTmodel_pT_0_2_v1.onnx",
+                "/lustre/alice/users/lubynets/bdt/outputs_train/moreMoreVars/model/2/BDTmodel_pT_2_5_v1.onnx",
+                "/lustre/alice/users/lubynets/bdt/outputs_train/moreMoreVars/model/3/BDTmodel_pT_5_8_v1.onnx",
+                "/lustre/alice/users/lubynets/bdt/outputs_train/moreMoreVars/model/4/BDTmodel_pT_8_12_v1.onnx",
+                "/lustre/alice/users/lubynets/bdt/outputs_train/moreMoreVars/model/5/BDTmodel_pT_12_20_v1.onnx"
             ]
         },
         "timestampCCDB": "-1",
@@ -867,7 +874,7 @@
         "processBayesPidWithKFParticle": "false"
     },
     "hf-tree-creator-lc-to-p-k-pi": {
-        "selectionFlagLc": "0",
+        "selectionFlagLc": "1",
         "fillCandidateLiteTable": "true",
         "fillCollIdTable": "true",
         "fillCandidateMcTable": "true",

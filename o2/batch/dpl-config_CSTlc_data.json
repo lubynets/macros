@@ -45,6 +45,10 @@
         "processV000ToV002": "false",
         "processV001ToV002": "true"
     },
+    "lumi-task": {
+        "processRun2": "false",
+        "processRun3": "true"
+    },
     "tracks-extra-spawner": "",
     "track-propagation": {
         "trackTuner": {
@@ -561,16 +565,11 @@
         "binsPt": {
             "values": [
                 "0",
-                "1",
                 "2",
-                "3",
-                "4",
                 "5",
-                "6",
                 "8",
                 "12",
-                "24",
-                "36"
+                "20"
             ]
         },
         "cuts": {
@@ -579,12 +578,7 @@
                 "pT bin 1",
                 "pT bin 2",
                 "pT bin 3",
-                "pT bin 4",
-                "pT bin 5",
-                "pT bin 6",
-                "pT bin 7",
-                "pT bin 8",
-                "pT bin 9"
+                "pT bin 4"
             ],
             "labels_cols": [
                 "m",
@@ -601,132 +595,67 @@
             ],
             "values": [
                 [
-                    "0.4",
-                    "0.45",
-                    "0.4",
-                    "0.4",
-                    "20",
-                    "0",
-                    "0.9",
-                    "0",
-                    "0",
+                    "0.18",
+                    "-1",
+                    "-1",
+                    "-1",
+                    "10000000000",
+                    "-1",
+                    "-1",
+                    "-1",
+                    "-1",
                     "10000000000",
                     "-1"
                 ],
                 [
-                    "0.4",
-                    "0.45",
-                    "0.4",
-                    "0.4",
-                    "20",
-                    "0",
-                    "0.9",
-                    "0",
-                    "0",
+                    "0.18",
+                    "-1",
+                    "-1",
+                    "-1",
+                    "10000000000",
+                    "-1",
+                    "-1",
+                    "-1",
+                    "-1",
                     "10000000000",
                     "-1"
                 ],
                 [
-                    "0.4",
-                    "0.45",
-                    "0.4",
-                    "0.4",
-                    "20",
-                    "0",
-                    "0.9",
-                    "0",
-                    "0",
+                    "0.18",
+                    "-1",
+                    "-1",
+                    "-1",
+                    "10000000000",
+                    "-1",
+                    "-1",
+                    "-1",
+                    "-1",
                     "10000000000",
                     "-1"
                 ],
                 [
-                    "0.4",
-                    "0.45",
-                    "0.4",
-                    "0.4",
-                    "20",
-                    "0",
-                    "0.9",
-                    "0",
-                    "0",
+                    "0.18",
+                    "-1",
+                    "-1",
+                    "-1",
+                    "10000000000",
+                    "-1",
+                    "-1",
+                    "-1",
+                    "-1",
                     "10000000000",
                     "-1"
                 ],
                 [
-                    "0.4",
-                    "0.45",
-                    "0.4",
-                    "0.4",
-                    "20",
-                    "0",
-                    "0.85",
-                    "0",
-                    "0",
+                    "0.18",
+                    "-1",
+                    "-1",
+                    "-1",
                     "10000000000",
-                    "-1"
-                ],
-                [
-                    "0.4",
-                    "0.45",
-                    "0.4",
-                    "0.4",
-                    "20",
-                    "0",
-                    "0.85",
-                    "0",
-                    "0",
-                    "10000000000",
-                    "-1"
-                ],
-                [
-                    "0.4",
-                    "0.45",
-                    "0.4",
-                    "0.4",
-                    "20",
-                    "0",
-                    "0.85",
-                    "0",
-                    "0",
-                    "10000000000",
-                    "-1"
-                ],
-                [
-                    "0.4",
-                    "0.45",
-                    "0.4",
-                    "0.4",
-                    "20",
-                    "0",
-                    "0.85",
-                    "0",
-                    "0",
-                    "10000000000",
-                    "-1"
-                ],
-                [
-                    "0.4",
-                    "0.45",
-                    "0.4",
-                    "0.4",
-                    "20",
-                    "0",
-                    "0.85",
-                    "0",
-                    "0",
-                    "10000000000",
-                    "-1"
-                ],
-                [
-                    "0.4",
-                    "0.45",
-                    "0.4",
-                    "0.4",
-                    "20",
-                    "0",
-                    "0.85",
-                    "0",
-                    "0",
+                    "-1",
+                    "-1",
+                    "-1",
+                    "-1",
                     "10000000000",
                     "-1"
                 ]
@@ -738,12 +667,7 @@
                 "pT bin 1",
                 "pT bin 2",
                 "pT bin 3",
-                "pT bin 4",
-                "pT bin 5",
-                "pT bin 6",
-                "pT bin 7",
-                "pT bin 8",
-                "pT bin 9"
+                "pT bin 4"
             ],
             "labels_cols": [
                 "kfChi2PrimPr",
@@ -761,163 +685,89 @@
             ],
             "values": [
                 [
-                    "5",
-                    "5",
-                    "5",
-                    "3",
-                    "3",
-                    "3",
-                    "0.01",
-                    "0.01",
-                    "0.01",
-                    "3",
-                    "3",
-                    "5"
+                    "-10",
+                    "-10",
+                    "-10",
+                    "100",
+                    "100",
+                    "100",
+                    "1",
+                    "1",
+                    "1",
+                    "100",
+                    "-10",
+                    "100"
                 ],
                 [
-                    "5",
-                    "5",
-                    "5",
-                    "3",
-                    "3",
-                    "3",
-                    "0.01",
-                    "0.01",
-                    "0.01",
-                    "3",
-                    "3",
-                    "5"
+                    "-10",
+                    "-10",
+                    "-10",
+                    "100",
+                    "100",
+                    "100",
+                    "1",
+                    "1",
+                    "1",
+                    "100",
+                    "-10",
+                    "100"
                 ],
                 [
-                    "5",
-                    "5",
-                    "5",
-                    "3",
-                    "3",
-                    "3",
-                    "0.01",
-                    "0.01",
-                    "0.01",
-                    "3",
-                    "3",
-                    "5"
+                    "-10",
+                    "-10",
+                    "-10",
+                    "100",
+                    "100",
+                    "100",
+                    "1",
+                    "1",
+                    "1",
+                    "100",
+                    "-10",
+                    "100"
                 ],
                 [
-                    "5",
-                    "5",
-                    "5",
-                    "3",
-                    "3",
-                    "3",
-                    "0.01",
-                    "0.01",
-                    "0.01",
-                    "3",
-                    "3",
-                    "5"
+                    "-10",
+                    "-10",
+                    "-10",
+                    "100",
+                    "100",
+                    "100",
+                    "1",
+                    "1",
+                    "1",
+                    "100",
+                    "-10",
+                    "100"
                 ],
                 [
-                    "5",
-                    "5",
-                    "5",
-                    "3",
-                    "3",
-                    "3",
-                    "0.01",
-                    "0.01",
-                    "0.01",
-                    "3",
-                    "3",
-                    "5"
-                ],
-                [
-                    "5",
-                    "5",
-                    "5",
-                    "3",
-                    "3",
-                    "3",
-                    "0.01",
-                    "0.01",
-                    "0.01",
-                    "3",
-                    "3",
-                    "5"
-                ],
-                [
-                    "5",
-                    "5",
-                    "5",
-                    "3",
-                    "3",
-                    "3",
-                    "0.01",
-                    "0.01",
-                    "0.01",
-                    "3",
-                    "3",
-                    "5"
-                ],
-                [
-                    "5",
-                    "5",
-                    "5",
-                    "3",
-                    "3",
-                    "3",
-                    "0.01",
-                    "0.01",
-                    "0.01",
-                    "3",
-                    "3",
-                    "5"
-                ],
-                [
-                    "5",
-                    "5",
-                    "5",
-                    "3",
-                    "3",
-                    "3",
-                    "0.01",
-                    "0.01",
-                    "0.01",
-                    "3",
-                    "3",
-                    "5"
-                ],
-                [
-                    "5",
-                    "5",
-                    "5",
-                    "3",
-                    "3",
-                    "3",
-                    "0.01",
-                    "0.01",
-                    "0.01",
-                    "3",
-                    "3",
-                    "5"
+                    "-10",
+                    "-10",
+                    "-10",
+                    "100",
+                    "100",
+                    "100",
+                    "1",
+                    "1",
+                    "1",
+                    "100",
+                    "-10",
+                    "100"
                 ]
             ]
         },
         "applyNonKfCuts": "false",
         "applyKfCuts": "true",
         "activateQA": "false",
-        "applyMl": "false",
+        "applyMl": "true",
         "binsPtMl": {
             "values": [
                 "0",
-                "1",
                 "2",
-                "3",
-                "4",
-                "6",
+                "5",
                 "8",
                 "12",
-                "24",
-                "36"
+                "20"
             ]
         },
         "cutDirMl": {
@@ -933,14 +783,7 @@
                 "pT bin 1",
                 "pT bin 2",
                 "pT bin 3",
-                "pT bin 4",
-                "pT bin 5",
-                "pT bin 6",
-                "pT bin 7",
-                "pT bin 8",
-                "pT bin 9",
-                "pT bin 10",
-                "pT bin 11"
+                "pT bin 4"
             ],
             "labels_cols": [
                 "score class 1",
@@ -949,62 +792,27 @@
             ],
             "values": [
                 [
-                    "0.025000000000000001",
+                    "0.15",
                     "0",
                     "0"
                 ],
                 [
-                    "0.050000000000000003",
+                    "0.15",
                     "0",
                     "0"
                 ],
                 [
-                    "0.10000000000000001",
+                    "0.15",
                     "0",
                     "0"
                 ],
                 [
-                    "0.14999999999999999",
+                    "0.15",
                     "0",
                     "0"
                 ],
                 [
-                    "0.29999999999999999",
-                    "0",
-                    "0"
-                ],
-                [
-                    "0.5",
-                    "0",
-                    "0"
-                ],
-                [
-                    "1",
-                    "0",
-                    "0"
-                ],
-                [
-                    "1",
-                    "0",
-                    "0"
-                ],
-                [
-                    "1",
-                    "0",
-                    "0"
-                ],
-                [
-                    "1",
-                    "0",
-                    "0"
-                ],
-                [
-                    "1",
-                    "0",
-                    "0"
-                ],
-                [
-                    "1",
+                    "0.15",
                     "0",
                     "0"
                 ]
@@ -1013,19 +821,26 @@
         "nClassesMl": "3",
         "namesInputFeatures": {
             "values": [
+                "kfChi2PrimProton",
+                "kfChi2PrimKaon",
+                "kfChi2PrimPion",
+                "kfChi2GeoKaonPion",
+                "kfChi2GeoProtonKaon",
+                "kfChi2GeoProtonPion",
+                "kfDcaKaonPion",
+                "kfDcaProtonKaon",
+                "kfDcaProtonPion",
                 "impactParameterXY0",
                 "impactParameterXY1",
                 "impactParameterXY2",
-                "chi2PCA",
                 "cpa",
                 "cpaXY",
-                "decayLengthXY",
-                "decayLength",
-                "tpcTofNSigmaPi0",
-                "tpcTofNSigmaPr0",
+                "kfChi2Geo",
+                "kfChi2Topo",
+                "kfDecayLengthNormalised",
+                "tpcTofNSigmaPrExpPr0",
                 "tpcTofNSigmaKa1",
-                "tpcTofNSigmaPi2",
-                "tpcTofNSigmaPr2"
+                "tpcTofNSigmaPiExpPi2"
             ]
         },
         "ccdbUrl": "http:\/\/alice-ccdb.cern.ch",
@@ -1044,15 +859,11 @@
         },
         "onnxFileNames": {
             "values": [
-                "\/lustre\/alice\/users\/lubynets\/CSTlc\/BDT\/ModelHandler_pT_0_1.onnx",
-                "\/lustre\/alice\/users\/lubynets\/CSTlc\/BDT\/ModelHandler_pT_1_2.onnx",
-                "\/lustre\/alice\/users\/lubynets\/CSTlc\/BDT\/ModelHandler_pT_2_3.onnx",
-                "\/lustre\/alice\/users\/lubynets\/CSTlc\/BDT\/ModelHandler_pT_3_4.onnx",
-                "\/lustre\/alice\/users\/lubynets\/CSTlc\/BDT\/ModelHandler_pT_4_6.onnx",
-                "\/lustre\/alice\/users\/lubynets\/CSTlc\/BDT\/ModelHandler_pT_6_8.onnx",
-                "\/lustre\/alice\/users\/lubynets\/CSTlc\/BDT\/ModelHandler_pT_8_12.onnx",
-                "\/lustre\/alice\/users\/lubynets\/CSTlc\/BDT\/ModelHandler_pT_12_24.onnx",
-                "\/lustre\/alice\/users\/lubynets\/CSTlc\/BDT\/ModelHandler_pT_12_24.onnx"
+                "/lustre/alice/users/lubynets/bdt/outputs_train/moreMoreVars/model/1/BDTmodel_pT_0_2_v1.onnx",
+                "/lustre/alice/users/lubynets/bdt/outputs_train/moreMoreVars/model/2/BDTmodel_pT_2_5_v1.onnx",
+                "/lustre/alice/users/lubynets/bdt/outputs_train/moreMoreVars/model/3/BDTmodel_pT_5_8_v1.onnx",
+                "/lustre/alice/users/lubynets/bdt/outputs_train/moreMoreVars/model/4/BDTmodel_pT_8_12_v1.onnx",
+                "/lustre/alice/users/lubynets/bdt/outputs_train/moreMoreVars/model/5/BDTmodel_pT_12_20_v1.onnx"
             ]
         },
         "timestampCCDB": "-1",
@@ -1063,10 +874,11 @@
         "processBayesPidWithKFParticle": "false"
     },
     "hf-tree-creator-lc-to-p-k-pi": {
-        "selectionFlagLc": "0",
+        "selectionFlagLc": "1",
         "fillCandidateLiteTable": "true",
-        "fillCollIdTable": "false",
+        "fillCollIdTable": "true",
         "fillCandidateMcTable": "false",
+        "applyMl": "true",
         "keepOnlySignalMc": "false",
         "keepOnlyBkg": "false",
         "downSampleBkgFactor": "1",
