@@ -25,6 +25,7 @@ SET(EXECUTABLES
     tsallis_fit_pt
     pt_weight_builder
     mass_bdt_qa_thn
+    mass_bdt_qa_thn_toy
 )
 
 SET(SOURCES

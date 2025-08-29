@@ -136,10 +136,11 @@ void SetRanges(THnSparse* histo, int axisNum, float lo, float hi) {
 
   const TAxis* axis = histo->GetAxis(axisNum);
   int binLo{-999}, binHi{-999};
-  for(int iBin=1, nBins=axis->GetNbins(); iBin<=nBins+1; ++iBin) {
+  for(int iBin=1, nBins=axis->GetNbins(); iBin<=nBins; ++iBin) {
     const float binLowEdge = axis->GetBinLowEdge(iBin);
+    const float binUpEdge = axis->GetBinUpEdge(iBin);
     if(std::fabs(binLowEdge - lo)<tolerance) binLo = iBin;
-    if(std::fabs(binLowEdge - hi)<tolerance) binHi = iBin-1;
+    if(std::fabs(binUpEdge - hi)<tolerance) binHi = iBin;
     if(binLo != -999 && binHi != -999) break;
   }
   if(binLo == -999 || binHi == -999) throw std::runtime_error("SetRanges(): binLo == -999 || binHi == -999");
