@@ -31,16 +31,22 @@ void MassBdtQaThnToy(const std::string& fileName) {
   const std::map<std::string, int> axesIndices = MapAxesIndices(histoIn);
 
   TH1* hPt = histoIn->Projection(axesIndices.at(pTAxisTitle));
+  TH1* hMass = histoIn->Projection(axesIndices.at(massAxisTitle));
+  TH1* hBg = histoIn->Projection(axesIndices.at(bgAxisTitle));
+  TH1* hNp = histoIn->Projection(axesIndices.at(npAxisTitle));
   fileOut->cd();
   hPt->Write("hPt");
+  hMass->Write("hMass");
+  hBg->Write("hBg");
+  hNp->Write("hNp");
 
-  for(int iPt=9; iPt<10; ++iPt) {
+  for(int iPt=1; iPt<10; ++iPt) {
     const float lo = 0.1 * iPt;
     const float hi = 0.1 * (iPt + 1);
 
     SetRanges(histoIn, axesIndices.at(pTAxisTitle), lo, hi);
     TH1* histoMass = histoIn->Projection(axesIndices.at(massAxisTitle));
-//    histoMass->SetDirectory(nullptr);
+    histoMass->SetDirectory(nullptr);
     fileOut->cd();
     const std::string histoName = "hMass_" + to_string_with_precision(lo, 1) + "_" + to_string_with_precision(hi, 1);
     histoMass->Write(histoName.c_str());

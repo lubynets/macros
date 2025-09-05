@@ -14,18 +14,27 @@ const std::string massAxisTitle = "m_{pK#pi} (GeV/#it{c}^{2})";
 const TAxis pTAxis = {200, 0, 20};
 const std::string pTAxisTitle = "#it{p}_{T} (GeV/#it{c})";
 
+const TAxis bgAxis = {100, 0, 1};
+const std::string bgAxisTitle = "bdt[BG]";
+
+const TAxis npAxis = {100, 0, 1};
+const std::string npAxisTitle = "bdt[NP]";
+
 void MassQABdtToy(QA::Task& task) {
   task.SetTopLevelDirName("");
 
   task.AddH1("hPt", {pTAxisTitle, Variable::FromString("Candidates.fLitePt"), pTAxis});
+  task.AddH1("hMass", {massAxisTitle, Variable::FromString("Candidates.fLiteM"), massAxis});
+  task.AddH1("hBg", {bgAxisTitle, Variable::FromString("Candidates.fLiteMlScoreFirstClass"), bgAxis});
+  task.AddH1("hNp", {npAxisTitle, Variable::FromString("Candidates.fLiteMlScoreThirdClass"), npAxis});
 
-  for(int iPt=9; iPt<10; ++iPt) {
+  for(int iPt=1; iPt<10; ++iPt) {
     const float lo = 0.1*iPt;
     const float hi = 0.1*(iPt+1);
     SimpleCut pTCut = RangeCut("Candidates.fLitePt", lo, hi);
     Cuts* cuts = new Cuts("cuts", {pTCut});
     const std::string histoName = "hMass_" + HelperFunctions::ToStringWithPrecision(lo, 1) + "_" + HelperFunctions::ToStringWithPrecision(hi, 1);
-    task.AddH1(histoName, {massAxisTitle, Variable::FromString("Candidates.fKFMassInv"), massAxis}, cuts);
+    task.AddH1(histoName, {massAxisTitle, Variable::FromString("Candidates.fLiteM"), massAxis}, cuts);
   }
 }
 
