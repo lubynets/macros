@@ -112,8 +112,12 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
     const float textYStep = 0.06;
 
     TLegend leg(textX1, textY2, textX2, textY2 + 2*textYStep);
-    if (isMc) leg.AddEntry(hMcDiff, "MC", "PL");
-    leg.AddEntry(hCutVarDiff, "rec", "PL");
+    if (isMc) {
+      leg.AddEntry(hMcDiff, "MC", "PL");
+      leg.AddEntry(hCutVarDiff, "rec", "PL");
+    } else {
+      leg.AddEntry(hCutVarDiff, "Data", "PL");
+    }
 
     TCanvas ccFit("ccFit", "");
     ccFit.SetCanvasSize(1200, 800);

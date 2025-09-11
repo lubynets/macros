@@ -35,8 +35,17 @@ const std::vector<short> signalTargetsAtBdt {
 const std::string recBranchName = "Candidates";
 const std::vector<std::string> bdtClasses{"fLiteMlScoreFirstClass", "fLiteMlScoreSecondClass", "fLiteMlScoreThirdClass"};
 
-auto TCuts = HelperFunctions::CreateRangeCuts(lifetimeRanges, "T_", recBranchName + ".fKFT");
+// auto TCuts = HelperFunctions::CreateRangeCuts(lifetimeRanges, "T_", recBranchName + ".fKFT");
 SimpleCut rapidityCut = RangeCut(Variable::FromString(recBranchName + ".fLiteY"), rapidityRanges.first, rapidityRanges.second);
+
+Variable properLifetime("properLifetime", {{recBranchName, "fLiteCt"}}, [](const std::vector<double>& v) { return 100./2.997*v.at(0); });
+std::vector<SimpleCut> TCuts{
+  RangeCut(properLifetime, lifetimeRanges.at(0), lifetimeRanges.at(1), ("T_" + HelperFunctions::ToStringWithPrecision(lifetimeRanges.at(0), 2) + "_" + HelperFunctions::ToStringWithPrecision(lifetimeRanges.at(1), 2)).c_str()),
+  RangeCut(properLifetime, lifetimeRanges.at(1), lifetimeRanges.at(2), ("T_" + HelperFunctions::ToStringWithPrecision(lifetimeRanges.at(1), 2) + "_" + HelperFunctions::ToStringWithPrecision(lifetimeRanges.at(2), 2)).c_str()),
+  RangeCut(properLifetime, lifetimeRanges.at(2), lifetimeRanges.at(3), ("T_" + HelperFunctions::ToStringWithPrecision(lifetimeRanges.at(2), 2) + "_" + HelperFunctions::ToStringWithPrecision(lifetimeRanges.at(3), 2)).c_str()),
+  RangeCut(properLifetime, lifetimeRanges.at(3), lifetimeRanges.at(4), ("T_" + HelperFunctions::ToStringWithPrecision(lifetimeRanges.at(3), 2) + "_" + HelperFunctions::ToStringWithPrecision(lifetimeRanges.at(4), 2)).c_str()),
+  RangeCut(properLifetime, lifetimeRanges.at(4), lifetimeRanges.at(5), ("T_" + HelperFunctions::ToStringWithPrecision(lifetimeRanges.at(4), 2) + "_" + HelperFunctions::ToStringWithPrecision(lifetimeRanges.at(5), 2)).c_str()),
+};
 
 void MassQABdt(QA::Task& task);
 
@@ -81,7 +90,7 @@ void mass_qa(const std::string& filelistname, bool isMc) {
         }
         TH1* histoMerged = HelperFunctions::MergeHistograms(fileOut, histoNames);
         HelperFunctions::CD(fileOut, dt.GetTitle() + "/" + GetPtCutName(pTRanges.size()-1) + "/" + tCut.GetTitle());
-        histoMerged->Write(("/hM_" + signalShortcut + "gt" + HelperFunctions::ToStringWithPrecision(bslv, 2)).c_str());
+        histoMerged->Write(("hM_" + signalShortcut + "gt" + HelperFunctions::ToStringWithPrecision(bslv, 2)).c_str());
       } // bdtSignalLowerValues
     } // TCuts
   } // datatypes
@@ -112,7 +121,7 @@ void MassQABdt(QA::Task& task) {
         for (const auto& bsc : bdtSigCuts) {
           Cuts* cutsRec = new Cuts(dt.GetTitle() + "_" + tCut.GetTitle(), {bdtBgScoreCut, bsc, rapidityCut, tCut});
           const std::string histoName = "hM_" + bsc.GetTitle();
-          task.AddH1(histoName, {massAxisTitle, Variable::FromString(recBranchName + ".fKFMassInv"), massAxis}, cutsRec);
+          task.AddH1(histoName, {massAxisTitle, Variable::FromString(recBranchName + ".fLiteM"), massAxis}, cutsRec);
         }// bdtNonPromptCuts
       } // TCuts
     } // datatypes
@@ -122,13 +131,13 @@ void MassQABdt(QA::Task& task) {
 std::vector<SimpleCut> PrepareDataTypes(const std::string& varName) {
   std::vector<SimpleCut> result {
     RangeCut(varName, -0.1, 3.1, "all"),
-    SimpleCut({varName}, [](std::vector<double> par){ return par[0] == 0 || par[0] == 1 || par[0] == 3; }, "all_wononprompt"),
-    SimpleCut({varName}, [](std::vector<double> par){ return par[0] == 0 || par[0] == 2 || par[0] == 3; }, "all_woprompt"),
-    SimpleCut({varName}, [](std::vector<double> par){ return par[0] == 0 || par[0] == 3; }, "background"),
-    EqualsCut(varName, 1,"prompt"),
-    EqualsCut(varName, 2,"nonprompt"),
-    RangeCut(varName,  0.9, 2.1, "signal"),
-    EqualsCut(varName, 3,"wrongswap"),
+//     SimpleCut({varName}, [](std::vector<double> par){ return par[0] == 0 || par[0] == 1 || par[0] == 3; }, "all_wononprompt"),
+//     SimpleCut({varName}, [](std::vector<double> par){ return par[0] == 0 || par[0] == 2 || par[0] == 3; }, "all_woprompt"),
+//     SimpleCut({varName}, [](std::vector<double> par){ return par[0] == 0 || par[0] == 3; }, "background"),
+//     EqualsCut(varName, 1,"prompt"),
+//     EqualsCut(varName, 2,"nonprompt"),
+//     RangeCut(varName,  0.9, 2.1, "signal"),
+//     EqualsCut(varName, 3,"wrongswap"),
     EqualsCut(varName, -999, "data"),
   };
 

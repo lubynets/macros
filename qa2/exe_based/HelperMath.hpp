@@ -5,6 +5,7 @@
 #ifndef QA2_HELPERMATH_HPP
 #define QA2_HELPERMATH_HPP
 
+#include <TFile.h>
 #include <TGraph.h>
 #include <TMatrixDSym.h>
 
@@ -66,6 +67,7 @@ void InvertHisto(TH1* histo);
 std::pair<TH1*, TH1*> EvaluateEfficiencyHisto(TH1* hNum, TH1* hDen);
 
 TH1* MergeHistograms(const std::vector<TH1*>& histos);
+TH1* MergeHistograms(TFile* fileIn, const std::vector<std::string>& histoNames);
 
 TH1* CutSubHistogram(const TH1* histoIn, double lo, double hi);
 

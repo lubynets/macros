@@ -2,7 +2,6 @@
 // Created by oleksii on 12.05.25.
 //
 #include "HelperGeneral.hpp"
-#include "HelperMath.hpp"
 #include "HelperPlot.hpp"
 
 #include <TLegend.h>
@@ -10,7 +9,6 @@
 #include <iostream>
 
 using namespace HelperGeneral;
-using namespace HelperMath;
 using namespace HelperPlot;
 
 void MassBdtQa(const std::string& fileName, const std::string& dataType) {

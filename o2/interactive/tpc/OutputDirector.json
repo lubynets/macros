@@ -25,6 +25,12 @@
     },
     {
       "table": "AOD/CASCBB/0"
+    },
+    {
+      "table": "AOD/CASCMAPID/0"
+    },
+    {
+      "table": "AOD/V0BITS/0"
     }
   ],
   "ntfmerge": 1

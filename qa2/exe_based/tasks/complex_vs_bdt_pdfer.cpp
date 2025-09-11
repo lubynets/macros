@@ -127,7 +127,7 @@ double EvaluateAverageExcludingOutliers(const std::vector<double>& values, const
     ++count;
   }
 
-  return sum/count;
+  return count > 0 ? sum/count : averagePreliminary;
 }
 
 double EvaluateAverageExcludingOutliers(const TGraphErrors* graph, double from, double to, double chi2Max) {

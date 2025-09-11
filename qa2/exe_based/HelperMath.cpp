@@ -181,13 +181,26 @@ TH1* HelperMath::MergeHistograms(const std::vector<TH1*>& histos) {
   for(const auto& h : histos) {
     HelperGeneral::CheckHistogramsForXaxisIdentity(h, histos.at(0));
   }
+  const bool isSumw2 = histos.at(0)->GetSumw2N() > 0;
 
-  TH1* hResult = dynamic_cast<TH1*>(histos.at(0)->Clone("merged"));
+  TH1* hResult = dynamic_cast<TH1*>(histos.at(0)->Clone("hMerged"));
   Sumw2IfNotYet(hResult);
   hResult->SetDirectory(nullptr);
   for(size_t iH=1, nHs=histos.size(); iH<nHs; ++iH) {
     hResult->Add(histos.at(iH));
   }
+  Sumw2IfNotYet(hResult, isSumw2);
+
+  return hResult;
+}
+
+TH1* HelperMath::MergeHistograms(TFile* fileIn, const std::vector<std::string>& histoNames) {
+  std::vector<TH1*> histos;
+  histos.reserve(histoNames.size());
+  for (const auto& hN : histoNames) {
+    histos.emplace_back(HelperGeneral::GetObjectWithNullptrCheck<TH1>(fileIn, hN));
+  }
+  TH1* hResult = MergeHistograms(histos);
 
   return hResult;
 }
