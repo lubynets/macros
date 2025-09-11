@@ -39,8 +39,10 @@ void tpc_qa2(const std::string& fileName, bool isParticleWise=true, bool isDrawB
       TH1* h = fileIn->Get<TH1>((hiName + "_" + paName).c_str());
       TCanvas cc("cc", "");
       cc.SetCanvasSize(1200, 800);
+      cc.SetRightMargin(0.12);
       cc.SetLogx(std::string(h->GetXaxis()->GetTitle()) == "#it{p} (GeV/#it{c})");
       cc.SetLogz();
+      h->GetZaxis()->CenterTitle();
       h->Draw("colz");
       if(isDrawBB && hiName == "hPdEdx") {
         for(int iParticle=0, nParticles=particleMasses.size(); iParticle<nParticles; ++iParticle) {

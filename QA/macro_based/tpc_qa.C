@@ -28,18 +28,40 @@ void tpc_qa(const std::string& fileName) {
   std::array<TH1D*, Particles::nParticles> hNSigma;
   std::array<TH2D*, Particles::nParticles> hPNSigma;
 
+  const int nBinsP = 100;
+  const double lowP = 0.1;
+  const double hiP = 10;
+
+  std::vector<double> binEdgesP(nBinsP+1);
+  const double logLowP = std::log10(lowP);
+  const double logHiP = std::log10(hiP);
+  const double logStepP = (logHiP - logLowP) / nBinsP;
+  for(int iBin=0; iBin<=nBinsP; ++iBin) {
+    binEdgesP.at(iBin) = std::pow(10., logLowP + iBin*logStepP);
+  }
+
+  const int nBinsDedx = 100;
+  const double lowDedx = 0;
+  const double hiDedx = 150;
+
+  const int nBinsNsigma = 100;
+  const double lowNsigma = -10;
+  const double hiNsigma = 10;
+
   for(int kParticle=0; kParticle<Particles::nParticles; ++kParticle) {
-    hPdEdx.at(kParticle) = new TH2D(("hPdEdx_" + particleNames.at(kParticle)).c_str(), particleNames.at(kParticle).c_str(), 99, 0.1, 10, 100, 0, 150);
+    hPdEdx.at(kParticle) = new TH2D(("hPdEdx_" + particleNames.at(kParticle)).c_str(), particleNames.at(kParticle).c_str(), nBinsP, binEdgesP.data(), nBinsDedx, lowDedx, hiDedx);
     hPdEdx.at(kParticle)->GetXaxis()->SetTitle("#it{p} (GeV/#it{c})");
     hPdEdx.at(kParticle)->GetYaxis()->SetTitle("dE/dx (a.u.)");
+    hPdEdx.at(kParticle)->GetZaxis()->SetTitle("Entries");
 
-    hNSigma.at(kParticle) = new TH1D(("hNSigma_" + particleNames.at(kParticle)).c_str(), particleNames.at(kParticle).c_str(), 500, -10, 10);
+    hNSigma.at(kParticle) = new TH1D(("hNSigma_" + particleNames.at(kParticle)).c_str(), particleNames.at(kParticle).c_str(), nBinsNsigma, lowNsigma, hiNsigma);
     hNSigma.at(kParticle)->GetXaxis()->SetTitle("N#sigma TPC");
     hNSigma.at(kParticle)->GetYaxis()->SetTitle("Entries");
 
-    hPNSigma.at(kParticle) = new TH2D(("hPNSigma_" + particleNames.at(kParticle)).c_str(), particleNames.at(kParticle).c_str(), 99, 0.1, 10, 100, -10, 10);
+    hPNSigma.at(kParticle) = new TH2D(("hPNSigma_" + particleNames.at(kParticle)).c_str(), particleNames.at(kParticle).c_str(), nBinsP, binEdgesP.data(), nBinsNsigma, lowNsigma, hiNsigma);
     hPNSigma.at(kParticle)->GetXaxis()->SetTitle("#it{p} (GeV/#it{c})");
     hPNSigma.at(kParticle)->GetYaxis()->SetTitle("N#sigma TPC");
+    hPNSigma.at(kParticle)->GetZaxis()->SetTitle("Entries");
   }
 
   for(const auto& dirName : dirNames) {
