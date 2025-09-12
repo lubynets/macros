@@ -118,3 +118,60 @@ void HelperGeneral::CheckHistogramsForXaxisIdentity(const TH1* h1, const TH1* h2
     }
   }
 }
+
+std::map<std::string, int> HelperGeneral::MapAxesIndices(const THnSparse* histo) {
+  std::map<std::string, int> result;
+  const int nDims = histo->GetNdimensions();
+  for(int iDim=0; iDim<nDims; ++iDim) {
+    result.insert({histo->GetAxis(iDim)->GetTitle(), iDim});
+  }
+  return result;
+}
+
+void HelperGeneral::CheckTAxisForRanges(const TAxis& axis, const std::vector<float>& ranges) {
+  const int nBins = axis.GetNbins();
+  for(const auto& range : ranges) {
+    bool ok{false};
+    for(int iBin=1; iBin<=nBins+1; ++iBin) {
+      const float edge = axis.GetBinLowEdge(iBin);
+      if(std::fabs(edge - range) < 1e-4) {
+        ok = true;
+        break;
+      }
+    }
+    if(!ok) {
+      throw std::runtime_error("HelperGeneral::CheckTAxisForRanges() - the range " + std::to_string(range) + " is missing");
+    }
+  }
+}
+
+void HelperGeneral::SetTHnSparseAxisRanges(THnSparse* histo, int axisNum, float lo, float hi) {
+  constexpr double tolerance = 1e-6;
+
+  if(std::fabs(lo+999)<tolerance && std::fabs(hi+999)<tolerance) {
+    histo->GetAxis(axisNum)->SetRange();
+    return;
+  }
+
+  if(lo >= hi) throw std::runtime_error("SetTHnSparseAxisRanges(): lo >= hi");
+
+  const TAxis* axis = histo->GetAxis(axisNum);
+  int binLo{-999}, binHi{-999};
+  for(int iBin=1, nBins=axis->GetNbins(); iBin<=nBins; ++iBin) {
+    const float binLowEdge = axis->GetBinLowEdge(iBin);
+    const float binUpEdge = axis->GetBinUpEdge(iBin);
+    if(std::fabs(binLowEdge - lo)<tolerance) binLo = iBin;
+    if(std::fabs(binUpEdge - hi)<tolerance) binHi = iBin;
+    if(binLo != -999 && binHi != -999) break;
+  }
+  if(binLo == -999 || binHi == -999) throw std::runtime_error("SetTHnSparseAxisRanges(): binLo == -999 || binHi == -999");
+  histo->GetAxis(axisNum)->SetRange(binLo, binHi);
+}
+
+double HelperGeneral::InterpolateTH1SuppressWarning(const TH1* h, double value) {
+  double result;
+  if (value <= h->GetBinLowEdge(1) || value >= h->GetBinLowEdge(h->GetNbinsX() + 1)) result = 0.;
+  else
+    result = h->Interpolate(value);
+  return result;
+}

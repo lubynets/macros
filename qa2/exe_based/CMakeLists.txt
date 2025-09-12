@@ -25,7 +25,8 @@ SET(EXECUTABLES
     tsallis_fit_pt
     pt_weight_builder
     mass_bdt_qa_thn
-    mass_bdt_qa_thn_toy
+    yield_lifetime_qa_thn
+    scale_thnsparse_temp
 )
 
 SET(SOURCES

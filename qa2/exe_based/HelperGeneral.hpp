@@ -5,6 +5,7 @@
 #ifndef QA2_HELPERGENERAL_HPP
 #define QA2_HELPERGENERAL_HPP
 
+#include <THnSparse.h>
 #include <TFile.h>
 #include <TF1.h>
 
@@ -66,6 +67,13 @@ void CD(TFile* file, const std::string& dirName);
 
 void CheckHistogramsForXaxisIdentity(const TH1* h1, const TH1* h2);
 
+std::map<std::string, int> MapAxesIndices(const THnSparse* histo);
+
+void CheckTAxisForRanges(const TAxis& axis, const std::vector<float>& ranges);
+
+void SetTHnSparseAxisRanges(THnSparse* histo, int axisNum, float lo= -999., float hi= -999.);
+
+double InterpolateTH1SuppressWarning(const TH1* h, double value);
 };
 
 
