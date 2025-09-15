@@ -16,7 +16,7 @@ using namespace AnalysisTree;
 const std::vector<float> lifetimeRanges = {0.2, 0.35, 0.5, 0.7, 0.9, 1.6};
 const std::vector<float> pTRanges = {0, 2, 5, 8, 12, 20};
 const std::vector<float> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.05, 0.08};
-const TAxis lifetimeAxis = {400, 0, 2};
+const TAxis lifetimeAxis = {200, 0, 2};
 const std::string lifetimeAxisTitle = "T (ps)";
 const std::string genBranchName = "Generated";
 const std::pair<float, float> rapidityRanges{-0.8, 0.8};
@@ -54,6 +54,8 @@ const std::vector<std::string> weightsPresences{"", "_W"};
 
 const short kSignal = kNonPrompt; const std::string signalShortcut = "NP";
 
+Variable properLifetime("properLifetime", {{recBranchName, "fLiteCt"}}, [](const std::vector<double>& v) { return 100./2.99792458*v.at(0); });
+
 void FillYieldRec(QA::Task& task, const TH1* hWeights) {
   SimpleCut rapidityCut = RangeCut(Variable::FromString(recBranchName + ".fLiteY"), rapidityRanges.first, rapidityRanges.second);
   Variable ptWeigth("ptWeigth", {{recBranchName, "fKFPt"}}, [=] (std::vector<double>& par) {
@@ -80,8 +82,8 @@ void FillYieldRec(QA::Task& task, const TH1* hWeights) {
       for (const auto& bsc : bdtSigCuts) {
         Cuts* cutsRec = new Cuts(promptness.name_, {promptness.cut_rec_, bdtBgScoreCut, bsc, rapidityCut});
         const std::string histoName = "hT_" + bsc.GetTitle();
-        task.AddH1(histoName, {lifetimeAxisTitle, Variable::FromString(recBranchName + ".fKFT"), lifetimeAxis}, cutsRec);
-        if(promptness.name_ == "prompt") task.AddH1(histoName + "_W", {lifetimeAxisTitle, Variable::FromString(recBranchName + ".fKFT"), lifetimeAxis}, cutsRec, ptWeigth);
+        task.AddH1(histoName, {lifetimeAxisTitle, properLifetime, lifetimeAxis}, cutsRec);
+        if(promptness.name_ == "prompt") task.AddH1(histoName + "_W", {lifetimeAxisTitle, properLifetime, lifetimeAxis}, cutsRec, ptWeigth);
       }// bdtSigCuts
     }// promptnesses
   } // pTs
@@ -97,7 +99,7 @@ void FillYieldGen(QA::Task& task, const TH1* hWeights) {
     SimpleCut pTCut = RangeCut({genBranchName + ".fGen_Pt"}, pTRanges.at(iPt), pTRanges.at(iPt+1), pTCutName);
     for (const auto& promptness : promptnesses) {
       task.SetTopLevelDirName("gen/" + promptness.name_ + "/" + pTCutName);
-      Cuts* cutsGen = new Cuts(promptness.name_ + "_" + pTCutName, {promptness.cut_gen_, pTCut});
+      Cuts* cutsGen = new Cuts(promptness.name_ + "_" + pTCutName, {promptness.cut_gen_, pTCut, rapidityCut});
       const std::string histoName = "hT";
       task.AddH1(histoName, {lifetimeAxisTitle, Variable::FromString(genBranchName + ".fGen_TDecay"), lifetimeAxis}, cutsGen);
       task.AddH1(histoName + "_W", {lifetimeAxisTitle, Variable::FromString(genBranchName + ".fGen_TDecay"), lifetimeAxis}, cutsGen, ptWeigth);
