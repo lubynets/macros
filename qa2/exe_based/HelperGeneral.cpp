@@ -175,3 +175,35 @@ double HelperGeneral::InterpolateTH1SuppressWarning(const TH1* h, double value) 
     result = h->Interpolate(value);
   return result;
 }
+
+void HelperGeneral::ScaleTHnSparseWithWeight(THnSparse* histoIn, int nDim, const TH1* histoWeight) {
+  const int nDims = histoIn->GetNdimensions();
+  if(nDims <= nDim) {
+    throw std::runtime_error("HelperGeneral::ScaleTHnSparseWithWeight: histoIn->GetNdimensions() <= nDim = " + std::to_string(nDim));
+  }
+  histoIn->Sumw2();
+
+  // Buffers for coordinates
+  // coords[i] will hold bin index along axis i
+  std::vector<int> coords(nDims);
+
+  // Loop over filled bins
+  const Long64_t nFilledBins = histoIn->GetNbins();
+  for (Long64_t iBin = 0; iBin < nFilledBins; ++iBin) {
+    const double content = histoIn->GetBinContent(iBin, coords.data());
+    if (content == 0) continue;
+
+    const int binIndex = coords.at(nDim);  // Note: this is the bin number along that axis
+    const TAxis* axis = histoIn->GetAxis(nDim);
+    const double binCenter = axis->GetBinCenter(binIndex);
+
+    const double scaleFactor = InterpolateTH1SuppressWarning(histoWeight, binCenter);
+
+    const double newContent = content * scaleFactor;
+    histoIn->SetBinContent(coords.data(), newContent);
+
+    const double err = histoIn->GetBinError(iBin);
+    const double newErr = err * scaleFactor;
+    histoIn->SetBinError(coords.data(), newErr);
+  }
+}
