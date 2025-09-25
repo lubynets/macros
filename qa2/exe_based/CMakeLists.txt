@@ -26,6 +26,7 @@ SET(EXECUTABLES
     pt_weight_builder
     mass_bdt_qa_thn
     yield_lifetime_qa_thn
+    multifit_qa
 )
 
 SET(SOURCES
@@ -88,10 +89,10 @@ install(FILES
 
 foreach(EXE ${EXECUTABLES})
     # Add the executable
-    add_executable(${EXE} tasks/${EXE}.cpp)
+    add_executable(qa2-${EXE} tasks/${EXE}.cpp)
     # Link ROOT libraries to the executable
-    target_link_libraries(${EXE} ${ROOT_LIBRARIES} ROOT::EG Qa2)
-    install (TARGETS ${EXE} RUNTIME DESTINATION bin)
+    target_link_libraries(qa2-${EXE} ${ROOT_LIBRARIES} ROOT::EG Qa2)
+    install (TARGETS qa2-${EXE} RUNTIME DESTINATION bin)
 endforeach()
 
 # ==================================================================
