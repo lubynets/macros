@@ -22,7 +22,6 @@
 
 #include "HFInvMassFitter.h"
 
-// if .h file not found, please include your local rapidjson/document.h and rapidjson/filereadstream.h here
 #include <TCanvas.h>
 #include <TDatabasePDG.h>
 #include <TFile.h>
@@ -172,6 +171,8 @@ int runMassFitter(const TString& configFileName)
 
   const bool drawBgPrefit = config["drawBgPrefit"].GetBool();
   const bool highlightPeakRegion = config["highlightPeakRegion"].GetBool();
+
+  const Int_t randomSeed = config.HasMember("randomSeed") ? config["randomSeed"].GetInt() : -1;
 
   const unsigned int nSliceVarBins = sliceVarMin.size();
   std::vector<int> bkgFunc(nSliceVarBins);
@@ -387,6 +388,7 @@ int runMassFitter(const TString& configFileName)
     if (isMc) {
       HFInvMassFitter* massFitter;
       massFitter = new HFInvMassFitter(hMassForFit[iSliceVar], massMin[iSliceVar], massMax[iSliceVar], HFInvMassFitter::NoBkg, sgnFunc[iSliceVar]);
+      massFitter->setRandomSeed(randomSeed);
       massFitter->setDrawBgPrefit(drawBgPrefit);
       massFitter->setHighlightPeakRegion(highlightPeakRegion);
       massFitter->setInitialGaussianMean(massPDG);
@@ -430,6 +432,7 @@ int runMassFitter(const TString& configFileName)
       HFInvMassFitter* massFitter;
       massFitter = new HFInvMassFitter(hMassForFit[iSliceVar], massMin[iSliceVar], massMax[iSliceVar],
                                        bkgFunc[iSliceVar], sgnFunc[iSliceVar]);
+      massFitter->setRandomSeed(randomSeed);
       massFitter->setDrawBgPrefit(drawBgPrefit);
       massFitter->setHighlightPeakRegion(highlightPeakRegion);
       massFitter->setInitialGaussianMean(massPDG);
