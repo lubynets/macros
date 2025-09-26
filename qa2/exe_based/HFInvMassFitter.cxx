@@ -960,8 +960,14 @@ double HFInvMassFitter::randomizeInitialFitParameter(double valueLower, double v
     return valueInitial;
   }
   double result;
+  int nIter{0};
   do {
-    result = valueInitial + mRandomGen->Gaus(valueSmear);
+    result = mRandomGen->Gaus(valueInitial, valueSmear);
+    ++nIter;
+    if (nIter > 20) {
+      std::cout << "randomizeInitialFitParameter() - long while loop << valueLower = " << valueLower << " valueUpper = " << valueUpper << " valueInitial = " << valueInitial << " valueSmear = "  << valueSmear << "\n";
+      throw;
+    }
   }
   while (result<valueLower || result > valueUpper);
 
