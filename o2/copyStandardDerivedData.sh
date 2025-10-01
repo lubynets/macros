@@ -27,24 +27,26 @@ for path in `sed 's/,/\n/g' ${HYPERLOOP_OUTPUT_DIRECTORIES}`; do
    patterns_numerated=( "[0-9]*/AO2D.root" "[0-9]*/AnalysisResults.root" )
    patterns_single_file=( "AO2D.root" "AnalysisResults.root" )
 
-   if [[ $(alien_find -r "$path" ${patterns_single_file[0]}) ]]; then
+   if [[ $(alien_find -r "$path" ${patterns_single_file[0]}) ]] || [[ $(alien_find -r "$path" ${patterns_single_file[1]}) ]]; then
       echo "Found single (slim) file at $path - starting copy"
       patterns=("${patterns_single_file[@]}")
-   elif [[ $(alien_find -r "$path" ${patterns_aod[0]}) ]]; then
+   elif [[ $(alien_find -r "$path" ${patterns_aod[0]}) ]] || [[ $(alien_find -r "$path" ${patterns_aod[1]}) ]]; then
       echo "Found merged files under AOD at $path - starting copy"
       patterns=("${patterns_aod[@]}")
-   elif [[ $(alien_find -r "$path" ${patterns_numerated[0]}) ]]; then
+   elif [[ $(alien_find -r "$path" ${patterns_numerated[0]}) ]] || [[ $(alien_find -r "$path" ${patterns_numerated[1]}) ]]; then
       echo "Found unmerged files in numerated directories at $path - starting copy"
       patterns=("${patterns_numerated[@]}")
    else
-      echo "Nothing was found at $path. Exit"
-      exit
+      echo "Nothing was found at $path. Switch to the next parent_dir"
    fi
 
    for pattern in "${patterns[@]}"; do
       # Get list of remote files
       remote_files=$(alien_find -r "$path" "$pattern")
       while read -r remote; do
+      if [[ -z "$remote" ]]; then
+      continue
+      fi
       # Extract basename (filename)
       fname="${remote#"$parent_dir"/}"
       if [[ -f "$fname" ]]; then
