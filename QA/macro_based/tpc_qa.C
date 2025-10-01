@@ -67,6 +67,7 @@ void tpc_qa(const std::string& fileName) {
   for(const auto& dirName : dirNames) {
     TFile* fileIn = TFile::Open(fileName.c_str());
     TTree* treeIn = fileIn->Get<TTree>((dirName + "/O2tpcskimv0tree").c_str());
+    if(treeIn == nullptr) treeIn = fileIn->Get<TTree>((dirName + "/O2tpcskimv0wde").c_str());
     treeIn->SetBranchAddress("fPidIndex", &fPidIndex);
     treeIn->SetBranchAddress("fTPCInnerParam", &fTPCInnerParam);
     treeIn->SetBranchAddress("fBetaGamma", &fBetaGamma);
