@@ -62,6 +62,29 @@ enum DecayChannelMain : int8_t {
   NChannelsMain = XicToSPiPi // last channel
 };
 
+struct Mother {
+  int id_;
+  std::string name_;
+};
+
+enum MotherParticle : int {
+  Dplus = 0,
+  Ds,
+  Dstar,
+  Lc,
+  Xic,
+  NMotherParticles
+};
+
+std::vector<Mother> Mothers {
+  {Dplus, "Dplus"},
+  {Ds,    "Ds"},
+  {Dstar, "Dstar"},
+  {Lc,    "Lc"},
+  {Xic,   "Xic"}
+};
+
+
 /// @brief D+ BR values used in MC (https://github.com/AliceO2Group/O2DPG/blob/master/MC/config/PWGHF/pythia8/generator/pythia8_charmhadronic_with_decays_Mode2_CorrBkg.cfg)
 std::map<int, float> BRsDplus_PYTHIA = {
     std::make_pair(DplusToPiKPi,    0.28),
@@ -151,6 +174,42 @@ float pythiaBRScalingFactorLc = 1./( BRsLc_PYTHIA[LcToPKPi] + BRsLc_PYTHIA[LcToP
 /// Scaling factor in PYTHIA for the Xic+ decays, from the fact that PYTHIA normalizes all BRs to sum at 1
 float pythiaBRScalingFactorXic = 1./( BRsXic_PYTHIA[XicToPKPi] + BRsXic_PYTHIA[XicToPKK] + BRsXic_PYTHIA[XicToSPiPi] );
 
+struct Decay {
+  int id_;
+  Mother mother_;
+  std::string daughters_;
+  float br_pythia_;
+};
+std::vector<Decay> Decays {
+  {DplusToPiKPi,       Mothers[Dplus], "PiKPi",      BRsDplus_PYTHIA[DplusToPiKPi]},
+  {DplusToPiKPiPi0,    Mothers[Dplus], "PiKPiPi0",   BRsDplus_PYTHIA[DplusToPiKPiPi0]},
+  {DplusToPiPiPi,      Mothers[Dplus], "PiPiPi",     BRsDplus_PYTHIA[DplusToPiPiPi]},
+  {DplusToPiKK,        Mothers[Dplus], "PiKK",       BRsDplus_PYTHIA[DplusToPiKK]},
+
+  {DsToPiKK,           Mothers[Ds],    "PiKK",       BRsDs_PYTHIA[DsToPiKK]},
+  {DsToPiKKPi0,        Mothers[Ds],    "PiKKPi0",    BRsDs_PYTHIA[DsToPiKKPi0]},
+  {DsToPiPiK,          Mothers[Ds],    "PiPiK",      BRsDs_PYTHIA[DsToPiPiK]},
+  {DsToPiPiPi,         Mothers[Ds],    "PiPiPi",     BRsDs_PYTHIA[DsToPiPiPi]},
+  {DsToPiPiPiPi0,      Mothers[Ds],    "PiPiPiPi0",  BRsDs_PYTHIA[DsToPiPiPiPi0]},
+
+  {DstarToPiKPi,       Mothers[Dstar], "PiKPi",      BRsD0_PYTHIA[DstarToPiKPi]},
+  {DstarToPiKPiPi0,    Mothers[Dstar], "PiKPiPi0",   BRsD0_PYTHIA[DstarToPiKPiPi0]},
+  {DstarToPiKPiPi0Pi0, Mothers[Dstar], "PiKPiPi0Pi0",BRsD0_PYTHIA[DstarToPiKPiPi0Pi0]},
+  {DstarToPiKK,        Mothers[Dstar], "PiKK",       BRsD0_PYTHIA[DstarToPiKK]},
+  {DstarToPiKKPi0,     Mothers[Dstar], "PiKKPi0",    BRsD0_PYTHIA[DstarToPiKKPi0]},
+  {DstarToPiPiPi,      Mothers[Dstar], "PiPiPi",     BRsD0_PYTHIA[DstarToPiPiPi]},
+  {DstarToPiPiPiPi0,   Mothers[Dstar], "PiPiPiPi0",  BRsD0_PYTHIA[DstarToPiPiPiPi0]},
+
+  {LcToPKPi,           Mothers[Lc],    "PKPi",       BRsLc_PYTHIA[LcToPKPi]},
+  {LcToPKPiPi0,        Mothers[Lc],    "PKPiPi0",    BRsLc_PYTHIA[LcToPKPiPi0]},
+  {LcToPPiPi,          Mothers[Lc],    "PPiPi",      BRsLc_PYTHIA[LcToPPiPi]},
+  {LcToPKK,            Mothers[Lc],    "PKK",        BRsLc_PYTHIA[LcToPKK]},
+
+  {XicToPKPi,          Mothers[Xic],   "PKPi",       BRsXic_PYTHIA[XicToPKPi]},
+  {XicToPKK,           Mothers[Xic],   "PKK",        BRsXic_PYTHIA[XicToPKK]},
+  {XicToSPiPi,         Mothers[Xic],   "SPiPi",      BRsXic_PYTHIA[XicToSPiPi]},
+};
+
 //__________________________________________________________
 //__________________________________________________________
 //__________________________________________________________
@@ -161,8 +220,10 @@ void corrBkgLc(bool scaleByBrs = true,
                std::vector<float> ptMaxs = {2, 3, 4, 5, 6, 7, 8, 10, 12, 16, 24}, //{2, 4, 6, 8, 12},
                std::vector<float> bdt = {0.06, 0.04, 0.04, 0.05, 0.1, 0.1, 0.1, 0.1, 0.1, 0.15, 0.2})
 {
+    const size_t nDecays{Decays.size()};
+    const size_t nMothers{Mothers.size()};
 
-    const std::vector<std::string> dirNames = GetDFNames(filename);
+    const std::vector<std::string> dirNames = /*GetDFNames(filename)*/{"DF_2263624225188351"};
     TFile* file = TFile::Open(filename.c_str());
 
 
@@ -176,6 +237,9 @@ void corrBkgLc(bool scaleByBrs = true,
     for(int i=0; i<NChannelsMain; i++) {
         colors.push_back(cols.At(i) + 9*i);
     }
+
+    std::vector<std::vector<TH1D*>> histos;
+    histos.resize(nDecays);
 
     std::vector<TH1D*> histos_DplusToPiKPi = {};
     std::vector<TH1D*> histos_DplusToPiKPiPi0 = {};
@@ -205,6 +269,13 @@ void corrBkgLc(bool scaleByBrs = true,
 
     int col, row, w, h;
     setRowCols(ptMins.size(), col, row, w, h);
+
+    std::vector<TCanvas*> can;
+    for(size_t iMother=0; iMother<nMothers; ++iMother) {
+      const std::string cName = "can_" + Mothers.at(iMother).name_ + "Channels";
+      can.push_back(new TCanvas(cName.c_str(), cName.c_str(), w, h));
+      can.back()->Divide(col, row);
+    }
     TCanvas* can_DplusChannels = new TCanvas("can_DplusChannels", "can_DplusChannels", w, h);
     can_DplusChannels->Divide(col, row);
     TCanvas* can_DsChannels = new TCanvas("can_DsChannels", "can_DsChannels", w, h);
@@ -227,6 +298,29 @@ void corrBkgLc(bool scaleByBrs = true,
         std::vector<float> max_values = {};
 
         /// setup histograms
+        /// selections
+        // pt interval
+        std::string cuts_base = "";
+        cuts_base = cuts_base + std::to_string(ptMin) + std::string(" < fPt && fPt < ") + std::to_string(ptMax);
+        // bdt
+        std::string cuts_BDT = applyBdt ? std::string(" && fMlScoreFirstClass < ") + std::to_string(bdt.at(ptBin)) : std::string("");
+        cuts_base = cuts_base + cuts_BDT;
+        //
+
+        std::vector<std::string> histoNames;
+        std::vector<std::string> cuts;
+
+        for(size_t iDecay=0; iDecay<nDecays; ++iDecay) {
+          const std::string decayFormula = Decays.at(iDecay).mother_.name_ + "To" + Decays.at(iDecay).daughters_;
+          histoNames.push_back("histos_" + decayFormula + "_ptBin" + std::to_string(ptBin));
+          histos.at(iDecay).push_back(new TH1D(histoNames.at(iDecay).c_str(), histoNames.at(iDecay).c_str(), binsX, minX, maxX));
+
+          const std::string cut = cuts_base + " && (fFlagMc == " + std::to_string(-Decays.at(iDecay).id_) + " || fFlagMc == " + std::to_string(Decays.at(iDecay).id_) + ")";
+          cuts.push_back(cut);
+
+          std::cout << cuts.back() << "\n";
+        }
+
         std::string name_DplusToPiKPi = std::string("histos_DplusToPiKPi_ptBin") + std::to_string(ptBin);
         std::string name_DplusToPiKPiPi0 = std::string("histos_DplusToPiKPiPi0_ptBin") + std::to_string(ptBin);
         std::string name_DplusToPiPiPi = std::string("histos_DplusToPiPiPi_ptBin") + std::to_string(ptBin);
@@ -276,14 +370,7 @@ void corrBkgLc(bool scaleByBrs = true,
         histos_XicToSPiPi.push_back(new TH1D(name_XicToSPiPi.c_str(), name_XicToSPiPi.c_str(), binsX, minX, maxX));
         histos_bkgSum.push_back(new TH1D(name_bkgSum.c_str(), name_bkgSum.c_str(), binsX, minX, maxX));
 
-        /// selections
-        // pt interval
-        std::string cuts_base = "";
-        cuts_base = cuts_base + std::to_string(ptMin) + std::string(" < fPt && fPt < ") + std::to_string(ptMax);
-        // bdt
-        std::string cuts_BDT = applyBdt ? std::string(" && fMlScoreFirstClass < ") + std::to_string(bdt.at(ptBin)) : std::string("");
-        cuts_base = cuts_base + cuts_BDT;
-        //
+
         std::string cuts_DplusToPiKPi = cuts_base + std::string(" && (fFlagMc == ") + std::to_string(-DplusToPiKPi) + std::string(" || fFlagMc == ") + std::to_string(DplusToPiKPi) + std::string(")");
         std::string cuts_DplusToPiKPiPi0 = cuts_base + std::string(" && (fFlagMc == ") + std::to_string(-DplusToPiKPiPi0) + std::string(" || fFlagMc == ") + std::to_string(DplusToPiKPiPi0) + std::string(")");
         std::string cuts_DplusToPiPiPi = cuts_base + std::string(" && (fFlagMc == ") + std::to_string(-DplusToPiPiPi) + std::string(" || fFlagMc == ") + std::to_string(DplusToPiPiPi) + std::string(")");
@@ -963,4 +1050,10 @@ std::vector<std::string> GetDFNames(const std::string& fileName) {
   fileIn->Close();
 
   return result;
+}
+
+int main() {
+  corrBkgLc();
+
+  return 0;
 }
