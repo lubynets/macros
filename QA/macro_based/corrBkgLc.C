@@ -19,6 +19,10 @@ std::string to_string_fixed_digits(I value,int digitsCount);
 //__________________________________________________________
 //__________________________________________________________
 //__________________________________________________________
+std::vector<std::string> GetDFNames(const std::string& fileName);
+//__________________________________________________________
+//__________________________________________________________
+//__________________________________________________________
 void setRowCols(const int size, int& rows, int& cols, int& w, int& h);
 //__________________________________________________________
 //__________________________________________________________
@@ -151,14 +155,16 @@ float pythiaBRScalingFactorXic = 1./( BRsXic_PYTHIA[XicToPKPi] + BRsXic_PYTHIA[X
 //__________________________________________________________
 //__________________________________________________________
 void corrBkgLc(bool scaleByBrs = true,
-               bool applyBdt = true,
-               //std::string filename = "/home/mattia/Documenti/cernbox/Documents/Trains/o2_validation/Hyperloop/SigmaC_from2025/MC/2025Jul08_HLtrain441330_LHC25e4_LcCorrBkg/AO2D.root", // low stat, old BDT
-               std::string filename = "~/Documenti/cernbox/Documents/Trains/o2_validation/Hyperloop/SigmaC_from2025/MC/2025Aug29_HLtrain483576_LHC25e4_fullStat_BdtSwappedPID_LcCorrBkg/merged_DF/AO2D.root",
-               std::string strdir = "DF_2307582993058732",
+               bool applyBdt = false,
+               std::string filename = "/home/oleksii/alidir/sandbox/AO2D.root",
                std::vector<float> ptMins = {1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 16}, //{1, 2, 4, 6, 8},
                std::vector<float> ptMaxs = {2, 3, 4, 5, 6, 7, 8, 10, 12, 16, 24}, //{2, 4, 6, 8, 12},
                std::vector<float> bdt = {0.06, 0.04, 0.04, 0.05, 0.1, 0.1, 0.1, 0.1, 0.1, 0.15, 0.2})
 {
+
+    const std::vector<std::string> dirNames = GetDFNames(filename);
+    TFile* file = TFile::Open(filename.c_str());
+
 
     const float minX = 2.1;
     const float maxX = 2.5;
@@ -170,11 +176,6 @@ void corrBkgLc(bool scaleByBrs = true,
     for(int i=0; i<NChannelsMain; i++) {
         colors.push_back(cols.At(i) + 9*i);
     }
-
-    /// Open the file and get the tree
-    TFile* file = TFile::Open(filename.c_str());
-    TTree* tree = nullptr;
-    file->GetObject(Form("%s/O2hfcandlclite", strdir.c_str()), tree);
 
     std::vector<TH1D*> histos_DplusToPiKPi = {};
     std::vector<TH1D*> histos_DplusToPiKPiPi0 = {};
@@ -332,35 +333,46 @@ void corrBkgLc(bool scaleByBrs = true,
         std::cout << cuts_XicToPKK << std::endl;
         std::cout << cuts_XicToSPiPi << std::endl;
 
-        /// TTree projections
-        // D+ channels
-        tree->Draw(Form("fM>>%s", name_DplusToPiKPi.c_str()), cuts_DplusToPiKPi.c_str(), "goff");
-        tree->Draw(Form("fM>>%s", name_DplusToPiKPiPi0.c_str()), cuts_DplusToPiKPiPi0.c_str(), "goff");
-        tree->Draw(Form("fM>>%s", name_DplusToPiPiPi.c_str()), cuts_DplusToPiPiPi.c_str(), "goff");
-        tree->Draw(Form("fM>>%s", name_DplusToPiKK.c_str()), cuts_DplusToPiKK.c_str(), "goff");
-        // Ds channels
-        tree->Draw(Form("fM>>%s", name_DsToPiKK.c_str()), cuts_DsToPiKK.c_str(), "goff");
-        tree->Draw(Form("fM>>%s", name_DsToPiKKPi0.c_str()), cuts_DsToPiKKPi0.c_str(), "goff");
-        tree->Draw(Form("fM>>%s", name_DsToPiPiK.c_str()), cuts_DsToPiPiK.c_str(), "goff");
-        tree->Draw(Form("fM>>%s", name_DsToPiPiPi.c_str()), cuts_DsToPiPiPi.c_str(), "goff");
-        tree->Draw(Form("fM>>%s", name_DsToPiPiPiPi0.c_str()), cuts_DsToPiPiPiPi0.c_str(), "goff");
-        // D* channels
-        tree->Draw(Form("fM>>%s", name_DstarToPiKPi.c_str()), cuts_DstarToPiKPi.c_str(), "goff");
-        tree->Draw(Form("fM>>%s", name_DstarToPiKPiPi0.c_str()), cuts_DstarToPiKPiPi0.c_str(), "goff");
-        tree->Draw(Form("fM>>%s", name_DstarToPiKPiPi0Pi0.c_str()), cuts_DstarToPiKPiPi0Pi0.c_str(), "goff");
-        tree->Draw(Form("fM>>%s", name_DstarToPiKK.c_str()), cuts_DstarToPiKK.c_str(), "goff");
-        tree->Draw(Form("fM>>%s", name_DstarToPiKKPi0.c_str()), cuts_DstarToPiKKPi0.c_str(), "goff");
-        tree->Draw(Form("fM>>%s", name_DstarToPiPiPi.c_str()), cuts_DstarToPiPiPi.c_str(), "goff");
-        tree->Draw(Form("fM>>%s", name_DstarToPiPiPiPi0.c_str()), cuts_DstarToPiPiPiPi0.c_str(), "goff");
-        // Lc channels
-        tree->Draw(Form("fM>>%s", name_LcToPKPi.c_str()), cuts_LcToPKPi.c_str(), "goff");
-        tree->Draw(Form("fM>>%s", name_LcToPKPiPi0.c_str()), cuts_LcToPKPiPi0.c_str(), "goff");
-        tree->Draw(Form("fM>>%s", name_LcToPPiPi.c_str()), cuts_LcToPPiPi.c_str(), "goff");
-        tree->Draw(Form("fM>>%s", name_LcToPKK.c_str()), cuts_LcToPKK.c_str(), "goff");
-        // Xic channels
-        tree->Draw(Form("fM>>%s", name_XicToPKPi.c_str()), cuts_XicToPKPi.c_str(), "goff");
-        tree->Draw(Form("fM>>%s", name_XicToPKK.c_str()), cuts_XicToPKK.c_str(), "goff");
-        tree->Draw(Form("fM>>%s", name_XicToSPiPi.c_str()), cuts_XicToSPiPi.c_str(), "goff");
+
+
+        /// Open the file and get the tree
+        for(const auto& dirName : dirNames) {
+            std::cout << "Processing " << dirName << "\n";
+            TTree* tree = file->Get<TTree>((dirName + "/O2hfcandlclite").c_str());
+
+            std::cout << "tree->GetEntries() = " << tree->GetEntries() << "\n";
+
+            /// TTree projections
+            // D+ channels
+            tree->Draw(Form("fM>>%s", name_DplusToPiKPi.c_str()), cuts_DplusToPiKPi.c_str(), "goff");
+            tree->Draw(Form("fM>>%s", name_DplusToPiKPiPi0.c_str()), cuts_DplusToPiKPiPi0.c_str(), "goff");
+            tree->Draw(Form("fM>>%s", name_DplusToPiPiPi.c_str()), cuts_DplusToPiPiPi.c_str(), "goff");
+            tree->Draw(Form("fM>>%s", name_DplusToPiKK.c_str()), cuts_DplusToPiKK.c_str(), "goff");
+            // Ds channels
+            tree->Draw(Form("fM>>%s", name_DsToPiKK.c_str()), cuts_DsToPiKK.c_str(), "goff");
+            tree->Draw(Form("fM>>%s", name_DsToPiKKPi0.c_str()), cuts_DsToPiKKPi0.c_str(), "goff");
+            tree->Draw(Form("fM>>%s", name_DsToPiPiK.c_str()), cuts_DsToPiPiK.c_str(), "goff");
+            tree->Draw(Form("fM>>%s", name_DsToPiPiPi.c_str()), cuts_DsToPiPiPi.c_str(), "goff");
+            tree->Draw(Form("fM>>%s", name_DsToPiPiPiPi0.c_str()), cuts_DsToPiPiPiPi0.c_str(), "goff");
+            // D* channels
+            tree->Draw(Form("fM>>%s", name_DstarToPiKPi.c_str()), cuts_DstarToPiKPi.c_str(), "goff");
+            tree->Draw(Form("fM>>%s", name_DstarToPiKPiPi0.c_str()), cuts_DstarToPiKPiPi0.c_str(), "goff");
+            tree->Draw(Form("fM>>%s", name_DstarToPiKPiPi0Pi0.c_str()), cuts_DstarToPiKPiPi0Pi0.c_str(), "goff");
+            tree->Draw(Form("fM>>%s", name_DstarToPiKK.c_str()), cuts_DstarToPiKK.c_str(), "goff");
+            tree->Draw(Form("fM>>%s", name_DstarToPiKKPi0.c_str()), cuts_DstarToPiKKPi0.c_str(), "goff");
+            tree->Draw(Form("fM>>%s", name_DstarToPiPiPi.c_str()), cuts_DstarToPiPiPi.c_str(), "goff");
+            tree->Draw(Form("fM>>%s", name_DstarToPiPiPiPi0.c_str()), cuts_DstarToPiPiPiPi0.c_str(), "goff");
+            // Lc channels
+            tree->Draw(Form("fM>>%s", name_LcToPKPi.c_str()), cuts_LcToPKPi.c_str(), "goff");
+            tree->Draw(Form("fM>>%s", name_LcToPKPiPi0.c_str()), cuts_LcToPKPiPi0.c_str(), "goff");
+            tree->Draw(Form("fM>>%s", name_LcToPPiPi.c_str()), cuts_LcToPPiPi.c_str(), "goff");
+            tree->Draw(Form("fM>>%s", name_LcToPKK.c_str()), cuts_LcToPKK.c_str(), "goff");
+            // Xic channels
+            tree->Draw(Form("fM>>%s", name_XicToPKPi.c_str()), cuts_XicToPKPi.c_str(), "goff");
+            tree->Draw(Form("fM>>%s", name_XicToPKK.c_str()), cuts_XicToPKK.c_str(), "goff");
+            tree->Draw(Form("fM>>%s", name_XicToSPiPi.c_str()), cuts_XicToSPiPi.c_str(), "goff");
+
+        }
 
 
         /// scale by BR values
@@ -617,6 +629,7 @@ void corrBkgLc(bool scaleByBrs = true,
 
         /// determine the maximum Y
         maxY = *std::max_element(max_values.begin(), max_values.end()) * 1.5;
+        maxY = std::max(maxY, 1.f);
 
         /// Draw stuff
         // D+ channels
@@ -864,6 +877,8 @@ void corrBkgLc(bool scaleByBrs = true,
         histos_bkgSum.at(ptBin)->Write();
     }
 
+    file->Close();
+
     return;
 }
 //__________________________________________________________
@@ -928,4 +943,24 @@ std::string to_string_fixed_digits(I value,int digitsCount)
     std::stringstream stream;
     stream << std::fixed << std::setprecision(digitsCount) <<value;
     return stream.str();
+}
+//__________________________________________________________
+//__________________________________________________________
+//__________________________________________________________
+std::vector<std::string> GetDFNames(const std::string& fileName) {
+  TFile* fileIn = TFile::Open(fileName.c_str());
+  if(fileIn == nullptr) {
+    throw std::runtime_error("fileIn == nullptr");
+  }
+
+  std::vector<std::string> result;
+  auto lok = fileIn->GetListOfKeys();
+  for(const auto& k : *lok) {
+    const std::string dirname = k->GetName();
+    if(dirname.substr(0, 2) != "DF") continue;
+    result.emplace_back(dirname);
+  }
+  fileIn->Close();
+
+  return result;
 }
