@@ -216,7 +216,7 @@ std::vector<Decay> Decays {
 //__________________________________________________________
 //__________________________________________________________
 //__________________________________________________________
-void corrBkgLc(const std::string& filename = "") {
+void corrBkgLc(const std::string& filename, const bool doRun=true) {
     const bool scaleByBrs = true;
     const bool applyBdt = true;
     const std::vector<float> sliceVarEdges{1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 16, 24};
@@ -225,8 +225,6 @@ void corrBkgLc(const std::string& filename = "") {
     const std::string sliceVarTextName{"#it{p}_{T}"};
     const std::string sliceVarUnit{"GeV/#it{c}"};
 
-//     std::vector<float> ptMins = {1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 16};
-//     std::vector<float> ptMaxs = {2, 3, 4, 5, 6, 7, 8, 10, 12, 16, 24};
     std::vector<float> bdt = {0.06, 0.04, 0.04, 0.05, 0.1, 0.1, 0.1, 0.1, 0.1, 0.15, 0.2};
 
     const size_t nDecays{Decays.size()};
@@ -235,7 +233,7 @@ void corrBkgLc(const std::string& filename = "") {
     const int indexDplusToPiKPi = std::distance(Decays.begin(), std::find_if(Decays.begin(), Decays.end(), [](const Decay& decay) { return decay.id_ == DplusToPiKPi; }));
 
     const std::vector<std::string> dirNames = GetDFNames(filename);
-//     const std::vector<std::string> dirNames = {"DF_2306213598582778"};
+//     const std::vector<std::string> dirNames = {"DF_2263624270445293"};
     TFile* file = TFile::Open(filename.c_str());
 
     const float minX = 2.1;
@@ -249,9 +247,9 @@ void corrBkgLc(const std::string& filename = "") {
         colors.push_back(cols.At(i) + 9*i);
     }
 
-    std::vector<std::vector<TH1D*>> histos;
+    std::vector<std::vector<TH1*>> histos;
     histos.resize(nDecays);
-    std::vector<TH1D*> histos_bkgSum = {};
+    std::vector<TH1*> histos_bkgSum = {};
 
     int col, row, w, h;
     setRowCols(sliceVarEdges.size()-1, col, row, w, h);
@@ -286,7 +284,7 @@ void corrBkgLc(const std::string& filename = "") {
         for(size_t iDecay=0; iDecay<nDecays; ++iDecay) {
           const std::string decayFormula = Decays.at(iDecay).mother_.name_ + "To" + Decays.at(iDecay).daughters_;
           histoNames.push_back("histos_" + decayFormula + "_" + sliceVarName + "Bin" + std::to_string(sliceVarBin));
-          histos.at(iDecay).push_back(new TH1D(histoNames.at(iDecay).c_str(), histoNames.at(iDecay).c_str(), binsX, minX, maxX));
+          histos.at(iDecay).emplace_back(doRun ? new TH1D(histoNames.at(iDecay).c_str(), histoNames.at(iDecay).c_str(), binsX, minX, maxX) : file->Get<TH1>((sliceVarName + "Bin" + std::to_string(sliceVarBin) + "/" + histoNames.back()).c_str()));
 
           const std::string cut = cuts_base + " && (fFlagMc == " + std::to_string(-Decays.at(iDecay).id_) + " || fFlagMc == " + std::to_string(Decays.at(iDecay).id_) + ")";
           cuts.push_back(cut);
@@ -294,8 +292,8 @@ void corrBkgLc(const std::string& filename = "") {
           std::cout << cuts.back() << "\n";
         }
 
-        std::string name_bkgSum = std::string("histos_bkgSum_" + sliceVarName + "Bin") + std::to_string(sliceVarBin);
-        histos_bkgSum.push_back(new TH1D(name_bkgSum.c_str(), name_bkgSum.c_str(), binsX, minX, maxX));
+        const std::string name_bkgSum = std::string("histos_bkgSum_" + sliceVarName + "Bin") + std::to_string(sliceVarBin);
+        histos_bkgSum.push_back(doRun ? new TH1D(name_bkgSum.c_str(), name_bkgSum.c_str(), binsX, minX, maxX) : file->Get<TH1>((sliceVarName + "Bin" + std::to_string(sliceVarBin) + "/" + name_bkgSum).c_str()));
 
         /// Open the file and get the tree
         for(const auto& dirName : dirNames) {
@@ -310,7 +308,7 @@ void corrBkgLc(const std::string& filename = "") {
         }
 
         /// scale by BR values
-        if (scaleByBrs) {
+        if (doRun && scaleByBrs) {
           for(size_t iDecay=0; iDecay<nDecays; ++iDecay) {
             const auto& decay = Decays.at(iDecay);
             histos.at(iDecay).back()->Scale(decay.br_pdg_ / (decay.mother_.pythia_br_scaling_factor_ * decay.br_pythia_));
@@ -325,7 +323,7 @@ void corrBkgLc(const std::string& filename = "") {
         for(size_t iDecay=0; iDecay<nDecays; ++iDecay) {
           const auto& decay = Decays.at(iDecay);
           const auto& histo = histos.at(iDecay).back();
-          if(decay.id_ != LcToPKPi) histos_bkgSum.back()->Add(histo); // this is the signal!
+          if(doRun && decay.id_ != LcToPKPi) histos_bkgSum.back()->Add(histo); // this is the signal!
 
           const auto& color = colors.at(decay.id_-1);
           histo->SetTitle(decay.formula_.c_str());
@@ -403,7 +401,7 @@ void corrBkgLc(const std::string& filename = "") {
     } /// end loop over pt intervals
 
     /// save stuff
-    TFile* fout = new TFile(Form("file_corrBkgPKPi_MC%s%s.root", scaleByBrs ? "_brScaled" : "", applyBdt ? "_bdtCuts" : ""), "recreate");
+    TFile* fout = new TFile(doRun ? Form("file_corrBkgPKPi_MC%s%s.root", scaleByBrs ? "_brScaled" : "", applyBdt ? "_bdtCuts" : "") : "fileOut.root", "recreate");
 //     for(int iMother=0; iMother<nMothers+1; ++iMother) {
 //       can.at(iMother)->Write();
 //     }
