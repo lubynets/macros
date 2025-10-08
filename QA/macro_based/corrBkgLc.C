@@ -184,51 +184,58 @@ struct Decay {
   int fill_style_;
 };
 std::vector<Decay> Decays {
-  {DplusToPiKPi,        Mothers[Dplus],    "PiKPi",        BRsDplus_PYTHIA[DplusToPiKPi],        BRsDplus_PDG[DplusToPiKPi],        "D^{+}#rightarrowK^{#minus}#pi^{+}#pi^{+}",                3004},
-  {DplusToPiKPiPi0,     Mothers[Dplus],    "PiKPiPi0",     BRsDplus_PYTHIA[DplusToPiKPiPi0],     BRsDplus_PDG[DplusToPiKPiPi0],     "D^{+}#rightarrowK^{#minus}#pi^{+}#pi^{+}#pi^{0}",         3005},
-  {DplusToPiPiPi,       Mothers[Dplus],    "PiPiPi",       BRsDplus_PYTHIA[DplusToPiPiPi],       BRsDplus_PDG[DplusToPiPiPi],       "D^{+}#rightarrow#pi^{#minus}#pi^{+}#pi^{+}",              3006},
-  {DplusToPiKK,         Mothers[Dplus],    "PiKK",         BRsDplus_PYTHIA[DplusToPiKK],         BRsDplus_PDG[DplusToPiKK],         "D^{+}#rightarrow#pi^{+}K^{#minus}K^{+}",                  3007},
+  {DplusToPiKPi,       Mothers[Dplus], "PiKPi",       BRsDplus_PYTHIA[DplusToPiKPi],    BRsDplus_PDG[DplusToPiKPi],    "D^{+}#rightarrowK^{#minus}#pi^{+}#pi^{+}",                3004},
+  {DplusToPiKPiPi0,    Mothers[Dplus], "PiKPiPi0",    BRsDplus_PYTHIA[DplusToPiKPiPi0], BRsDplus_PDG[DplusToPiKPiPi0], "D^{+}#rightarrowK^{#minus}#pi^{+}#pi^{+}#pi^{0}",         3005},
+  {DplusToPiPiPi,      Mothers[Dplus], "PiPiPi",      BRsDplus_PYTHIA[DplusToPiPiPi],   BRsDplus_PDG[DplusToPiPiPi],   "D^{+}#rightarrow#pi^{#minus}#pi^{+}#pi^{+}",              3006},
+  {DplusToPiKK,        Mothers[Dplus], "PiKK",        BRsDplus_PYTHIA[DplusToPiKK],     BRsDplus_PDG[DplusToPiKK],     "D^{+}#rightarrow#pi^{+}K^{#minus}K^{+}",                  3007},
 
-  {DsToPiKK,            Mothers[Ds],       "PiKK",         BRsDs_PYTHIA[DsToPiKK],               BRsDs_PDG[DsToPiKK],               "D_{s}^{+}#rightarrowK^{#minus}#pi^{+}#pi^{+}",             3004},
-  {DsToPiKKPi0,         Mothers[Ds],       "PiKKPi0",      BRsDs_PYTHIA[DsToPiKKPi0],            BRsDs_PDG[DsToPiKKPi0],            "D_{s}^{+}#rightarrowK^{#minus}#pi^{+}#pi^{+}#pi^{0}",      3005},
-  {DsToPiPiK,           Mothers[Ds],       "PiPiK",        BRsDs_PYTHIA[DsToPiPiK],              BRsDs_PDG[DsToPiPiK],              "D_{s}^{+}#rightarrowK^{+}#pi^{+}#pi^{#minus}",             3006},
-  {DsToPiPiPi,          Mothers[Ds],       "PiPiPi",       BRsDs_PYTHIA[DsToPiPiPi],             BRsDs_PDG[DsToPiPiPi],             "D_{s}^{+}#rightarrow#pi^{+}#pi^{#minus}#pi^{+}",           3007},
-  {DsToPiPiPiPi0,       Mothers[Ds],       "PiPiPiPi0",    BRsDs_PYTHIA[DsToPiPiPiPi0],          BRsDs_PDG[DsToPiPiPiPi0],          "D_{s}^{+}#rightarrow#pi^{+}#pi^{#minus}#pi^{+}#pi^{0}",    3008},
+  {DsToPiKK,           Mothers[Ds],    "PiKK",        BRsDs_PYTHIA[DsToPiKK],           BRsDs_PDG[DsToPiKK],           "D_{s}^{+}#rightarrowK^{#minus}#pi^{+}#pi^{+}",            3004},
+  {DsToPiKKPi0,        Mothers[Ds],    "PiKKPi0",     BRsDs_PYTHIA[DsToPiKKPi0],        BRsDs_PDG[DsToPiKKPi0],        "D_{s}^{+}#rightarrowK^{#minus}#pi^{+}#pi^{+}#pi^{0}",     3005},
+  {DsToPiPiK,          Mothers[Ds],    "PiPiK",       BRsDs_PYTHIA[DsToPiPiK],          BRsDs_PDG[DsToPiPiK],          "D_{s}^{+}#rightarrowK^{+}#pi^{+}#pi^{#minus}",            3006},
+  {DsToPiPiPi,         Mothers[Ds],    "PiPiPi",      BRsDs_PYTHIA[DsToPiPiPi],         BRsDs_PDG[DsToPiPiPi],         "D_{s}^{+}#rightarrow#pi^{+}#pi^{#minus}#pi^{+}",          3007},
+  {DsToPiPiPiPi0,      Mothers[Ds],    "PiPiPiPi0",   BRsDs_PYTHIA[DsToPiPiPiPi0],      BRsDs_PDG[DsToPiPiPiPi0],      "D_{s}^{+}#rightarrow#pi^{+}#pi^{#minus}#pi^{+}#pi^{0}",   3008},
 
-  {DstarToPiKPi,        Mothers[Dstar],    "PiKPi",        BRsD0_PYTHIA[DstarToPiKPi],            BRsD0_PDG[DstarToPiKPi],          "D^{*+}#rightarrow#pi^{+}K^{#minus}#pi^{+}",                3004},
-  {DstarToPiKPiPi0,     Mothers[Dstar],    "PiKPiPi0",     BRsD0_PYTHIA[DstarToPiKPiPi0],         BRsD0_PDG[DstarToPiKPiPi0],       "D^{*+}#rightarrow#pi^{+}K^{#minus}#pi^{+}#pi^{0}",         3005},
-  {DstarToPiKPiPi0Pi0,  Mothers[Dstar],    "PiKPiPi0Pi0",  BRsD0_PYTHIA[DstarToPiKPiPi0Pi0],      BRsD0_PDG[DstarToPiKPiPi0Pi0],    "D^{*+}#rightarrow#pi^{+}K^{#minus}#pi^{+}#pi^{0}#pi^{0}",  3006},
-  {DstarToPiKK,         Mothers[Dstar],    "PiKK",         BRsD0_PYTHIA[DstarToPiKK],             BRsD0_PDG[DstarToPiKK],           "D^{*+}#rightarrow#pi^{+}K^{#minus}K^{+}",                  3007},
-  {DstarToPiKKPi0,      Mothers[Dstar],    "PiKKPi0",      BRsD0_PYTHIA[DstarToPiKKPi0],          BRsD0_PDG[DstarToPiKKPi0],        "D^{*+}#rightarrow#pi^{+}K^{#minus}K^{+}#pi^{0}",           3008},
-  {DstarToPiPiPi,       Mothers[Dstar],    "PiPiPi",       BRsD0_PYTHIA[DstarToPiPiPi],           BRsD0_PDG[DstarToPiPiPi],         "D^{*+}#rightarrow#pi^{+}#pi^{#minus}#pi^{+}",              3009},
-  {DstarToPiPiPiPi0,    Mothers[Dstar],    "PiPiPiPi0",    BRsD0_PYTHIA[DstarToPiPiPiPi0],        BRsD0_PDG[DstarToPiPiPiPi0],      "D^{*+}#rightarrow#pi^{+}#pi^{#minus}#pi^{+}#pi^{0}",       3010},
+  {DstarToPiKPi,       Mothers[Dstar], "PiKPi",       BRsD0_PYTHIA[DstarToPiKPi],       BRsD0_PDG[DstarToPiKPi],       "D^{*+}#rightarrow#pi^{+}K^{#minus}#pi^{+}",               3004},
+  {DstarToPiKPiPi0,    Mothers[Dstar], "PiKPiPi0",    BRsD0_PYTHIA[DstarToPiKPiPi0],    BRsD0_PDG[DstarToPiKPiPi0],    "D^{*+}#rightarrow#pi^{+}K^{#minus}#pi^{+}#pi^{0}",        3005},
+  {DstarToPiKPiPi0Pi0, Mothers[Dstar], "PiKPiPi0Pi0", BRsD0_PYTHIA[DstarToPiKPiPi0Pi0], BRsD0_PDG[DstarToPiKPiPi0Pi0], "D^{*+}#rightarrow#pi^{+}K^{#minus}#pi^{+}#pi^{0}#pi^{0}", 3006},
+  {DstarToPiKK,        Mothers[Dstar], "PiKK",        BRsD0_PYTHIA[DstarToPiKK],        BRsD0_PDG[DstarToPiKK],        "D^{*+}#rightarrow#pi^{+}K^{#minus}K^{+}",                 3007},
+  {DstarToPiKKPi0,     Mothers[Dstar], "PiKKPi0",     BRsD0_PYTHIA[DstarToPiKKPi0],     BRsD0_PDG[DstarToPiKKPi0],     "D^{*+}#rightarrow#pi^{+}K^{#minus}K^{+}#pi^{0}",          3008},
+  {DstarToPiPiPi,      Mothers[Dstar], "PiPiPi",      BRsD0_PYTHIA[DstarToPiPiPi],      BRsD0_PDG[DstarToPiPiPi],      "D^{*+}#rightarrow#pi^{+}#pi^{#minus}#pi^{+}",             3009},
+  {DstarToPiPiPiPi0,   Mothers[Dstar], "PiPiPiPi0",   BRsD0_PYTHIA[DstarToPiPiPiPi0],   BRsD0_PDG[DstarToPiPiPiPi0],   "D^{*+}#rightarrow#pi^{+}#pi^{#minus}#pi^{+}#pi^{0}",      3010},
 
-  {LcToPKPi,            Mothers[Lc],       "PKPi",         BRsLc_PYTHIA[LcToPKPi],                BRsLc_PDG[LcToPKPi],              "#Lambda_{c}^{+}#rightarrowpK^{#minus}#pi^{+}",             3001},
-  {LcToPKPiPi0,         Mothers[Lc],       "PKPiPi0",      BRsLc_PYTHIA[LcToPKPiPi0],             BRsLc_PDG[LcToPKPiPi0],           "#Lambda_{c}^{+}#rightarrowpK^{#minus}#pi^{+}#pi^{0}",      3004},
-  {LcToPPiPi,           Mothers[Lc],       "PPiPi",        BRsLc_PYTHIA[LcToPPiPi],               BRsLc_PDG[LcToPPiPi],             "#Lambda_{c}^{+}#rightarrowp#pi^{#minus}#pi^{+}",           3005},
-  {LcToPKK,             Mothers[Lc],       "PKK",          BRsLc_PYTHIA[LcToPKK],                 BRsLc_PDG[LcToPKK],               "#Lambda_{c}^{+}#rightarrowpK^{#minus}K^{+}",               3006},
+  {LcToPKPi,           Mothers[Lc],    "PKPi",        BRsLc_PYTHIA[LcToPKPi],           BRsLc_PDG[LcToPKPi],           "#Lambda_{c}^{+}#rightarrowpK^{#minus}#pi^{+}",            3001},
+  {LcToPKPiPi0,        Mothers[Lc],    "PKPiPi0",     BRsLc_PYTHIA[LcToPKPiPi0],        BRsLc_PDG[LcToPKPiPi0],        "#Lambda_{c}^{+}#rightarrowpK^{#minus}#pi^{+}#pi^{0}",     3004},
+  {LcToPPiPi,          Mothers[Lc],    "PPiPi",       BRsLc_PYTHIA[LcToPPiPi],          BRsLc_PDG[LcToPPiPi],          "#Lambda_{c}^{+}#rightarrowp#pi^{#minus}#pi^{+}",          3005},
+  {LcToPKK,            Mothers[Lc],    "PKK",         BRsLc_PYTHIA[LcToPKK],            BRsLc_PDG[LcToPKK],            "#Lambda_{c}^{+}#rightarrowpK^{#minus}K^{+}",              3006},
 
-  {XicToPKPi,           Mothers[Xic],      "PKPi",         BRsXic_PYTHIA[XicToPKPi],              BRsXic_PDG[XicToPKPi],            "#Xi_{c}^{+}#rightarrowpK^{#minus}#pi^{+}",                 3004},
-  {XicToPKK,            Mothers[Xic],      "PKK",          BRsXic_PYTHIA[XicToPKK],               BRsXic_PDG[XicToPKK],             "#Xi_{c}^{+}#rightarrowpK^{#minus}K^{+}",                   3005},
-  {XicToSPiPi,          Mothers[Xic],      "SPiPi",        BRsXic_PYTHIA[XicToSPiPi],             BRsXic_PDG[XicToSPiPi],           "#Xi_{c}^{+}#rightarrow#Sigma^{+}#pi^{#minus}#pi^{+}",      3006},
+  {XicToPKPi,          Mothers[Xic],   "PKPi",        BRsXic_PYTHIA[XicToPKPi],         BRsXic_PDG[XicToPKPi],         "#Xi_{c}^{+}#rightarrowpK^{#minus}#pi^{+}",                3004},
+  {XicToPKK,           Mothers[Xic],   "PKK",         BRsXic_PYTHIA[XicToPKK],          BRsXic_PDG[XicToPKK],          "#Xi_{c}^{+}#rightarrowpK^{#minus}K^{+}",                  3005},
+  {XicToSPiPi,         Mothers[Xic],   "SPiPi",       BRsXic_PYTHIA[XicToSPiPi],        BRsXic_PDG[XicToSPiPi],        "#Xi_{c}^{+}#rightarrow#Sigma^{+}#pi^{#minus}#pi^{+}",     3006},
 };
 
 //__________________________________________________________
 //__________________________________________________________
 //__________________________________________________________
-void corrBkgLc(bool scaleByBrs = true,
-               bool applyBdt = false,
-               std::string filename = "/home/oleksii/alidir/sandbox/AO2D.root",
-               std::vector<float> ptMins = {1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 16}, //{1, 2, 4, 6, 8},
-               std::vector<float> ptMaxs = {2, 3, 4, 5, 6, 7, 8, 10, 12, 16, 24}, //{2, 4, 6, 8, 12},
-               std::vector<float> bdt = {0.06, 0.04, 0.04, 0.05, 0.1, 0.1, 0.1, 0.1, 0.1, 0.15, 0.2})
-{
+void corrBkgLc(const std::string& filename = "") {
+    const bool scaleByBrs = true;
+    const bool applyBdt = true;
+    const std::vector<float> sliceVarEdges{1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 16, 24};
+    const std::string sliceVarName{"pt"};
+    const std::string sliceVarTreeName{"fPt"};
+    const std::string sliceVarTextName{"#it{p}_{T}"};
+    const std::string sliceVarUnit{"GeV/#it{c}"};
+
+//     std::vector<float> ptMins = {1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 16};
+//     std::vector<float> ptMaxs = {2, 3, 4, 5, 6, 7, 8, 10, 12, 16, 24};
+    std::vector<float> bdt = {0.06, 0.04, 0.04, 0.05, 0.1, 0.1, 0.1, 0.1, 0.1, 0.15, 0.2};
+
     const size_t nDecays{Decays.size()};
     const size_t nMothers{Mothers.size()};
     const int indexLcToPKPi = std::distance(Decays.begin(), std::find_if(Decays.begin(), Decays.end(), [](const Decay& decay) { return decay.id_ == LcToPKPi; }));
     const int indexDplusToPiKPi = std::distance(Decays.begin(), std::find_if(Decays.begin(), Decays.end(), [](const Decay& decay) { return decay.id_ == DplusToPiKPi; }));
 
-    const std::vector<std::string> dirNames = GetDFNames(filename)/*{"DF_2263624225188351"}*/;
+    const std::vector<std::string> dirNames = GetDFNames(filename);
+//     const std::vector<std::string> dirNames = {"DF_2306213598582778"};
     TFile* file = TFile::Open(filename.c_str());
 
     const float minX = 2.1;
@@ -244,12 +251,10 @@ void corrBkgLc(bool scaleByBrs = true,
 
     std::vector<std::vector<TH1D*>> histos;
     histos.resize(nDecays);
-
     std::vector<TH1D*> histos_bkgSum = {};
 
-
     int col, row, w, h;
-    setRowCols(ptMins.size(), col, row, w, h);
+    setRowCols(sliceVarEdges.size()-1, col, row, w, h);
 
     std::vector<TCanvas*> can;
     for(size_t iMother=0; iMother<nMothers+1; ++iMother) {
@@ -259,20 +264,19 @@ void corrBkgLc(bool scaleByBrs = true,
     }
 
     /// loop over pt intervals
-    for(int ptBin=0; ptBin<ptMins.size(); ptBin++) {
-        const float ptMin = ptMins.at(ptBin);
-        const float ptMax = ptMaxs.at(ptBin);
-        std::string title = to_string_fixed_digits(ptMin, 1) + std::string(" < #it{p}_{T} < ") + to_string_fixed_digits(ptMax, 1) + std::string(" GeV/#it{c}");
-//         std::vector<float> max_values = {};
+    for(int sliceVarBin=0; sliceVarBin<sliceVarEdges.size()-1; sliceVarBin++) {
+        const float sliceVarMin = sliceVarEdges.at(sliceVarBin);
+        const float sliceVarMax = sliceVarEdges.at(sliceVarBin+1);
+        const std::string title = to_string_fixed_digits(sliceVarMin, 1) + std::string(" < " + sliceVarTextName + " < ") + to_string_fixed_digits(sliceVarMax, 1) + std::string(" " + sliceVarUnit);
         double maxY{1.};
 
         /// setup histograms
         /// selections
         // pt interval
         std::string cuts_base = "";
-        cuts_base = cuts_base + std::to_string(ptMin) + std::string(" < fPt && fPt < ") + std::to_string(ptMax);
+        cuts_base = cuts_base + std::to_string(sliceVarMin) + std::string(" < " + sliceVarTreeName + " && " +  sliceVarTreeName + " < ") + std::to_string(sliceVarMax);
         // bdt
-        std::string cuts_BDT = applyBdt ? std::string(" && fMlScoreFirstClass < ") + std::to_string(bdt.at(ptBin)) : std::string("");
+        std::string cuts_BDT = applyBdt ? std::string(" && fMlScoreFirstClass < ") + std::to_string(bdt.at(sliceVarBin)) : std::string("");
         cuts_base = cuts_base + cuts_BDT;
         //
 
@@ -281,7 +285,7 @@ void corrBkgLc(bool scaleByBrs = true,
 
         for(size_t iDecay=0; iDecay<nDecays; ++iDecay) {
           const std::string decayFormula = Decays.at(iDecay).mother_.name_ + "To" + Decays.at(iDecay).daughters_;
-          histoNames.push_back("histos_" + decayFormula + "_ptBin" + std::to_string(ptBin));
+          histoNames.push_back("histos_" + decayFormula + "_" + sliceVarName + "Bin" + std::to_string(sliceVarBin));
           histos.at(iDecay).push_back(new TH1D(histoNames.at(iDecay).c_str(), histoNames.at(iDecay).c_str(), binsX, minX, maxX));
 
           const std::string cut = cuts_base + " && (fFlagMc == " + std::to_string(-Decays.at(iDecay).id_) + " || fFlagMc == " + std::to_string(Decays.at(iDecay).id_) + ")";
@@ -290,7 +294,7 @@ void corrBkgLc(bool scaleByBrs = true,
           std::cout << cuts.back() << "\n";
         }
 
-        std::string name_bkgSum = std::string("histos_bkgSum_ptBin") + std::to_string(ptBin);
+        std::string name_bkgSum = std::string("histos_bkgSum_" + sliceVarName + "Bin") + std::to_string(sliceVarBin);
         histos_bkgSum.push_back(new TH1D(name_bkgSum.c_str(), name_bkgSum.c_str(), binsX, minX, maxX));
 
         /// Open the file and get the tree
@@ -316,6 +320,7 @@ void corrBkgLc(bool scaleByBrs = true,
         if(indexLcToPKPi < nDecays) std::cout << "Lc: " << histos.at(indexLcToPKPi).back()->Integral() << std::endl;
         if(indexDplusToPiKPi < nDecays) std::cout << "D+: " << histos.at(indexDplusToPiKPi).back()->Integral() << std::endl;
 
+        const float binwidth = histos.at(0).back()->GetBinWidth(1) * 1000; // MeV/c2
         /// create the template with the sum of correlated background sources
         for(size_t iDecay=0; iDecay<nDecays; ++iDecay) {
           const auto& decay = Decays.at(iDecay);
@@ -329,10 +334,10 @@ void corrBkgLc(bool scaleByBrs = true,
           histo->SetMarkerColor(color);
           histo->SetFillColor(color);
           histo->SetFillStyle(decay.fill_style_);
+          histo->GetXaxis()->SetTitle("#it{M}(pK#pi) (GeV/#it{c}^{2})");
+          histo->GetYaxis()->SetTitle(Form("counts/%.0f MeV/#it{c}^{2}", binwidth));
           maxY = std::max(maxY, histo->GetMaximum());
         }
-        const float binwidth = histos.at(0).back()->GetBinWidth(1) * 1000; // MeV/c2
-
 
         // sum
         histos_bkgSum.back()->SetTitle("sum of backgrounds");
@@ -346,7 +351,7 @@ void corrBkgLc(bool scaleByBrs = true,
         frames.resize(nMothers+1);
         for(int iMother=0; iMother<nMothers+1; ++iMother) {
           auto& frame = frames.at(iMother);
-          frame = can.at(iMother)->cd(ptBin+1)->DrawFrame(2.1, 0.00000001, 2.5, maxY, title.c_str());
+          frame = can.at(iMother)->cd(sliceVarBin+1)->DrawFrame(2.1, 0.00000001, 2.5, 1.2*maxY, title.c_str());
           frame->GetXaxis()->SetTitle("#it{M}(pK#pi) (GeV/#it{c}^{2})");
           frame->GetYaxis()->SetTitle(Form("counts/%.0f MeV/#it{c}^{2}", binwidth));
           frame->SetLineWidth(0);
@@ -363,12 +368,12 @@ void corrBkgLc(bool scaleByBrs = true,
           gPad->Update();
         }
 
-        if(ptBin == row*col-2 || ptBin == row*col-1) {
-            int ptBin_legend = ptBin;
+        if(sliceVarBin == row*col-2 || sliceVarBin == row*col-1) {
+            int sliceVarBin_legend = sliceVarBin;
             float minY_legend = 0.6;
             float maxY_legend = 0.8;
-            if (ptBin == row*col-2) {
-                ptBin_legend++;
+            if (sliceVarBin == row*col-2) {
+                sliceVarBin_legend++;
                 minY_legend = 0.2;
                 maxY_legend = 0.85;
             }
@@ -388,7 +393,7 @@ void corrBkgLc(bool scaleByBrs = true,
                 leg->SetNColumns(2);
                 leg->AddEntry(histos_bkgSum.back());
               }
-              can.at(iMother)->cd(ptBin_legend+1);
+              can.at(iMother)->cd(sliceVarBin_legend+1);
               leg->Draw();
               gPad->Update();
             }
@@ -399,17 +404,18 @@ void corrBkgLc(bool scaleByBrs = true,
 
     /// save stuff
     TFile* fout = new TFile(Form("file_corrBkgPKPi_MC%s%s.root", scaleByBrs ? "_brScaled" : "", applyBdt ? "_bdtCuts" : ""), "recreate");
-    for(int iMother=0; iMother<nMothers+1; ++iMother) {
-      can.at(iMother)->Write();
-    }
-    for(int ptBin=0; ptBin<ptMins.size(); ptBin++) {
-        fout ->cd();
-        TDirectory* td = fout->mkdir(Form("ptBin%d", ptBin));
+//     for(int iMother=0; iMother<nMothers+1; ++iMother) {
+//       can.at(iMother)->Write();
+//     }
+    can.at(nMothers)->Write();
+    for(int sliceVarBin=0; sliceVarBin<sliceVarEdges.size()-1; sliceVarBin++) {
+        fout->cd();
+        TDirectory* td = fout->mkdir(Form("%sBin%d", sliceVarName.c_str(), sliceVarBin));
         td->cd();
         for(int iDecay=0; iDecay<nDecays; ++iDecay) {
-          histos.at(iDecay).at(ptBin)->Write();
+          histos.at(iDecay).at(sliceVarBin)->Write();
         }
-        histos_bkgSum.at(ptBin)->Write();
+        histos_bkgSum.at(sliceVarBin)->Write();
     }
     fout->Close();
 
