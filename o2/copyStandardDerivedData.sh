@@ -39,6 +39,8 @@ for i in `seq $start $end`; do
    patterns_single_file=${file_name[i]}
 
    for path in `sed 's/,/\n/g' ${HYPERLOOP_OUTPUT_DIRECTORIES}`; do
+      echo "Processing $path"
+      echo
       if [[ $path == *"/AOD" ]]; then
          path="${path%"/AOD"}"
       fi
@@ -62,16 +64,24 @@ for i in `seq $start $end`; do
       remote_files=$(alien_find -r "$path" "$pattern")
       while read -r remote; do
       if [[ -z "$remote" ]]; then
+         echo "Not copying $remote since it is not found"
+         echo
          continue
       fi
       # Extract basename (filename)
       fname="${remote#"$parent_dir"/}"
-      if [[ -f "$fname" ]]; then
+      fname_size="-999"
+      if [[ -f $fname ]]; then
+         fname_size=$(ls -l $fname | awk '{print $5}')
+      fi
+      remote_size=$(alien_ls -l $remote | awk '{print $4}')
+      if [[ $fname_size -eq $remote_size ]]; then
          echo "Skipping $fname - already exists"
       else
          echo "Copying $fname from $remote"
          alien_cp $remote file:./$fname
       fi
+      echo
       done <<< "$remote_files"
    done
 done
