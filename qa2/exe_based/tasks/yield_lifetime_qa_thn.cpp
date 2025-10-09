@@ -145,6 +145,8 @@ int main(int argc, char* argv[]) {
   const std::string fileName = argv[1];
   const std::string filePtWeightName = argc > 2 ? argv[2] : "";
 
+  const bool isDoWeight = !filePtWeightName.empty();
+
   FillYieldRec(fileName, filePtWeightName);
   FillYieldGen(fileName, filePtWeightName);
 
@@ -155,7 +157,7 @@ int main(int argc, char* argv[]) {
   TFile* fileOut = OpenFileWithNullptrCheck("yield_lifetime_qa_thn.root", "update");
   for(const auto& promptness : promptnesses) {
     for(const auto& weightPresence : weightsPresences) {
-      if(promptness.first == "nonprompt" && weightPresence == "_W") continue;
+      if((promptness.first == "nonprompt" || !isDoWeight) && weightPresence == "_W") continue;
       std::vector<std::string> histoGenNames;
       histoGenNames.reserve(pTCutNames.size());
       for (const auto& ptcn : pTCutNames) {
@@ -172,7 +174,7 @@ int main(int argc, char* argv[]) {
     }
     for (const auto& bslv : bdtSignalLowerValues) {
       for(const auto& weightPresence : weightsPresences) {
-        if(promptness.first == "nonprompt" && weightPresence == "_W") continue;
+        if((promptness.first == "nonprompt" || !isDoWeight) && weightPresence == "_W") continue;
         std::vector<std::string> histoRecNames;
         histoRecNames.reserve(pTCutNames.size());
         for (const auto& ptcn : pTCutNames) {
