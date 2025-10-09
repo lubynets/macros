@@ -27,6 +27,10 @@ void setRowCols(const int size, int& rows, int& cols, int& w, int& h);
 //__________________________________________________________
 //__________________________________________________________
 //__________________________________________________________
+std::string ReadNthLine(const std::string& fileName);
+//__________________________________________________________
+//__________________________________________________________
+//__________________________________________________________
 /// Channels taken from here: https://github.com/AliceO2Group/O2Physics/blob/master/PWGHF/Core/DecayChannels.h#L61-L95 (8th July 2025)
 /// @brief 3-prong candidates: main channels
 enum DecayChannelMain : int8_t {
@@ -216,7 +220,9 @@ std::vector<Decay> Decays {
 //__________________________________________________________
 //__________________________________________________________
 //__________________________________________________________
-void corrBkgLc(const std::string& filename, const bool doRun=true) {
+void corrBkgLc(const std::string& filenameIn, const bool doRun=true) {
+    const std::string filename = ReadNthLine(filenameIn);
+
     const bool scaleByBrs = true;
     const bool applyBdt = true;
     const std::vector<float> sliceVarEdges{1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 16, 24};
@@ -401,7 +407,7 @@ void corrBkgLc(const std::string& filename, const bool doRun=true) {
     } /// end loop over pt intervals
 
     /// save stuff
-    TFile* fout = new TFile(doRun ? Form("file_corrBkgPKPi_MC%s%s.root", scaleByBrs ? "_brScaled" : "", applyBdt ? "_bdtCuts" : "") : "fileOut.root", "recreate");
+    TFile* fout = new TFile(doRun ? "corrBkgLc.root" : "corrBkgLc.canvaser.root", "recreate");
 //     for(int iMother=0; iMother<nMothers+1; ++iMother) {
 //       can.at(iMother)->Write();
 //     }
@@ -414,6 +420,13 @@ void corrBkgLc(const std::string& filename, const bool doRun=true) {
           histos.at(iDecay).at(sliceVarBin)->Write();
         }
         histos_bkgSum.at(sliceVarBin)->Write();
+    }
+    if(doRun) {
+      TNamed metaBrScaled("brScaled", scaleByBrs ? "Yes" : "No");
+      TNamed metaBdtCuts("bdtCuts", applyBdt ? "Yes" : "No");
+      fout->cd();
+      metaBrScaled.Write();
+      metaBdtCuts.Write();
     }
     fout->Close();
 
@@ -501,6 +514,27 @@ std::vector<std::string> GetDFNames(const std::string& fileName) {
     result.emplace_back(dirname);
   }
   fileIn->Close();
+
+  return result;
+}
+//__________________________________________________________
+//__________________________________________________________
+//__________________________________________________________
+std::string ReadNthLine(const std::string& fileName) {
+  if(fileName.find(':') == std::string::npos) return fileName;
+
+  std::string result;
+  const size_t colonPosition = fileName.find(':');
+  const std::string fileListName = fileName.substr(0, colonPosition);
+  const std::string fileLineNumberStr = fileName.substr(colonPosition + 1);
+  const int fileLineNumberInt = std::stoi(fileLineNumberStr);
+
+  std::ifstream fileList(fileListName);
+  if (!fileList.is_open()) throw std::runtime_error("ReadNthLine() - the fileList " + fileListName + " is missing!");
+
+  for(size_t iLine=0; iLine<fileLineNumberInt; ++iLine) {
+    if (!std::getline(fileList, result)) throw std::runtime_error("ReadNthLine() - the EOF of fileList " + fileListName + " reached before line " + fileLineNumberStr);
+  }
 
   return result;
 }
