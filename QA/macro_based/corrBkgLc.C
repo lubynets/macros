@@ -217,6 +217,8 @@ std::vector<Decay> Decays {
   {XicToSPiPi,         Mothers[Xic],   "SPiPi",       BRsXic_PYTHIA[XicToSPiPi],        BRsXic_PDG[XicToSPiPi],        "#Xi_{c}^{+}#rightarrow#Sigma^{+}#pi^{#minus}#pi^{+}",     3006},
 };
 
+std::string FromCtToProperLifetimePs{"33.35641"};
+
 //__________________________________________________________
 //__________________________________________________________
 //__________________________________________________________
@@ -225,13 +227,35 @@ void corrBkgLc(const std::string& filenameIn, const bool doRun=true) {
 
     const bool scaleByBrs = true;
     const bool applyBdt = true;
-    const std::vector<float> sliceVarEdges{1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 16, 24};
-    const std::string sliceVarName{"pt"};
-    const std::string sliceVarTreeName{"fPt"};
-    const std::string sliceVarTextName{"#it{p}_{T}"};
-    const std::string sliceVarUnit{"GeV/#it{c}"};
+    const bool eraseLcToPKPi = false;
+
+//     const std::vector<float> sliceVarEdges{1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 16, 24};
+//     const std::string sliceVarName{"pt"};
+//     const std::string sliceVarTreeName{"fPt"};
+//     const std::string sliceVarTextName{"#it{p}_{T}"};
+//     const std::string sliceVarUnit{"GeV/#it{c}"};
+
+    const std::vector<float> sliceVarEdges{0.2, 0.35, 0.5, 0.7, 0.9, 1.6};
+    const std::string sliceVarName{"T"};
+    const std::string sliceVarTreeName{"(fCt * " + FromCtToProperLifetimePs + ")"};
+    const std::string sliceVarTextName{"#it{T}"};
+    const std::string sliceVarUnit{"ps"};
+
+    const std::vector<float> pTRanges = {1, 3, 5, 8, 12, 20};
+    const std::vector<float> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.05, 0.08};
+    const std::string ptTreeName = "fPt";
+    const std::string bdtTreeName = "fMlScoreFirstClass";
+    if(bdtBgUpperValuesVsPt.size() != pTRanges.size() - 1) throw std::runtime_error("bdtUpperValuesVsPt.size() != pTRanges.size() - 1");
+    std::string cuts_bdt;
+    for(size_t iPt=0, nPts=pTRanges.size()-1; iPt<nPts; ++iPt) {
+      cuts_bdt = cuts_bdt + "( " + std::to_string(pTRanges.at(iPt)) + " <= " + ptTreeName + " && " + ptTreeName + " < " + std::to_string(pTRanges.at(iPt+1)) + " && " + bdtTreeName + " < " + std::to_string(bdtBgUpperValuesVsPt.at(iPt)) + " )";
+      if(iPt<nPts-1) cuts_bdt = cuts_bdt + " || ";
+    }
+    std::cout << "cuts_bdt = " << cuts_bdt << "\n";
 
     std::vector<float> bdt = {0.06, 0.04, 0.04, 0.05, 0.1, 0.1, 0.1, 0.1, 0.1, 0.15, 0.2};
+
+    if(eraseLcToPKPi) Decays.erase(std::remove_if(Decays.begin(), Decays.end(), [](const Decay& decay) { return decay.id_ == LcToPKPi; }), Decays.end());
 
     const size_t nDecays{Decays.size()};
     const size_t nMothers{Mothers.size()};
@@ -277,11 +301,9 @@ void corrBkgLc(const std::string& filenameIn, const bool doRun=true) {
         /// setup histograms
         /// selections
         // pt interval
-        std::string cuts_base = "";
-        cuts_base = cuts_base + std::to_string(sliceVarMin) + std::string(" < " + sliceVarTreeName + " && " +  sliceVarTreeName + " < ") + std::to_string(sliceVarMax);
+        std::string cuts_base = std::to_string(sliceVarMin) + std::string(" < " + sliceVarTreeName + " && " +  sliceVarTreeName + " < ") + std::to_string(sliceVarMax);
         // bdt
-        std::string cuts_BDT = applyBdt ? std::string(" && fMlScoreFirstClass < ") + std::to_string(bdt.at(sliceVarBin)) : std::string("");
-        cuts_base = cuts_base + cuts_BDT;
+        if(applyBdt) cuts_base = cuts_base + " && (" + cuts_bdt + ")";
         //
 
         std::vector<std::string> histoNames;
