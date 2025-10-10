@@ -23,10 +23,14 @@ void tpc_qa(const std::string& fileName) {
   Float_t fBetaGamma;
   Float_t fTPCSignal;
   Float_t fNSigTPC;
+  Float_t fNSigTOF;
 
   std::array<TH2D*, Particles::nParticles> hPdEdx;
-  std::array<TH1D*, Particles::nParticles> hNSigma;
-  std::array<TH2D*, Particles::nParticles> hPNSigma;
+  std::array<TH1D*, Particles::nParticles> hNSigmaTpc;
+  std::array<TH2D*, Particles::nParticles> hPNSigmaTpc;
+  std::array<TH1D*, Particles::nParticles> hNSigmaTof;
+  std::array<TH2D*, Particles::nParticles> hPNSigmaTof;
+
 
   const int nBinsP = 100;
   const double lowP = 0.1;
@@ -54,14 +58,23 @@ void tpc_qa(const std::string& fileName) {
     hPdEdx.at(kParticle)->GetYaxis()->SetTitle("dE/dx (a.u.)");
     hPdEdx.at(kParticle)->GetZaxis()->SetTitle("Entries");
 
-    hNSigma.at(kParticle) = new TH1D(("hNSigma_" + particleNames.at(kParticle)).c_str(), particleNames.at(kParticle).c_str(), nBinsNsigma, lowNsigma, hiNsigma);
-    hNSigma.at(kParticle)->GetXaxis()->SetTitle("N#sigma TPC");
-    hNSigma.at(kParticle)->GetYaxis()->SetTitle("Entries");
+    hNSigmaTpc.at(kParticle) = new TH1D(("hNSigmaTpc_" + particleNames.at(kParticle)).c_str(), particleNames.at(kParticle).c_str(), nBinsNsigma, lowNsigma, hiNsigma);
+    hNSigmaTpc.at(kParticle)->GetXaxis()->SetTitle("N#sigma TPC");
+    hNSigmaTpc.at(kParticle)->GetYaxis()->SetTitle("Entries");
 
-    hPNSigma.at(kParticle) = new TH2D(("hPNSigma_" + particleNames.at(kParticle)).c_str(), particleNames.at(kParticle).c_str(), nBinsP, binEdgesP.data(), nBinsNsigma, lowNsigma, hiNsigma);
-    hPNSigma.at(kParticle)->GetXaxis()->SetTitle("#it{p} (GeV/#it{c})");
-    hPNSigma.at(kParticle)->GetYaxis()->SetTitle("N#sigma TPC");
-    hPNSigma.at(kParticle)->GetZaxis()->SetTitle("Entries");
+    hPNSigmaTpc.at(kParticle) = new TH2D(("hPNSigmaTpc_" + particleNames.at(kParticle)).c_str(), particleNames.at(kParticle).c_str(), nBinsP, binEdgesP.data(), nBinsNsigma, lowNsigma, hiNsigma);
+    hPNSigmaTpc.at(kParticle)->GetXaxis()->SetTitle("#it{p} (GeV/#it{c})");
+    hPNSigmaTpc.at(kParticle)->GetYaxis()->SetTitle("N#sigma TPC");
+    hPNSigmaTpc.at(kParticle)->GetZaxis()->SetTitle("Entries");
+
+    hNSigmaTof.at(kParticle) = new TH1D(("hNSigmaTof_" + particleNames.at(kParticle)).c_str(), particleNames.at(kParticle).c_str(), nBinsNsigma, lowNsigma, hiNsigma);
+    hNSigmaTof.at(kParticle)->GetXaxis()->SetTitle("N#sigma TOF");
+    hNSigmaTof.at(kParticle)->GetYaxis()->SetTitle("Entries");
+
+    hPNSigmaTof.at(kParticle) = new TH2D(("hPNSigmaTof_" + particleNames.at(kParticle)).c_str(), particleNames.at(kParticle).c_str(), nBinsP, binEdgesP.data(), nBinsNsigma, lowNsigma, hiNsigma);
+    hPNSigmaTof.at(kParticle)->GetXaxis()->SetTitle("#it{p} (GeV/#it{c})");
+    hPNSigmaTof.at(kParticle)->GetYaxis()->SetTitle("N#sigma TOF");
+    hPNSigmaTof.at(kParticle)->GetZaxis()->SetTitle("Entries");
   }
 
   for(const auto& dirName : dirNames) {
@@ -73,6 +86,7 @@ void tpc_qa(const std::string& fileName) {
     treeIn->SetBranchAddress("fBetaGamma", &fBetaGamma);
     treeIn->SetBranchAddress("fTPCSignal", &fTPCSignal);
     treeIn->SetBranchAddress("fNSigTPC", &fNSigTPC);
+    treeIn->SetBranchAddress("fNSigTOF", &fNSigTOF);
 
     const int nEntries = treeIn->GetEntries();
     for(int iEntry=0; iEntry<nEntries; ++iEntry) {
@@ -80,18 +94,25 @@ void tpc_qa(const std::string& fileName) {
       const float p = fTPCInnerParam;
       const float beta = calcBetaFromBetaGamma(fBetaGamma);
       const float dEdx = fTPCSignal;
-      const float nsigma = fNSigTPC;
+      const float nSigmaTpc = fNSigTPC;
+      const float nSigmaTof = fNSigTOF;
 
       const short particleId = GetParicleByfPidIndex(fPidIndex);
 
       hPdEdx.at(particleId)->Fill(p, dEdx);
       hPdEdx.at(Particles::kAll)->Fill(p, dEdx);
 
-      hNSigma.at(particleId)->Fill(nsigma);
-      hNSigma.at(Particles::kAll)->Fill(nsigma);
+      hNSigmaTpc.at(particleId)->Fill(nSigmaTpc);
+      hNSigmaTpc.at(Particles::kAll)->Fill(nSigmaTpc);
 
-      hPNSigma.at(particleId)->Fill(p, nsigma);
-      hPNSigma.at(Particles::kAll)->Fill(p, nsigma);
+      hPNSigmaTpc.at(particleId)->Fill(p, nSigmaTpc);
+      hPNSigmaTpc.at(Particles::kAll)->Fill(p, nSigmaTpc);
+
+      hNSigmaTof.at(particleId)->Fill(nSigmaTof);
+      hNSigmaTof.at(Particles::kAll)->Fill(nSigmaTof);
+
+      hPNSigmaTof.at(particleId)->Fill(p, nSigmaTof);
+      hPNSigmaTof.at(Particles::kAll)->Fill(p, nSigmaTof);
     }
 
     fileIn->Close();
@@ -100,8 +121,10 @@ void tpc_qa(const std::string& fileName) {
   TFile* fileOut = TFile::Open("tpc_qa.root", "recreate");
   for(int kParticle=0; kParticle<Particles::nParticles; ++kParticle) {
     hPdEdx.at(kParticle)->Write();
-    hNSigma.at(kParticle)->Write();
-    hPNSigma.at(kParticle)->Write();
+    hNSigmaTpc.at(kParticle)->Write();
+    hPNSigmaTpc.at(kParticle)->Write();
+    hNSigmaTof.at(kParticle)->Write();
+    hPNSigmaTof.at(kParticle)->Write();
   }
   fileOut->Close();
 }
