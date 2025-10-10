@@ -93,6 +93,13 @@ foreach(EXE ${EXECUTABLES})
     # Link ROOT libraries to the executable
     target_link_libraries(qa2-${EXE} ${ROOT_LIBRARIES} ROOT::EG Qa2)
     install (TARGETS qa2-${EXE} RUNTIME DESTINATION bin)
+      # Install a symlink named just ${EXE} that points to qa2-${EXE}
+    install(CODE
+    "execute_process(
+       COMMAND \"\${CMAKE_COMMAND}\" -E create_symlink
+               \"\${CMAKE_INSTALL_PREFIX}/bin/qa2-${EXE}\"
+               \"\${CMAKE_INSTALL_PREFIX}/bin/${EXE}\")"
+    )
 endforeach()
 
 # ==================================================================
