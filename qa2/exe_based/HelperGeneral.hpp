@@ -76,6 +76,8 @@ void SetTHnSparseAxisRanges(THnSparse* histo, int axisNum, float lo= -999., floa
 double InterpolateTH1SuppressWarning(const TH1* h, double value);
 
 void ScaleTHnSparseWithWeight(THnSparse* histoIn, int nDim, const TH1* histoWeight);
+
+std::string ReadNthLine(const std::string& fileName);
 };
 
 

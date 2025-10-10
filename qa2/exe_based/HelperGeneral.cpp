@@ -7,6 +7,7 @@
 #include <TH1.h>
 #include <TROOT.h>
 
+#include <fstream>
 #include <iostream>
 
 std::vector<std::pair<std::string, std::string>> HelperGeneral::FindCuts(TFile* fileIn, std::string name_start, bool printCuts) {
@@ -206,4 +207,23 @@ void HelperGeneral::ScaleTHnSparseWithWeight(THnSparse* histoIn, int nDim, const
     const double newErr = err * scaleFactor;
     histoIn->SetBinError(coords.data(), newErr);
   }
+}
+
+std::string HelperGeneral::ReadNthLine(const std::string& fileName) {
+  if(fileName.find(':') == std::string::npos) return fileName;
+
+  std::string result;
+  const size_t colonPosition = fileName.find(':');
+  const std::string fileListName = fileName.substr(0, colonPosition);
+  const std::string fileLineNumberStr = fileName.substr(colonPosition + 1);
+  const int fileLineNumberInt = std::stoi(fileLineNumberStr);
+
+  std::ifstream fileList(fileListName);
+  if (!fileList.is_open()) throw std::runtime_error("HelperGeneral::ReadNthLine() - the fileList " + fileListName + " is missing!");
+
+  for(size_t iLine=0; iLine<fileLineNumberInt; ++iLine) {
+    if (!std::getline(fileList, result)) throw std::runtime_error("HelperGeneral::ReadNthLine() - the EOF of fileList " + fileListName + " reached before line " + fileLineNumberStr);
+  }
+
+  return result;
 }

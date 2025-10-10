@@ -16,7 +16,7 @@ using namespace HelperGeneral;
 const std::vector<float> lifetimeRanges = {0.2, 0.35, 0.5, 0.7, 0.9, 1.6};
 const std::string lifetimeAxisTitle = "T_{proper} (ps)";
 
-const std::vector<float> pTRanges = {0, 2, 5, 8, 12, 20};
+const std::vector<float> pTRanges = {1, 3, 5, 8, 12, 20};
 const std::string pTAxisTitle = "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})";
 
 const std::vector<float> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.05, 0.08};
@@ -27,8 +27,9 @@ const std::string massAxisTitle = "inv. mass (p K #pi) (GeV/#it{c}^{2})";
 std::string GetPtCutName(size_t iPt);
 
 
-void MassBdtQaThn(const std::string& fileName) {
+void MassBdtQaThn(const std::string& fileNameIn) {
 //  LoadMacro("styles/mc_qa2.style.cc");
+  const std::string fileName = ReadNthLine(fileNameIn);
 
   TFile* fileIn = OpenFileWithNullptrCheck(fileName);
   TFile* fileOut = TFile::Open("mass_bdt_qa_thn.root", "recreate");
@@ -54,12 +55,16 @@ void MassBdtQaThn(const std::string& fileName) {
   }
 
   for(size_t iPt=0, nPts=pTRanges.size()-1; iPt<nPts; ++iPt) {
+    std::cout << "\nProcessing iPt = " << iPt << "\n";
     SetTHnSparseAxisRanges(histoIn, axesIndices.at(pTAxisTitle), pTRanges.at(iPt), pTRanges.at(iPt + 1));
     SetTHnSparseAxisRanges(histoIn, axesIndices.at(bgAxisTitle), 0., bdtBgUpperValuesVsPt.at(iPt));
     for(size_t iT=0, nTs=lifetimeRanges.size()-1; iT<nTs; ++iT) {
+      std::cout << "Processing iT = " << iT << "\n";
       const std::string dirName = pTCutNames.at(iPt) + "/" + tCutNames.at(iT);
       SetTHnSparseAxisRanges(histoIn, axesIndices.at(lifetimeAxisTitle), lifetimeRanges.at(iT), lifetimeRanges.at(iT + 1));
+      std::cout << "Processing bdtSig = ";
       for (const auto& bdtSig: bdtSignalLowerValues) {
+        std::cout << bdtSig << " ";
         SetTHnSparseAxisRanges(histoIn, axesIndices.at(npAxisTitle), bdtSig, 1.);
         TH1D* histoMass = histoIn->Projection(axesIndices.at(massAxisTitle));
         histoMass->SetDirectory(nullptr);
@@ -68,6 +73,7 @@ void MassBdtQaThn(const std::string& fileName) {
         histoMass->Write(histoName.c_str());
         SetTHnSparseAxisRanges(histoIn, axesIndices.at(npAxisTitle));
       } // bdtSignalLowerValues
+      std::cout << "\n";
       SetTHnSparseAxisRanges(histoIn, axesIndices.at(lifetimeAxisTitle));
     } // lifetimeRanges
     SetTHnSparseAxisRanges(histoIn, axesIndices.at(pTAxisTitle));
@@ -99,13 +105,13 @@ std::string GetPtCutName(size_t iPt) {
 int main(int argc, char* argv[]) {
   if (argc < 2) {
     std::cout << "Error! Please use " << std::endl;
-    std::cout << " ./mass_bdt_qa_thn fileName" << std::endl;
+    std::cout << " ./mass_bdt_qa_thn fileNameIn" << std::endl;
     exit(EXIT_FAILURE);
   }
 
-  const std::string fileName = argv[1];
+  const std::string fileNameIn = argv[1];
 
-  MassBdtQaThn(fileName);
+  MassBdtQaThn(fileNameIn);
 
   return 0;
 }
