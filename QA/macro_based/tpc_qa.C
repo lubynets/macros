@@ -30,7 +30,7 @@ void tpc_qa(const std::string& fileName) {
   std::array<TH2D*, Particles::nParticles> hPNSigmaTpc;
   std::array<TH1D*, Particles::nParticles> hNSigmaTof;
   std::array<TH2D*, Particles::nParticles> hPNSigmaTof;
-
+  std::array<TH1D*, Particles::nParticles> hPNoMatchedTof;
 
   const int nBinsP = 100;
   const double lowP = 0.1;
@@ -75,6 +75,10 @@ void tpc_qa(const std::string& fileName) {
     hPNSigmaTof.at(kParticle)->GetXaxis()->SetTitle("#it{p} (GeV/#it{c})");
     hPNSigmaTof.at(kParticle)->GetYaxis()->SetTitle("N#sigma TOF");
     hPNSigmaTof.at(kParticle)->GetZaxis()->SetTitle("Entries");
+
+    hPNoMatchedTof.at(kParticle) = new TH1D(("hPNoMatchedTof_" + particleNames.at(kParticle)).c_str(), particleNames.at(kParticle).c_str(), nBinsP, binEdgesP.data());
+    hPNoMatchedTof.at(kParticle)->GetXaxis()->SetTitle("#it{p} (GeV/#it{c})");
+    hPNoMatchedTof.at(kParticle)->GetYaxis()->SetTitle("Entries");
   }
 
   for(const auto& dirName : dirNames) {
@@ -97,6 +101,9 @@ void tpc_qa(const std::string& fileName) {
       const float nSigmaTpc = fNSigTPC;
       const float nSigmaTof = fNSigTOF;
 
+//       if(std::fabs(fNSigTOF) > 3.f && std::fabs(fNSigTOF+999.f) > 1e-3) continue;
+      if(std::fabs(fNSigTOF) > 3.f) continue;
+
       const short particleId = GetParicleByfPidIndex(fPidIndex);
 
       hPdEdx.at(particleId)->Fill(p, dEdx);
@@ -113,6 +120,11 @@ void tpc_qa(const std::string& fileName) {
 
       hPNSigmaTof.at(particleId)->Fill(p, nSigmaTof);
       hPNSigmaTof.at(Particles::kAll)->Fill(p, nSigmaTof);
+
+      if(std::fabs(nSigmaTof+999.f) < 1e-3) {
+        hPNoMatchedTof.at(particleId)->Fill(p);
+        hPNoMatchedTof.at(Particles::kAll)->Fill(p);
+      }
     }
 
     fileIn->Close();
@@ -125,6 +137,7 @@ void tpc_qa(const std::string& fileName) {
     hPNSigmaTpc.at(kParticle)->Write();
     hNSigmaTof.at(kParticle)->Write();
     hPNSigmaTof.at(kParticle)->Write();
+    hPNoMatchedTof.at(kParticle)->Write();
   }
   fileOut->Close();
 }
