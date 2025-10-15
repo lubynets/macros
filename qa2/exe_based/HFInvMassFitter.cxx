@@ -123,7 +123,9 @@ HFInvMassFitter::HFInvMassFitter() : TNamed(),
                                      mIntegralSgn(0),
                                      mHistoTemplateRefl(nullptr),
                                      mDrawBgPrefit(kFALSE),
-                                     mHighlightPeakRegion(kFALSE)
+                                     mHighlightPeakRegion(kFALSE),
+                                     mRandomSeed(-1),
+                                     mRandomGen(nullptr)
 {
   // default constructor
 }
@@ -195,7 +197,9 @@ HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit, Double_t minValue, Doubl
                                                                                                                                     mIntegralSgn(0),
                                                                                                                                     mHistoTemplateRefl(nullptr),
                                                                                                                                     mDrawBgPrefit(kFALSE),
-                                                                                                                                    mHighlightPeakRegion(kFALSE)
+                                                                                                                                    mHighlightPeakRegion(kFALSE),
+                                                                                                                                    mRandomSeed(-1),
+                                                                                                                                    mRandomGen(nullptr)
 {
   // standard constructor
   mHistoInvMass = dynamic_cast<TH1*>(histoToFit->Clone(histoToFit->GetTitle()));
@@ -226,6 +230,10 @@ HFInvMassFitter::~HFInvMassFitter()
 
 void HFInvMassFitter::doFit()
 {
+  mRandomGen = new TRandom3();
+  if (mRandomSeed >= 0) {
+    mRandomGen->SetSeed(mRandomSeed);
+  }
   mIntegralHisto = mHistoInvMass->Integral(mHistoInvMass->FindBin(mMinMass), mHistoInvMass->FindBin(mMaxMass));
   mWorkspace = new RooWorkspace("mWorkspace");
   fillWorkspace(*mWorkspace);
@@ -252,13 +260,21 @@ void HFInvMassFitter::doFit()
   dataHistogram.plotOn(mInvMassFrame, Name("data_c"));                       // plot data histogram on the frame
 
   // define number of background and background fit function
-  mRooNBkg = new RooRealVar("mRooNBkg", "number of background", 0.3 * mIntegralHisto, 0., 1.2 * mIntegralHisto); // background yield
+  const double rooNBkgLower = 0.;
+  const double rooNBkgUpper = 1.2 * mIntegralHisto;
+  const double rooNBkgInitial = 0.3 * mIntegralHisto;
+  const double rooNBkgSmear = 0.1 * mIntegralHisto;
+  mRooNBkg = new RooRealVar("mRooNBkg", "number of background", randomizeInitialFitParameter(rooNBkgLower, rooNBkgUpper, rooNBkgInitial, rooNBkgSmear), rooNBkgLower, rooNBkgUpper); // background yield
   RooAbsPdf* bkgPdf = createBackgroundFitFunction(mWorkspace);                                                   // Create background pdf
   RooAbsPdf* sgnPdf = createSignalFitFunction(mWorkspace);                                                       // Create signal pdf
 
   // fit MC or Data
   if (mTypeOfBkgPdf == NoBkg) {                                                                                // MC
-    mRooNSgn = new RooRealVar("mRooNSig", "number of signal", 0.3 * mIntegralHisto, 0., 1.2 * mIntegralHisto); // signal yield
+    const double rooNSigLower = 0.;
+    const double rooNSigUpper = 1.2 * mIntegralHisto;
+    const double rooNSigInitial = 0.3 * mIntegralHisto;
+    const double rooNSigSmear = 0.1 * mIntegralHisto;
+    mRooNSgn = new RooRealVar("mRooNSig", "number of signal", randomizeInitialFitParameter(rooNSigLower, rooNSigUpper, rooNSigInitial, rooNSigSmear), rooNSigLower, rooNSigUpper); // signal yield
     mTotalPdf = new RooAddPdf("mMCFunc", "MC fit function", RooArgList(*sgnPdf), RooArgList(*mRooNSgn));       // create total pdf
     if (!strcmp(mFitOption.Data(), "Chi2")) {
       mTotalPdf->chi2FitTo(dataHistogram, Range("signal"));
@@ -304,7 +320,11 @@ void HFInvMassFitter::doFit()
     checkForSignal(estimatedSignal);              // SIG's absolute integral in "bkg" range
     calculateBackground(mBkgYield, mBkgYieldErr); // BG's absolute integral in "bkg" range
 
-    mRooNSgn = new RooRealVar("mNSgn", "number of signal", 0.3 * estimatedSignal, 0., 1.2 * estimatedSignal); // estimated signal yield
+    const double rooNSigLower = 0.;
+    const double rooNSigUpper = 1.2 * estimatedSignal;
+    const double rooNSigInitial = 0.3 * estimatedSignal;
+    const double rooNSigSmear = 0.1 * estimatedSignal;
+    mRooNSgn = new RooRealVar("mNSgn", "number of signal", randomizeInitialFitParameter(rooNSigLower, rooNSigUpper, rooNSigInitial, rooNSigSmear), rooNSigLower, rooNSigUpper); // estimated signal yield
     if (mFixedRawYield > 0) {
       mRooNSgn->setVal(mFixedRawYield); // fixed signal yield
       mRooNSgn->setConstant(kTRUE);
@@ -317,7 +337,11 @@ void HFInvMassFitter::doFit()
       mReflFrame = mass->frame();
       mReflOnlyFrame = mass->frame(Title(Form("%s", mHistoTemplateRefl->GetTitle())));
       reflHistogram.plotOn(mReflOnlyFrame);
-      mRooNRefl = new RooRealVar("mNRefl", "number of reflection", 0.5 * mHistoTemplateRefl->Integral(), 0, mHistoTemplateRefl->Integral());
+      const double rooNReflLower = 0.;
+      const double rooNReflUpper = mHistoTemplateRefl->Integral();
+      const double rooNReflInitial = 0.5 * mHistoTemplateRefl->Integral();
+      const double rooNReflSmear = 0.1 * mHistoTemplateRefl->Integral();
+      mRooNRefl = new RooRealVar("mNRefl", "number of reflection", randomizeInitialFitParameter(rooNReflLower, rooNReflUpper, rooNReflInitial, rooNReflSmear), rooNReflLower, rooNReflUpper);
       RooAddPdf reflFuncTemp("reflFuncTemp", "template reflection fit function", RooArgList(*reflPdf), RooArgList(*mRooNRefl));
       if (!strcmp(mFitOption.Data(), "Chi2")) {
         reflFuncTemp.chi2FitTo(reflHistogram);
@@ -383,35 +407,63 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
   // Declare observable variable
   RooRealVar mass("mass", "mass", mMinMass, mMaxMass, "GeV/c^{2}");
   // bkg expo
-  RooRealVar tau("tau", "tau", -1, -5., 5.);
+  const double tauLower = -5.;
+  const double tauUpper = 5.;
+  const double tauInitial = -1.;
+  const double tauSmear = 0.1;
+  RooRealVar tau("tau", "tau", randomizeInitialFitParameter(tauLower, tauUpper, tauInitial, tauSmear), tauLower, tauUpper);
   RooAbsPdf* bkgFuncExpo = new RooExponential("bkgFuncExpo", "background fit function", mass, tau);
   workspace.import(*bkgFuncExpo);
   delete bkgFuncExpo;
   // bkg poly1
-  RooRealVar polyParam0("polyParam0", "Parameter of Poly function", 0.5, -5., 5.);
-  RooRealVar polyParam1("polyParam1", "Parameter of Poly function", 0.2, -5., 5.);
+  const double polyParam0Lower = -5.;
+  const double polyParam0Upper = 5.;
+  const double polyParam0Initial = 0.5;
+  const double polyParam0Smear = 0.1;
+  RooRealVar polyParam0("polyParam0", "Parameter of Poly function", randomizeInitialFitParameter(polyParam0Lower, polyParam0Upper, polyParam0Initial, polyParam0Smear), polyParam0Lower, polyParam0Upper);
+  const double polyParam1Lower = -5.;
+  const double polyParam1Upper = 5.;
+  const double polyParam1Initial = 0.2;
+  const double polyParam1Smear = 0.05;
+  RooRealVar polyParam1("polyParam1", "Parameter of Poly function", randomizeInitialFitParameter(polyParam1Lower, polyParam1Upper, polyParam1Initial, polyParam1Smear), polyParam1Lower, polyParam1Upper);
   RooAbsPdf* bkgFuncPoly1 = new RooPolynomial("bkgFuncPoly1", "background fit function", mass, RooArgSet(polyParam0, polyParam1));
   workspace.import(*bkgFuncPoly1);
   delete bkgFuncPoly1;
   // bkg poly2
-  RooRealVar polyParam2("polyParam2", "Parameter of Poly function", 0.2, -5., 5.);
+  const double polyParam2Lower = -5.;
+  const double polyParam2Upper = 5.;
+  const double polyParam2Initial = 0.2;
+  const double polyParam2Smear = 0.05;
+  RooRealVar polyParam2("polyParam2", "Parameter of Poly function", randomizeInitialFitParameter(polyParam2Lower, polyParam2Upper, polyParam2Initial, polyParam2Smear), polyParam2Lower, polyParam2Upper);
   RooAbsPdf* bkgFuncPoly2 = new RooPolynomial("bkgFuncPoly2", "background fit function", mass, RooArgSet(polyParam0, polyParam1, polyParam2));
   workspace.import(*bkgFuncPoly2);
   delete bkgFuncPoly2;
   // bkg poly3
-  RooRealVar polyParam3("polyParam3", "Parameter of Poly function", 0.2, -1., 1.);
+  const double polyParam3Lower = -1.;
+  const double polyParam3Upper = 1.;
+  const double polyParam3Initial = 0.2;
+  const double polyParam3Smear = 0.05;
+  RooRealVar polyParam3("polyParam3", "Parameter of Poly function", randomizeInitialFitParameter(polyParam3Lower, polyParam3Upper, polyParam3Initial, polyParam3Smear), polyParam3Lower, polyParam3Upper);
   RooAbsPdf* bkgFuncPoly3 = new RooPolynomial("bkgFuncPoly3", "background pdf", mass, RooArgSet(polyParam0, polyParam1, polyParam2, polyParam3));
   workspace.import(*bkgFuncPoly3);
   delete bkgFuncPoly3;
   // bkg power law
   RooRealVar powParam1("powParam1", "Parameter of Pow function", TDatabasePDG::Instance()->GetParticle("pi+")->Mass());
-  RooRealVar powParam2("powParam2", "Parameter of Pow function", 1., -10, 10);
+  const double powParam2Lower = -10.;
+  const double powParam2Upper = 10.;
+  const double powParam2Initial = 1.;
+  const double powParam2Smear = 0.2;
+  RooRealVar powParam2("powParam2", "Parameter of Pow function", randomizeInitialFitParameter(powParam2Lower, powParam2Upper, powParam2Initial, powParam2Smear), powParam2Lower, powParam2Upper);
   RooAbsPdf* bkgFuncPow = new RooGenericPdf("bkgFuncPow", "bkgFuncPow", "(mass-powParam1)^powParam2", RooArgSet(mass, powParam1, powParam2));
   workspace.import(*bkgFuncPow);
   delete bkgFuncPow;
   // pow * exp
   RooRealVar powExpoParam1("powExpoParam1", "Parameter of PowExpo function", 1 / 2);
-  RooRealVar powExpoParam2("powExpoParam2", "Parameter of PowExpo function", 1, -10, 10);
+  const double powExpoParam2Lower = -10.;
+  const double powExpoParam2Upper = 10.;
+  const double powExpoParam2Initial = 1.;
+  const double powExpoParam2Smear = 0.2;
+  RooRealVar powExpoParam2("powExpoParam2", "Parameter of PowExpo function", randomizeInitialFitParameter(powExpoParam2Lower, powExpoParam2Upper, powExpoParam2Initial, powExpoParam2Smear), powExpoParam2Lower, powExpoParam2Upper);
   RooRealVar massPi("massPi", "mass of pion", TDatabasePDG::Instance()->GetParticle("pi+")->Mass());
   RooFormulaVar powExpoParam3("powExpoParam3", "powExpoParam1 + 1", RooArgList(powExpoParam1));
   RooFormulaVar powExpoParam4("powExpoParam4", "1./powExpoParam2", RooArgList(powExpoParam2));
@@ -540,17 +592,45 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
   workspace.import(*reflFuncDoubleGaus);
   delete reflFuncDoubleGaus;
   // reflection poly3
-  RooRealVar polyReflParam0("polyReflParam0", "polyReflParam0", 0.5, -1., 1.);
-  RooRealVar polyReflParam1("polyReflParam1", "polyReflParam1", 0.2, -1., 1.);
-  RooRealVar polyReflParam2("polyReflParam2", "polyReflParam2", 0.2, -1., 1.);
-  RooRealVar polyReflParam3("polyReflParam3", "polyReflParam3", 0.2, -1., 1.);
+  const double polyReflParam0Lower = -1.;
+  const double polyReflParam0Upper = 1.;
+  const double polyReflParam0Initial = 0.5;
+  const double polyReflParam0Smear = 0.1;
+  RooRealVar polyReflParam0("polyReflParam0", "polyReflParam0", randomizeInitialFitParameter(polyReflParam0Lower, polyReflParam0Upper, polyReflParam0Initial, polyReflParam0Smear), polyReflParam0Lower, polyReflParam0Upper);
+  const double polyReflParam1Lower = -1.;
+  const double polyReflParam1Upper = 1.;
+  const double polyReflParam1Initial = 0.2;
+  const double polyReflParam1Smear = 0.05;
+  RooRealVar polyReflParam1("polyReflParam1", "polyReflParam1", randomizeInitialFitParameter(polyReflParam1Lower, polyReflParam1Upper, polyReflParam1Initial, polyReflParam1Smear), polyReflParam1Lower, polyReflParam1Upper);
+  const double polyReflParam2Lower = -1.;
+  const double polyReflParam2Upper = 1.;
+  const double polyReflParam2Initial = 0.2;
+  const double polyReflParam2Smear = 0.05;
+  RooRealVar polyReflParam2("polyReflParam2", "polyReflParam2", randomizeInitialFitParameter(polyReflParam2Lower, polyReflParam2Upper, polyReflParam2Initial, polyReflParam2Smear), polyReflParam2Lower, polyReflParam2Upper);
+  const double polyReflParam3Lower = -1.;
+  const double polyReflParam3Upper = 1.;
+  const double polyReflParam3Initial = 0.2;
+  const double polyReflParam3Smear = 0.05;
+  RooRealVar polyReflParam3("polyReflParam3", "polyReflParam3", randomizeInitialFitParameter(polyReflParam3Lower, polyReflParam3Upper, polyReflParam3Initial, polyReflParam3Smear), polyReflParam3Lower, polyReflParam3Upper);
   RooAbsPdf* reflFuncPoly3 = new RooPolynomial("reflFuncPoly3", "reflection PDF", mass, RooArgSet(polyReflParam0, polyReflParam1, polyReflParam2, polyReflParam3));
   workspace.import(*reflFuncPoly3);
   delete reflFuncPoly3;
   // reflection poly6
-  RooRealVar polyReflParam4("polyReflParam4", "polyReflParam4", 0.2, -1., 1.);
-  RooRealVar polyReflParam5("polyReflParam5", "polyReflParam5", 0.2, -1., 1.);
-  RooRealVar polyReflParam6("polyReflParam6", "polyReflParam6", 0.2, -1., 1.);
+  const double polyReflParam4Lower = -1.;
+  const double polyReflParam4Upper = 1.;
+  const double polyReflParam4Initial = 0.2;
+  const double polyReflParam4Smear = 0.05;
+  RooRealVar polyReflParam4("polyReflParam4", "polyReflParam4", randomizeInitialFitParameter(polyReflParam4Lower, polyReflParam4Upper, polyReflParam4Initial, polyReflParam4Smear), polyReflParam4Lower, polyReflParam4Upper);
+  const double polyReflParam5Lower = -1.;
+  const double polyReflParam5Upper = 1.;
+  const double polyReflParam5Initial = 0.2;
+  const double polyReflParam5Smear = 0.05;
+  RooRealVar polyReflParam5("polyReflParam5", "polyReflParam5", randomizeInitialFitParameter(polyReflParam5Lower, polyReflParam5Upper, polyReflParam5Initial, polyReflParam5Smear), polyReflParam5Lower, polyReflParam5Upper);
+  const double polyReflParam6Lower = -1.;
+  const double polyReflParam6Upper = 1.;
+  const double polyReflParam6Initial = 0.2;
+  const double polyReflParam6Smear = 0.05;
+  RooRealVar polyReflParam6("polyReflParam6", "polyReflParam6", randomizeInitialFitParameter(polyReflParam6Lower, polyReflParam6Upper, polyReflParam6Initial, polyReflParam6Smear), polyReflParam6Lower, polyReflParam6Upper);
   RooAbsPdf* reflFuncPoly6 = new RooPolynomial("reflFuncPoly6", "reflection pdf", mass, RooArgSet(polyReflParam0, polyReflParam1, polyReflParam2, polyReflParam3, polyReflParam4, polyReflParam5, polyReflParam6));
   workspace.import(*reflFuncPoly6);
   delete reflFuncPoly6;
@@ -873,4 +953,23 @@ void HFInvMassFitter::setReflFuncFixed()
     default:
       break;
   }
+}
+
+double HFInvMassFitter::randomizeInitialFitParameter(double valueLower, double valueUpper, double valueInitial, double valueSmear) const {
+  if (mRandomSeed < 0) {
+    return valueInitial;
+  }
+  double result;
+  int nIter{0};
+  do {
+    result = mRandomGen->Gaus(valueInitial, valueSmear);
+    ++nIter;
+    if (nIter > 20) {
+      std::cout << "randomizeInitialFitParameter() - long while loop << valueLower = " << valueLower << " valueUpper = " << valueUpper << " valueInitial = " << valueInitial << " valueSmear = "  << valueSmear << "\n";
+      throw;
+    }
+  }
+  while (result<valueLower || result > valueUpper);
+
+  return result;
 }

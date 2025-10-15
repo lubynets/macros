@@ -76,7 +76,7 @@ void HelperPlot::SetLineDrawParameters(std::vector<TF1*> fs, int lineWidth, int 
   }
 }
 
-TF1* HelperPlot::HorizontalLine4Graph(float level, TGraph* graph) {
+TF1* HelperPlot::HorizontalLine4Graph(const double level, TGraph* graph) {
   float xlo = graph->GetPointX(0);
   float xhi = graph->GetPointX(graph->GetN() - 1);
   const float diff = xhi - xlo;

@@ -27,6 +27,7 @@
 #include <TF1.h>
 #include <TH1.h>
 #include <TNamed.h>
+#include <TRandom3.h>
 #include <TVirtualPad.h>
 
 #include <Rtypes.h>
@@ -227,6 +228,8 @@ class HFInvMassFitter : public TNamed
   void drawFit(TVirtualPad* c, Int_t writeFitInfo = 2);
   void drawResidual(TVirtualPad* c);
   void drawReflection(TVirtualPad* c);
+  void setRandomSeed(ULong_t seed) { mRandomSeed = seed; }
+  double randomizeInitialFitParameter(double valueLower, double valueUpper, double valueInitial, double valueSmear) const;
 
  private:
   HFInvMassFitter(const HFInvMassFitter& source);
@@ -301,6 +304,8 @@ class HFInvMassFitter : public TNamed
   TH1* mHistoTemplateRefl;     /// reflection histogram
   Bool_t mDrawBgPrefit;        /// draw background after fitting the sidebands
   Bool_t mHighlightPeakRegion; /// draw vertical lines showing the peak region (usually +- 3 sigma)
+  TRandom3* mRandomGen;
+  Int_t mRandomSeed;
 
   ClassDef(HFInvMassFitter, 1);
 };

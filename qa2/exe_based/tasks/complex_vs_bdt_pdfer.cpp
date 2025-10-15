@@ -32,16 +32,16 @@ void complex_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::string
   }
   //=================================================================
 
-  const std::vector<std::string> variables {
-    "RawYieldsSignal",
-    "RawYieldsSignalCounted",
-    "RawYieldsSigma",
-    "RawYieldsMean",
-    "RawYieldsSignificance",
-    "RawYieldsSgnOverBkg",
-    "RawYieldsBkg",
-    "RawYieldsChiSquareBkg",
-    "RawYieldsChiSquareTotal"
+  std::vector<std::string> variables {
+   "RawYieldsSignal",
+   "RawYieldsSignalCounted",
+   "RawYieldsSigma",
+   "RawYieldsMean",
+   "RawYieldsSignificance",
+   "RawYieldsSgnOverBkg",
+   "RawYieldsBkg",
+   "RawYieldsChiSquareBkg",
+   "RawYieldsChiSquareTotal"
   };
 
   TFile* fileMarkup = OpenFileWithNullptrCheck(fileNameTemplate + "." + targetSignal + "gt" + to_string_with_precision(bdtScores.at(0), 2) + ".root");
@@ -52,17 +52,23 @@ void complex_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::string
   }
 
   HelperMath::tensor2<TGraphErrors*> graphVar = HelperMath::make_tensor<TGraphErrors*, 2>({variables.size(), lifeTimeRanges.size()-1}, nullptr);
+  int iExistingVar{0};
   for(int iVar=0, nVars=variables.size(); iVar<nVars; ++iVar) {
-    histoMarkup = GetObjectWithNullptrCheck<TH1>(fileMarkup, "h" + variables.at(iVar));
-    const std::string yAxisTitle = histoMarkup->GetYaxis()->GetTitle();
+    histoMarkup = fileMarkup->Get<TH1>(("h" + variables.at(iExistingVar)).c_str());
+    if(histoMarkup == nullptr) {
+      variables.erase(variables.begin() + iExistingVar);
+      continue;
+    }
+    const std::string& yAxisTitle = histoMarkup->GetYaxis()->GetTitle();
     for(int iT=0, nTs=lifeTimeRanges.size()-1; iT<nTs; ++iT) {
-      graphVar.at(iVar).at(iT) = new TGraphErrors();
-      auto gra = graphVar.at(iVar).at(iT);
-      gra->SetName(("gr" + variables.at(iVar) + "_" + + "_T" + std::to_string(iT)).c_str());
+      auto& gra = graphVar.at(iExistingVar).at(iT);
+      gra = new TGraphErrors();
+      gra->SetName(("gr" + variables.at(iExistingVar) + "_" + + "_T" + std::to_string(iT)).c_str());
       gra->SetTitle(("bin #" + std::to_string(iT+1) + "#; T#in (" + to_string_with_precision(lifeTimeRanges.at(iT), 2) + "#; " + to_string_with_precision(lifeTimeRanges.at(iT+1), 2) + ") ps").c_str());
       gra->GetXaxis()->SetTitle(("bdt score " + targetSignal).c_str());
       gra->GetYaxis()->SetTitle(yAxisTitle.c_str());
     } // lifeTimeRanges
+    ++iExistingVar;
   } // variables
   fileMarkup->Close();
 

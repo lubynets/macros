@@ -22,12 +22,12 @@ void DivideGraph(TGraph* num, const TGraph* den);
 
 template <typename T, size_t N>
 struct nested_vector {
-    using type = std::vector<typename nested_vector<T, N - 1>::type>;
+  using type = std::vector<typename nested_vector<T, N - 1>::type>;
 };
 // Base case
 template <typename T>
 struct nested_vector<T, 0> {
-    using type = T;
+  using type = T;
 };
 
 template <typename T, std::size_t N>
@@ -38,17 +38,17 @@ tensor<T, N> make_tensor(std::array<std::size_t, N> const& dims, T const& init =
   if constexpr (N == 0) {
     return init;
   } else {
-  tensor<T, N> v;
-  v.resize(dims[0]);
-  auto subdims = [&] {
+    tensor<T, N> v;
+    v.resize(dims[0]);
+    auto subdims = [&] {
       std::array<std::size_t, N - 1> tail{};
       std::copy(dims.begin() + 1, dims.end(), tail.begin());
       return tail;
-  }();
-  for (auto& sub : v) {
-    sub = make_tensor<T, N - 1>(subdims, init);
-  }
-  return v;
+    }();
+    for (auto& sub : v) {
+      sub = make_tensor<T, N - 1>(subdims, init);
+    }
+    return v;
   }
 }
 

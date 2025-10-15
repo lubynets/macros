@@ -86,10 +86,15 @@ McDfs = [] # a blank for MC df containing entries from all files
 is_first_mc_file = True
 for fileindex in range(files_mc_from, files_mc_to+1):
     filename = input_files_mc_path + '.' + str(fileindex) + '.root'
+    print(f'Reading MC file {filename}')
     ## read input file
-    with uproot.open(filename) as file:
-        tree = file["pTree"]
-        df = tree.arrays(library="pd")
+    try:
+        with uproot.open(filename) as file:
+            tree = file["pTree"]
+            df = tree.arrays(library="pd")
+    except Exception as e:
+        print(f"Error processing file {filename}: {e}")
+        continue
     df = df[keep_variables]
     df.query(f'(({slice_var_treename} >= {slice_var_min}) & ({slice_var_treename} < {slice_var_max}))', inplace=True)   # where is fPt defined? What is its nature, string? Can one generalize it?
     signal_counts[0] += len(df) # Original length of the df in the certain fPt interval (sel_variables = 'total')
@@ -123,12 +128,17 @@ print('Reading data dataframes and applying selections...')
 BkgDfs = []
 for fileindex in range(files_data_from, files_data_to+1):
     filename = input_files_data_path + '.' + str(fileindex) + '.root'
+    print(f'Reading data file {filename}')
     ## read input file
-    with uproot.open(filename) as file:
-        tree = file["pTree"]
-        df = tree.arrays(library="pd")
+    try:
+        with uproot.open(filename) as file:
+            tree = file["pTree"]
+            df = tree.arrays(library="pd")
+    except Exception as e:
+        print(f"Error processing file {filename}: {e}")
+        continue
     df = df[keep_variables]
-    df.query(f'(({slice_var_treename} >= {slice_var_min}) & ({slice_var_treename} < {slice_var_max})) & ((fKFMassInv > {sidebands[0]} & fKFMassInv < {sidebands[1]}) | (fKFMassInv > {sidebands[2]} & fKFMassInv < {sidebands[3]}))', inplace=True)
+    df.query(f'(({slice_var_treename} >= {slice_var_min}) & ({slice_var_treename} < {slice_var_max})) & ((fLiteM > {sidebands[0]} & fLiteM < {sidebands[1]}) | (fLiteM > {sidebands[2]} & fLiteM < {sidebands[3]}))', inplace=True)
     bkg_counts[0] += len(df)
     ## Check for infinities and NaNs
     if df.isna().any().any():
@@ -146,6 +156,8 @@ for fileindex in range(files_data_from, files_data_to+1):
             bkg_counts[index+2] += len(df)
     BkgDfs.append(df)
     del df
+    if bkg_counts[-1] > 2*signal_counts[-1]:
+        break
 BkgDf = pd.concat(BkgDfs, ignore_index=True)
 del BkgDfs
 print('Reading data dataframes and applying selections: Done.')
@@ -362,7 +374,7 @@ print('Plotting variable distributions: Done.')
 
 # --------------- Plot correlation matrices ----------------
 print('Plotting correlation matrices...')
-CorrVars = ['fKFMassInv'] + sorted([x for x in TrainVars], key=str.lower)
+CorrVars = ['fLiteM'] + sorted([x for x in TrainVars], key=str.lower)
 CorrMatr = plot_utils.plot_corr([BkgDf, PromptDf, NonPromptDf], CorrVars, LegLabels)
 for (fig, label) in zip(CorrMatr, OutputLabels):
     fig.tight_layout()

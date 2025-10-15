@@ -1,8 +1,9 @@
 const std::vector<std::string> particleNames{"proton", "pion", "electorn", "kaon", "all"};
 const std::vector<double> particleMasses{0.938272, 0.139571, 0.000511, 0.493677};
-const std::vector<std::string> histoNames{"hPdEdx", "hNSigma", "hPNSigma"};
+const std::vector<std::string> histoNames{"hPdEdx", "hNSigmaTpc", "hPNSigmaTpc", "hNSigmaTof", "hPNSigmaTof", "hPNoMatchedTof"};
 
 void tpc_qa2(const std::string& fileName, bool isParticleWise=true, bool isDrawBB=true) {
+  gStyle->SetOptStat("nemruo");
 
   const std::array<double, 5> bbParams {
     0.17489300668239594,

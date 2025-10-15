@@ -5,54 +5,83 @@
 #   AO2Ds are supposed to be stored                                                                      #
 ##########################################################################################################
 
-export HYPERLOOP_OUTPUT_DIRECTORIES="$1"
+HYPERLOOP_OUTPUT_DIRECTORIES="$1"
+COPY_SELECTION="${2:-2}"
 
 if [[ -z "$HYPERLOOP_OUTPUT_DIRECTORIES" ]]; then
    echo "Not enough arguments! Please use"
-   echo "./copyStandardDerivedData.sh HyperloopOutputDirectories.txt"
+   echo "./copyStandardDerivedData.sh HyperloopOutputDirectories.txt (N=2)"
+   echo "N=0 for copy AO2D.root only, 1 for copy AnalysisResults.root only and 2 (default) for copy both"
    exit 1
 fi
 
 source /lustre/alice/users/lubynets/.export_tokens.sh
 
-for path in `sed 's/,/\n/g' ${HYPERLOOP_OUTPUT_DIRECTORIES}`; do
-   if [[ $path == *"/AOD" ]]; then
-      path="${path%"/AOD"}"
-   fi
+# Define patterns to search and copy
+file_name=("AO2D.root" "AnalysisResults.root")
 
-   parent_dir=$(dirname "$path")
+if [[ "$COPY_SELECTION" -eq 0 ]]; then
+  start=0; end=0
+elif [[ "$COPY_SELECTION" -eq 1 ]]; then
+  start=1; end=1
+elif [[ "$COPY_SELECTION" -eq 2 ]]; then
+  start=0; end=1
+else
+  echo "COPY_SELECTION=${COPY_SELECTION}, while it must be 0, 1 or 2"
+  exit 1
+fi
 
-   # Define patterns to search and copy
-   patterns_aod=( "AOD/[0-9]*/AO2D.root" "AOD/[0-9]*/AnalysisResults.root" )
-   patterns_numerated=( "[0-9]*/AO2D.root" "[0-9]*/AnalysisResults.root" )
-   patterns_single_file=( "AO2D.root" "AnalysisResults.root" )
+for i in `seq $start $end`; do
+   echo "Processing ${file_name[i]}s"
 
-   if [[ $(alien_find -r "$path" ${patterns_single_file[0]}) ]]; then
-      echo "Found single (slim) file at $path - starting copy"
-      patterns=("${patterns_single_file[@]}")
-   elif [[ $(alien_find -r "$path" ${patterns_aod[0]}) ]]; then
-      echo "Found merged files under AOD at $path - starting copy"
-      patterns=("${patterns_aod[@]}")
-   elif [[ $(alien_find -r "$path" ${patterns_numerated[0]}) ]]; then
-      echo "Found unmerged files in numerated directories at $path - starting copy"
-      patterns=("${patterns_numerated[@]}")
-   else
-      echo "Nothing was found at $path. Exit"
-      exit
-   fi
+   patterns_aod="AOD/[0-9]*/"${file_name[i]}
+   patterns_numerated="[0-9]*/"${file_name[i]}
+   patterns_single_file=${file_name[i]}
 
-   for pattern in "${patterns[@]}"; do
+   for path in `sed 's/,/\n/g' ${HYPERLOOP_OUTPUT_DIRECTORIES}`; do
+      echo "Processing $path"
+      echo
+      if [[ $path == *"/AOD" ]]; then
+         path="${path%"/AOD"}"
+      fi
+
+      parent_dir=$(dirname "$path")
+
+      if [[ $(alien_find -r "$path" ${patterns_single_file}) ]]; then
+         echo "Found single (slim) file at $path - starting copy"
+         pattern=$patterns_single_file
+      elif [[ $(alien_find -r "$path" ${patterns_aod}) ]]; then
+         echo "Found merged files under AOD at $path - starting copy"
+         pattern=$patterns_aod
+      elif [[ $(alien_find -r "$path" ${patterns_numerated}) ]]; then
+         echo "Found unmerged files in numerated directories at $path - starting copy"
+         pattern=$patterns_numerated
+      else
+         echo "Nothing was found at $path. Switch to the next parent_dir"
+      fi
+
       # Get list of remote files
       remote_files=$(alien_find -r "$path" "$pattern")
       while read -r remote; do
+      if [[ -z "$remote" ]]; then
+         echo "Not copying $remote since it is not found"
+         echo
+         continue
+      fi
       # Extract basename (filename)
       fname="${remote#"$parent_dir"/}"
-      if [[ -f "$fname" ]]; then
+      fname_size="-999"
+      if [[ -f $fname ]]; then
+         fname_size=$(ls -l $fname | awk '{print $5}')
+      fi
+      remote_size=$(alien_ls -l $remote | awk '{print $4}')
+      if [[ $fname_size -eq $remote_size ]]; then
          echo "Skipping $fname - already exists"
       else
          echo "Copying $fname from $remote"
          alien_cp $remote file:./$fname
       fi
+      echo
       done <<< "$remote_files"
    done
 done

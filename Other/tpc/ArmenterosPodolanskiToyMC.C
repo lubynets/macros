@@ -6,7 +6,7 @@ double evalQStar(double M, double m1, double m2);
 double evalRalpha(double M, double m1, double m2, double P);
 bool checkCascade(double aplpha, double qt);
 
-void ArmenterosPodolanski(int nEvents = 10000000) {
+void ArmenterosPodolanskiToyMC(int nEvents = 10000000) {
     TRandom3 rng(0);
 
     // Masses in GeV/c^2
@@ -108,24 +108,3 @@ double evalRalpha(double M, double m1, double m2, double P) {
   const double b = P / std::sqrt(P*P + M*M);
   return 2*evalQStar(M, m1, m2) / b / M;
 }
-
-// bool checkCascade(double aplpha, double qt) {
-//   const double cutAPOmegaUp1 = ;
-//   const double cutAPOmegaUp2 = ;
-//   const double cutAPOmegaUp3 = ;
-//   const double cutAPOmegaDown1 = ;
-//   const double cutAPOmegaDown2 = ;
-//   const double cutAPOmegaDown3 = ;
-//
-//
-//
-//
-//   const double qUp = std::abs(alpha - cutAPOmegaUp2) > std::abs(cutAPOmegaUp3) ? 0. : cutAPOmegaUp1 * std::sqrt(1.0f - ((alpha - cutAPOmegaUp2) * (alpha - cutAPOmegaUp2)) / (cutAPOmegaUp3 * cutAPOmegaUp3));
-//   const double qDown = std::abs(alpha - cutAPOmegaDown2) > std::abs(cutAPOmegaDown3) ? 0. : cutAPOmegaDown1 * std::sqrt(1.0f - ((alpha - cutAPOmegaDown2) * (alpha - cutAPOmegaDown2)) / (cutAPOmegaDown3 * cutAPOmegaDown3));
-//
-//   if (alpha < cutAlphaOmegaLow || alpha > cutAlphaOmegaHigh || qt < qDown || qt > qUp) {
-//     return false;
-//   }  else {
-//     return true;
-//   }
-// }

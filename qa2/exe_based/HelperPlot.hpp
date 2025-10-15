@@ -36,7 +36,7 @@ std::pair<double, double> GetMinMaxBinWithError(const TH1* h);
 
 void SetLineDrawParameters(std::vector<TF1*> fs, int lineWidth = 1, int lineStyle = 7, Color_t lineColor = kBlack);
 
-TF1* HorizontalLine4Graph(float level, TGraph* graph);
+TF1* HorizontalLine4Graph(double level, TGraph* graph);
 
 TPaveText* AddOneLineText(const std::string& text, const std::array<float, 4>& xy, const std::string& option="brNDC", float size=0.03);
 
