@@ -173,10 +173,9 @@ int runMassFitter(const TString& configFileName)
   const bool highlightPeakRegion = config["highlightPeakRegion"].GetBool();
 
   const Int_t randomSeed = config.HasMember("randomSeed") ? config["randomSeed"].GetInt() : -1;
+  const double nSigmaForSideband = config.HasMember("nSigmaForSideband") ? config["nSigmaForSideband"].GetDouble() : 3;
 
   const unsigned int nSliceVarBins = sliceVarMin.size();
-  std::vector<int> bkgFunc(nSliceVarBins);
-  std::vector<int> sgnFunc(nSliceVarBins);
   std::vector<double> sliceVarLimits(nSliceVarBins + 1);
 
   for (unsigned int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
@@ -186,12 +185,11 @@ int runMassFitter(const TString& configFileName)
     if (bkgFuncConfig[iSliceVar] < 0 || bkgFuncConfig[iSliceVar] >= HFInvMassFitter::NTypesOfBkgPdf) {
       throw std::runtime_error("ERROR: only Expo, Poly1, Poly2, Pow and PowEx background functions supported! Exit");
     }
-    bkgFunc[iSliceVar] = bkgFuncConfig[iSliceVar];
+    bkgFuncConfig[iSliceVar] = bkgFuncConfig[iSliceVar];
 
     if (sgnFuncConfig[iSliceVar] < 0 || sgnFuncConfig[iSliceVar] >= HFInvMassFitter::NTypesOfSgnPdf) {
       throw std::runtime_error("ERROR: only SingleGaus, DoubleGaus and DoubleGausSigmaRatioPar signal functions supported! Exit");
     }
-    sgnFunc[iSliceVar] = sgnFuncConfig[iSliceVar];
   }
 
   std::map<std::string, std::pair<std::string, std::string>> particles{
@@ -387,7 +385,8 @@ int runMassFitter(const TString& configFileName)
 
     if (isMc) {
       HFInvMassFitter* massFitter;
-      massFitter = new HFInvMassFitter(hMassForFit[iSliceVar], massMin[iSliceVar], massMax[iSliceVar], HFInvMassFitter::NoBkg, sgnFunc[iSliceVar]);
+      massFitter = new HFInvMassFitter(hMassForFit[iSliceVar], massMin[iSliceVar], massMax[iSliceVar], HFInvMassFitter::NoBkg, sgnFuncConfig[iSliceVar]);
+      massFitter->setNumberOfSigmaForSidebands(nSigmaForSideband);
       massFitter->setRandomSeed(randomSeed);
       massFitter->setDrawBgPrefit(drawBgPrefit);
       massFitter->setHighlightPeakRegion(highlightPeakRegion);
@@ -431,7 +430,8 @@ int runMassFitter(const TString& configFileName)
     } else {
       HFInvMassFitter* massFitter;
       massFitter = new HFInvMassFitter(hMassForFit[iSliceVar], massMin[iSliceVar], massMax[iSliceVar],
-                                       bkgFunc[iSliceVar], sgnFunc[iSliceVar]);
+                                       bkgFuncConfig[iSliceVar], sgnFuncConfig[iSliceVar]);
+      massFitter->setNumberOfSigmaForSidebands(nSigmaForSideband);
       massFitter->setRandomSeed(randomSeed);
       massFitter->setDrawBgPrefit(drawBgPrefit);
       massFitter->setHighlightPeakRegion(highlightPeakRegion);

@@ -21,6 +21,7 @@
 #include "HFInvMassFitter.h"
 
 #include <RooAddPdf.h>
+#include <RooCrystalBall.h>
 #include <RooDataHist.h>
 #include <RooExponential.h>
 #include <RooFitResult.h>
@@ -591,6 +592,32 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
   RooAbsPdf* reflFuncDoubleGaus = new RooAddPdf("reflFuncDoubleGaus", "reflection pdf", RooArgList(gausRefl1, gausRefl2), fracRefl);
   workspace.import(*reflFuncDoubleGaus);
   delete reflFuncDoubleGaus;
+  // signal DSCB pdf
+  if (mBoundMean) {
+    mean.setMin(mMassLowLimit);
+    mean.setMax(mMassUpLimit);
+  }
+  if (mFixedMean) {
+    mean.setVal(mMass);
+    mean.setConstant(kTRUE);
+  }
+  if (mFixedSigma) {
+    sigma.setVal(mSigmaSgn);
+    sigma.setConstant(kTRUE);
+  }
+  if (mBoundSigma) {
+    sigma.setMin(mSigmaSgn * (1 - mParamSgn));
+    sigma.setMax(mSigmaSgn * (1 + mParamSgn));
+  }
+// Tail parameters: left side
+  RooRealVar alphaL("alphaL", "left tail alpha", 1.5, 0.1, 10.);
+  RooRealVar nL("nL", "left tail n", 2.0, 0.5, 50.);
+// Tail parameters: right side
+  RooRealVar alphaR("alphaR", "right tail alpha", 1.5, 0.1, 10.);
+  RooRealVar nR("nR", "right tail n", 2.0, 0.5, 50.);
+  RooAbsPdf *sgnFuncDSCB = new RooCrystalBall("sgnFuncDSCB", "double sided crystal ball signal", mass, mean,sigma,alphaL,nL,alphaR,nR);
+  workspace.import(*sgnFuncDSCB);
+  delete sgnFuncDSCB;
   // reflection poly3
   const double polyReflParam0Lower = -1.;
   const double polyReflParam0Upper = 1.;
@@ -729,8 +756,8 @@ void HFInvMassFitter::highlightPeakRegion(const RooPlot* plot, Color_t color, Wi
   double yMax = plot->GetMaximum();
   const Double_t mean = mRooMeanSgn->getVal();
   const Double_t sigma = mRooSigmaSgn->getVal();
-  const Double_t minForSgn = mean - mNSigmaForSidebands * sigma;
-  const Double_t maxForSgn = mean + mNSigmaForSidebands * sigma;
+  const Double_t minForSgn = mean - mNSigmaForSgn * sigma;
+  const Double_t maxForSgn = mean + mNSigmaForSgn * sigma;
   TLine* leftLine = new TLine(minForSgn, yMin, minForSgn, yMax);
   TLine* rightLine = new TLine(maxForSgn, yMin, maxForSgn, yMax);
   for (const auto& line : std::array<TLine*, 2>{leftLine, rightLine}) {
@@ -754,8 +781,8 @@ void HFInvMassFitter::countSignal(Double_t& signal, Double_t& signalErr) const
 {
   const Double_t mean = mRooMeanSgn->getVal();
   const Double_t sigma = mRooSigmaSgn->getVal();
-  const Double_t minForSgn = mean - mNSigmaForSidebands * sigma;
-  const Double_t maxForSgn = mean + mNSigmaForSidebands * sigma;
+  const Double_t minForSgn = mean - mNSigmaForSgn * sigma;
+  const Double_t maxForSgn = mean + mNSigmaForSgn * sigma;
   const Int_t binForMinSgn = mHistoInvMass->FindBin(minForSgn);
   const Int_t binForMaxSgn = mHistoInvMass->FindBin(maxForSgn);
   const Double_t binForMinSgnUpperEdge = mHistoInvMass->GetBinLowEdge(binForMinSgn + 1);
@@ -861,6 +888,11 @@ RooAbsPdf* HFInvMassFitter::createSignalFitFunction(RooWorkspace* workspace)
       sgnPdf = workspace->pdf("sgnFuncDoublePeak");
       mRooSigmaSgn = workspace->var("sigmaSec");
       mRooMeanSgn = workspace->var("meanSec");
+    } break;
+    case 4: {
+      sgnPdf = workspace->pdf("sgnFuncDSCB");
+      mRooSigmaSgn = workspace->var("sigma");
+      mRooMeanSgn = workspace->var("mean");
     } break;
     default:
       break;
