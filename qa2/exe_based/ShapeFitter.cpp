@@ -98,7 +98,7 @@ TPaveText* ShapeFitter::ConvertFitParametersToText(const std::string& funcType, 
 }
 
 void ShapeFitter::PrepareHistoSidebands() {
-  histo_sidebands_ = dynamic_cast<TH1D*>(histo_in_->Clone());
+  histo_sidebands_ = dynamic_cast<TH1*>(histo_in_->Clone());
   const int nBins = histo_sidebands_->GetNbinsX();
   for(int iBin = 1; iBin <= nBins; iBin++) {
     const double binCenter = histo_sidebands_->GetBinCenter(iBin);
@@ -112,7 +112,7 @@ void ShapeFitter::PrepareHistoSidebands() {
 }
 
 void ShapeFitter::PrepareHistoPeak() {
-  histo_peak_ = dynamic_cast<TH1D*>(histo_in_->Clone());
+  histo_peak_ = dynamic_cast<TH1*>(histo_in_->Clone());
   histo_peak_->Sumw2();
   histo_peak_->Add(sidebands_fit_, -1);
 
@@ -214,14 +214,14 @@ void ShapeFitter::CopyPasteParametersToAll(const TF1* funcFrom, int nParsFunc, i
   }
 }
 
-void ShapeFitter::DefinePeak(TH1D* histo, float left, float right) {
+void ShapeFitter::DefinePeak(TH1* histo, float left, float right) {
   if      (peak_shape_ == "Gaus")       DefinePeakGaus(histo, left, right);
   else if (peak_shape_ == "DSCB")       DefinePeakDSCB(histo, left, right);
   else if (peak_shape_ == "DoubleGaus") DefinePeakDoubleGaus(histo, left, right);
   else                                  throw std::runtime_error("ShapeFitter::DefinePeak(): peak_shape_ must be one of the available");
 }
 
-void ShapeFitter::DefinePeakGaus(TH1D* histo, double left, double right) {
+void ShapeFitter::DefinePeakGaus(TH1* histo, double left, double right) {
   peak_fit_ = new TF1("peak_fit", Gaus::Shape, left, right, Gaus::nPars);
   peak_fit_->SetParameter(Gaus::kFactor, histo->Interpolate(expected_mu_));
   peak_fit_->FixParameter(Gaus::kShift, expected_mu_);
@@ -234,7 +234,7 @@ void ShapeFitter::DefinePeakGaus(TH1D* histo, double left, double right) {
   peak_fit_->SetTitle("Gaus");
 }
 
-void ShapeFitter::DefinePeakDoubleGaus(TH1D* histo, double left, double right) {
+void ShapeFitter::DefinePeakDoubleGaus(TH1* histo, double left, double right) {
   peak_fit_ = new TF1("peak_fit", DoubleGaus::Shape, left, right, DoubleGaus::nPars);
   peak_fit_->SetParameter(DoubleGaus::kFactor1, histo->Interpolate(expected_mu_) / 2);
   peak_fit_->SetParameter(DoubleGaus::kFactor2, histo->Interpolate(expected_mu_) / 2);
@@ -251,7 +251,7 @@ void ShapeFitter::DefinePeakDoubleGaus(TH1D* histo, double left, double right) {
   peak_fit_->SetTitle("DoubleGaus");
 }
 
-void ShapeFitter::DefinePeakDSCB(TH1D* histo, float left, float right) {
+void ShapeFitter::DefinePeakDSCB(TH1* histo, float left, float right) {
   peak_fit_ = new TF1("sgnl_fit", DoubleSidedCrystalBall::Shape, left, right, DoubleSidedCrystalBall::nPars);
   peak_fit_->SetParameter(DoubleSidedCrystalBall::kFactor, histo->Interpolate(expected_mu_));
   peak_fit_->FixParameter(DoubleSidedCrystalBall::kShift, expected_mu_);

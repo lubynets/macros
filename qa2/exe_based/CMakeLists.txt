@@ -13,6 +13,7 @@ SET(EXECUTABLES
     efficiency
     ct_mcfit
     mass_fit
+    mass_fit2
     ct_fit
     varCorr_qa2
     dwrth1

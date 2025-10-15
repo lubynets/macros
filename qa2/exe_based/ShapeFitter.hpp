@@ -14,7 +14,7 @@
 
 class ShapeFitter {
  public:
-  explicit ShapeFitter(TH1D* histo) { histo_in_ = histo; }
+  explicit ShapeFitter(TH1* histo) { histo_in_ = histo; }
   virtual ~ShapeFitter() = default;
 
   TF1* GetPeakFunc() const { return peak_fit_; }
@@ -22,14 +22,14 @@ class ShapeFitter {
   double GetPeakChi2() const { return peak_fit_->GetChisquare(); }
   int GetPeakNDF() const { return peak_fit_->GetNDF(); }
   double GetPeakChi2OverNDF() const { return GetPeakChi2() / GetPeakNDF(); }
-  TH1D* GetPeakHisto() const { return histo_peak_; }
+  TH1* GetPeakHisto() const { return histo_peak_; }
 
   TF1* GetSideBandFunc() const { return sidebands_fit_; }
   TF1* GetSideBandReFunc() const { return sidebands_refit_; }
   double GetSideBandChi2() const { return sidebands_fit_->GetChisquare(); }
   int GetSideBandNDF() const { return sidebands_fit_->GetNDF(); }
   double GetSideBandChi2OverNDF() const { return GetSideBandChi2() / GetSideBandNDF(); }
-  TH1D* GetSideBandHisto() const { return histo_sidebands_; }
+  TH1* GetSideBandHisto() const { return histo_sidebands_; }
 
   TF1* GetAllFunc() const { return all_fit_; }
   TF1* GetAllReFunc() const { return all_refit_; }
@@ -39,7 +39,7 @@ class ShapeFitter {
   double GetAllChi2() const { return GetSideBandChi2() + GetPeakChi2(); }
   int GetAllNDF() const { return GetSideBandNDF() + GetPeakNDF(); }
   double GetAllChi2OverNDF() const { return GetAllChi2() / GetAllNDF(); }
-  TH1D* GetAllHisto() const { return histo_in_; }
+  TH1* GetAllHisto() const { return histo_in_; }
 
   double GetPeakSigma() const { return peak_sigma_; }
   double GetSignalIntegral3Sigma() const { return peak_integral_3s_; }
@@ -63,13 +63,13 @@ class ShapeFitter {
   void FitSideBands();
   void FitAll();
 
-  void DefinePeakGaus(TH1D* h, double left, double right);
-  void DefinePeakDoubleGaus(TH1D* histo, double left, double right);
-  void DefinePeakDSCB(TH1D* histo, float left, float right);
+  void DefinePeakGaus(TH1* h, double left, double right);
+  void DefinePeakDoubleGaus(TH1* histo, double left, double right);
+  void DefinePeakDSCB(TH1* histo, float left, float right);
 
   void CopyPasteParametersToAll(const TF1* funcFrom, int nParsFunc, int nParsShift);
 
-  void DefinePeak(TH1D* histo, float left, float right);
+  void DefinePeak(TH1* histo, float left, float right);
   void DefineSideBand(double left, double right);
   void DefineAll(double left, double right);
 
@@ -81,9 +81,9 @@ class ShapeFitter {
   void EvaluatePeakSigma();
   void EvaluateSigBgIntegrals();
 
-  TH1D* histo_in_{nullptr};
-  TH1D* histo_sidebands_{nullptr};
-  TH1D* histo_peak_{nullptr};
+  TH1* histo_in_{nullptr};
+  TH1* histo_sidebands_{nullptr};
+  TH1* histo_peak_{nullptr};
 
   TF1* peak_fit_{nullptr};
   TF1* sidebands_fit_{nullptr};
