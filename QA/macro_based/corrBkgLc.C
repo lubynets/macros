@@ -170,7 +170,7 @@ enum MotherParticle : int {
   NMotherParticles
 };
 
-std::vector<Mother> Mothers {
+const std::vector<Mother> Mothers {
   {Dplus, "Dplus", pythiaBRScalingFactorDPlus},
   {Ds,    "Ds",    pythiaBRScalingFactorDs},
   {Dstar, "Dstar", pythiaBRScalingFactorDstar},
@@ -193,8 +193,8 @@ std::vector<Decay> Decays {
   {DplusToPiPiPi,      Mothers[Dplus], "PiPiPi",      BRsDplus_PYTHIA[DplusToPiPiPi],   BRsDplus_PDG[DplusToPiPiPi],   "D^{+}#rightarrow#pi^{#minus}#pi^{+}#pi^{+}",              3006},
   {DplusToPiKK,        Mothers[Dplus], "PiKK",        BRsDplus_PYTHIA[DplusToPiKK],     BRsDplus_PDG[DplusToPiKK],     "D^{+}#rightarrow#pi^{+}K^{#minus}K^{+}",                  3007},
 
-  {DsToPiKK,           Mothers[Ds],    "PiKK",        BRsDs_PYTHIA[DsToPiKK],           BRsDs_PDG[DsToPiKK],           "D_{s}^{+}#rightarrowK^{#minus}#pi^{+}#pi^{+}",            3004},
-  {DsToPiKKPi0,        Mothers[Ds],    "PiKKPi0",     BRsDs_PYTHIA[DsToPiKKPi0],        BRsDs_PDG[DsToPiKKPi0],        "D_{s}^{+}#rightarrowK^{#minus}#pi^{+}#pi^{+}#pi^{0}",     3005},
+  {DsToPiKK,           Mothers[Ds],    "PiKK",        BRsDs_PYTHIA[DsToPiKK],           BRsDs_PDG[DsToPiKK],           "D_{s}^{+}#rightarrowK^{+}K^{#minus}#pi^{+}",              3004},
+  {DsToPiKKPi0,        Mothers[Ds],    "PiKKPi0",     BRsDs_PYTHIA[DsToPiKKPi0],        BRsDs_PDG[DsToPiKKPi0],        "D_{s}^{+}#rightarrowK^{+}K^{#minus}#pi^{+}#pi^{0}",       3005},
   {DsToPiPiK,          Mothers[Ds],    "PiPiK",       BRsDs_PYTHIA[DsToPiPiK],          BRsDs_PDG[DsToPiPiK],          "D_{s}^{+}#rightarrowK^{+}#pi^{+}#pi^{#minus}",            3006},
   {DsToPiPiPi,         Mothers[Ds],    "PiPiPi",      BRsDs_PYTHIA[DsToPiPiPi],         BRsDs_PDG[DsToPiPiPi],         "D_{s}^{+}#rightarrow#pi^{+}#pi^{#minus}#pi^{+}",          3007},
   {DsToPiPiPiPi0,      Mothers[Ds],    "PiPiPiPi0",   BRsDs_PYTHIA[DsToPiPiPiPi0],      BRsDs_PDG[DsToPiPiPiPi0],      "D_{s}^{+}#rightarrow#pi^{+}#pi^{#minus}#pi^{+}#pi^{0}",   3008},
@@ -217,7 +217,7 @@ std::vector<Decay> Decays {
   {XicToSPiPi,         Mothers[Xic],   "SPiPi",       BRsXic_PYTHIA[XicToSPiPi],        BRsXic_PDG[XicToSPiPi],        "#Xi_{c}^{+}#rightarrow#Sigma^{+}#pi^{#minus}#pi^{+}",     3006},
 };
 
-std::string FromCtToProperLifetimePs{"33.35641"};
+const std::string FromCtToProperLifetimePs{"33.35641"};
 
 //__________________________________________________________
 //__________________________________________________________
@@ -227,8 +227,11 @@ void corrBkgLc(const std::string& filenameIn, const bool doRun=true) {
 
     const bool scaleByBrs = true;
     const bool applyBdt = true;
-    const bool eraseLcToPKPi = false;
+    const bool eraseLcToPKPi = true;
+    const bool keepOnlyDToKPiPiAndDsToPiKK = false;
+    bool saveCanvas = false;
 
+    if(!doRun) saveCanvas = true;
 //     const std::vector<float> sliceVarEdges{1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 16, 24};
 //     const std::string sliceVarName{"pt"};
 //     const std::string sliceVarTreeName{"fPt"};
@@ -253,9 +256,8 @@ void corrBkgLc(const std::string& filenameIn, const bool doRun=true) {
     }
     std::cout << "cuts_bdt = " << cuts_bdt << "\n";
 
-    std::vector<float> bdt = {0.06, 0.04, 0.04, 0.05, 0.1, 0.1, 0.1, 0.1, 0.1, 0.15, 0.2};
-
     if(eraseLcToPKPi) Decays.erase(std::remove_if(Decays.begin(), Decays.end(), [](const Decay& decay) { return decay.id_ == LcToPKPi; }), Decays.end());
+    if(keepOnlyDToKPiPiAndDsToPiKK) Decays.erase(std::remove_if(Decays.begin(), Decays.end(), [](const Decay& decay) { return decay.id_ != DplusToPiKPi && decay.id_ != DsToPiKK; }), Decays.end());
 
     const size_t nDecays{Decays.size()};
     const size_t nMothers{Mothers.size()};
@@ -295,7 +297,7 @@ void corrBkgLc(const std::string& filenameIn, const bool doRun=true) {
     for(int sliceVarBin=0; sliceVarBin<sliceVarEdges.size()-1; sliceVarBin++) {
         const float sliceVarMin = sliceVarEdges.at(sliceVarBin);
         const float sliceVarMax = sliceVarEdges.at(sliceVarBin+1);
-        const std::string title = to_string_fixed_digits(sliceVarMin, 1) + std::string(" < " + sliceVarTextName + " < ") + to_string_fixed_digits(sliceVarMax, 1) + std::string(" " + sliceVarUnit);
+        const std::string title = to_string_fixed_digits(sliceVarMin, 2) + std::string(" < " + sliceVarTextName + " < ") + to_string_fixed_digits(sliceVarMax, 2) + std::string(" " + sliceVarUnit);
         double maxY{1.};
 
         /// setup histograms
@@ -370,6 +372,7 @@ void corrBkgLc(const std::string& filenameIn, const bool doRun=true) {
         histos_bkgSum.back()->SetLineColor(kGray+1);
         histos_bkgSum.back()->SetLineWidth(2);
         histos_bkgSum.back()->SetMarkerColor(histos_bkgSum.back()->GetLineColor());
+        maxY = std::max(maxY, histos_bkgSum.back()->GetMaximum());
 
         /// Draw stuff
         // D+ channels
@@ -433,7 +436,7 @@ void corrBkgLc(const std::string& filenameIn, const bool doRun=true) {
 //     for(int iMother=0; iMother<nMothers+1; ++iMother) {
 //       can.at(iMother)->Write();
 //     }
-    can.at(nMothers)->Write();
+    if(saveCanvas) can.at(nMothers)->Write();
     for(int sliceVarBin=0; sliceVarBin<sliceVarEdges.size()-1; sliceVarBin++) {
         fout->cd();
         TDirectory* td = fout->mkdir(Form("%sBin%d", sliceVarName.c_str(), sliceVarBin));
