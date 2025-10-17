@@ -38,6 +38,8 @@ void SetLineDrawParameters(std::vector<TF1*> fs, int lineWidth = 1, int lineStyl
 
 TF1* HorizontalLine4Graph(double level, TGraph* graph);
 
+TF1* HorizontalLine(double level, double xlo=-999, double xhi=999);
+
 TPaveText* AddOneLineText(const std::string& text, const std::array<float, 4>& xy, const std::string& option="brNDC", float size=0.03);
 
 std::vector<TPaveText*> AddMultiLineText(const std::vector<std::string>& texts, const std::array<float, 4>& xy, const std::string& option="brNDC", float size=0.03);
@@ -94,8 +96,6 @@ inline std::string EvaluatePrintingBracket(const std::vector<T>& vec, size_t ind
   size_t vecSize = vec.size();
   return EvaluatePrintingBracket(vecSize, index);
 }
-
 };
-
 
 #endif //QA2_HELPERPLOT_HPP

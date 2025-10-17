@@ -88,6 +88,13 @@ TF1* HelperPlot::HorizontalLine4Graph(const double level, TGraph* graph) {
   return horizLine;
 }
 
+TF1* HelperPlot::HorizontalLine(const double level, const double xlo, const double xhi) {
+  TF1* horizLine = new TF1("horizLine", "[0]", xlo, xhi);
+  horizLine->SetParameter(0, level);
+
+  return horizLine;
+}
+
 TPaveText* HelperPlot::AddOneLineText(const std::string& text, const std::array<float, 4>& xy, const std::string& option, float size) {
   if(text.empty()) return nullptr;
   TPaveText* textPtr = new TPaveText(xy.at(0), xy.at(1), xy.at(2), xy.at(3), option.c_str());

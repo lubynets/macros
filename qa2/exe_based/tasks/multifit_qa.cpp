@@ -29,8 +29,10 @@ void MultiFitQa(const bool isVerbose=true) {
 
   const std::vector<std::string> variables {
     "hRawYieldsSignal",
+    "hRawYieldsSignalCounted",
     "hRawYieldsSigma",
-    "hRawYieldsMean"
+    "hRawYieldsMean",
+    "hRawYieldsChiSquareTotal"
   };
 
   std::vector<int> trialNumbers(nTrials);
@@ -45,6 +47,7 @@ void MultiFitQa(const bool isVerbose=true) {
   tensor<TGraphErrors*, 3> graph = make_tensor<TGraphErrors*, 3>({nVars, nLifetimeRanges, nBdtScores}, nullptr);
   tensor<std::map<double, size_t>, 3> values = make_tensor<std::map<double, size_t>, 3>({nVars, nLifetimeRanges, nBdtScores}, {});
   tensor<std::map<double, size_t>, 3> errors = make_tensor<std::map<double, size_t>, 3>({nVars, nLifetimeRanges, nBdtScores}, {});
+  tensor<TGraphErrors*, 3> graphVsChi2 = make_tensor<TGraphErrors*, 3>({nVars, nLifetimeRanges, nBdtScores}, nullptr);
   for(size_t iVar=0; iVar<nVars; ++iVar) {
     for (size_t iT = 0; iT < nLifetimeRanges; ++iT) {
       for (size_t iScore = 0; iScore < nBdtScores; ++iScore) {
@@ -55,6 +58,14 @@ void MultiFitQa(const bool isVerbose=true) {
         gr->SetTitle(grName.c_str());
         gr->GetXaxis()->SetTitle("Trial #");
         gr->GetYaxis()->SetTitle(histoName.c_str());
+
+        auto& grVsChi2 = graphVsChi2.at(iVar).at(iT).at(iScore);
+        grVsChi2 = new TGraphErrors();
+        const std::string grVsChi2Name = variables.at(iVar) + "VsChi2" + "_T" + std::to_string(iT) + "_NPgt" + to_string_with_precision(bdtScores.at(iScore), 2);
+        grVsChi2->SetName(grVsChi2Name.c_str());
+        grVsChi2->SetTitle(grVsChi2Name.c_str());
+        grVsChi2->GetXaxis()->SetTitle("hRawYieldsChiSquareTotal");
+        grVsChi2->GetYaxis()->SetTitle(histoName.c_str());
       } // nBdtScores
     } // nLifetimeRanges
   } // nVars
@@ -66,12 +77,13 @@ void MultiFitQa(const bool isVerbose=true) {
       TFile* fileIn = TFile::Open(fileName.c_str(), "read");
       if(isVerbose) std::cout << ", opened successfully\n";
       if(fileIn == nullptr) {
-        std::cout << ", " << fileName << " is missing\n";
+        if(isVerbose) std::cout << ", " << fileName << " is missing\n";
         continue;
       }
       for(size_t iVar=0; iVar<nVars; ++iVar) {
         if(isVerbose) std::cout << "Reading histogram" << variables.at(iVar);
         TH1* histoIn = GetObjectWithNullptrCheck<TH1>(fileIn, variables.at(iVar));
+        TH1* histoChi2 = GetObjectWithNullptrCheck<TH1>(fileIn, "hRawYieldsChiSquareTotal");
         if(isVerbose) std::cout << ", read successfully\t";
         if(isVerbose) std::cout << "iBin = ";
         for (int iBin = 1; iBin <= nLifetimeRanges; ++iBin) {
@@ -83,10 +95,15 @@ void MultiFitQa(const bool isVerbose=true) {
           gr->SetPointError(gr->GetN() - 1, 0, error);
           values.at(iVar).at(iBin - 1).at(iScore).insert({value, trial});
           errors.at(iVar).at(iBin - 1).at(iScore).insert({error, trial});
+
+          const double chi2 = histoChi2->GetBinContent(iBin);
+          auto grVsChi2 = graphVsChi2.at(iVar).at(iBin - 1).at(iScore);
+          grVsChi2->AddPoint(chi2, value);
+          grVsChi2->SetPointError(grVsChi2->GetN() - 1, 0, error);
         } // nLifetimeRanges
-        std::cout << "\n";
+        if(isVerbose) std::cout << "\n";
       } // nVars
-      if(isVerbose) std::cout << "\nColsing " << fileName;
+      if(isVerbose) std::cout << "\nClosing " << fileName;
       fileIn->Close();
       if(isVerbose) std::cout << ", closed successfully\n\n";
     } // nBdtScores
@@ -126,9 +143,15 @@ void MultiFitQa(const bool isVerbose=true) {
       histoSmooth->Reset();
       for (size_t iT = 0; iT < nLifetimeRanges; ++iT) {
         TCanvas cc("cc", "");
+        TCanvas ccVsChi2("ccVsChi2", "");
         cc.SetCanvasSize(1200, 800);
+        ccVsChi2.SetCanvasSize(1200, 800);
         const auto& gr = graph.at(iVar).at(iT).at(iScore);
+        const auto& grVsChi2 = graphVsChi2.at(iVar).at(iT).at(iScore);
+        cc.cd();
         gr->Draw("APE");
+        ccVsChi2.cd();
+        grVsChi2->Draw("APE");
         const size_t medianValueTrial = FindMapMedian(values.at(iVar).at(iT).at(iScore));
         const int medianValuePoint = FindGraphsPointByX(gr, static_cast<double>(medianValueTrial));
         const double medianValue = gr->GetPointY(medianValuePoint);
@@ -137,17 +160,24 @@ void MultiFitQa(const bool isVerbose=true) {
         const double medianError = gr->GetErrorY(medianErrorPoint);
         histoSmooth->SetBinContent(iT + 1, medianValue);
         histoSmooth->SetBinError(iT + 1, medianError);
-        TF1* lineValue = HorizontalLine4Graph(medianValue, gr);
-        TF1* lineErrorUp = HorizontalLine4Graph(medianValue + medianError, gr);
-        TF1* lineErrorDown = HorizontalLine4Graph(medianValue - medianError, gr);
+//        TF1* lineValue = HorizontalLine4Graph(medianValue, gr);
+//        TF1* lineErrorUp = HorizontalLine4Graph(medianValue + medianError, gr);
+//        TF1* lineErrorDown = HorizontalLine4Graph(medianValue - medianError, gr);
+        TF1* lineValue = HorizontalLine(medianValue);
+        TF1* lineErrorUp = HorizontalLine(medianValue + medianError);
+        TF1* lineErrorDown = HorizontalLine(medianValue - medianError);
         lineErrorUp->SetLineStyle(7);
         lineErrorDown->SetLineStyle(7);
         for (const auto& line: {lineValue, lineErrorUp, lineErrorDown}) {
           line->SetLineColor(kRed);
           line->SetLineWidth(2);
+          cc.cd();
+          line->Draw("same");
+          ccVsChi2.cd();
           line->Draw("same");
         }
-        cc.Print((variables.at(iVar) + "_T_" + std::to_string(iT) + ".pdf" + priBra).c_str(), "pdf");
+        cc.Print((variables.at(iVar) + "_T_" + std::to_string(iT+1) + ".pdf" + priBra).c_str(), "pdf");
+        ccVsChi2.Print((variables.at(iVar) + "VsChi2" + "_T_" + std::to_string(iT+1) + ".pdf" + priBra).c_str(), "pdf");
       } // nLifetimeRanges
       fileSmooth->cd();
       histoSmooth->Write();
@@ -159,5 +189,7 @@ void MultiFitQa(const bool isVerbose=true) {
 
 int main(int argc, char* argv[]) {
 
-  MultiFitQa();
+  const bool isVerbose = argc > 1 ? string_to_bool(argv[1]) : false;
+
+  MultiFitQa(isVerbose);
 }

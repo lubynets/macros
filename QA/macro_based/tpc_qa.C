@@ -102,7 +102,7 @@ void tpc_qa(const std::string& fileName) {
       const float nSigmaTof = fNSigTOF;
 
 //       if(std::fabs(fNSigTOF) > 3.f && std::fabs(fNSigTOF+999.f) > 1e-3) continue;
-      if(std::fabs(fNSigTOF) > 3.f) continue;
+//       if(std::fabs(fNSigTOF) > 3.f) continue;
 
       const short particleId = GetParicleByfPidIndex(fPidIndex);
 
