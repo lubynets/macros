@@ -40,7 +40,7 @@ void MultiFitQa(const bool isVerbose=true) {
 
   const size_t nVars = variables.size();
   const size_t nBdtScores = bdtScores.size();
-  TFile* fileMarkUp = OpenFileWithNullptrCheck(std::to_string(trialNumbers.at(0)) + "/" + fileNameTemplate + ".NPgt0.01.root");
+  TFile* fileMarkUp = OpenFileWithNullptrCheck("trials/" + std::to_string(trialNumbers.at(0)) + "/" + fileNameTemplate + ".NPgt0.01.root");
   TH1* histoMarkUp = GetObjectWithNullptrCheck<TH1>(fileMarkUp, variables.at(0));
   const size_t nLifetimeRanges = histoMarkUp->GetNbinsX();
 
@@ -72,7 +72,7 @@ void MultiFitQa(const bool isVerbose=true) {
 
   for(const auto& trial : trialNumbers) {
     for(size_t iScore=0; iScore<nBdtScores; ++iScore) {
-      const std::string fileName = std::to_string(trial) + "/" + fileNameTemplate + ".NPgt" + to_string_with_precision(bdtScores.at(iScore), 2) + ".root";
+      const std::string fileName = "trials/" + std::to_string(trial) + "/" + fileNameTemplate + ".NPgt" + to_string_with_precision(bdtScores.at(iScore), 2) + ".root";
       if(isVerbose) std::cout << "Opening " << fileName;
       TFile* fileIn = TFile::Open(fileName.c_str(), "read");
       if(isVerbose) std::cout << ", opened successfully\n";
@@ -86,7 +86,7 @@ void MultiFitQa(const bool isVerbose=true) {
         TH1* histoChi2 = GetObjectWithNullptrCheck<TH1>(fileIn, "hRawYieldsChiSquareTotal");
         if(isVerbose) std::cout << ", read successfully\t";
         if(isVerbose) std::cout << "iBin = ";
-        for (int iBin = 1; iBin <= nLifetimeRanges; ++iBin) {
+        for (int iBin = 1; iBin <= static_cast<int>(nLifetimeRanges); ++iBin) {
           if(isVerbose) std::cout << iBin << " ";
           const double value = histoIn->GetBinContent(iBin);
           const double error = histoIn->GetBinError(iBin);
@@ -136,7 +136,7 @@ void MultiFitQa(const bool isVerbose=true) {
         return s.substr(0, pos);
     };
     const std::string dirSmoothPath = getDirectory(fileSmoothName);
-    if(!dirSmoothPath.empty()) std::system(("mkdir -p " + dirSmoothPath).c_str());
+    if(!dirSmoothPath.empty()) MkDirBash(dirSmoothPath);
     TFile* fileSmooth = TFile::Open(("smooth/" + fileNameTemplate + ".NPgt" + to_string_with_precision(bdtScores.at(iScore), 2) + ".root").c_str(), "recreate");
     for(size_t iVar=0; iVar<nVars; ++iVar) {
       TH1* histoSmooth = dynamic_cast<TH1*>(GetObjectWithNullptrCheck<TH1>(fileMarkUp, variables.at(iVar))->Clone());
@@ -160,24 +160,29 @@ void MultiFitQa(const bool isVerbose=true) {
         const double medianError = gr->GetErrorY(medianErrorPoint);
         histoSmooth->SetBinContent(iT + 1, medianValue);
         histoSmooth->SetBinError(iT + 1, medianError);
-//        TF1* lineValue = HorizontalLine4Graph(medianValue, gr);
-//        TF1* lineErrorUp = HorizontalLine4Graph(medianValue + medianError, gr);
-//        TF1* lineErrorDown = HorizontalLine4Graph(medianValue - medianError, gr);
-        TF1* lineValue = HorizontalLine(medianValue);
-        TF1* lineErrorUp = HorizontalLine(medianValue + medianError);
-        TF1* lineErrorDown = HorizontalLine(medianValue - medianError);
-        lineErrorUp->SetLineStyle(7);
-        lineErrorDown->SetLineStyle(7);
-        for (const auto& line: {lineValue, lineErrorUp, lineErrorDown}) {
+        TF1* lineValue = HorizontalLine4Graph(medianValue, gr);
+        TF1* lineErrorUp = HorizontalLine4Graph(medianValue + medianError, gr);
+        TF1* lineErrorDown = HorizontalLine4Graph(medianValue - medianError, gr);
+        TF1* lineValueChi2 = HorizontalLine4Graph(medianValue, grVsChi2);
+        TF1* lineErrorUpChi2 = HorizontalLine4Graph(medianValue + medianError, grVsChi2);
+        TF1* lineErrorDownChi2 = HorizontalLine4Graph(medianValue - medianError, grVsChi2);
+        for (const auto& line: {lineErrorUp, lineErrorDown, lineErrorUpChi2, lineErrorDownChi2}) {
+          line->SetLineStyle(7);
+          line->SetLineStyle(7);
+        }
+        int iLine{0};
+        for (const auto& line: {lineValue, lineErrorUp, lineErrorDown, lineValueChi2, lineErrorUpChi2, lineErrorDownChi2}) {
           line->SetLineColor(kRed);
           line->SetLineWidth(2);
-          cc.cd();
+          if(iLine<3) cc.cd();
+          else        ccVsChi2.cd();
           line->Draw("same");
-          ccVsChi2.cd();
-          line->Draw("same");
+          ++iLine;
         }
-        cc.Print((variables.at(iVar) + "_T_" + std::to_string(iT+1) + ".pdf" + priBra).c_str(), "pdf");
-        ccVsChi2.Print((variables.at(iVar) + "VsChi2" + "_T_" + std::to_string(iT+1) + ".pdf" + priBra).c_str(), "pdf");
+        MkDirBash(variables.at(iVar));
+        MkDirBash(variables.at(iVar) + "VsChi2");
+        cc.Print((variables.at(iVar) + "/" + variables.at(iVar) + "_T_" + std::to_string(iT+1) + ".pdf" + priBra).c_str(), "pdf");
+        ccVsChi2.Print((variables.at(iVar) + "VsChi2" + "/" + variables.at(iVar) + "VsChi2" + "_T_" + std::to_string(iT+1) + ".pdf" + priBra).c_str(), "pdf");
       } // nLifetimeRanges
       fileSmooth->cd();
       histoSmooth->Write();

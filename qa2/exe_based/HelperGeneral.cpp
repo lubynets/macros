@@ -227,3 +227,7 @@ std::string HelperGeneral::ReadNthLine(const std::string& fileName) {
 
   return result;
 }
+
+void HelperGeneral::MkDirBash(const std::string& dirName) {
+  std::system(("mkdir -p " + dirName).c_str());
+}

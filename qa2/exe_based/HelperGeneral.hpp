@@ -78,6 +78,8 @@ double InterpolateTH1SuppressWarning(const TH1* h, double value);
 void ScaleTHnSparseWithWeight(THnSparse* histoIn, int nDim, const TH1* histoWeight);
 
 std::string ReadNthLine(const std::string& fileName);
+
+void MkDirBash(const std::string& dirName);
 };
 
 

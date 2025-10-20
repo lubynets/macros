@@ -76,21 +76,28 @@ void HelperPlot::SetLineDrawParameters(std::vector<TF1*> fs, int lineWidth, int 
   }
 }
 
-TF1* HelperPlot::HorizontalLine4Graph(const double level, TGraph* graph) {
-  float xlo = graph->GetPointX(0);
-  float xhi = graph->GetPointX(graph->GetN() - 1);
-  const float diff = xhi - xlo;
-  xlo = -diff / 10;
-  xhi += diff / 10;
+TF1* HelperPlot::HorizontalLine4Graph(const double level, const std::vector<TGraph*>& graphs) {
+  double xlo{1e9f};
+  double xhi{-1e9f};
+  for(const auto& graph: graphs) {
+    xlo = std::min(xlo, graph->GetXaxis()->GetXmin());
+    xhi = std::max(xhi, graph->GetXaxis()->GetXmax());
+  }
   TF1* horizLine = new TF1("horizLine", "[0]", xlo, xhi);
   horizLine->SetParameter(0, level);
+  horizLine->SetNpx(1000);
 
   return horizLine;
+}
+
+TF1* HelperPlot::HorizontalLine4Graph(double level, TGraph* graph) {
+  return HorizontalLine4Graph(level, std::vector<TGraph*>{graph});
 }
 
 TF1* HelperPlot::HorizontalLine(const double level, const double xlo, const double xhi) {
   TF1* horizLine = new TF1("horizLine", "[0]", xlo, xhi);
   horizLine->SetParameter(0, level);
+  horizLine->SetNpx(1000);
 
   return horizLine;
 }

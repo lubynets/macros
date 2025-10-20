@@ -38,6 +38,8 @@ void SetLineDrawParameters(std::vector<TF1*> fs, int lineWidth = 1, int lineStyl
 
 TF1* HorizontalLine4Graph(double level, TGraph* graph);
 
+TF1* HorizontalLine4Graph(double level, const std::vector<TGraph*>& graphs);
+
 TF1* HorizontalLine(double level, double xlo=-999, double xhi=999);
 
 TPaveText* AddOneLineText(const std::string& text, const std::array<float, 4>& xy, const std::string& option="brNDC", float size=0.03);
