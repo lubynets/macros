@@ -34,6 +34,7 @@
 #include <RooPlot.h>
 #include <RooPolynomial.h>
 #include <RooRealVar.h>
+#include <RooVoigtian.h>
 #include <RooWorkspace.h>
 #include <TColor.h>
 #include <TDatabasePDG.h>
@@ -618,6 +619,27 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
   RooAbsPdf *sgnFuncDSCB = new RooCrystalBall("sgnFuncDSCB", "double sided crystal ball signal", mass, mean,sigma,alphaL,nL,alphaR,nR);
   workspace.import(*sgnFuncDSCB);
   delete sgnFuncDSCB;
+  // signal Voigt pdf
+  if (mBoundMean) {
+    mean.setMin(mMassLowLimit);
+    mean.setMax(mMassUpLimit);
+  }
+  if (mFixedMean) {
+    mean.setVal(mMass);
+    mean.setConstant(kTRUE);
+  }
+  if (mFixedSigma) {
+    sigma.setVal(mSigmaSgn);
+    sigma.setConstant(kTRUE);
+  }
+  if (mBoundSigma) {
+    sigma.setMin(mSigmaSgn * (1 - mParamSgn));
+    sigma.setMax(mSigmaSgn * (1 + mParamSgn));
+  }
+  RooRealVar width("width", "width (FWHM) for Breit-Wigner part", mSigmaSgn, mSigmaSgn - 0.01, mSigmaSgn + 0.01);
+  RooAbsPdf* sgnFuncVoigt = new RooVoigtian("sgnFuncVoigt", "signal pdf (Voigtian)", mass, mean, width, sigma, false);
+  workspace.import(*sgnFuncVoigt);
+  delete sgnFuncVoigt;
   // reflection poly3
   const double polyReflParam0Lower = -1.;
   const double polyReflParam0Upper = 1.;
@@ -869,28 +891,33 @@ RooAbsPdf* HFInvMassFitter::createSignalFitFunction(RooWorkspace* workspace)
 {
   RooAbsPdf* sgnPdf{nullptr};
   switch (mTypeOfSgnPdf) {
-    case 0: {
+    case SingleGaus: {
       sgnPdf = workspace->pdf("sgnFuncGaus");
       mRooSigmaSgn = workspace->var("sigma");
       mRooMeanSgn = workspace->var("mean");
     } break;
-    case 1: {
+    case DoubleGaus: {
       sgnPdf = workspace->pdf("sgnFuncDoubleGaus");
       mRooSigmaSgn = workspace->var("sigmaDoubleGaus");
       mRooMeanSgn = workspace->var("mean");
     } break;
-    case 2: {
+    case DoubleGausSigmaRatioPar: {
       sgnPdf = workspace->pdf("sgnFuncGausRatio");
       mRooSigmaSgn = workspace->var("sigmaDoubleGausRatio");
       mRooMeanSgn = workspace->var("mean");
     } break;
-    case 3: {
+    case GausSec: {
       sgnPdf = workspace->pdf("sgnFuncDoublePeak");
       mRooSigmaSgn = workspace->var("sigmaSec");
       mRooMeanSgn = workspace->var("meanSec");
     } break;
-    case 4: {
+    case DoubleSidedCrystalBall: {
       sgnPdf = workspace->pdf("sgnFuncDSCB");
+      mRooSigmaSgn = workspace->var("sigma");
+      mRooMeanSgn = workspace->var("mean");
+    } break;
+    case Voigt: {
+      sgnPdf = workspace->pdf("sgnFuncVoigt");
       mRooSigmaSgn = workspace->var("sigma");
       mRooMeanSgn = workspace->var("mean");
     } break;

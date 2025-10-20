@@ -57,6 +57,7 @@ class HFInvMassFitter : public TNamed
     DoubleGausSigmaRatioPar = 2,
     GausSec = 3,
     DoubleSidedCrystalBall = 4,
+    Voigt = 5,
     NTypesOfSgnPdf
   };
   enum TypeOfReflPdf {
