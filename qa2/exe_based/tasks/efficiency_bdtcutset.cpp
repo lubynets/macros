@@ -31,7 +31,7 @@ void efficiency_bdtcutset(const std::string& fileName) {
 
   // ========================= Configuration =================================
   const std::vector<double> lifeTimeRanges = {0.2, 0.35, 0.5, 0.7, 0.9, 1.6};
-  const std::vector<double> pTRanges = {0, 2, 5, 8, 12, 20};
+  const std::vector<double> pTRanges = {1, 3, 5, 8, 12, 20};
 
   std::vector<float> bdtScores;
   for(int i=0; i<=99; i++) {
@@ -74,7 +74,7 @@ void efficiency_bdtcutset(const std::string& fileName) {
 
         for (const auto& score: bdtScores) {
           const std::string sScore = to_string_with_precision(score, 2);
-          for (int iLifeTimeRange = 0; iLifeTimeRange < lifeTimeRanges.size() - 1 && score == bdtScores.at(0); ++iLifeTimeRange) {
+          for (size_t iLifeTimeRange = 0; iLifeTimeRange < lifeTimeRanges.size() - 1 && score == bdtScores.at(0); ++iLifeTimeRange) {
             std::cout << "Processing iLifeTimeRange " << iLifeTimeRange << "\n";
             const Color_t grColor = promptness == "prompt" ? kRed : kBlue;
             const Style_t grLineStyle = weightPresences.at(iWeightPresence) == "" ? 1 : 7;
@@ -116,7 +116,7 @@ void efficiency_bdtcutset(const std::string& fileName) {
           TFile* fileOutScore = TFile::Open(("Eff_times_Acc_Lc." + tarSigShortcut + "gt" + sScore + ".root").c_str(), openOption.c_str());
           CD(fileOutScore, PtRangeString(iPt));
           histoEff->Write((promptness + weightPresences.at(iWeightPresence)).c_str());
-          for (int iLifeTimeRange = 0; iLifeTimeRange < lifeTimeRanges.size() - 1; ++iLifeTimeRange) {
+          for (size_t iLifeTimeRange = 0; iLifeTimeRange < lifeTimeRanges.size() - 1; ++iLifeTimeRange) {
             auto gr = grEff.at(iPromptness).at(iWeightPresence).at(iPt).at(iLifeTimeRange);
             gr->SetPoint(gr->GetN(), score, histoEff->GetBinContent(iLifeTimeRange + 1));
             gr->SetPointError(gr->GetN() - 1, 0, histoEff->GetBinError(iLifeTimeRange + 1));
@@ -140,7 +140,7 @@ void efficiency_bdtcutset(const std::string& fileName) {
   }
 
   for(size_t iPt=0, nPts=pTRanges.size()-1; iPt<=nPts; ++iPt) {
-    for (int iLifeTimeRange = 0; iLifeTimeRange < lifeTimeRanges.size() - 1; ++iLifeTimeRange) {
+    for (size_t iLifeTimeRange = 0; iLifeTimeRange < lifeTimeRanges.size() - 1; ++iLifeTimeRange) {
       const std::string priBra = lifeTimeRanges.size() - 1 == 1 ? "" : iLifeTimeRange == 0 ? "(" : iLifeTimeRange == lifeTimeRanges.size() - 2 ? ")" : "";
       TCanvas cc("cc", "");
       cc.SetCanvasSize(1200, 800);
