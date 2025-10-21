@@ -63,6 +63,8 @@ ROOT_GENERATE_DICTIONARY( G__Qa2 ${HEADERS}
 add_library(Qa2 SHARED ${SOURCES} G__Qa2.cxx)
 target_link_libraries(Qa2 PRIVATE ${ROOT_LIBRARIES} ROOT::EG ROOT::RooFit ROOT::RooFitCore)
 
+configure_file(qa2Config.sh.in ${CMAKE_BINARY_DIR}/qa2Config.sh)
+
 install(TARGETS Qa2 EXPORT Qa2Targets
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
@@ -88,12 +90,21 @@ install(FILES
         lib
         OPTIONAL)
 
+install(FILES
+        ${CMAKE_BINARY_DIR}/qa2Config.sh
+        DESTINATION
+        bin
+        COMPONENT
+        Devel
+        )
+
 foreach(EXE ${EXECUTABLES})
     # Add the executable
     add_executable(qa2-${EXE} tasks/${EXE}.cpp)
     # Link ROOT libraries to the executable
     target_link_libraries(qa2-${EXE} ${ROOT_LIBRARIES} ROOT::EG Qa2)
     install (TARGETS qa2-${EXE} RUNTIME DESTINATION bin)
+    install (FILES tasks/${EXE}.cpp DESTINATION share)
       # Install a symlink named just ${EXE} that points to qa2-${EXE}
     install(CODE
     "execute_process(
