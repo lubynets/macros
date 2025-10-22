@@ -1,19 +1,3 @@
-#include "TFile.h"
-#include "TTree.h"
-#include "TH1.h"
-#include "TCanvas.h"
-#include "TLegend.h"
-#include "TStyle.h"
-#include "TColor.h"
-
-#include <string>
-#include <vector>
-#include <iostream>
-#include <sstream>
-#include <iomanip>
-#include <algorithm>
-#include <map>
-
 template <typename I>
 std::string to_string_fixed_digits(I value,int digitsCount);
 //__________________________________________________________
@@ -228,8 +212,9 @@ void corrBkgLc(const std::string& filenameIn, const bool doRun=true) {
     const bool scaleByBrs = true;
     const bool applyBdt = true;
     const bool eraseLcToPKPi = true;
-    const bool keepOnlyDToKPiPiAndDsToPiKK = false;
+    const bool keepOnlyDToKPiPiAndDsToPiKK = true;
     bool saveCanvas = false;
+    const int smoothFactor{100000};
 
     if(!doRun) saveCanvas = true;
 //     const std::vector<float> sliceVarEdges{1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 16, 24};
@@ -364,6 +349,7 @@ void corrBkgLc(const std::string& filenameIn, const bool doRun=true) {
           histo->SetFillStyle(decay.fill_style_);
           histo->GetXaxis()->SetTitle("#it{M}(pK#pi) (GeV/#it{c}^{2})");
           histo->GetYaxis()->SetTitle(Form("counts/%.0f MeV/#it{c}^{2}", binwidth));
+          if(smoothFactor != 0) histo->Smooth(smoothFactor);
           maxY = std::max(maxY, histo->GetMaximum());
         }
 
@@ -372,6 +358,7 @@ void corrBkgLc(const std::string& filenameIn, const bool doRun=true) {
         histos_bkgSum.back()->SetLineColor(kGray+1);
         histos_bkgSum.back()->SetLineWidth(2);
         histos_bkgSum.back()->SetMarkerColor(histos_bkgSum.back()->GetLineColor());
+        if(smoothFactor != 0) histos_bkgSum.back()->Smooth(smoothFactor);
         maxY = std::max(maxY, histos_bkgSum.back()->GetMaximum());
 
         /// Draw stuff
