@@ -198,6 +198,7 @@ class HFInvMassFitter : public TNamed
     }
     mHistoTemplateRefl = static_cast<TH1*>(histoRefl->Clone("mHistoTemplateRefl"));
   }
+  void setTemplateCorrelBg(TH1* histoCorrelBg) { mHistoTemplateCorrelBg = histoCorrelBg; }
   void setDrawBgPrefit(Bool_t value = true) { mDrawBgPrefit = value; }
   void setHighlightPeakRegion(Bool_t value = true) { mHighlightPeakRegion = value; }
   Double_t getChiSquareOverNDFTotal() const { return mChiSquareOverNdfTotal; }
@@ -293,6 +294,7 @@ class HFInvMassFitter : public TNamed
   RooRealVar* mRooNSgn;              /// total Signal fit function integral
   RooRealVar* mRooNBkg;              /// total background fit function integral
   RooRealVar* mRooNRefl;             /// total reflection fit function integral
+  RooRealVar* mRooNCorrelBg;         /// total correlated background fit function integral
   RooAbsPdf* mTotalPdf;              /// total fit function
   RooPlot* mInvMassFrame;            /// frame of mass
   RooPlot* mReflFrame;               /// reflection frame
@@ -304,6 +306,7 @@ class HFInvMassFitter : public TNamed
   Double_t mIntegralBkg;       /// integral of background fit function
   Double_t mIntegralSgn;       /// integral of signal fit function
   TH1* mHistoTemplateRefl;     /// reflection histogram
+  TH1* mHistoTemplateCorrelBg; /// correlated background histogram
   Bool_t mDrawBgPrefit;        /// draw background after fitting the sidebands
   Bool_t mHighlightPeakRegion; /// draw vertical lines showing the peak region (usually +- 3 sigma)
   TRandom3* mRandomGen;

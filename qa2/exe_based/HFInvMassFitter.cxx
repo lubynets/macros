@@ -124,10 +124,11 @@ HFInvMassFitter::HFInvMassFitter() : TNamed(),
                                      mIntegralBkg(0),
                                      mIntegralSgn(0),
                                      mHistoTemplateRefl(nullptr),
+                                     mHistoTemplateCorrelBg(nullptr),
                                      mDrawBgPrefit(kFALSE),
                                      mHighlightPeakRegion(kFALSE),
-                                     mRandomSeed(-1),
-                                     mRandomGen(nullptr)
+                                     mRandomGen(nullptr),
+                                     mRandomSeed(-1)
 {
   // default constructor
 }
@@ -198,10 +199,11 @@ HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit, Double_t minValue, Doubl
                                                                                                                                     mIntegralBkg(0),
                                                                                                                                     mIntegralSgn(0),
                                                                                                                                     mHistoTemplateRefl(nullptr),
+                                                                                                                                    mHistoTemplateCorrelBg(nullptr),
                                                                                                                                     mDrawBgPrefit(kFALSE),
                                                                                                                                     mHighlightPeakRegion(kFALSE),
-                                                                                                                                    mRandomSeed(-1),
-                                                                                                                                    mRandomGen(nullptr)
+                                                                                                                                    mRandomGen(nullptr),
+                                                                                                                                    mRandomSeed(-1)
 {
   // standard constructor
   mHistoInvMass = dynamic_cast<TH1*>(histoToFit->Clone(histoToFit->GetTitle()));
@@ -374,7 +376,7 @@ void HFInvMassFitter::doFit()
       mResidualFrame = mass->frame(Title("Residual Distribution"));
       mResidualFrame->addPlotable(residualHistogram, "p");
       mSgnPdf->plotOn(mResidualFrame, Normalization(1.0, RooAbsReal::RelativeExpected), LineColor(kBlue));
-    } else {
+    } else if (mHistoTemplateCorrelBg == nullptr) {
       mTotalPdf = new RooAddPdf("mTotalPdf", "background + signal pdf", RooArgList(*bkgPdf, *sgnPdf), RooArgList(*mRooNBkg, *mRooNSgn));
       if (!strcmp(mFitOption.Data(), "Chi2")) {
         mTotalPdf->chi2FitTo(dataHistogram);
@@ -390,6 +392,8 @@ void HFInvMassFitter::doFit()
       RooHist* residualHistogram = mInvMassFrame->residHist("data_c", "Bkg_c");
       mResidualFrame->addPlotable(residualHistogram, "P");
       mSgnPdf->plotOn(mResidualFrame, Normalization(1.0, RooAbsReal::RelativeExpected), LineColor(kBlue));
+    } else {
+      RooDataHist corrBgDataHist("corrBgDataHist", "correlated background histogram template", RooArgList(*mass), Import(*mHistoTemplateCorrelBg));
     }
     mass->setRange("bkgForSignificance", mRooMeanSgn->getVal() - mNSigmaForSgn * mRooSigmaSgn->getVal(), mRooMeanSgn->getVal() + mNSigmaForSgn * mRooSigmaSgn->getVal());
     bkgIntegral = mBkgPdf->createIntegral(*mass, NormSet(*mass), Range("bkgForSignificance"));

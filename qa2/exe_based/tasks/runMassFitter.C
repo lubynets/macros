@@ -82,6 +82,7 @@ int runMassFitter(const TString& configFileName)
   Bool_t isMc = config["IsMC"].GetBool();
   TString inputFileName = config["InFileName"].GetString();
   TString reflFileName = config["ReflFileName"].GetString();
+  TString correlBgFileName = config.HasMember("CorrelBgFileName") ? config["CorrelBgFileName"].GetString() : "";
   TString outputFileName = config["OutFileName"].GetString();
   TString particleName = config["Particle"].GetString();
 
@@ -91,6 +92,7 @@ int runMassFitter(const TString& configFileName)
   std::vector<std::string> reflHistoName;
   std::vector<std::string> promptSecPeakHistoName;
   std::vector<std::string> fdSecPeakHistoName;
+  std::vector<std::string> correlBgHistoName;
   TString sliceVarName;
   TString sliceVarUnit;
   std::vector<double> sliceVarMin;
@@ -122,6 +124,10 @@ int runMassFitter(const TString& configFileName)
   const Value& fdSecPeakHistoNameValue = config["FDSecPeakHistoName"];
   parseStringArray(fdSecPeakHistoNameValue, fdSecPeakHistoName);
 
+  if (config.HasMember("CorrelBgHistoName")) {
+    const Value& correlBgHistoNameValue = config["CorrelBgHistoName"];
+    parseStringArray(correlBgHistoNameValue, correlBgHistoName);
+  }
   const bool fixSigma = config["FixSigma"].GetBool();
   const std::string sigmaFile = config["SigmaFile"].GetString();
 
@@ -168,6 +174,9 @@ int runMassFitter(const TString& configFileName)
   readArray(sgnFuncValue, sgnFuncConfig);
 
   const bool enableRefl = config["EnableRefl"].GetBool();
+
+  const bool includeCorrelBg = config.HasMember("IncludeCorrelBg") ? config["IncludeCorrelBg"].GetBool() : false;
+  const int correlBgSmoothFactor = config.HasMember("CorrelBgSmoothFactor") ? config["CorrelBgSmoothFactor"].GetInt() : 0;
 
   const bool drawBgPrefit = config["drawBgPrefit"].GetBool();
   const bool highlightPeakRegion = config["highlightPeakRegion"].GetBool();
@@ -220,9 +229,18 @@ int runMassFitter(const TString& configFileName)
     }
   }
 
+  TFile* inputFileCorrelBg{nullptr};
+  if (includeCorrelBg) {
+    inputFileCorrelBg = TFile::Open(correlBgFileName.Data());
+    if (!inputFileCorrelBg || !inputFileCorrelBg->IsOpen()) {
+      return -1;
+    }
+  }
+
   std::vector<TH1*> hMassSgn(nSliceVarBins);
   std::vector<TH1*> hMassRefl(nSliceVarBins);
   std::vector<TH1*> hMass(nSliceVarBins);
+  std::vector<TH1*> hMassCorrBg(nSliceVarBins);
 
   for (unsigned int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
     if (!isMc) {
@@ -236,6 +254,12 @@ int runMassFitter(const TString& configFileName)
         }
         if (!hMassSgn[iSliceVar]) {
           throw std::runtime_error("ERROR: MC prompt or FD histogram not found! Exit!");
+        }
+      }
+      if (includeCorrelBg) {
+        hMassCorrBg[iSliceVar] = inputFileRefl->Get<TH1>(correlBgHistoName[iSliceVar].data());
+        if (hMassCorrBg[iSliceVar] == nullptr) {
+          throw std::runtime_error("ERROR: Correlated background histogram not found! Exit!");
         }
       }
     } else {
@@ -334,6 +358,7 @@ int runMassFitter(const TString& configFileName)
   std::vector<TH1*> hMassForFit(nSliceVarBins);
   std::vector<TH1*> hMassForRefl(nSliceVarBins);
   std::vector<TH1*> hMassForSgn(nSliceVarBins);
+  std::vector<TH1*> hMassForCorrelBg(nSliceVarBins);
 
   Int_t canvasSize[2] = {1920, 1080};
   if (nSliceVarBins == 1) {
@@ -374,6 +399,13 @@ int runMassFitter(const TString& configFileName)
     if (enableRefl) {
       hMassForRefl[iSliceVar] = static_cast<TH1*>(hMassRefl[iSliceVar]->Rebin(nRebin[iSliceVar]));
       hMassForSgn[iSliceVar] = static_cast<TH1*>(hMassSgn[iSliceVar]->Rebin(nRebin[iSliceVar]));
+    }
+
+    if (includeCorrelBg) {
+      hMassForCorrelBg[iSliceVar] = dynamic_cast<TH1*>(hMassCorrBg[iSliceVar]->Rebin(nRebin[iSliceVar]));
+      if (correlBgSmoothFactor>0) {
+        hMassForCorrelBg[iSliceVar]->Smooth(correlBgSmoothFactor);
+      }
     }
 
     Double_t reflOverSgn = 0;
@@ -467,6 +499,10 @@ int runMassFitter(const TString& configFileName)
         reflOverSgn = hMassForRefl[iSliceVar]->Integral(hMassForRefl[iSliceVar]->FindBin(massMin[iSliceVar] * 1.0001), hMassForRefl[iSliceVar]->FindBin(massMax[iSliceVar] * 0.999)) / reflOverSgn;
         massFitter->setFixReflOverSgn(reflOverSgn);
         massFitter->setTemplateReflections(hMassRefl[iSliceVar], HFInvMassFitter::DoubleGaus);
+      }
+
+      if (includeCorrelBg) {
+        massFitter->setTemplateCorrelBg(hMassForCorrelBg[iSliceVar]);
       }
 
       massFitter->doFit();
