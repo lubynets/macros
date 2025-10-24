@@ -31,6 +31,7 @@
 #include <RooGenericPdf.h>
 #include <RooGlobalFunc.h>
 #include <RooHist.h>
+#include <RooHistPdf.h>
 #include <RooPlot.h>
 #include <RooPolynomial.h>
 #include <RooRealVar.h>
@@ -60,7 +61,7 @@ ClassImp(HFInvMassFitter);
 
 HFInvMassFitter::HFInvMassFitter() : TNamed(),
                                      mHistoInvMass(nullptr),
-                                     mFitOption("L,E"),
+                                     mFitOption(""),
                                      mMinMass(0),
                                      mMaxMass(5),
                                      mTypeOfBkgPdf(Expo),
@@ -113,6 +114,7 @@ HFInvMassFitter::HFInvMassFitter() : TNamed(),
                                      mRooNSgn(nullptr),
                                      mRooNBkg(nullptr),
                                      mRooNRefl(nullptr),
+                                     mRooNCorrelBg(nullptr),
                                      mTotalPdf(nullptr),
                                      mInvMassFrame(nullptr),
                                      mReflFrame(nullptr),
@@ -135,7 +137,7 @@ HFInvMassFitter::HFInvMassFitter() : TNamed(),
 
 HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit, Double_t minValue, Double_t maxValue, Int_t fitTypeBkg, Int_t fitTypeSgn) : TNamed(),
                                                                                                                                     mHistoInvMass(nullptr),
-                                                                                                                                    mFitOption("L,E"),
+                                                                                                                                    mFitOption(""),
                                                                                                                                     mMinMass(minValue),
                                                                                                                                     mMaxMass(maxValue),
                                                                                                                                     mTypeOfBkgPdf(fitTypeBkg),
@@ -188,6 +190,7 @@ HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit, Double_t minValue, Doubl
                                                                                                                                     mRooNSgn(nullptr),
                                                                                                                                     mRooNBkg(nullptr),
                                                                                                                                     mRooNRefl(nullptr),
+                                                                                                                                    mRooNCorrelBg(nullptr),
                                                                                                                                     mTotalPdf(nullptr),
                                                                                                                                     mInvMassFrame(nullptr),
                                                                                                                                     mReflFrame(nullptr),
@@ -225,6 +228,7 @@ HFInvMassFitter::~HFInvMassFitter()
   delete mRooNSgn;
   delete mRooNBkg;
   delete mRooNRefl;
+  delete mRooNCorrelBg;
   delete mInvMassFrame;
   delete mReflFrame;
   delete mReflOnlyFrame;
@@ -334,6 +338,7 @@ void HFInvMassFitter::doFit()
       mRooNSgn->setConstant(kTRUE);
     }
     mSgnPdf = new RooAddPdf("mSgnPdf", "signal fit function", RooArgList(*sgnPdf), RooArgList(*mRooNSgn));
+    mRooNCorrelBg = new RooRealVar("mNCorrelBg", "number of correlated background", 0.01*mRooNSgn->getVal(), 0., 0.1*mRooNSgn->getVal()); // TODO get rid of magic numbers
     // create reflection template and fit to reflection
     if (mHistoTemplateRefl) {
       RooAbsPdf* reflPdf = createReflectionFitFunction(mWorkspace); // create reflection pdf
@@ -376,8 +381,14 @@ void HFInvMassFitter::doFit()
       mResidualFrame = mass->frame(Title("Residual Distribution"));
       mResidualFrame->addPlotable(residualHistogram, "p");
       mSgnPdf->plotOn(mResidualFrame, Normalization(1.0, RooAbsReal::RelativeExpected), LineColor(kBlue));
-    } else if (mHistoTemplateCorrelBg == nullptr) {
-      mTotalPdf = new RooAddPdf("mTotalPdf", "background + signal pdf", RooArgList(*bkgPdf, *sgnPdf), RooArgList(*mRooNBkg, *mRooNSgn));
+    } else {
+      if (mHistoTemplateCorrelBg == nullptr) {
+        mTotalPdf = new RooAddPdf("mTotalPdf", "background + signal pdf", RooArgList(*bkgPdf, *sgnPdf), RooArgList(*mRooNBkg, *mRooNSgn));
+      } else {
+        RooDataHist corrBgDataHist("corrBgDataHist", "correlated background histogram template", RooArgList(*mass), Import(*mHistoTemplateCorrelBg));
+        auto* corrBgPdf = new RooHistPdf("corrBgPdf", "correlated background template pdf", RooArgList(*mass), corrBgDataHist, 1.);
+        mTotalPdf = new RooAddPdf("modelTotal", "background + signal + correlated bkg", RooArgList( *bkgPdf, *sgnPdf, *corrBgPdf ), RooArgList(*mRooNBkg, *mRooNSgn, *mRooNCorrelBg));
+      }
       if (!strcmp(mFitOption.Data(), "Chi2")) {
         mTotalPdf->chi2FitTo(dataHistogram);
       } else {
@@ -392,8 +403,6 @@ void HFInvMassFitter::doFit()
       RooHist* residualHistogram = mInvMassFrame->residHist("data_c", "Bkg_c");
       mResidualFrame->addPlotable(residualHistogram, "P");
       mSgnPdf->plotOn(mResidualFrame, Normalization(1.0, RooAbsReal::RelativeExpected), LineColor(kBlue));
-    } else {
-      RooDataHist corrBgDataHist("corrBgDataHist", "correlated background histogram template", RooArgList(*mass), Import(*mHistoTemplateCorrelBg));
     }
     mass->setRange("bkgForSignificance", mRooMeanSgn->getVal() - mNSigmaForSgn * mRooSigmaSgn->getVal(), mRooMeanSgn->getVal() + mNSigmaForSgn * mRooSigmaSgn->getVal());
     bkgIntegral = mBkgPdf->createIntegral(*mass, NormSet(*mass), Range("bkgForSignificance"));

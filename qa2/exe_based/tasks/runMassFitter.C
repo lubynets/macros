@@ -257,7 +257,7 @@ int runMassFitter(const TString& configFileName)
         }
       }
       if (includeCorrelBg) {
-        hMassCorrBg[iSliceVar] = inputFileRefl->Get<TH1>(correlBgHistoName[iSliceVar].data());
+        hMassCorrBg[iSliceVar] = inputFileCorrelBg->Get<TH1>(correlBgHistoName[iSliceVar].data());
         if (hMassCorrBg[iSliceVar] == nullptr) {
           throw std::runtime_error("ERROR: Correlated background histogram not found! Exit!");
         }
@@ -472,6 +472,8 @@ int runMassFitter(const TString& configFileName)
       massFitter->setBoundGaussianMean(massPDG, 0.8 * massPDG, 1.2 * massPDG);
       if (useLikelihood) {
         massFitter->setUseLikelihoodFit();
+      } else {
+        massFitter->setUseChi2Fit();
       }
 
       auto setFixedValue = [&massFitter, &iSliceVar](bool const& isFix, std::vector<double> const& fixManual, const TH1* histToFix, std::function<void(Double_t)> setFunc, std::string const& var) -> void {
