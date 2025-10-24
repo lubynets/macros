@@ -154,7 +154,7 @@ enum MotherParticle : int {
   NMotherParticles
 };
 
-const std::vector<Mother> Mothers {
+std::vector<Mother> Mothers {
   {Dplus, "Dplus", pythiaBRScalingFactorDPlus},
   {Ds,    "Ds",    pythiaBRScalingFactorDs},
   {Dstar, "Dstar", pythiaBRScalingFactorDstar},
@@ -214,7 +214,7 @@ void corrBkgLc(const std::string& filenameIn, const bool doRun=true) {
     const bool eraseLcToPKPi = true;
     const bool keepOnlyDToKPiPiAndDsToPiKK = true;
     bool saveCanvas = false;
-    const int smoothFactor{100000};
+    const int smoothFactor{0};
 
     if(!doRun) saveCanvas = true;
 //     const std::vector<float> sliceVarEdges{1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 16, 24};
@@ -253,9 +253,9 @@ void corrBkgLc(const std::string& filenameIn, const bool doRun=true) {
 //     const std::vector<std::string> dirNames = {"DF_2263624270445293"};
     TFile* file = TFile::Open(filename.c_str());
 
-    const float minX = 2.1;
-    const float maxX = 2.5;
-    const int binsX = 200;
+    const float minX = 1.98;
+    const float maxX = 2.58;
+    const int binsX = 600;
 
     gStyle->SetPalette(kVisibleSpectrum);
     auto cols = TColor::GetPalette();
@@ -315,8 +315,6 @@ void corrBkgLc(const std::string& filenameIn, const bool doRun=true) {
             std::cout << "Processing " << dirName << "\n";
             TTree* tree = file->Get<TTree>((dirName + "/O2hfcandlclite").c_str());
 
-            std::cout << "tree->GetEntries() = " << tree->GetEntries() << "\n";
-
             for(size_t iDecay=0; iDecay<nDecays; ++iDecay) {
               tree->Draw(Form("fM>>+%s", histoNames.at(iDecay).c_str()), cuts.at(iDecay).c_str(), "goff");
             }
@@ -367,7 +365,7 @@ void corrBkgLc(const std::string& filenameIn, const bool doRun=true) {
         frames.resize(nMothers+1);
         for(int iMother=0; iMother<nMothers+1; ++iMother) {
           auto& frame = frames.at(iMother);
-          frame = can.at(iMother)->cd(sliceVarBin+1)->DrawFrame(2.1, 0.00000001, 2.5, 1.2*maxY, title.c_str());
+          frame = can.at(iMother)->cd(sliceVarBin+1)->DrawFrame(minX, 0.00000001, maxX, 1.2*maxY, title.c_str());
           frame->GetXaxis()->SetTitle("#it{M}(pK#pi) (GeV/#it{c}^{2})");
           frame->GetYaxis()->SetTitle(Form("counts/%.0f MeV/#it{c}^{2}", binwidth));
           frame->SetLineWidth(0);
