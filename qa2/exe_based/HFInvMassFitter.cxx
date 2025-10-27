@@ -382,11 +382,12 @@ void HFInvMassFitter::doFit()
       mResidualFrame->addPlotable(residualHistogram, "p");
       mSgnPdf->plotOn(mResidualFrame, Normalization(1.0, RooAbsReal::RelativeExpected), LineColor(kBlue));
     } else {
+      RooDataHist* corrBgDataHist{nullptr};
       if (mHistoTemplateCorrelBg == nullptr) {
         mTotalPdf = new RooAddPdf("mTotalPdf", "background + signal pdf", RooArgList(*bkgPdf, *sgnPdf), RooArgList(*mRooNBkg, *mRooNSgn));
       } else {
-        RooDataHist corrBgDataHist("corrBgDataHist", "correlated background histogram template", RooArgList(*mass), Import(*mHistoTemplateCorrelBg));
-        auto* corrBgPdf = new RooHistPdf("corrBgPdf", "correlated background template pdf", RooArgList(*mass), corrBgDataHist, 1.);
+        corrBgDataHist = new RooDataHist("corrBgDataHist", "correlated background histogram template", RooArgList(*mass), Import(*mHistoTemplateCorrelBg));
+        auto* corrBgPdf = new RooHistPdf("corrBgPdf", "correlated background template pdf", RooArgList(*mass), *corrBgDataHist, 1.);
         mTotalPdf = new RooAddPdf("modelTotal", "background + signal + correlated bkg", RooArgList( *bkgPdf, *sgnPdf, *corrBgPdf ), RooArgList(*mRooNBkg, *mRooNSgn, *mRooNCorrelBg));
       }
       if (!strcmp(mFitOption.Data(), "Chi2")) {
