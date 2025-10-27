@@ -1,3 +1,5 @@
+const int smoothFactor{100000};
+
 class classFuncBkgWithTemplate : public TNamed {
 
     public:
@@ -7,7 +9,7 @@ class classFuncBkgWithTemplate : public TNamed {
         if(histo_template_input) {
             std::cout << "[classFuncBkgWithTemplate] template read correctly" << std::endl;
             histo_template = dynamic_cast<TH1D*>(histo_template_input->Clone());
-            histo_template->Smooth(100000);
+            histo_template->Smooth(smoothFactor);
         }
 
         /// polynomial background
@@ -70,6 +72,10 @@ class classFuncBkgWithTemplate : public TNamed {
         return return_value;
     }
 
+//     double getTemplateOnly() {
+//         return par[0]*histo_template->GetBinContent(histo_template->FindBin(x[0]));
+//     }
+
     private:
         bool addSignal;
         TH1D* histo_template;
@@ -81,7 +87,7 @@ class classFuncBkgWithTemplate : public TNamed {
 void fitCorrBg() {
     const std::string filename = "/home/oleksii/alidir/working/cutVar/data/input/mass_bdt_qa_thn.HL.data.HF_LHC23_pass4_Thin_2P3PDstar.522578.root";
     const std::string histoname = "pT_1_20/T_0.90_1.60/hM_NPgt0.00";
-    const std::string filename_template = "/home/oleksii/alidir/working/correlBG/corrBkgLc.canvaser.HL.mc.HF_LHC24h1b_All.522675.mainOnly.root";
+    const std::string filename_template = "/home/oleksii/alidir/working/correlBG/corrBkgLc.canvaser.HL.mc.HF_LHC24h1b_All.backup_522675.mainOnly.root";
     const std::string histoname_template = "TBin4/histos_bkgSum_TBin4";
 
     gStyle->SetCanvasPreferGL(true);
@@ -176,10 +182,6 @@ void fitCorrBg() {
     func_signal_1->SetLineWidth(2);
     func_signal_1->SetLineColor(kRed+1);
     func_signal_1->SetFillColor(func_signal_1->GetLineColor());
-    //TH1D* h_signal = dynamic_cast<TH1D*>(func_signal_1->GetHistogram());
-    //h_signal->SetFillColorAlpha(h_signal->GetLineColor(), 0.2);
-    //h_signal->SetFillStyle(1001);
-    //h_signal->DrawClone("samehisto");
     func_signal_1->Draw("same");
     hFrame_residuals_can1->GetXaxis()->UnZoom();
     gPad->SetTicks();
@@ -194,7 +196,7 @@ void fitCorrBg() {
     /// canvas
     TCanvas* can2 = new TCanvas("can2", "with template", 1200, 600);
     can2->Divide(2, 1);
-    TH1F* hFrame_can2 = can2->cd(1)->DrawFrame(minX, minY*0.2, maxX, maxY*1.1, histogram_2->GetTitle());
+    TH1F* hFrame_can2 = can2->cd(1)->DrawFrame(minX, 0, maxX, maxY*1.1, histogram_2->GetTitle());
     hFrame_can2->GetXaxis()->SetTitle(histogram_2->GetXaxis()->GetTitle());
     hFrame_can2->GetYaxis()->SetTitle(histogram_2->GetYaxis()->GetTitle());
     histogram_2->Draw("same");
@@ -210,7 +212,6 @@ void fitCorrBg() {
     classFuncBkgWithTemplate* fFit_bkg_template = new classFuncBkgWithTemplate(histo_template, 3, false);
     classFuncBkgWithTemplate* fFit_template = new classFuncBkgWithTemplate(histo_template, 3, true);
     int npars = 1 /*template*/ + 3 /*signal*/ + 4 /*pol3*/;
-    //int npars = 1 /*template*/ + 3 /*signal*/ + 3 /*pol2*/;
     std::cout << "npars = " << npars << std::endl;
     TF1* fit_bkg_template = new TF1("fit_bkg_template", fFit_bkg_template, minX, maxX, npars-3);
     TF1* fit_template = new TF1("fit_template", fFit_template, minX, maxX, npars);
@@ -221,8 +222,6 @@ void fitCorrBg() {
 
     /// set parameters
     fit_template->SetParameters(fit_bkg_template->GetParameter(0), func_signal_1->GetParameter(0), func_signal_1->GetParameter(1), func_signal_1->GetParameter(2), fit_bkg_template->GetParameter(1), fit_bkg_template->GetParameter(2), fit_bkg_template->GetParameter(3), fit_bkg_template->GetParameter(4));
-    //fit_template->SetParLimits(0, 0., 1000000000.);
-    //fit_template->SetParLimits(1, 0., 1000000000.);
 
     /// fit
     histogram_2->Fit(fit_template, "RL", "", minX, maxX);
@@ -232,6 +231,41 @@ void fitCorrBg() {
     const float mean_error_2 = fit_template->GetParError(2);
     const float sigma_2 = fit_template->GetParameter(3);
     const float sigma_error_2 = fit_template->GetParError(3);
+
+    TF1* fit_template_corrBg = new TF1("fit_template_corrBg", fFit_template, minX, maxX, npars);
+    TF1* fit_template_usualBg = new TF1("fit_template_usualBg", fFit_template, minX, maxX, npars);
+    TF1* fit_template_Signal = new TF1("fit_template_Signal", fFit_template, minX, maxX, npars);
+    for(int iPar=0, nPars=fit_template_corrBg->GetNpar(); iPar<nPars; ++iPar) {
+        const auto param = fit_template->GetParameter(iPar);
+        std::cout << "param = " << param << "\n";
+        if(iPar==0 || iPar==2 || iPar==3) fit_template_corrBg->SetParameter(iPar, param);
+        else                              fit_template_corrBg->SetParameter(iPar, 0.);
+
+        if(iPar<4 && iPar!=2 && iPar!=3) fit_template_usualBg->SetParameter(iPar, 0.);
+        else                             fit_template_usualBg->SetParameter(iPar, param);
+
+        if(iPar>0 && iPar<4) fit_template_Signal->SetParameter(iPar, param);
+        else                 fit_template_Signal->SetParameter(iPar, 0.);
+    }
+
+    fit_template_corrBg->SetLineColor(kMagenta);
+    fit_template_usualBg->SetLineColor(kGreen+2);
+    fit_template_Signal->SetNpx(1000);
+    fit_template_Signal->SetLineWidth(0);
+    fit_template_Signal->SetFillStyle(1001);
+    fit_template_Signal->SetFillColorAlpha(kBlue, 0.3);
+
+    TLegend* leg = new TLegend(0.2, 0.4, 0.45, 0.6);
+    leg->SetBorderSize(0);
+    leg->SetTextSize(0.03);
+    leg->AddEntry(fit_template_corrBg, "corr BG", "L");
+    leg->AddEntry(fit_template_usualBg, "uncorr BG", "L");
+    leg->AddEntry(fit_template_Signal, "signal", "F");
+    leg->Draw("same");
+
+    fit_template_corrBg->Draw("same");
+    fit_template_usualBg->Draw("same");
+    fit_template_Signal->Draw("same");
 
     TPaveText* txt_2 = new TPaveText(minX, maxY*0.20, maxX, maxY*0.40);
     txt_2->SetTextFont(42);
@@ -269,10 +303,6 @@ void fitCorrBg() {
     func_signal_2->SetLineWidth(2);
     func_signal_2->SetLineColor(kRed+1);
     func_signal_2->SetFillColor(func_signal_2->GetLineColor());
-    //TH1D* h_signal = dynamic_cast<TH1D*>(func_signal_2->GetHistogram());
-    //h_signal->SetFillColorAlpha(h_signal->GetLineColor(), 0.2);
-    //h_signal->SetFillStyle(1001);
-    //h_signal->DrawClone("samehisto");
     func_signal_2->Draw("same");
     hFrame_residuals_can2->GetXaxis()->UnZoom();
     gPad->SetTicks();

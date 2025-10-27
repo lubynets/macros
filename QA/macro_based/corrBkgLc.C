@@ -253,8 +253,8 @@ void corrBkgLc(const std::string& filenameIn, const bool doRun=true) {
 //     const std::vector<std::string> dirNames = {"DF_2263624270445293"};
     TFile* file = TFile::Open(filename.c_str());
 
-    const float minX = 1.98;
-    const float maxX = 2.58;
+    const double minX = 1.98;
+    const double maxX = 2.58;
     const int binsX = 600;
 
     gStyle->SetPalette(kVisibleSpectrum);
