@@ -1,4 +1,4 @@
-const int smoothFactor{100000};
+const int smoothFactor{100};
 
 class classFuncBkgWithTemplate : public TNamed {
 
@@ -30,8 +30,12 @@ class classFuncBkgWithTemplate : public TNamed {
         int npars = 0;
         // the template
         if(histo_template) {
-            return_value += par[npars]*histo_template->GetBinContent(histo_template->FindBin(x[0]));
-            npars++;
+            if (addSignal) {
+                return_value += par[0]*par[1]*histo_template->GetBinContent(histo_template->FindBin(x[0]));
+            } else {
+                return_value += par[0]*histo_template->GetBinContent(histo_template->FindBin(x[0]));
+            }
+            ++npars;
         }
 
         /// add signal
@@ -87,8 +91,9 @@ class classFuncBkgWithTemplate : public TNamed {
 void fitCorrBg() {
     const std::string filename = "/home/oleksii/alidir/working/cutVar/data/input/mass_bdt_qa_thn.HL.data.HF_LHC23_pass4_Thin_2P3PDstar.522578.root";
     const std::string histoname = "pT_1_20/T_0.90_1.60/hM_NPgt0.00";
-    const std::string filename_template = "/home/oleksii/alidir/working/correlBG/corrBkgLc.canvaser.HL.mc.HF_LHC24h1b_All.backup_522675.mainOnly.root";
+    const std::string filename_template = "/home/oleksii/alidir/working/correlBG/corrBkgLc.canvaser.HL.mc.HF_LHC24h1b_All.522675.root";
     const std::string histoname_template = "TBin4/histos_bkgSum_TBin4";
+    const std::string histoname_signal = "TBin4/histos_LcToPKPi_TBin4";
 
     gStyle->SetCanvasPreferGL(true);
 
@@ -206,7 +211,12 @@ void fitCorrBg() {
     /// template histogram
     TFile* file_template = TFile::Open(filename_template.c_str(), "read");
     TH1D* histo_template = nullptr;
+    TH1D* histo_signal = nullptr;
     file_template->GetObject(histoname_template.c_str(), histo_template);
+    file_template->GetObject(histoname_signal.c_str(), histo_signal);
+
+    std::cout << "histo_template->Integral() = " << histo_template->Integral("width") << "\n";
+    std::cout << "histo_signal->Integral() = " << histo_signal->Integral("width") << "\n";
 
     /// fit function
     classFuncBkgWithTemplate* fFit_bkg_template = new classFuncBkgWithTemplate(histo_template, 3, false);
