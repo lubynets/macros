@@ -43,6 +43,19 @@ list(APPEND HEADERS "BdtEfficiencyCalculator.hpp" "Shapes.hpp")
 # Specify the C++ standard
 set(CMAKE_CXX_STANDARD 17)
 
+# by default build optimized code
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE RELEASE)
+endif()
+
+# in DEBUG mode make verbose Makefile
+if(CMAKE_BUILD_TYPE MATCHES DEBUG)
+    set(CMAKE_VERBOSE_MAKEFILE ON)
+endif()
+
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -ggdb -g -Wall -Wextra")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2 -ftree-vectorize -ffast-math")
+
 set(QA_RAPIDJSON_INCLUDE_DIRS "" CACHE STRING "Location of rapidjson include directories")
 
 # Find the ROOT package (you might need to specify the ROOT_DIR if it's not in the default location)
