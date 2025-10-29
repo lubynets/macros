@@ -1,4 +1,4 @@
-const int smoothFactor{100};
+const int smoothFactor{1000};
 
 class classFuncBkgWithTemplate : public TNamed {
 
@@ -30,11 +30,8 @@ class classFuncBkgWithTemplate : public TNamed {
         int npars = 0;
         // the template
         if(histo_template) {
-            if (addSignal) {
-                return_value += par[0]*par[1]*histo_template->GetBinContent(histo_template->FindBin(x[0]));
-            } else {
-                return_value += par[0]*histo_template->GetBinContent(histo_template->FindBin(x[0]));
-            }
+            return_value += par[0]*histo_template->GetBinContent(histo_template->FindBin(x[0]));
+            if (addSignal) return_value *= par[1];
             ++npars;
         }
 
@@ -76,10 +73,6 @@ class classFuncBkgWithTemplate : public TNamed {
         return return_value;
     }
 
-//     double getTemplateOnly() {
-//         return par[0]*histo_template->GetBinContent(histo_template->FindBin(x[0]));
-//     }
-
     private:
         bool addSignal;
         TH1D* histo_template;
@@ -118,7 +111,7 @@ void fitCorrBg() {
     can1->Divide(2, 1);
     float minY = histogram->GetMinimum();
     float maxY = histogram->GetMaximum();
-    TH1F* hFrame_can1 = can1->cd(1)->DrawFrame(minX, minY*0.2, maxX, maxY*1.1, histogram->GetTitle());
+    TH1F* hFrame_can1 = can1->cd(1)->DrawFrame(minX, 0, maxX, maxY*1.1, histogram->GetTitle());
     hFrame_can1->GetXaxis()->SetTitle(histogram->GetXaxis()->GetTitle()); 
     hFrame_can1->GetYaxis()->SetTitle(histogram->GetYaxis()->GetTitle());
     histogram->Draw("same");
@@ -131,7 +124,7 @@ void fitCorrBg() {
     TF1* fit_noTemplate = new TF1("fit_noTemplate", Form("%s + %s(3)", str_signal.c_str(), str_bkg.c_str()), minX, maxX);
     TF1* func_signal_1 = new TF1("func_signal_1", str_signal.c_str(), minX, maxX);
     TF1* func_bkg_1 = new TF1("func_bkg_1", str_bkg.c_str(), minX, maxX);
-    
+
     /// pre-fit background
     TF1* prefit_pol3 = new TF1("prefit_pol3", "pol3", 0, 3);
     histogram->Fit(prefit_pol3, "NQR", "", minX, maxX);
@@ -141,7 +134,8 @@ void fitCorrBg() {
     
     /// fit
     histogram->Fit(fit_noTemplate, "RN", "", minX, maxX);
-    fit_noTemplate->SetLineColor(kBlue+1);
+    fit_noTemplate->SetLineColor(kRed);
+    func_bkg_1->SetLineColor(kGreen+2);
     func_bkg_1->Draw("same");
     fit_noTemplate->Draw("same");
     const float binwidth = histogram->GetBinWidth(1);
@@ -165,6 +159,13 @@ void fitCorrBg() {
     /// signal and background functions
     func_signal_1->SetParameters(fit_noTemplate->GetParameter(0), fit_noTemplate->GetParameter(1), fit_noTemplate->GetParameter(2));
     func_bkg_1->SetParameters(fit_noTemplate->GetParameter(3), fit_noTemplate->GetParameter(4), fit_noTemplate->GetParameter(5), fit_noTemplate->GetParameter(6));
+
+    TF1* func_signal_1_clone = dynamic_cast<TF1*>(func_signal_1->Clone());
+    func_signal_1_clone->SetNpx(1000);
+    func_signal_1_clone->SetLineWidth(0);
+    func_signal_1_clone->SetFillStyle(1001);
+    func_signal_1_clone->SetFillColorAlpha(kBlue, 0.3);
+    func_signal_1_clone->Draw("same");
 
     /// residuals
     TH1D* histo_residuals_noTempl = dynamic_cast<TH1D*>(histogram->Clone());
@@ -215,8 +216,12 @@ void fitCorrBg() {
     file_template->GetObject(histoname_template.c_str(), histo_template);
     file_template->GetObject(histoname_signal.c_str(), histo_signal);
 
-    std::cout << "histo_template->Integral() = " << histo_template->Integral("width") << "\n";
-    std::cout << "histo_signal->Integral() = " << histo_signal->Integral("width") << "\n";
+    const double mcIntegralSignal = histo_signal->Integral("width");
+    const double mcIntegralTemplate = histo_template->Integral("width");
+
+    std::cout << "histo_template->Integral() = " << mcIntegralTemplate << "\n";
+    std::cout << "histo_signal->Integral() = " << mcIntegralSignal << "\n";
+    std::cout << "mcTemplOverSignal = " << mcIntegralTemplate / mcIntegralSignal << "\n";
 
     /// fit function
     classFuncBkgWithTemplate* fFit_bkg_template = new classFuncBkgWithTemplate(histo_template, 3, false);
@@ -231,7 +236,7 @@ void fitCorrBg() {
     histogram_2->Fit(fit_bkg_template, "R", "", minX, maxX);
 
     /// set parameters
-    fit_template->SetParameters(fit_bkg_template->GetParameter(0), func_signal_1->GetParameter(0), func_signal_1->GetParameter(1), func_signal_1->GetParameter(2), fit_bkg_template->GetParameter(1), fit_bkg_template->GetParameter(2), fit_bkg_template->GetParameter(3), fit_bkg_template->GetParameter(4));
+    fit_template->SetParameters(fit_bkg_template->GetParameter(0)/func_signal_1->GetParameter(0), func_signal_1->GetParameter(0), func_signal_1->GetParameter(1), func_signal_1->GetParameter(2), fit_bkg_template->GetParameter(1), fit_bkg_template->GetParameter(2), fit_bkg_template->GetParameter(3), fit_bkg_template->GetParameter(4));
 
     /// fit
     histogram_2->Fit(fit_template, "RL", "", minX, maxX);
@@ -242,14 +247,13 @@ void fitCorrBg() {
     const float sigma_2 = fit_template->GetParameter(3);
     const float sigma_error_2 = fit_template->GetParError(3);
 
-    TF1* fit_template_corrBg = new TF1("fit_template_corrBg", fFit_template, minX, maxX, npars);
+    TF1* fit_template_corrBg = new TF1("fit_template_corrBg", fFit_bkg_template, minX, maxX, npars);
     TF1* fit_template_usualBg = new TF1("fit_template_usualBg", fFit_template, minX, maxX, npars);
     TF1* fit_template_Signal = new TF1("fit_template_Signal", fFit_template, minX, maxX, npars);
     for(int iPar=0, nPars=fit_template_corrBg->GetNpar(); iPar<nPars; ++iPar) {
         const auto param = fit_template->GetParameter(iPar);
         std::cout << "param = " << param << "\n";
-        if(iPar==0 || iPar==2 || iPar==3) fit_template_corrBg->SetParameter(iPar, param);
-        else                              fit_template_corrBg->SetParameter(iPar, 0.);
+        if(iPar==0) fit_template_corrBg->SetParameter(iPar, fit_template->GetParameter(iPar)*fit_template->GetParameter(iPar+1));
 
         if(iPar<4 && iPar!=2 && iPar!=3) fit_template_usualBg->SetParameter(iPar, 0.);
         else                             fit_template_usualBg->SetParameter(iPar, param);
@@ -257,6 +261,8 @@ void fitCorrBg() {
         if(iPar>0 && iPar<4) fit_template_Signal->SetParameter(iPar, param);
         else                 fit_template_Signal->SetParameter(iPar, 0.);
     }
+
+    std::cout << "fitTemplOverSignal = " << fit_template->GetParameter(0) * mcIntegralTemplate << "\n";
 
     fit_template_corrBg->SetLineColor(kMagenta);
     fit_template_usualBg->SetLineColor(kGreen+2);
@@ -290,7 +296,7 @@ void fitCorrBg() {
     /// signal and background functions
     TF1* func_signal_2 = new TF1("func_signal_2", str_signal.c_str(), minX, maxX);
     func_signal_2->SetParameters(fit_template->GetParameter(1), fit_template->GetParameter(2), fit_template->GetParameter(3));
-    fit_bkg_template->SetParameters(fit_template->GetParameter(0), fit_template->GetParameter(4), fit_template->GetParameter(5), fit_template->GetParameter(6), fit_template->GetParameter(7));
+    fit_bkg_template->SetParameters(fit_template->GetParameter(0)*fit_template->GetParameter(1), fit_template->GetParameter(4), fit_template->GetParameter(5), fit_template->GetParameter(6), fit_template->GetParameter(7));
 
     /// residuals
     TH1D* histo_residuals_templ = dynamic_cast<TH1D*>(histogram_2->Clone());
