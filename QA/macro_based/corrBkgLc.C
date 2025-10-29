@@ -1,21 +1,13 @@
 template <typename I>
 std::string to_string_fixed_digits(I value,int digitsCount);
-//__________________________________________________________
-//__________________________________________________________
-//__________________________________________________________
+
 std::vector<std::string> GetDFNames(const std::string& fileName);
-//__________________________________________________________
-//__________________________________________________________
-//__________________________________________________________
+
 void setRowCols(const int size, int& rows, int& cols, int& w, int& h);
-//__________________________________________________________
-//__________________________________________________________
-//__________________________________________________________
+
 std::string ReadNthLine(const std::string& fileName);
-//__________________________________________________________
-//__________________________________________________________
-//__________________________________________________________
-/// Channels taken from here: https://github.com/AliceO2Group/O2Physics/blob/master/PWGHF/Core/DecayChannels.h#L61-L95 (8th July 2025)
+
+/// Channels taken from here: https://github.com/AliceO2Group/O2Physics/blob/87be5da87be8bcef56dccf64b5d960e7f1b7545d/PWGHF/Core/DecayChannels.h#L61-L95
 /// @brief 3-prong candidates: main channels
 enum DecayChannelMain : int8_t {
   // D+
@@ -142,6 +134,7 @@ float pythiaBRScalingFactorXic = 1./( BRsXic_PYTHIA[XicToPKPi] + BRsXic_PYTHIA[X
 struct Mother {
   int id_;
   std::string name_;
+  std::string greek_name_;
   float pythia_br_scaling_factor_;
 };
 
@@ -155,11 +148,11 @@ enum MotherParticle : int {
 };
 
 std::vector<Mother> Mothers {
-  {Dplus, "Dplus", pythiaBRScalingFactorDPlus},
-  {Ds,    "Ds",    pythiaBRScalingFactorDs},
-  {Dstar, "Dstar", pythiaBRScalingFactorDstar},
-  {Lc,    "Lc",    pythiaBRScalingFactorLc},
-  {Xic,   "Xic",   pythiaBRScalingFactorXic}
+  {Dplus, "Dplus", "D^{+}",           pythiaBRScalingFactorDPlus},
+  {Ds,    "Ds",    "D_{s}^{+}",       pythiaBRScalingFactorDs   },
+  {Dstar, "Dstar", "D^{*+}",          pythiaBRScalingFactorDstar},
+  {Lc,    "Lc",    "#Lambda_{c}^{+}", pythiaBRScalingFactorLc   },
+  {Xic,   "Xic",   "#Xi_{c}^{+}",     pythiaBRScalingFactorXic  }
 };
 
 struct Decay {
@@ -168,37 +161,37 @@ struct Decay {
   std::string daughters_;
   float br_pythia_;
   float br_pdg_;
-  std::string formula_;
+  std::string greek_daughters_;
   int fill_style_;
 };
 std::vector<Decay> Decays {
-  {DplusToPiKPi,       Mothers[Dplus], "PiKPi",       BRsDplus_PYTHIA[DplusToPiKPi],    BRsDplus_PDG[DplusToPiKPi],    "D^{+}#rightarrowK^{#minus}#pi^{+}#pi^{+}",                3004},
-  {DplusToPiKPiPi0,    Mothers[Dplus], "PiKPiPi0",    BRsDplus_PYTHIA[DplusToPiKPiPi0], BRsDplus_PDG[DplusToPiKPiPi0], "D^{+}#rightarrowK^{#minus}#pi^{+}#pi^{+}#pi^{0}",         3005},
-  {DplusToPiPiPi,      Mothers[Dplus], "PiPiPi",      BRsDplus_PYTHIA[DplusToPiPiPi],   BRsDplus_PDG[DplusToPiPiPi],   "D^{+}#rightarrow#pi^{#minus}#pi^{+}#pi^{+}",              3006},
-  {DplusToPiKK,        Mothers[Dplus], "PiKK",        BRsDplus_PYTHIA[DplusToPiKK],     BRsDplus_PDG[DplusToPiKK],     "D^{+}#rightarrow#pi^{+}K^{#minus}K^{+}",                  3007},
+  {DplusToPiKPi,       Mothers[Dplus], "PiKPi",       BRsDplus_PYTHIA[DplusToPiKPi],    BRsDplus_PDG[DplusToPiKPi],    "#pi^{+}K^{#minus}#pi^{+}",               3004},
+  {DplusToPiKPiPi0,    Mothers[Dplus], "PiKPiPi0",    BRsDplus_PYTHIA[DplusToPiKPiPi0], BRsDplus_PDG[DplusToPiKPiPi0], "#pi^{+}K^{#minus}#pi^{+}#pi^{0}",        3005},
+  {DplusToPiPiPi,      Mothers[Dplus], "PiPiPi",      BRsDplus_PYTHIA[DplusToPiPiPi],   BRsDplus_PDG[DplusToPiPiPi],   "#pi^{+}#pi^{#minus}#pi^{+}",             3006},
+  {DplusToPiKK,        Mothers[Dplus], "PiKK",        BRsDplus_PYTHIA[DplusToPiKK],     BRsDplus_PDG[DplusToPiKK],     "#pi^{+}K^{#minus}K^{+}",                 3007},
 
-  {DsToPiKK,           Mothers[Ds],    "PiKK",        BRsDs_PYTHIA[DsToPiKK],           BRsDs_PDG[DsToPiKK],           "D_{s}^{+}#rightarrowK^{+}K^{#minus}#pi^{+}",              3004},
-  {DsToPiKKPi0,        Mothers[Ds],    "PiKKPi0",     BRsDs_PYTHIA[DsToPiKKPi0],        BRsDs_PDG[DsToPiKKPi0],        "D_{s}^{+}#rightarrowK^{+}K^{#minus}#pi^{+}#pi^{0}",       3005},
-  {DsToPiPiK,          Mothers[Ds],    "PiPiK",       BRsDs_PYTHIA[DsToPiPiK],          BRsDs_PDG[DsToPiPiK],          "D_{s}^{+}#rightarrowK^{+}#pi^{+}#pi^{#minus}",            3006},
-  {DsToPiPiPi,         Mothers[Ds],    "PiPiPi",      BRsDs_PYTHIA[DsToPiPiPi],         BRsDs_PDG[DsToPiPiPi],         "D_{s}^{+}#rightarrow#pi^{+}#pi^{#minus}#pi^{+}",          3007},
-  {DsToPiPiPiPi0,      Mothers[Ds],    "PiPiPiPi0",   BRsDs_PYTHIA[DsToPiPiPiPi0],      BRsDs_PDG[DsToPiPiPiPi0],      "D_{s}^{+}#rightarrow#pi^{+}#pi^{#minus}#pi^{+}#pi^{0}",   3008},
+  {DsToPiKK,           Mothers[Ds],    "PiKK",        BRsDs_PYTHIA[DsToPiKK],           BRsDs_PDG[DsToPiKK],           "#pi^{+}K^{#minus}K^{+}",                 3004},
+  {DsToPiKKPi0,        Mothers[Ds],    "PiKKPi0",     BRsDs_PYTHIA[DsToPiKKPi0],        BRsDs_PDG[DsToPiKKPi0],        "#pi^{+}K^{#minus}K^{+}#pi^{0}",          3005},
+  {DsToPiPiK,          Mothers[Ds],    "PiPiK",       BRsDs_PYTHIA[DsToPiPiK],          BRsDs_PDG[DsToPiPiK],          "#pi^{+}#pi^{#minus}K^{+}",               3006},
+  {DsToPiPiPi,         Mothers[Ds],    "PiPiPi",      BRsDs_PYTHIA[DsToPiPiPi],         BRsDs_PDG[DsToPiPiPi],         "#pi^{+}#pi^{#minus}#pi^{+}",             3007},
+  {DsToPiPiPiPi0,      Mothers[Ds],    "PiPiPiPi0",   BRsDs_PYTHIA[DsToPiPiPiPi0],      BRsDs_PDG[DsToPiPiPiPi0],      "#pi^{+}#pi^{#minus}#pi^{+}#pi^{0}",      3008},
 
-  {DstarToPiKPi,       Mothers[Dstar], "PiKPi",       BRsD0_PYTHIA[DstarToPiKPi],       BRsD0_PDG[DstarToPiKPi],       "D^{*+}#rightarrow#pi^{+}K^{#minus}#pi^{+}",               3004},
-  {DstarToPiKPiPi0,    Mothers[Dstar], "PiKPiPi0",    BRsD0_PYTHIA[DstarToPiKPiPi0],    BRsD0_PDG[DstarToPiKPiPi0],    "D^{*+}#rightarrow#pi^{+}K^{#minus}#pi^{+}#pi^{0}",        3005},
-  {DstarToPiKPiPi0Pi0, Mothers[Dstar], "PiKPiPi0Pi0", BRsD0_PYTHIA[DstarToPiKPiPi0Pi0], BRsD0_PDG[DstarToPiKPiPi0Pi0], "D^{*+}#rightarrow#pi^{+}K^{#minus}#pi^{+}#pi^{0}#pi^{0}", 3006},
-  {DstarToPiKK,        Mothers[Dstar], "PiKK",        BRsD0_PYTHIA[DstarToPiKK],        BRsD0_PDG[DstarToPiKK],        "D^{*+}#rightarrow#pi^{+}K^{#minus}K^{+}",                 3007},
-  {DstarToPiKKPi0,     Mothers[Dstar], "PiKKPi0",     BRsD0_PYTHIA[DstarToPiKKPi0],     BRsD0_PDG[DstarToPiKKPi0],     "D^{*+}#rightarrow#pi^{+}K^{#minus}K^{+}#pi^{0}",          3008},
-  {DstarToPiPiPi,      Mothers[Dstar], "PiPiPi",      BRsD0_PYTHIA[DstarToPiPiPi],      BRsD0_PDG[DstarToPiPiPi],      "D^{*+}#rightarrow#pi^{+}#pi^{#minus}#pi^{+}",             3009},
-  {DstarToPiPiPiPi0,   Mothers[Dstar], "PiPiPiPi0",   BRsD0_PYTHIA[DstarToPiPiPiPi0],   BRsD0_PDG[DstarToPiPiPiPi0],   "D^{*+}#rightarrow#pi^{+}#pi^{#minus}#pi^{+}#pi^{0}",      3010},
+  {DstarToPiKPi,       Mothers[Dstar], "PiKPi",       BRsD0_PYTHIA[DstarToPiKPi],       BRsD0_PDG[DstarToPiKPi],       "#pi^{+}K^{#minus}#pi^{+}",               3004},
+  {DstarToPiKPiPi0,    Mothers[Dstar], "PiKPiPi0",    BRsD0_PYTHIA[DstarToPiKPiPi0],    BRsD0_PDG[DstarToPiKPiPi0],    "#pi^{+}K^{#minus}#pi^{+}#pi^{0}",        3005},
+  {DstarToPiKPiPi0Pi0, Mothers[Dstar], "PiKPiPi0Pi0", BRsD0_PYTHIA[DstarToPiKPiPi0Pi0], BRsD0_PDG[DstarToPiKPiPi0Pi0], "#pi^{+}K^{#minus}#pi^{+}#pi^{0}#pi^{0}", 3006},
+  {DstarToPiKK,        Mothers[Dstar], "PiKK",        BRsD0_PYTHIA[DstarToPiKK],        BRsD0_PDG[DstarToPiKK],        "#pi^{+}K^{#minus}K^{+}",                 3007},
+  {DstarToPiKKPi0,     Mothers[Dstar], "PiKKPi0",     BRsD0_PYTHIA[DstarToPiKKPi0],     BRsD0_PDG[DstarToPiKKPi0],     "#pi^{+}K^{#minus}K^{+}#pi^{0}",          3008},
+  {DstarToPiPiPi,      Mothers[Dstar], "PiPiPi",      BRsD0_PYTHIA[DstarToPiPiPi],      BRsD0_PDG[DstarToPiPiPi],      "#pi^{+}#pi^{#minus}#pi^{+}",             3009},
+  {DstarToPiPiPiPi0,   Mothers[Dstar], "PiPiPiPi0",   BRsD0_PYTHIA[DstarToPiPiPiPi0],   BRsD0_PDG[DstarToPiPiPiPi0],   "#pi^{+}#pi^{#minus}#pi^{+}#pi^{0}",      3010},
 
-  {LcToPKPi,           Mothers[Lc],    "PKPi",        BRsLc_PYTHIA[LcToPKPi],           BRsLc_PDG[LcToPKPi],           "#Lambda_{c}^{+}#rightarrowpK^{#minus}#pi^{+}",            3001},
-  {LcToPKPiPi0,        Mothers[Lc],    "PKPiPi0",     BRsLc_PYTHIA[LcToPKPiPi0],        BRsLc_PDG[LcToPKPiPi0],        "#Lambda_{c}^{+}#rightarrowpK^{#minus}#pi^{+}#pi^{0}",     3004},
-  {LcToPPiPi,          Mothers[Lc],    "PPiPi",       BRsLc_PYTHIA[LcToPPiPi],          BRsLc_PDG[LcToPPiPi],          "#Lambda_{c}^{+}#rightarrowp#pi^{#minus}#pi^{+}",          3005},
-  {LcToPKK,            Mothers[Lc],    "PKK",         BRsLc_PYTHIA[LcToPKK],            BRsLc_PDG[LcToPKK],            "#Lambda_{c}^{+}#rightarrowpK^{#minus}K^{+}",              3006},
+  {LcToPKPi,           Mothers[Lc],    "PKPi",        BRsLc_PYTHIA[LcToPKPi],           BRsLc_PDG[LcToPKPi],           "pK^{#minus}#pi^{+}",                     3001},
+  {LcToPKPiPi0,        Mothers[Lc],    "PKPiPi0",     BRsLc_PYTHIA[LcToPKPiPi0],        BRsLc_PDG[LcToPKPiPi0],        "pK^{#minus}#pi^{+}#pi^{0}",              3004},
+  {LcToPPiPi,          Mothers[Lc],    "PPiPi",       BRsLc_PYTHIA[LcToPPiPi],          BRsLc_PDG[LcToPPiPi],          "p#pi^{#minus}#pi^{+}",                   3005},
+  {LcToPKK,            Mothers[Lc],    "PKK",         BRsLc_PYTHIA[LcToPKK],            BRsLc_PDG[LcToPKK],            "pK^{#minus}K^{+}",                       3006},
 
-  {XicToPKPi,          Mothers[Xic],   "PKPi",        BRsXic_PYTHIA[XicToPKPi],         BRsXic_PDG[XicToPKPi],         "#Xi_{c}^{+}#rightarrowpK^{#minus}#pi^{+}",                3004},
-  {XicToPKK,           Mothers[Xic],   "PKK",         BRsXic_PYTHIA[XicToPKK],          BRsXic_PDG[XicToPKK],          "#Xi_{c}^{+}#rightarrowpK^{#minus}K^{+}",                  3005},
-  {XicToSPiPi,         Mothers[Xic],   "SPiPi",       BRsXic_PYTHIA[XicToSPiPi],        BRsXic_PDG[XicToSPiPi],        "#Xi_{c}^{+}#rightarrow#Sigma^{+}#pi^{#minus}#pi^{+}",     3006},
+  {XicToPKPi,          Mothers[Xic],   "PKPi",        BRsXic_PYTHIA[XicToPKPi],         BRsXic_PDG[XicToPKPi],         "pK^{#minus}#pi^{+}",                     3004},
+  {XicToPKK,           Mothers[Xic],   "PKK",         BRsXic_PYTHIA[XicToPKK],          BRsXic_PDG[XicToPKK],          "pK^{#minus}K^{+}",                       3005},
+  {XicToSPiPi,         Mothers[Xic],   "SPiPi",       BRsXic_PYTHIA[XicToSPiPi],        BRsXic_PDG[XicToSPiPi],        "#Sigma^{+}#pi^{#minus}#pi^{+}",          3006},
 };
 
 const std::string FromCtToProperLifetimePs{"33.35641"};
@@ -211,9 +204,9 @@ void corrBkgLc(const std::string& filenameIn, const bool doRun=true) {
 
     const bool scaleByBrs = true;
     const bool applyBdt = true;
-    const bool eraseLcToPKPi = true;
-    const bool keepOnlyDToKPiPiAndDsToPiKK = true;
-    bool saveCanvas = false;
+    const bool eraseLcToPKPi = false;
+    const bool keepOnlyDToKPiPiAndDsToPiKK = false;
+    bool saveCanvas = true;
     const int smoothFactor{0};
 
     if(!doRun) saveCanvas = true;
@@ -250,7 +243,6 @@ void corrBkgLc(const std::string& filenameIn, const bool doRun=true) {
     const int indexDplusToPiKPi = std::distance(Decays.begin(), std::find_if(Decays.begin(), Decays.end(), [](const Decay& decay) { return decay.id_ == DplusToPiKPi; }));
 
     const std::vector<std::string> dirNames = GetDFNames(filename);
-//     const std::vector<std::string> dirNames = {"DF_2263624270445293"};
     TFile* file = TFile::Open(filename.c_str());
 
     const double minX = 1.98;
@@ -339,7 +331,7 @@ void corrBkgLc(const std::string& filenameIn, const bool doRun=true) {
           if(doRun && decay.id_ != LcToPKPi) histos_bkgSum.back()->Add(histo); // this is the signal!
 
           const auto& color = colors.at(decay.id_-1);
-          histo->SetTitle(decay.formula_.c_str());
+          histo->SetTitle((decay.mother_.greek_name_ + "#rightarrow" + decay.greek_daughters_).c_str());
           histo->SetLineColor(color);
           histo->SetLineWidth(2);
           histo->SetMarkerColor(color);

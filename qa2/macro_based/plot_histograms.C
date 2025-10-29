@@ -8,7 +8,7 @@ void plot_histograms(const std::string& fileName, const std::string& dirName) {
   // Access directory
   TDirectory* dir = f->GetDirectory(dirName.c_str());
   if (!dir) {
-    std::cerr << "Directory 'v0-selector' not found\n";
+    std::cerr << "Directory " << dirName << " not found\n";
     return;
   }
 
