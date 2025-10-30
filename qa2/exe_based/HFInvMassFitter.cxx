@@ -338,6 +338,7 @@ void HFInvMassFitter::doFit()
       mRooNSgn->setConstant(kTRUE);
     }
     mSgnPdf = new RooAddPdf("mSgnPdf", "signal fit function", RooArgList(*sgnPdf), RooArgList(*mRooNSgn));
+    std::cout << "reflOverSgn = " << mReflOverSgn << "\n";
     mRooNCorrelBg = new RooRealVar("mNCorrelBg", "number of correlated background", 0.01*mRooNSgn->getVal(), 0., 0.1*mRooNSgn->getVal()); // TODO get rid of magic numbers
     // create reflection template and fit to reflection
     if (mHistoTemplateRefl) {

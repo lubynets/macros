@@ -93,6 +93,7 @@ int runMassFitter(const TString& configFileName)
   std::vector<std::string> promptSecPeakHistoName;
   std::vector<std::string> fdSecPeakHistoName;
   std::vector<std::string> correlBgHistoName;
+  std::vector<std::string> signalHistoName;
   TString sliceVarName;
   TString sliceVarUnit;
   std::vector<double> sliceVarMin;
@@ -103,8 +104,8 @@ int runMassFitter(const TString& configFileName)
   std::vector<double> fixSecondSigmaManual;
   std::vector<double> fixMeanManual;
   std::vector<int> nRebin;
-  std::vector<int> bkgFuncConfig;
-  std::vector<int> sgnFuncConfig;
+  std::vector<int> bkgFunc;
+  std::vector<int> sgnFunc;
 
   const Value& inputHistoNameValue = config["InputHistoName"];
   parseStringArray(inputHistoNameValue, inputHistoName);
@@ -128,6 +129,12 @@ int runMassFitter(const TString& configFileName)
     const Value& correlBgHistoNameValue = config["CorrelBgHistoName"];
     parseStringArray(correlBgHistoNameValue, correlBgHistoName);
   }
+
+  if (config.HasMember("SignalHistoName")) {
+    const Value& signalHistoNameValue = config["SignalHistoName"];
+    parseStringArray(signalHistoNameValue, signalHistoName);
+  }
+
   const bool fixSigma = config["FixSigma"].GetBool();
   const std::string sigmaFile = config["SigmaFile"].GetString();
 
@@ -168,10 +175,10 @@ int runMassFitter(const TString& configFileName)
   bool useLikelihood = config["UseLikelihood"].GetBool();
 
   const Value& bkgFuncValue = config["BkgFunc"];
-  readArray(bkgFuncValue, bkgFuncConfig);
+  readArray(bkgFuncValue, bkgFunc);
 
   const Value& sgnFuncValue = config["SgnFunc"];
-  readArray(sgnFuncValue, sgnFuncConfig);
+  readArray(sgnFuncValue, sgnFunc);
 
   const bool enableRefl = config["EnableRefl"].GetBool();
 
@@ -191,12 +198,11 @@ int runMassFitter(const TString& configFileName)
     sliceVarLimits[iSliceVar] = sliceVarMin[iSliceVar];
     sliceVarLimits[iSliceVar + 1] = sliceVarMax[iSliceVar];
 
-    if (bkgFuncConfig[iSliceVar] < 0 || bkgFuncConfig[iSliceVar] >= HFInvMassFitter::NTypesOfBkgPdf) {
+    if (bkgFunc[iSliceVar] < 0 || bkgFunc[iSliceVar] >= HFInvMassFitter::NTypesOfBkgPdf) {
       throw std::runtime_error("ERROR: only Expo, Poly1, Poly2, Pow and PowEx background functions supported! Exit");
     }
-    bkgFuncConfig[iSliceVar] = bkgFuncConfig[iSliceVar];
 
-    if (sgnFuncConfig[iSliceVar] < 0 || sgnFuncConfig[iSliceVar] >= HFInvMassFitter::NTypesOfSgnPdf) {
+    if (sgnFunc[iSliceVar] < 0 || sgnFunc[iSliceVar] >= HFInvMassFitter::NTypesOfSgnPdf) {
       throw std::runtime_error("ERROR: only SingleGaus, DoubleGaus and DoubleGausSigmaRatioPar signal functions supported! Exit");
     }
   }
@@ -260,6 +266,10 @@ int runMassFitter(const TString& configFileName)
         hMassCorrBg[iSliceVar] = inputFileCorrelBg->Get<TH1>(correlBgHistoName[iSliceVar].data());
         if (hMassCorrBg[iSliceVar] == nullptr) {
           throw std::runtime_error("ERROR: Correlated background histogram not found! Exit!");
+        }
+        hMassSgn[iSliceVar] = inputFileCorrelBg->Get<TH1>(signalHistoName[iSliceVar].data());
+        if (hMassSgn[iSliceVar] == nullptr) {
+          throw std::runtime_error("ERROR: Signal histogram not found! Exit!");
         }
       }
     } else {
@@ -406,6 +416,7 @@ int runMassFitter(const TString& configFileName)
       if (correlBgSmoothFactor>0) {
         hMassForCorrelBg[iSliceVar]->Smooth(correlBgSmoothFactor);
       }
+      hMassForSgn[iSliceVar] = static_cast<TH1*>(hMassSgn[iSliceVar]->Rebin(nRebin[iSliceVar]));
     }
 
     Double_t reflOverSgn = 0;
@@ -417,7 +428,7 @@ int runMassFitter(const TString& configFileName)
 
     if (isMc) {
       HFInvMassFitter* massFitter;
-      massFitter = new HFInvMassFitter(hMassForFit[iSliceVar], massMin[iSliceVar], massMax[iSliceVar], HFInvMassFitter::NoBkg, sgnFuncConfig[iSliceVar]);
+      massFitter = new HFInvMassFitter(hMassForFit[iSliceVar], massMin[iSliceVar], massMax[iSliceVar], HFInvMassFitter::NoBkg, sgnFunc[iSliceVar]);
       massFitter->setNumberOfSigmaForSidebands(nSigmaForSideband);
       massFitter->setRandomSeed(randomSeed);
       massFitter->setDrawBgPrefit(drawBgPrefit);
@@ -462,7 +473,7 @@ int runMassFitter(const TString& configFileName)
     } else {
       HFInvMassFitter* massFitter;
       massFitter = new HFInvMassFitter(hMassForFit[iSliceVar], massMin[iSliceVar], massMax[iSliceVar],
-                                       bkgFuncConfig[iSliceVar], sgnFuncConfig[iSliceVar]);
+                                       bkgFunc[iSliceVar], sgnFunc[iSliceVar]);
       massFitter->setNumberOfSigmaForSidebands(nSigmaForSideband);
       massFitter->setRandomSeed(randomSeed);
       massFitter->setDrawBgPrefit(drawBgPrefit);
@@ -505,6 +516,9 @@ int runMassFitter(const TString& configFileName)
 
       if (includeCorrelBg) {
         massFitter->setTemplateCorrelBg(hMassForCorrelBg[iSliceVar]);
+        reflOverSgn = hMassForSgn[iSliceVar]->Integral(hMassForSgn[iSliceVar]->FindBin(massMin[iSliceVar] * 1.0001), hMassForSgn[iSliceVar]->FindBin(massMax[iSliceVar] * 0.999));
+        reflOverSgn = hMassForCorrelBg[iSliceVar]->Integral(hMassForCorrelBg[iSliceVar]->FindBin(massMin[iSliceVar] * 1.0001), hMassForCorrelBg[iSliceVar]->FindBin(massMax[iSliceVar] * 0.999)) / reflOverSgn;
+        massFitter->setInitialReflOverSgn(reflOverSgn);
       }
 
       massFitter->doFit();
@@ -586,8 +600,8 @@ int runMassFitter(const TString& configFileName)
         hFitConfig->SetBinContent(4, iSliceVar + 1, fixSigmaManual[iSliceVar]);
       }
     }
-    hFitConfig->SetBinContent(5, iSliceVar + 1, bkgFuncConfig[iSliceVar]);
-    hFitConfig->SetBinContent(6, iSliceVar + 1, sgnFuncConfig[iSliceVar]);
+    hFitConfig->SetBinContent(5, iSliceVar + 1, bkgFunc[iSliceVar]);
+    hFitConfig->SetBinContent(6, iSliceVar + 1, sgnFunc[iSliceVar]);
   }
 
   // save output histograms
