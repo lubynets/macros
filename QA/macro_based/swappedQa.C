@@ -1,5 +1,6 @@
 std::string ReadNthLine(const std::string& fileName);
 std::vector<std::string> GetDFNames(const std::string& fileName);
+int determineSwapVsSelectionFlag(int swap, int flag);
 
 /// Channels taken from here: https://github.com/AliceO2Group/O2Physics/blob/87be5da87be8bcef56dccf64b5d960e7f1b7545d/PWGHF/Core/DecayChannels.h#L61-L95
 /// @brief 3-prong candidates: main channels
@@ -69,10 +70,10 @@ std::vector<Decay> Decays {
   {DplusToPiKPi,       Mothers[Dplus], "PiKPi",       "#pi^{+}K^{#minus}#pi^{+}"              },
   {DplusToPiKPiPi0,    Mothers[Dplus], "PiKPiPi0",    "#pi^{+}K^{#minus}#pi^{+}#pi^{0}"       },
   {DplusToPiPiPi,      Mothers[Dplus], "PiPiPi",      "#pi^{+}#pi^{#minus}#pi^{+}"            },
-  {DplusToPiKK,        Mothers[Dplus], "PiKK",        "#pi^{+}K^{#minus}K^{+}"                },
+  {DplusToPiKK,        Mothers[Dplus], "PiKK",        "K^{+}K^{#minus}#pi^{+}"                },
 
-  {DsToPiKK,           Mothers[Ds],    "PiKK",        "#pi^{+}K^{#minus}K^{+}"                },
-  {DsToPiKKPi0,        Mothers[Ds],    "PiKKPi0",     "#pi^{+}K^{#minus}K^{+}#pi^{0}"         },
+  {DsToPiKK,           Mothers[Ds],    "PiKK",        "K^{+}K^{#minus}#pi^{+}"                },
+  {DsToPiKKPi0,        Mothers[Ds],    "PiKKPi0",     "K^{+}K^{#minus}#pi^{+}#pi^{0}"         },
   {DsToPiPiK,          Mothers[Ds],    "PiPiK",       "#pi^{+}#pi^{#minus}K^{+}"              },
   {DsToPiPiPi,         Mothers[Ds],    "PiPiPi",      "#pi^{+}#pi^{#minus}#pi^{+}"            },
   {DsToPiPiPiPi0,      Mothers[Ds],    "PiPiPiPi0",   "#pi^{+}#pi^{#minus}#pi^{+}#pi^{0}"     },
@@ -80,8 +81,8 @@ std::vector<Decay> Decays {
   {DstarToPiKPi,       Mothers[Dstar], "PiKPi",       "#pi^{+}K^{#minus}#pi^{+}"              },
   {DstarToPiKPiPi0,    Mothers[Dstar], "PiKPiPi0",    "#pi^{+}K^{#minus}#pi^{+}#pi^{0}"       },
   {DstarToPiKPiPi0Pi0, Mothers[Dstar], "PiKPiPi0Pi0", "#pi^{+}K^{#minus}#pi^{+}#pi^{0}#pi^{0}"},
-  {DstarToPiKK,        Mothers[Dstar], "PiKK",        "#pi^{+}K^{#minus}K^{+}"                },
-  {DstarToPiKKPi0,     Mothers[Dstar], "PiKKPi0",     "#pi^{+}K^{#minus}K^{+}#pi^{0}"         },
+  {DstarToPiKK,        Mothers[Dstar], "PiKK",        "K^{+}K^{#minus}#pi^{+}"                },
+  {DstarToPiKKPi0,     Mothers[Dstar], "PiKKPi0",     "K^{+}K^{#minus}#pi^{+}#pi^{0}"         },
   {DstarToPiPiPi,      Mothers[Dstar], "PiPiPi",      "#pi^{+}#pi^{#minus}#pi^{+}"            },
   {DstarToPiPiPiPi0,   Mothers[Dstar], "PiPiPiPi0",   "#pi^{+}#pi^{#minus}#pi^{+}#pi^{0}"     },
 
@@ -92,10 +93,12 @@ std::vector<Decay> Decays {
 
   {XicToPKPi,          Mothers[Xic],   "PKPi",        "pK^{#minus}#pi^{+}"                    },
   {XicToPKK,           Mothers[Xic],   "PKK",         "pK^{#minus}K^{+}"                      },
-  {XicToSPiPi,         Mothers[Xic],   "SPiPi",       "#Sigma^{+}#pi^{#minus}#pi^{+}"         },
+  {XicToSPiPi,         Mothers[Xic],   "SPiPi",       "#Sigma^{+}#pi^{#minus}#pi^{+}"         }
 };
 
 void swappedQa(const std::string& filenameIn, const int nFiles) {
+  const bool isApplyBdt{true};
+
   const size_t nDecays{Decays.size()};
   std::vector<TH1*> histos;
   histos.resize(nDecays);
@@ -104,13 +107,28 @@ void swappedQa(const std::string& filenameIn, const int nFiles) {
   std::vector<std::string> histoNames;
   histoNames.resize(nDecays);
 
+  const std::vector<float> pTRanges = {1, 3, 5, 8, 12, 20};
+  const std::vector<float> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.05, 0.08};
+  const std::string ptTreeName = "fPt";
+  const std::string bdtTreeName = "fMlScoreFirstClass";
+  if(bdtBgUpperValuesVsPt.size() != pTRanges.size() - 1) throw std::runtime_error("bdtUpperValuesVsPt.size() != pTRanges.size() - 1");
+  std::string cuts_bdt;
+  if(isApplyBdt) {
+    for(size_t iPt=0, nPts=pTRanges.size()-1; iPt<nPts; ++iPt) {
+      cuts_bdt = cuts_bdt + "( " + std::to_string(pTRanges.at(iPt)) + " <= " + ptTreeName + " && " + ptTreeName + " < " + std::to_string(pTRanges.at(iPt+1)) + " && " + bdtTreeName + " < " + std::to_string(bdtBgUpperValuesVsPt.at(iPt)) + " )";
+      if(iPt<nPts-1) cuts_bdt = cuts_bdt + " || ";
+    }
+    cuts_bdt.append(" && ");
+  }
+  std::cout << "cuts_bdt = " << cuts_bdt << "\n";
+
   for(size_t iDecay=0; iDecay<nDecays; ++iDecay) {
     const std::string histoName = Decays.at(iDecay).mother_.name_ + "To" + Decays.at(iDecay).daughters_;
     histoNames.at(iDecay) = histoName.c_str();
     histos.at(iDecay) = new TH1D(histoName.c_str(), (Decays.at(iDecay).mother_.greek_name_ + "#rightarrow" + Decays.at(iDecay).greek_daughters_).c_str(), 4, -2, 2);
-    histos.at(iDecay)->GetXaxis()->SetTitle("isCandidateSwapped");
+    histos.at(iDecay)->GetXaxis()->SetTitle("swapVsSelectionFlag");
     histos.at(iDecay)->GetYaxis()->SetTitle("Entries");
-    cuts.at(iDecay) = "fFlagMc == " + std::to_string(-Decays.at(iDecay).id_) + " || fFlagMc == " + std::to_string(Decays.at(iDecay).id_);
+    cuts.at(iDecay) = "(fFlagMc == " + std::to_string(-Decays.at(iDecay).id_) + " || fFlagMc == " + std::to_string(Decays.at(iDecay).id_) + ")";
   }
 
   for(int iFile=1; iFile<=nFiles; ++ iFile) {
@@ -124,7 +142,7 @@ void swappedQa(const std::string& filenameIn, const int nFiles) {
       TTree* tree = fileIn->Get<TTree>((dirName + "/O2hfcandlclite").c_str());
 
       for(size_t iDecay=0; iDecay<nDecays; ++iDecay) {
-        tree->Draw(Form("fIsCandidateSwapped>>+%s", histoNames.at(iDecay).c_str()), cuts.at(iDecay).c_str(), "goff");
+        tree->Draw(Form("determineSwapVsSelectionFlag(fIsCandidateSwapped, fCandidateSelFlag)>>+%s", histoNames.at(iDecay).c_str()), cuts.at(iDecay).c_str(), "goff");
       } // nDecays
     } // dirNames
     std::cout << "\n";
@@ -173,4 +191,10 @@ std::string ReadNthLine(const std::string& fileName) {
   }
 
   return result;
+}
+
+int determineSwapVsSelectionFlag(const int swap, const int flag) {
+  if((swap==0 && flag==1) || (swap==1 && flag==2)) return 0;
+  else if((swap==0 && flag==2) || (swap==1 && flag==1)) return 1;
+  else return -1;
 }

@@ -168,10 +168,10 @@ std::vector<Decay> Decays {
   {DplusToPiKPi,       Mothers[Dplus], "PiKPi",       BRsDplus_PYTHIA[DplusToPiKPi],    BRsDplus_PDG[DplusToPiKPi],    "#pi^{+}K^{#minus}#pi^{+}",               3004},
   {DplusToPiKPiPi0,    Mothers[Dplus], "PiKPiPi0",    BRsDplus_PYTHIA[DplusToPiKPiPi0], BRsDplus_PDG[DplusToPiKPiPi0], "#pi^{+}K^{#minus}#pi^{+}#pi^{0}",        3005},
   {DplusToPiPiPi,      Mothers[Dplus], "PiPiPi",      BRsDplus_PYTHIA[DplusToPiPiPi],   BRsDplus_PDG[DplusToPiPiPi],   "#pi^{+}#pi^{#minus}#pi^{+}",             3006},
-  {DplusToPiKK,        Mothers[Dplus], "PiKK",        BRsDplus_PYTHIA[DplusToPiKK],     BRsDplus_PDG[DplusToPiKK],     "#pi^{+}K^{#minus}K^{+}",                 3007},
+  {DplusToPiKK,        Mothers[Dplus], "PiKK",        BRsDplus_PYTHIA[DplusToPiKK],     BRsDplus_PDG[DplusToPiKK],     "K^{+}K^{#minus}#pi^{+}",                 3007},
 
-  {DsToPiKK,           Mothers[Ds],    "PiKK",        BRsDs_PYTHIA[DsToPiKK],           BRsDs_PDG[DsToPiKK],           "#pi^{+}K^{#minus}K^{+}",                 3004},
-  {DsToPiKKPi0,        Mothers[Ds],    "PiKKPi0",     BRsDs_PYTHIA[DsToPiKKPi0],        BRsDs_PDG[DsToPiKKPi0],        "#pi^{+}K^{#minus}K^{+}#pi^{0}",          3005},
+  {DsToPiKK,           Mothers[Ds],    "PiKK",        BRsDs_PYTHIA[DsToPiKK],           BRsDs_PDG[DsToPiKK],           "K^{+}K^{#minus}#pi^{+}",                 3004},
+  {DsToPiKKPi0,        Mothers[Ds],    "PiKKPi0",     BRsDs_PYTHIA[DsToPiKKPi0],        BRsDs_PDG[DsToPiKKPi0],        "K^{+}K^{#minus}#pi^{+}#pi^{0}",          3005},
   {DsToPiPiK,          Mothers[Ds],    "PiPiK",       BRsDs_PYTHIA[DsToPiPiK],          BRsDs_PDG[DsToPiPiK],          "#pi^{+}#pi^{#minus}K^{+}",               3006},
   {DsToPiPiPi,         Mothers[Ds],    "PiPiPi",      BRsDs_PYTHIA[DsToPiPiPi],         BRsDs_PDG[DsToPiPiPi],         "#pi^{+}#pi^{#minus}#pi^{+}",             3007},
   {DsToPiPiPiPi0,      Mothers[Ds],    "PiPiPiPi0",   BRsDs_PYTHIA[DsToPiPiPiPi0],      BRsDs_PDG[DsToPiPiPiPi0],      "#pi^{+}#pi^{#minus}#pi^{+}#pi^{0}",      3008},
@@ -179,8 +179,8 @@ std::vector<Decay> Decays {
   {DstarToPiKPi,       Mothers[Dstar], "PiKPi",       BRsD0_PYTHIA[DstarToPiKPi],       BRsD0_PDG[DstarToPiKPi],       "#pi^{+}K^{#minus}#pi^{+}",               3004},
   {DstarToPiKPiPi0,    Mothers[Dstar], "PiKPiPi0",    BRsD0_PYTHIA[DstarToPiKPiPi0],    BRsD0_PDG[DstarToPiKPiPi0],    "#pi^{+}K^{#minus}#pi^{+}#pi^{0}",        3005},
   {DstarToPiKPiPi0Pi0, Mothers[Dstar], "PiKPiPi0Pi0", BRsD0_PYTHIA[DstarToPiKPiPi0Pi0], BRsD0_PDG[DstarToPiKPiPi0Pi0], "#pi^{+}K^{#minus}#pi^{+}#pi^{0}#pi^{0}", 3006},
-  {DstarToPiKK,        Mothers[Dstar], "PiKK",        BRsD0_PYTHIA[DstarToPiKK],        BRsD0_PDG[DstarToPiKK],        "#pi^{+}K^{#minus}K^{+}",                 3007},
-  {DstarToPiKKPi0,     Mothers[Dstar], "PiKKPi0",     BRsD0_PYTHIA[DstarToPiKKPi0],     BRsD0_PDG[DstarToPiKKPi0],     "#pi^{+}K^{#minus}K^{+}#pi^{0}",          3008},
+  {DstarToPiKK,        Mothers[Dstar], "PiKK",        BRsD0_PYTHIA[DstarToPiKK],        BRsD0_PDG[DstarToPiKK],        "K^{+}K^{#minus}#pi^{+}",                 3007},
+  {DstarToPiKKPi0,     Mothers[Dstar], "PiKKPi0",     BRsD0_PYTHIA[DstarToPiKKPi0],     BRsD0_PDG[DstarToPiKKPi0],     "K^{+}K^{#minus}#pi^{+}#pi^{0}",          3008},
   {DstarToPiPiPi,      Mothers[Dstar], "PiPiPi",      BRsD0_PYTHIA[DstarToPiPiPi],      BRsD0_PDG[DstarToPiPiPi],      "#pi^{+}#pi^{#minus}#pi^{+}",             3009},
   {DstarToPiPiPiPi0,   Mothers[Dstar], "PiPiPiPi0",   BRsD0_PYTHIA[DstarToPiPiPiPi0],   BRsD0_PDG[DstarToPiPiPiPi0],   "#pi^{+}#pi^{#minus}#pi^{+}#pi^{0}",      3010},
 
@@ -191,7 +191,7 @@ std::vector<Decay> Decays {
 
   {XicToPKPi,          Mothers[Xic],   "PKPi",        BRsXic_PYTHIA[XicToPKPi],         BRsXic_PDG[XicToPKPi],         "pK^{#minus}#pi^{+}",                     3004},
   {XicToPKK,           Mothers[Xic],   "PKK",         BRsXic_PYTHIA[XicToPKK],          BRsXic_PDG[XicToPKK],          "pK^{#minus}K^{+}",                       3005},
-  {XicToSPiPi,         Mothers[Xic],   "SPiPi",       BRsXic_PYTHIA[XicToSPiPi],        BRsXic_PDG[XicToSPiPi],        "#Sigma^{+}#pi^{#minus}#pi^{+}",          3006},
+  {XicToSPiPi,         Mothers[Xic],   "SPiPi",       BRsXic_PYTHIA[XicToSPiPi],        BRsXic_PDG[XicToSPiPi],        "#Sigma^{+}#pi^{#minus}#pi^{+}",          3006}
 };
 
 const std::string FromCtToProperLifetimePs{"33.35641"};
@@ -199,12 +199,11 @@ const std::string FromCtToProperLifetimePs{"33.35641"};
 //__________________________________________________________
 //__________________________________________________________
 //__________________________________________________________
-void corrBkgLc(const std::string& filenameIn, const bool doRun=true) {
-    const std::string filename = ReadNthLine(filenameIn);
-
+void corrBkgLc(const std::string& filenameIn, const bool doRun=true, const int fileFrom=1, int fileTo=0) {
+    fileTo = std::max(fileTo, fileFrom);
     const bool scaleByBrs = true;
     const bool applyBdt = true;
-    const bool eraseLcToPKPi = false;
+    const bool eraseLcToPKPi = true;
     const bool keepOnlyDToKPiPiAndDsToPiKK = false;
     bool saveCanvas = true;
     const int smoothFactor{0};
@@ -242,8 +241,7 @@ void corrBkgLc(const std::string& filenameIn, const bool doRun=true) {
     const int indexLcToPKPi = std::distance(Decays.begin(), std::find_if(Decays.begin(), Decays.end(), [](const Decay& decay) { return decay.id_ == LcToPKPi; }));
     const int indexDplusToPiKPi = std::distance(Decays.begin(), std::find_if(Decays.begin(), Decays.end(), [](const Decay& decay) { return decay.id_ == DplusToPiKPi; }));
 
-    const std::vector<std::string> dirNames = GetDFNames(filename);
-    TFile* file = TFile::Open(filename.c_str());
+    TFile* fileForNoRun = !doRun ? TFile::Open(filenameIn.c_str()) : nullptr;
 
     const double minX = 1.98;
     const double maxX = 2.58;
@@ -291,7 +289,7 @@ void corrBkgLc(const std::string& filenameIn, const bool doRun=true) {
         for(size_t iDecay=0; iDecay<nDecays; ++iDecay) {
           const std::string decayFormula = Decays.at(iDecay).mother_.name_ + "To" + Decays.at(iDecay).daughters_;
           histoNames.push_back("histos_" + decayFormula + "_" + sliceVarName + "Bin" + std::to_string(sliceVarBin));
-          histos.at(iDecay).emplace_back(doRun ? new TH1D(histoNames.at(iDecay).c_str(), histoNames.at(iDecay).c_str(), binsX, minX, maxX) : file->Get<TH1>((sliceVarName + "Bin" + std::to_string(sliceVarBin) + "/" + histoNames.back()).c_str()));
+          histos.at(iDecay).emplace_back(doRun ? new TH1D(histoNames.at(iDecay).c_str(), histoNames.at(iDecay).c_str(), binsX, minX, maxX) : fileForNoRun->Get<TH1>((sliceVarName + "Bin" + std::to_string(sliceVarBin) + "/" + histoNames.back()).c_str()));
 
           const std::string cut = cuts_base + " && (fFlagMc == " + std::to_string(-Decays.at(iDecay).id_) + " || fFlagMc == " + std::to_string(Decays.at(iDecay).id_) + ")";
           cuts.push_back(cut);
@@ -300,17 +298,26 @@ void corrBkgLc(const std::string& filenameIn, const bool doRun=true) {
         }
 
         const std::string name_bkgSum = std::string("histos_bkgSum_" + sliceVarName + "Bin") + std::to_string(sliceVarBin);
-        histos_bkgSum.push_back(doRun ? new TH1D(name_bkgSum.c_str(), name_bkgSum.c_str(), binsX, minX, maxX) : file->Get<TH1>((sliceVarName + "Bin" + std::to_string(sliceVarBin) + "/" + name_bkgSum).c_str()));
+        histos_bkgSum.push_back(doRun ? new TH1D(name_bkgSum.c_str(), name_bkgSum.c_str(), binsX, minX, maxX) : fileForNoRun->Get<TH1>((sliceVarName + "Bin" + std::to_string(sliceVarBin) + "/" + name_bkgSum).c_str()));
 
-        /// Open the file and get the tree
-        for(const auto& dirName : dirNames) {
-            std::cout << "Processing " << dirName << "\n";
-            TTree* tree = file->Get<TTree>((dirName + "/O2hfcandlclite").c_str());
+        if(doRun) {
+          for(int iFile=fileFrom; iFile<=fileTo; ++ iFile) {
+            std::cout << "Processing iFile = " << iFile << "\n";
+            const std::string filename = ReadNthLine(filenameIn + ":" + std::to_string(iFile));
+            TFile* fileIn = TFile::Open(filename.c_str(), "read");
+            const std::vector<std::string> dirNames = GetDFNames(filename);
 
-            for(size_t iDecay=0; iDecay<nDecays; ++iDecay) {
-              tree->Draw(Form("fM>>+%s", histoNames.at(iDecay).c_str()), cuts.at(iDecay).c_str(), "goff");
-            }
-        }
+            for(const auto& dirName : dirNames) {
+              std::cout << "Processing " << dirName << "\n";
+              TTree* tree = fileIn->Get<TTree>((dirName + "/O2hfcandlclite").c_str());
+
+              for(size_t iDecay=0; iDecay<nDecays; ++iDecay) {
+                tree->Draw(Form("fM>>+%s", histoNames.at(iDecay).c_str()), cuts.at(iDecay).c_str(), "goff");
+              } // nDecays
+            } // dirNames
+          } // nFiles
+        } // doRun
+
 
         /// scale by BR values
         if (doRun && scaleByBrs) {
@@ -432,7 +439,7 @@ void corrBkgLc(const std::string& filenameIn, const bool doRun=true) {
     }
     fout->Close();
 
-    file->Close();
+    if(!doRun) fileForNoRun->Close();
 
     return;
 }
