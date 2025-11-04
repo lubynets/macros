@@ -1,16 +1,24 @@
 const std::vector<std::string> particleNames{"proton", "pion", "electorn", "kaon", "all"};
 const std::vector<double> particleMasses{0.938272, 0.139571, 0.000511, 0.493677};
-const std::vector<std::string> histoNames{"hPdEdx", "hNSigmaTpc", "hPNSigmaTpc", "hNSigmaTof", "hPNSigmaTof", "hPNoMatchedTof"};
+const std::vector<std::string> histoNames{"hP", "hPdEdx", "hNSigmaTpc", "hPNSigmaTpc", "hNSigmaTof", "hPNSigmaTof", "hPNoMatchedTof"};
 
 void tpc_qa2(const std::string& fileName, bool isParticleWise=true, bool isDrawBB=true) {
   gStyle->SetOptStat("nemruo");
 
   const std::array<double, 5> bbParams {
-    0.17489300668239594,
-    4.753570079803467,
-    0.0036148501094430685,
-    2.33624005317688,
-    0.9984580278396606,
+//     // LHC23zzo apass5
+//     0.17489300668239594,
+//     4.753570079803467,
+//     0.0036148501094430685,
+//     2.33624005317688,
+//     0.9984580278396606,
+
+    // LHC23zzh pass5
+    0.16956,
+    4.88368,
+    0.0032743,
+    2.32698,
+    1.01932
   };
 
   TF1* funcBB = new TF1("funcBB", "([0]*([1]- log([2]+pow(x*[5],-1.*[4])) - pow((x*[5]/sqrt(1+x*x*[5]*[5])),[3]))*50./pow((x*[5]/sqrt(1+x*x*[5]*[5])),[3]))*pow(1.0,2.3)", 0.1, 10);
