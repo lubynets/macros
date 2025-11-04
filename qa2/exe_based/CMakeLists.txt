@@ -28,6 +28,7 @@ SET(EXECUTABLES
     mass_bdt_qa_thn
     yield_lifetime_qa_thn
     multifit_qa
+    tpc_qa
 )
 
 SET(SOURCES
