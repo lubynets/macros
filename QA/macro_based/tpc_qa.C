@@ -11,16 +11,19 @@ enum Particles : short {
 
 const std::array<std::string, Particles::nParticles> particleNames{"proton", "pion", "electorn", "kaon", "all"};
 
-std::vector<std::string> GetDFNames(const std::string& fileName);
-float calcBetaFromBetaGamma(float betaGamma);
-short GetParicleByfPidIndex(UChar_t fPidIndex);
+constexpr float NSigmaTofUnmatched{-1e6};
+constexpr float NSigmaTofUnmatchedTolerance{std::fabs(NSigmaTofUnmatched)/1e4};
 
-void tpc_qa(const std::string& fileName) {
-  const std::vector<std::string> dirNames = GetDFNames(fileName);
+bool IsUnmatchedTof(float nSigmaTof);
+std::vector<std::string> GetDFNames(const std::string& fileName);
+short GetParicleByfPidIndex(UChar_t fPidIndex);
+std::string ReadNthLine(const std::string& fileName, int nLine);
+
+void tpc_qa(const std::string& fileList, const bool isV0Tree=true, const int fileFrom=1, const int fileTo=1e6) {
+  const std::string treeNameBase = isV0Tree ? "O2tpcskimv0" : "O2tpctofskim";
 
   UChar_t fPidIndex;
   Float_t fTPCInnerParam;
-  Float_t fBetaGamma;
   Float_t fTPCSignal;
   Float_t fNSigTPC;
   Float_t fNSigTOF;
@@ -30,6 +33,7 @@ void tpc_qa(const std::string& fileName) {
   std::array<TH2D*, Particles::nParticles> hPNSigmaTpc;
   std::array<TH1D*, Particles::nParticles> hNSigmaTof;
   std::array<TH2D*, Particles::nParticles> hPNSigmaTof;
+  std::array<TH1D*, Particles::nParticles> hP;
   std::array<TH1D*, Particles::nParticles> hPNoMatchedTof;
 
   const int nBinsP = 100;
@@ -76,58 +80,69 @@ void tpc_qa(const std::string& fileName) {
     hPNSigmaTof.at(kParticle)->GetYaxis()->SetTitle("N#sigma TOF");
     hPNSigmaTof.at(kParticle)->GetZaxis()->SetTitle("Entries");
 
+    hP.at(kParticle) = new TH1D(("hP_" + particleNames.at(kParticle)).c_str(), particleNames.at(kParticle).c_str(), nBinsP, binEdgesP.data());
+    hP.at(kParticle)->GetXaxis()->SetTitle("#it{p} (GeV/#it{c})");
+    hP.at(kParticle)->GetYaxis()->SetTitle("Entries");
+
     hPNoMatchedTof.at(kParticle) = new TH1D(("hPNoMatchedTof_" + particleNames.at(kParticle)).c_str(), particleNames.at(kParticle).c_str(), nBinsP, binEdgesP.data());
     hPNoMatchedTof.at(kParticle)->GetXaxis()->SetTitle("#it{p} (GeV/#it{c})");
     hPNoMatchedTof.at(kParticle)->GetYaxis()->SetTitle("Entries");
   }
 
-  for(const auto& dirName : dirNames) {
-    TFile* fileIn = TFile::Open(fileName.c_str());
-    TTree* treeIn = fileIn->Get<TTree>((dirName + "/O2tpcskimv0tree").c_str());
-    if(treeIn == nullptr) treeIn = fileIn->Get<TTree>((dirName + "/O2tpcskimv0wde").c_str());
-    treeIn->SetBranchAddress("fPidIndex", &fPidIndex);
-    treeIn->SetBranchAddress("fTPCInnerParam", &fTPCInnerParam);
-    treeIn->SetBranchAddress("fBetaGamma", &fBetaGamma);
-    treeIn->SetBranchAddress("fTPCSignal", &fTPCSignal);
-    treeIn->SetBranchAddress("fNSigTPC", &fNSigTPC);
-    treeIn->SetBranchAddress("fNSigTOF", &fNSigTOF);
+  for(int iFile=fileFrom; iFile<=fileTo; ++iFile) {
+    const std::string fileName = ReadNthLine(fileList, iFile);
+    if(fileName.empty()) break;
+    std::cout << "Processing " << fileName << "\n";
+    const auto dirNames = GetDFNames(fileName);
+    for(const auto& dirName : dirNames) {
+      TFile* fileIn = TFile::Open(fileName.c_str());
+      TTree* treeIn = fileIn->Get<TTree>((dirName + "/" + treeNameBase + "tree").c_str());
+      if(treeIn == nullptr) treeIn = fileIn->Get<TTree>((dirName + "/" + treeNameBase + "wde").c_str());
+      treeIn->SetBranchAddress("fPidIndex", &fPidIndex);
+      treeIn->SetBranchAddress("fTPCInnerParam", &fTPCInnerParam);
+      treeIn->SetBranchAddress("fTPCSignal", &fTPCSignal);
+      treeIn->SetBranchAddress("fNSigTPC", &fNSigTPC);
+      treeIn->SetBranchAddress("fNSigTOF", &fNSigTOF);
 
-    const int nEntries = treeIn->GetEntries();
-    for(int iEntry=0; iEntry<nEntries; ++iEntry) {
-      treeIn->GetEntry(iEntry);
-      const float p = fTPCInnerParam;
-      const float beta = calcBetaFromBetaGamma(fBetaGamma);
-      const float dEdx = fTPCSignal;
-      const float nSigmaTpc = fNSigTPC;
-      const float nSigmaTof = fNSigTOF;
+      const int nEntries = treeIn->GetEntries();
+      for(int iEntry=0; iEntry<nEntries; ++iEntry) {
+        treeIn->GetEntry(iEntry);
+        const float p = fTPCInnerParam;
+        const float dEdx = fTPCSignal;
+        const float nSigmaTpc = fNSigTPC;
+        const float nSigmaTof = fNSigTOF;
 
-//       if(std::fabs(fNSigTOF) > 3.f && std::fabs(fNSigTOF+999.f) > 1e-3) continue;
-//       if(std::fabs(fNSigTOF) > 3.f) continue;
+  //       if(std::fabs(nSigmaTof) > 3.f && !IsUnmatchedTof(nSigmaTof)) continue;
+  //       if(std::fabs(nSigmaTof) > 3.f) continue;
 
-      const short particleId = GetParicleByfPidIndex(fPidIndex);
+        const short particleId = GetParicleByfPidIndex(fPidIndex);
+        if(particleId == -1) continue;
 
-      hPdEdx.at(particleId)->Fill(p, dEdx);
-      hPdEdx.at(Particles::kAll)->Fill(p, dEdx);
+        hPdEdx.at(particleId)->Fill(p, dEdx);
+        hPdEdx.at(Particles::kAll)->Fill(p, dEdx);
 
-      hNSigmaTpc.at(particleId)->Fill(nSigmaTpc);
-      hNSigmaTpc.at(Particles::kAll)->Fill(nSigmaTpc);
+        hNSigmaTpc.at(particleId)->Fill(nSigmaTpc);
+        hNSigmaTpc.at(Particles::kAll)->Fill(nSigmaTpc);
 
-      hPNSigmaTpc.at(particleId)->Fill(p, nSigmaTpc);
-      hPNSigmaTpc.at(Particles::kAll)->Fill(p, nSigmaTpc);
+        hPNSigmaTpc.at(particleId)->Fill(p, nSigmaTpc);
+        hPNSigmaTpc.at(Particles::kAll)->Fill(p, nSigmaTpc);
 
-      hNSigmaTof.at(particleId)->Fill(nSigmaTof);
-      hNSigmaTof.at(Particles::kAll)->Fill(nSigmaTof);
+        hNSigmaTof.at(particleId)->Fill(nSigmaTof);
+        hNSigmaTof.at(Particles::kAll)->Fill(nSigmaTof);
 
-      hPNSigmaTof.at(particleId)->Fill(p, nSigmaTof);
-      hPNSigmaTof.at(Particles::kAll)->Fill(p, nSigmaTof);
+        hPNSigmaTof.at(particleId)->Fill(p, nSigmaTof);
+        hPNSigmaTof.at(Particles::kAll)->Fill(p, nSigmaTof);
 
-      if(std::fabs(nSigmaTof+999.f) < 1e-3) {
-        hPNoMatchedTof.at(particleId)->Fill(p);
-        hPNoMatchedTof.at(Particles::kAll)->Fill(p);
+        hP.at(particleId)->Fill(p);
+        hP.at(Particles::kAll)->Fill(p);
+
+        if(IsUnmatchedTof(nSigmaTof)) {
+          hPNoMatchedTof.at(particleId)->Fill(p);
+          hPNoMatchedTof.at(Particles::kAll)->Fill(p);
+        }
       }
+      fileIn->Close();
     }
-
-    fileIn->Close();
   }
 
   TFile* fileOut = TFile::Open("tpc_qa.root", "recreate");
@@ -137,6 +152,7 @@ void tpc_qa(const std::string& fileName) {
     hPNSigmaTpc.at(kParticle)->Write();
     hNSigmaTof.at(kParticle)->Write();
     hPNSigmaTof.at(kParticle)->Write();
+    hP.at(kParticle)->Write();
     hPNoMatchedTof.at(kParticle)->Write();
   }
   fileOut->Close();
@@ -160,11 +176,7 @@ std::vector<std::string> GetDFNames(const std::string& fileName) {
   return result;
 }
 
-float calcBetaFromBetaGamma(float betaGamma) {
-  return betaGamma / std::sqrt(1 + betaGamma*betaGamma);
-}
-
-short GetParicleByfPidIndex(UChar_t fPidIndex) {
+short GetParicleByfPidIndex(const UChar_t fPidIndex) {
   switch(fPidIndex) {
     case static_cast<UChar_t>(0): return Particles::kElectorn;
     case static_cast<UChar_t>(2): return Particles::kPion;
@@ -172,4 +184,21 @@ short GetParicleByfPidIndex(UChar_t fPidIndex) {
     case static_cast<UChar_t>(4): return Particles::kProton;
     default: return -1;
   }
+}
+
+std::string ReadNthLine(const std::string& fileName, const int nLine) {
+  std::string result;
+
+  std::ifstream fileList(fileName);
+  if (!fileList.is_open()) throw std::runtime_error("ReadNthLine() - the fileList " + fileName + " is missing!");
+
+  for(size_t iLine=0; iLine<nLine; ++iLine) {
+    if (!std::getline(fileList, result)) return "";
+  }
+
+  return result;
+}
+
+bool IsUnmatchedTof(const float nSigmaTof) {
+  return std::fabs(nSigmaTof - NSigmaTofUnmatched) > NSigmaTofUnmatchedTolerance;
 }
