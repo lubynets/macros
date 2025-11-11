@@ -24,6 +24,7 @@
 #include <RooCrystalBall.h>
 #include <RooDataHist.h>
 #include <RooExponential.h>
+#include <RooExtendPdf.h>
 #include <RooFitResult.h>
 #include <RooFormulaVar.h>
 #include <RooGamma.h>
@@ -39,6 +40,7 @@
 #include <RooWorkspace.h>
 #include <TColor.h>
 #include <TDatabasePDG.h>
+#include <TFile.h>
 #include <TLine.h>
 #include <TNamed.h>
 #include <TPaveText.h>
@@ -236,6 +238,46 @@ HFInvMassFitter::~HFInvMassFitter()
   delete mWorkspace;
 }
 
+void HFInvMassFitter::writeBgFitInfo(TH1* hM, const bool isPreFit) {
+  static int count{0};
+  const std::string option = count == 0 ? "recreate" : "update";
+  TFile* fileOut = TFile::Open("bkgFitInfo.root", option.c_str());
+  const std::string& hName = std::to_string(count/2);
+  ++count;
+  TDirectory* dir = fileOut->GetDirectory(hName.c_str());
+  if (!dir) {
+      dir = fileOut->mkdir(hName.c_str());
+  }
+  dir->cd();  // change into it
+  if(isPreFit) {
+    hM->Write("hM");
+    TArrayD* sb = new TArrayD(2);
+    const double sbl = mWorkspace->var("mass")->getRange("SBL").second;
+    const double sbr = mWorkspace->var("mass")->getRange("SBR").first;
+    sb->AddAt(sbl, 0);
+    sb->AddAt(sbr, 1);
+    dir->WriteObject(sb, "sb");
+    dir->Write();
+  }
+  TArrayD* pars = new TArrayD(4);
+  const double integral = mRooNBkg->getVal();
+
+  RooArgSet* params = mBkgPdf->getParameters(RooArgSet(*mWorkspace->var("mass")));
+  RooRealVar* coef0 = dynamic_cast<RooRealVar*>(params->find("polyParam0"));
+  RooRealVar* coef1 = dynamic_cast<RooRealVar*>(params->find("polyParam1"));
+  RooRealVar* coef2 = dynamic_cast<RooRealVar*>(params->find("polyParam2"));
+  const double p0 = coef0->getVal();
+  const double p1 = coef1->getVal();
+  const double p2 = coef2->getVal();
+  pars->AddAt(integral, 0);
+  pars->AddAt(p0, 1);
+  pars->AddAt(p1, 2);
+  pars->AddAt(p2, 3);
+  dir->WriteObject(pars, isPreFit ? "prefit" : "fit");
+  dir->Write();
+  fileOut->Close();
+}
+
 void HFInvMassFitter::doFit()
 {
   mRandomGen = new TRandom3();
@@ -294,7 +336,9 @@ void HFInvMassFitter::doFit()
     calculateSignal(mRawYield, mRawYieldErr);        // calculate signal and signal error
     mTotalPdf->plotOn(mInvMassFrame, Name("Tot_c")); // plot total function
   } else {                                           // data
+//    auto* extBkg = new RooExtendPdf("extBkg","extended background", *bkgPdf, *mRooNBkg);
     mBkgPdf = new RooAddPdf("mBkgPdf", "background fit function", RooArgList(*bkgPdf), RooArgList(*mRooNBkg));
+//    mBkgPdf = extBkg;
     if (mTypeOfSgnPdf == GausSec) { // two peak fit
       if (!strcmp(mFitOption.Data(), "Chi2")) {
         mBkgPdf->chi2FitTo(dataHistogram, Range("SBL,SBR,SEC"), Save());
@@ -303,10 +347,20 @@ void HFInvMassFitter::doFit()
       }
     } else { // single peak fit
       if (!strcmp(mFitOption.Data(), "Chi2")) {
-        mBkgPdf->chi2FitTo(dataHistogram, Range("SBL,SBR"), Save());
+        std::cout << "Doing Chi2 fit for background...\n";
+        mBkgPdf->chi2FitTo(dataHistogram, Range("SBL,SBR"), Extended(),Save());
       } else {
         mBkgPdf->fitTo(dataHistogram, Range("SBL,SBR"), Save());
       }
+      std::cout << "mHistoInvMass->GetName() = " << mHistoInvMass->GetName() << "\n";
+      std::cout << "mHistoInvMass->GetTitle() = " << mHistoInvMass->GetTitle() << "\n";
+      std::cout << "Background prefit\n";
+      std::cout << "mRooNBkg = " << mRooNBkg->getVal() << " +/- " << mRooNBkg->getError() << "\n";
+      std::cout << "Background function: ";
+      mBkgPdf->printCompactTree(std::cout);
+      std::cout << "Integral = " << mBkgPdf->createIntegral(RooArgSet(*mass), RooFit::NormSet(RooArgSet(*mass)), RooFit::Range("full"))->getVal() << "\n";
+      std::cout << "\n";
+      writeBgFitInfo(mHistoInvMass, true);
     }
     // define the frame to evaluate background sidebands chi2 (bg pdf needs to be plotted within sideband ranges)
     RooPlot* frameTemporary = mass->frame(Title(Form("%s_temp", mHistoInvMass->GetTitle())));
@@ -339,7 +393,7 @@ void HFInvMassFitter::doFit()
     }
     mSgnPdf = new RooAddPdf("mSgnPdf", "signal fit function", RooArgList(*sgnPdf), RooArgList(*mRooNSgn));
     std::cout << "reflOverSgn = " << mReflOverSgn << "\n";
-    mRooNCorrelBg = new RooRealVar("mNCorrelBg", "number of correlated background", 0.01*mRooNSgn->getVal(), 0., 0.1*mRooNSgn->getVal()); // TODO get rid of magic numbers
+    mRooNCorrelBg = new RooRealVar("mNCorrelBg", "number of correlated background", mReflOverSgn*mRooNSgn->getVal(), 0., 10*mReflOverSgn*mRooNSgn->getVal());
     // create reflection template and fit to reflection
     if (mHistoTemplateRefl) {
       RooAbsPdf* reflPdf = createReflectionFitFunction(mWorkspace); // create reflection pdf
@@ -396,6 +450,13 @@ void HFInvMassFitter::doFit()
       } else {
         mTotalPdf->fitTo(dataHistogram);
       }
+      std::cout << "Total fit\n";
+      std::cout << "mRooNBkg = " << mRooNBkg->getVal() << " +/- " << mRooNBkg->getError() << "\n";
+      std::cout << "Background function: ";
+      mBkgPdf->printCompactTree(std::cout);
+      std::cout << "Integral = " << mBkgPdf->createIntegral(RooArgSet(*mass), RooFit::NormSet(RooArgSet(*mass)), RooFit::Range("full"))->getVal() << "\n";
+      std::cout << "\n";
+      writeBgFitInfo(mHistoInvMass, false);
       plotBkg(mTotalPdf);
       mTotalPdf->plotOn(mInvMassFrame, Name("Tot_c"), LineColor(kBlue));
       mSgnPdf->plotOn(mInvMassFrame, Normalization(1.0, RooAbsReal::RelativeExpected), DrawOption("F"), FillColor(TColor::GetColorTransparent(kBlue, 0.2)), VLines());
