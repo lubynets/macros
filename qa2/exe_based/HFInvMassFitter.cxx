@@ -284,6 +284,7 @@ void HFInvMassFitter::doFit()
   if (mRandomSeed >= 0) {
     mRandomGen->SetSeed(mRandomSeed);
   }
+
   mIntegralHisto = mHistoInvMass->Integral(mHistoInvMass->FindBin(mMinMass), mHistoInvMass->FindBin(mMaxMass));
   mWorkspace = new RooWorkspace("mWorkspace");
   fillWorkspace(*mWorkspace);
@@ -308,6 +309,27 @@ void HFInvMassFitter::doFit()
   mass->setRange("full", mMinMass, mMaxMass);
   mInvMassFrame = mass->frame(Title(Form("%s", mHistoInvMass->GetTitle()))); // define the frame to plot
   dataHistogram.plotOn(mInvMassFrame, Name("data_c"));                       // plot data histogram on the frame
+
+  auto CutHistoSidebands = [&](const TH1* histo) { // TODO generalize for various number of ranges
+    const RooRealVar* mass = mWorkspace->var("mass");
+    const double sblLeft = mass->getRange("SBL").first;
+    const double sblRight = mass->getRange("SBL").second;
+    const double sbrLeft = mass->getRange("SBR").first;
+    const double sbrRight = mass->getRange("SBR").second;
+    TH1* histoOut = dynamic_cast<TH1*>(histo->Clone());
+    for(int iBin=1, nBins=histoOut->GetNbinsX(); iBin<=nBins; ++iBin) {
+      const double binCenter = histoOut->GetBinCenter(iBin);
+      if((binCenter < sblLeft) || (binCenter > sblRight && binCenter < sbrLeft) || (binCenter > sbrRight)) {
+        histoOut->SetBinContent(iBin, 1e-9);
+        histoOut->SetBinError(iBin, 1e9);
+      }
+    }
+
+    return histoOut;
+  };
+
+  TH1* histoInvMassSidebands = CutHistoSidebands(mHistoInvMass);
+  RooDataHist dataHistogramSidebands("dataHistogramSidebands", "dataSB", *mass, Import(*histoInvMassSidebands));
 
   // define number of background and background fit function
   const double rooNBkgLower = 0.;
@@ -336,9 +358,7 @@ void HFInvMassFitter::doFit()
     calculateSignal(mRawYield, mRawYieldErr);        // calculate signal and signal error
     mTotalPdf->plotOn(mInvMassFrame, Name("Tot_c")); // plot total function
   } else {                                           // data
-//    auto* extBkg = new RooExtendPdf("extBkg","extended background", *bkgPdf, *mRooNBkg);
-    mBkgPdf = new RooAddPdf("mBkgPdf", "background fit function", RooArgList(*bkgPdf), RooArgList(*mRooNBkg));
-//    mBkgPdf = extBkg;
+   mBkgPdf = new RooAddPdf("mBkgPdf", "background fit function", RooArgList(*bkgPdf), RooArgList(*mRooNBkg));
     if (mTypeOfSgnPdf == GausSec) { // two peak fit
       if (!strcmp(mFitOption.Data(), "Chi2")) {
         mBkgPdf->chi2FitTo(dataHistogram, Range("SBL,SBR,SEC"), Save());
@@ -347,19 +367,10 @@ void HFInvMassFitter::doFit()
       }
     } else { // single peak fit
       if (!strcmp(mFitOption.Data(), "Chi2")) {
-        std::cout << "Doing Chi2 fit for background...\n";
-        mBkgPdf->chi2FitTo(dataHistogram, Range("SBL,SBR"), Extended(),Save());
+        mBkgPdf->chi2FitTo(dataHistogramSidebands, Save());
       } else {
         mBkgPdf->fitTo(dataHistogram, Range("SBL,SBR"), Save());
       }
-      std::cout << "mHistoInvMass->GetName() = " << mHistoInvMass->GetName() << "\n";
-      std::cout << "mHistoInvMass->GetTitle() = " << mHistoInvMass->GetTitle() << "\n";
-      std::cout << "Background prefit\n";
-      std::cout << "mRooNBkg = " << mRooNBkg->getVal() << " +/- " << mRooNBkg->getError() << "\n";
-      std::cout << "Background function: ";
-      mBkgPdf->printCompactTree(std::cout);
-      std::cout << "Integral = " << mBkgPdf->createIntegral(RooArgSet(*mass), RooFit::NormSet(RooArgSet(*mass)), RooFit::Range("full"))->getVal() << "\n";
-      std::cout << "\n";
       writeBgFitInfo(mHistoInvMass, true);
     }
     // define the frame to evaluate background sidebands chi2 (bg pdf needs to be plotted within sideband ranges)
@@ -450,12 +461,6 @@ void HFInvMassFitter::doFit()
       } else {
         mTotalPdf->fitTo(dataHistogram);
       }
-      std::cout << "Total fit\n";
-      std::cout << "mRooNBkg = " << mRooNBkg->getVal() << " +/- " << mRooNBkg->getError() << "\n";
-      std::cout << "Background function: ";
-      mBkgPdf->printCompactTree(std::cout);
-      std::cout << "Integral = " << mBkgPdf->createIntegral(RooArgSet(*mass), RooFit::NormSet(RooArgSet(*mass)), RooFit::Range("full"))->getVal() << "\n";
-      std::cout << "\n";
       writeBgFitInfo(mHistoInvMass, false);
       plotBkg(mTotalPdf);
       mTotalPdf->plotOn(mInvMassFrame, Name("Tot_c"), LineColor(kBlue));
