@@ -382,7 +382,7 @@ void HFInvMassFitter::doFit()
     RooAbsPdf* mBkgPdfPrefit{nullptr};
     if (mDrawBgPrefit) {
       mBkgPdfPrefit = dynamic_cast<RooAbsPdf*>(mBkgPdf->Clone());
-      mBkgPdfPrefit->plotOn(mInvMassFrame, Range("full"), Name("Bkg_c_prefit"), LineColor(kGray));
+      mBkgPdfPrefit->plotOn(mInvMassFrame, Range("full"), Name("Bkg_c_prefit"), NormRange("SBL,SBR"), LineColor(kGray));
       delete mBkgPdfPrefit;
     }
 
