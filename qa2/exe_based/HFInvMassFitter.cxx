@@ -24,7 +24,6 @@
 #include <RooCrystalBall.h>
 #include <RooDataHist.h>
 #include <RooExponential.h>
-#include <RooExtendPdf.h>
 #include <RooFitResult.h>
 #include <RooFormulaVar.h>
 #include <RooGamma.h>
@@ -117,6 +116,11 @@ HFInvMassFitter::HFInvMassFitter() : TNamed(),
                                      mRooNBkg(nullptr),
                                      mRooNRefl(nullptr),
                                      mRooNCorrelBg(nullptr),
+                                     mRooDscbAlphaL(nullptr),
+                                     mRooDscbAlphaR(nullptr),
+                                     mRooDscbNL(nullptr),
+                                     mRooDscbNR(nullptr),
+                                     mRooVoigtWidth(nullptr),
                                      mTotalPdf(nullptr),
                                      mInvMassFrame(nullptr),
                                      mReflFrame(nullptr),
@@ -193,6 +197,11 @@ HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit, Double_t minValue, Doubl
                                                                                                                                     mRooNBkg(nullptr),
                                                                                                                                     mRooNRefl(nullptr),
                                                                                                                                     mRooNCorrelBg(nullptr),
+                                                                                                                                    mRooDscbAlphaL(nullptr),
+                                                                                                                                    mRooDscbAlphaR(nullptr),
+                                                                                                                                    mRooDscbNL(nullptr),
+                                                                                                                                    mRooDscbNR(nullptr),
+                                                                                                                                    mRooVoigtWidth(nullptr),
                                                                                                                                     mTotalPdf(nullptr),
                                                                                                                                     mInvMassFrame(nullptr),
                                                                                                                                     mReflFrame(nullptr),
@@ -231,6 +240,11 @@ HFInvMassFitter::~HFInvMassFitter()
   delete mRooNBkg;
   delete mRooNRefl;
   delete mRooNCorrelBg;
+  delete mRooDscbAlphaL;
+  delete mRooDscbAlphaR;
+  delete mRooDscbNL;
+  delete mRooDscbNR;
+  delete mRooVoigtWidth;
   delete mInvMassFrame;
   delete mReflFrame;
   delete mReflOnlyFrame;
@@ -699,7 +713,7 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
 // Tail parameters: right side
   RooRealVar alphaR("alphaR", "right tail alpha", 1.5, 0.1, 10.);
   RooRealVar nR("nR", "right tail n", 2.0, 0.5, 50.);
-  RooAbsPdf *sgnFuncDSCB = new RooCrystalBall("sgnFuncDSCB", "double sided crystal ball signal", mass, mean,sigma,alphaL,nL,alphaR,nR);
+  RooAbsPdf *sgnFuncDSCB = new RooCrystalBall("sgnFuncDSCB", "double sided crystal ball signal", mass, mean, sigma, alphaL, nL, alphaR, nR);
   workspace.import(*sgnFuncDSCB);
   delete sgnFuncDSCB;
   // signal Voigt pdf
@@ -998,11 +1012,16 @@ RooAbsPdf* HFInvMassFitter::createSignalFitFunction(RooWorkspace* workspace)
       sgnPdf = workspace->pdf("sgnFuncDSCB");
       mRooSigmaSgn = workspace->var("sigma");
       mRooMeanSgn = workspace->var("mean");
+      mRooDscbAlphaL = workspace->var("alphaL");
+      mRooDscbNL = workspace->var("nL");
+      mRooDscbAlphaR = workspace->var("alphaR");
+      mRooDscbNR = workspace->var("nR");
     } break;
     case Voigt: {
       sgnPdf = workspace->pdf("sgnFuncVoigt");
       mRooSigmaSgn = workspace->var("sigma");
       mRooMeanSgn = workspace->var("mean");
+      mRooVoigtWidth = workspace->var("width");
     } break;
     default:
       break;

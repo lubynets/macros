@@ -316,6 +316,21 @@ int runMassFitter(const TString& configFileName)
   auto hReflectionOverSignal =
     new TH1D("hReflectionOverSignal", ";" + sliceVarName + "(" + sliceVarUnit + ");Refl/Signal Final/Init",
              nSliceVarBins, sliceVarLimits.data());
+  auto hRawYieldsDscbAlphaL =
+    new TH1D("hRawYieldsDscbAlphaL", ";" + sliceVarName + "(" + sliceVarUnit + ");#alpha_{L}",
+             nSliceVarBins, sliceVarLimits.data());
+  auto hRawYieldsDscbAlphaR =
+    new TH1D("hRawYieldsDscbAlphaR", ";" + sliceVarName + "(" + sliceVarUnit + ");#alpha_{R}",
+             nSliceVarBins, sliceVarLimits.data());
+  auto hRawYieldsDscbNL =
+    new TH1D("hRawYieldsDscbNL", ";" + sliceVarName + "(" + sliceVarUnit + ");n_{L}",
+             nSliceVarBins, sliceVarLimits.data());
+  auto hRawYieldsDscbNR =
+    new TH1D("hRawYieldsDscbNR", ";" + sliceVarName + "(" + sliceVarUnit + ");n_{R}",
+             nSliceVarBins, sliceVarLimits.data());
+  auto hRawYieldsVoigtWidth =
+    new TH1D("hRawYieldsVoigtWidth", ";" + sliceVarName + "(" + sliceVarUnit + ");#gamma (GeV/#it{c}^{2})",
+             nSliceVarBins, sliceVarLimits.data());
 
   const Int_t nConfigsToSave = 6;
   auto hFitConfig = new TH2F("hfitConfig", "Fit Configurations", nConfigsToSave, 0, 6, nSliceVarBins, sliceVarLimits.data());
@@ -338,6 +353,11 @@ int runMassFitter(const TString& configFileName)
   setHistoStyle(hRawYieldsChiSquareBkg);
   setHistoStyle(hRawYieldsChiSquareTotal);
   setHistoStyle(hReflectionOverSignal, kRed + 1);
+  setHistoStyle(hRawYieldsDscbAlphaL);
+  setHistoStyle(hRawYieldsDscbAlphaR);
+  setHistoStyle(hRawYieldsDscbNL);
+  setHistoStyle(hRawYieldsDscbNR);
+  setHistoStyle(hRawYieldsVoigtWidth);
 
   auto getHistToFix = [&nSliceVarBins](bool const& isFix, std::vector<double> const& fixManual, std::string const& fixFileName, std::string const& var) -> TH1* {
     TH1* histToFix = nullptr;
@@ -457,6 +477,16 @@ int runMassFitter(const TString& configFileName)
       const Double_t meanErr = massFitter->getMeanUncertainty();
       const Double_t reducedChiSquareBkg = massFitter->getChiSquareOverNDFBkg();
       const Double_t reducedChiSquareTotal = massFitter->getChiSquareOverNDFTotal();
+      const Double_t dscbAlphaL = massFitter->getDscbAlphaL();
+      const Double_t dscbAlphaR = massFitter->getDscbAlphaR();
+      const Double_t dscbNL = massFitter->getDscbNL();
+      const Double_t dscbNR = massFitter->getDscbNR();
+      const Double_t dscbAlphaLErr = massFitter->getDscbAlphaLUncertainty();
+      const Double_t dscbAlphaRErr = massFitter->getDscbAlphaRUncertainty();
+      const Double_t dscbNErrL = massFitter->getDscbNLUncertainty();
+      const Double_t dscbNErrR = massFitter->getDscbNRUncertainty();
+      const Double_t voigtWidth = massFitter->getVoigtWidth();
+      const Double_t voigtWidthErr = massFitter->getVoigtWidthUncertainty();
 
       hRawYieldsSignal->SetBinContent(iSliceVar + 1, rawYield);
       hRawYieldsSignal->SetBinError(iSliceVar + 1, rawYieldErr);
@@ -470,6 +500,16 @@ int runMassFitter(const TString& configFileName)
       hRawYieldsChiSquareBkg->SetBinError(iSliceVar + 1, 0.);
       hRawYieldsChiSquareTotal->SetBinContent(iSliceVar + 1, reducedChiSquareTotal);
       hRawYieldsChiSquareTotal->SetBinError(iSliceVar + 1, 0.);
+      hRawYieldsDscbAlphaL->SetBinContent(iSliceVar + 1, dscbAlphaL);
+      hRawYieldsDscbAlphaL->SetBinError(iSliceVar + 1, dscbAlphaLErr);
+      hRawYieldsDscbAlphaR->SetBinContent(iSliceVar + 1, dscbAlphaR);
+      hRawYieldsDscbAlphaR->SetBinError(iSliceVar + 1, dscbAlphaRErr);
+      hRawYieldsDscbNL->SetBinContent(iSliceVar + 1, dscbNL);
+      hRawYieldsDscbNL->SetBinError(iSliceVar + 1, dscbNErrL);
+      hRawYieldsDscbNR->SetBinContent(iSliceVar + 1, dscbNR);
+      hRawYieldsDscbNR->SetBinError(iSliceVar + 1, dscbNErrR);
+      hRawYieldsVoigtWidth->SetBinContent(iSliceVar + 1, voigtWidth);
+      hRawYieldsVoigtWidth->SetBinError(iSliceVar + 1, voigtWidthErr);
     } else {
       HFInvMassFitter* massFitter;
       massFitter = new HFInvMassFitter(hMassForFit[iSliceVar], massMin[iSliceVar], massMax[iSliceVar],
@@ -538,6 +578,16 @@ int runMassFitter(const TString& configFileName)
       const double bkg = massFitter->getBkgYield();
       const double bkgErr = massFitter->getBkgYieldError();
       const double reflOverSgn = massFitter->getReflOverSig();
+      const Double_t dscbAlphaL = massFitter->getDscbAlphaL();
+      const Double_t dscbAlphaR = massFitter->getDscbAlphaR();
+      const Double_t dscbNL = massFitter->getDscbNL();
+      const Double_t dscbNR = massFitter->getDscbNR();
+      const Double_t dscbAlphaLErr = massFitter->getDscbAlphaLUncertainty();
+      const Double_t dscbAlphaRErr = massFitter->getDscbAlphaRUncertainty();
+      const Double_t dscbNErrL = massFitter->getDscbNLUncertainty();
+      const Double_t dscbNErrR = massFitter->getDscbNRUncertainty();
+      const Double_t voigtWidth = massFitter->getVoigtWidth();
+      const Double_t voigtWidthErr = massFitter->getVoigtWidthUncertainty();
 
       hRawYieldsSignal->SetBinContent(iSliceVar + 1, rawYield);
       hRawYieldsSignal->SetBinError(iSliceVar + 1, rawYieldErr);
@@ -560,6 +610,16 @@ int runMassFitter(const TString& configFileName)
       if (enableRefl || includeCorrelBg) {
         hReflectionOverSignal->SetBinContent(iSliceVar + 1, reflOverSgn/reflOverSgnInit);
       }
+      hRawYieldsDscbAlphaL->SetBinContent(iSliceVar + 1, dscbAlphaL);
+      hRawYieldsDscbAlphaL->SetBinError(iSliceVar + 1, dscbAlphaLErr);
+      hRawYieldsDscbAlphaR->SetBinContent(iSliceVar + 1, dscbAlphaR);
+      hRawYieldsDscbAlphaR->SetBinError(iSliceVar + 1, dscbAlphaRErr);
+      hRawYieldsDscbNL->SetBinContent(iSliceVar + 1, dscbNL);
+      hRawYieldsDscbNL->SetBinError(iSliceVar + 1, dscbNErrL);
+      hRawYieldsDscbNR->SetBinContent(iSliceVar + 1, dscbNR);
+      hRawYieldsDscbNR->SetBinError(iSliceVar + 1, dscbNErrR);
+      hRawYieldsVoigtWidth->SetBinContent(iSliceVar + 1, voigtWidth);
+      hRawYieldsVoigtWidth->SetBinError(iSliceVar + 1, voigtWidthErr);
 
       if (enableRefl) {
         if (nSliceVarBins > 1) {
@@ -629,6 +689,15 @@ int runMassFitter(const TString& configFileName)
   hRawYieldsChiSquareTotal->Write();
   if (enableRefl || includeCorrelBg) {
     hReflectionOverSignal->Write();
+  }
+  if (std::find(sgnFunc.begin(), sgnFunc.end(), HFInvMassFitter::DoubleSidedCrystalBall) != sgnFunc.end()) {
+    hRawYieldsDscbAlphaL->Write();
+    hRawYieldsDscbAlphaR->Write();
+    hRawYieldsDscbNL->Write();
+    hRawYieldsDscbNR->Write();
+  }
+  if (std::find(sgnFunc.begin(), sgnFunc.end(), HFInvMassFitter::Voigt) != sgnFunc.end()) {
+    hRawYieldsVoigtWidth->Write();
   }
   hFitConfig->Write();
 

@@ -215,6 +215,16 @@ class HFInvMassFitter : public TNamed
   Double_t getMeanUncertainty() const { return mRooMeanSgn->getError(); }
   Double_t getSigma() const { return mRooSigmaSgn->getVal(); }
   Double_t getSigmaUncertainty() const { return mRooSigmaSgn->getError(); }
+  Double_t getDscbAlphaL() const { return mRooDscbAlphaL ? mRooDscbAlphaL->getVal() : 0.; }
+  Double_t getDscbAlphaR() const { return mRooDscbAlphaR ? mRooDscbAlphaR->getVal() : 0.; }
+  Double_t getDscbNL() const { return mRooDscbNL ? mRooDscbNL->getVal() : 0.; }
+  Double_t getDscbNR() const { return mRooDscbNR ? mRooDscbNR->getVal() : 0.; }
+  Double_t getDscbAlphaLUncertainty() const { return mRooDscbAlphaL ? mRooDscbAlphaL->getError() : 0.; }
+  Double_t getDscbAlphaRUncertainty() const { return mRooDscbAlphaR ? mRooDscbAlphaR->getError() : 0.; }
+  Double_t getDscbNLUncertainty() const { return mRooDscbNL ? mRooDscbNL->getError() : 0.; }
+  Double_t getDscbNRUncertainty() const { return mRooDscbNR ? mRooDscbNR->getError() : 0.; }
+  Double_t getVoigtWidth() const { return mRooVoigtWidth ? mRooVoigtWidth->getVal() : 0.; }
+  Double_t getVoigtWidthUncertainty() const { return mRooVoigtWidth ? mRooVoigtWidth->getError() : 0.; }
   Double_t getReflOverSig() const
   {
     if (mReflPdf) {
@@ -298,6 +308,11 @@ class HFInvMassFitter : public TNamed
   RooRealVar* mRooNBkg;              /// total background fit function integral
   RooRealVar* mRooNRefl;             /// total reflection fit function integral
   RooRealVar* mRooNCorrelBg;         /// total correlated background fit function integral
+  RooRealVar* mRooDscbAlphaL;        /// double sided Crystal Ball alpha left
+  RooRealVar* mRooDscbAlphaR;        /// double sided Crystal Ball alpha right
+  RooRealVar* mRooDscbNL;            /// double sided Crystal Ball n left
+  RooRealVar* mRooDscbNR;            /// double sided Crystal Ball n right
+  RooRealVar* mRooVoigtWidth;        /// Voigt width
   RooAbsPdf* mTotalPdf;              /// total fit function
   RooPlot* mInvMassFrame;            /// frame of mass
   RooPlot* mReflFrame;               /// reflection frame
