@@ -349,14 +349,16 @@ void HFInvMassFitter::doFit()
     mRooNSgn = new RooRealVar("mRooNSig", "number of signal", randomizeInitialFitParameter(rooNSigLower, rooNSigUpper, rooNSigInitial, rooNSigSmear), rooNSigLower, rooNSigUpper); // signal yield
     mTotalPdf = new RooAddPdf("mMCFunc", "MC fit function", RooArgList(*sgnPdf), RooArgList(*mRooNSgn));       // create total pdf
     if (!strcmp(mFitOption.Data(), "Chi2")) {
-      mTotalPdf->chi2FitTo(dataHistogram, Range("signal"));
+      mTotalPdf->chi2FitTo(dataHistogram, Range("full"));
     } else {
-      mTotalPdf->fitTo(dataHistogram, Range("signal"));
+      mTotalPdf->fitTo(dataHistogram, Range("full"));
     }
     RooAbsReal* signalIntegralMc = mTotalPdf->createIntegral(*mass, NormSet(*mass), Range("signal")); // sig yield from fit
     mIntegralSgn = signalIntegralMc->getValV();
     calculateSignal(mRawYield, mRawYieldErr);        // calculate signal and signal error
+    countSignal(mRawYieldCounted, mRawYieldCountedErr);
     mTotalPdf->plotOn(mInvMassFrame, Name("Tot_c")); // plot total function
+    mChiSquareOverNdfTotal = mInvMassFrame->chiSquare("Tot_c", "data_c"); // calculate reduced chi2 / NDF
   } else {                                           // data
    mBkgPdf = new RooAddPdf("mBkgPdf", "background fit function", RooArgList(*bkgPdf), RooArgList(*mRooNBkg));
     if (mTypeOfSgnPdf == GausSec) { // two peak fit
@@ -782,6 +784,7 @@ void HFInvMassFitter::drawFit(TVirtualPad* pad, Int_t writeFitInfo)
     textInfoRight->SetTextColor(kBlue);
     textInfoLeft->AddText(Form("S = %.0f #pm %.0f ", mRawYield, mRawYieldErr));
     textInfoLeft->AddText(Form("S_{count} = %.0f #pm %.0f ", mRawYieldCounted, mRawYieldCountedErr));
+    textInfoLeft->AddText(Form("#chi^{2} / ndf  =  %.3f", mChiSquareOverNdfTotal));
     if (mTypeOfBkgPdf != NoBkg) {
       textInfoLeft->AddText(Form("B (%d#sigma) = %.0f #pm %.0f", mNSigmaForSidebands, mBkgYield, mBkgYieldErr));
       textInfoLeft->AddText(Form("S/B (%d#sigma) = %.4g ", mNSigmaForSidebands, mRawYield / mBkgYield));
@@ -791,7 +794,6 @@ void HFInvMassFitter::drawFit(TVirtualPad* pad, Int_t writeFitInfo)
     }
     if (mTypeOfBkgPdf != NoBkg) {
       textInfoLeft->AddText(Form("Signif (%d#sigma) = %.1f #pm %.1f ", mNSigmaForSidebands, mSignificance, mSignificanceErr));
-      textInfoLeft->AddText(Form("#chi^{2} / ndf  =  %.3f", mChiSquareOverNdfTotal));
     }
     if (mFixedMean) {
       textInfoRight->AddText(Form("mean(fixed) = %.3f #pm %.3f", mRooMeanSgn->getVal(), mRooMeanSgn->getError()));
