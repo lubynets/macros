@@ -182,6 +182,7 @@ class HFInvMassFitter : public TNamed
   void setFixSignalYield(Double_t yield) { mFixedRawYield = yield; }
   void setNumberOfSigmaForSidebands(Double_t numberOfSigma) { mNSigmaForSidebands = numberOfSigma; }
   void plotBkg(RooAbsPdf* mFunc, Color_t color = kRed);
+  void plotCorrelBg(RooAbsPdf* mFunc, Color_t color = kGreen + 2);
   void plotRefl(RooAbsPdf* mFunc);
   void setReflFuncFixed();
   void doFit();

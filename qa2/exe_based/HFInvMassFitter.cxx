@@ -476,9 +476,11 @@ void HFInvMassFitter::doFit()
       } else {
         mTotalPdf->fitTo(dataHistogram);
       }
-      std::cout << "mRooNSgn->getVal() / estimatedSignal = " << mRooNSgn->getVal() / estimatedSignal << "\n";
       writeBgFitInfo(mHistoInvMass, false);
       plotBkg(mTotalPdf);
+      if (corrBgDataHist) {
+        plotCorrelBg(mTotalPdf);
+      }
       mTotalPdf->plotOn(mInvMassFrame, Name("Tot_c"), LineColor(kBlue));
       mSgnPdf->plotOn(mInvMassFrame, Normalization(1.0, RooAbsReal::RelativeExpected), DrawOption("F"), FillColor(TColor::GetColorTransparent(kBlue, 0.2)), VLines());
       mChiSquareOverNdfTotal = mInvMassFrame->chiSquare("Tot_c", "data_c"); // calculate reduced chi2 / DNF
@@ -1059,6 +1061,11 @@ void HFInvMassFitter::plotRefl(RooAbsPdf* pdf)
     throw std::runtime_error("plotRefl(): mTypeOfReflPdf must be within [0; " + std::to_string(NTypesOfReflPdf) + ") range");
   }
   pdf->plotOn(mInvMassFrame, Components(namesOfReflPdf.at(mTypeOfReflPdf).c_str()), Name("Refl_c"), LineColor(kGreen));
+}
+
+// Plot correlated Bkg components of fTotFunction
+void HFInvMassFitter::plotCorrelBg(RooAbsPdf* pdf, Color_t color) {
+  pdf->plotOn(mInvMassFrame, Components("corrBgPdf"), Name("CorrBkg_c"), LineColor(color));
 }
 
 // Fix reflection pdf
