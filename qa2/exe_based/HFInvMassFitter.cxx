@@ -405,8 +405,7 @@ void HFInvMassFitter::doFit()
       mRooNSgn->setConstant(kTRUE);
     }
     mSgnPdf = new RooAddPdf("mSgnPdf", "signal fit function", RooArgList(*sgnPdf), RooArgList(*mRooNSgn));
-    std::cout << "reflOverSgn = " << mReflOverSgn << "\n";
-    mRooNCorrelBg = new RooRealVar("mNCorrelBg", "number of correlated background", mReflOverSgn*mRooNSgn->getVal(), 0., 10*mReflOverSgn*mRooNSgn->getVal());
+    mRooNCorrelBg = new RooRealVar("mNCorrelBg", "number of correlated background", mReflOverSgn*estimatedSignal, 0., 10*mReflOverSgn*estimatedSignal);
     // create reflection template and fit to reflection
     if (mHistoTemplateRefl) {
       RooAbsPdf* reflPdf = createReflectionFitFunction(mWorkspace); // create reflection pdf
@@ -463,6 +462,7 @@ void HFInvMassFitter::doFit()
       } else {
         mTotalPdf->fitTo(dataHistogram);
       }
+      std::cout << "mRooNSgn->getVal() / estimatedSignal = " << mRooNSgn->getVal() / estimatedSignal << "\n";
       writeBgFitInfo(mHistoInvMass, false);
       plotBkg(mTotalPdf);
       mTotalPdf->plotOn(mInvMassFrame, Name("Tot_c"), LineColor(kBlue));
@@ -919,8 +919,8 @@ void HFInvMassFitter::calculateSignal(Double_t& signal, Double_t& errSignal) con
 // calculate background yield
 void HFInvMassFitter::calculateBackground(Double_t& bkg, Double_t& errBkg) const
 {
-  bkg = mRooNBkg->getVal() * mIntegralBkg;
-  errBkg = mRooNBkg->getError() * mIntegralBkg;
+  bkg = mRooNBkg->getVal();
+  errBkg = mRooNBkg->getError();
 }
 
 // calculate significance
@@ -940,8 +940,8 @@ void HFInvMassFitter::calculateSignificance(Double_t& significance, Double_t& er
 // estimate Signal
 void HFInvMassFitter::checkForSignal(Double_t& estimatedSignal)
 {
-  Double_t minForSgn = mMass - 4 * mSigmaSgn;
-  Double_t maxForSgn = mMass + 4 * mSigmaSgn;
+  Double_t minForSgn = mMinMass;
+  Double_t maxForSgn = mMaxMass;
   Int_t binForMinSgn = mHistoInvMass->FindBin(minForSgn);
   Int_t binForMaxSgn = mHistoInvMass->FindBin(maxForSgn);
 

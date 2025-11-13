@@ -314,7 +314,7 @@ int runMassFitter(const TString& configFileName)
     new TH1D("hRawYieldsChiSquareTotal",
              ";" + sliceVarName + "(" + sliceVarUnit + ");#chi^{2}/#it{ndf}", nSliceVarBins, sliceVarLimits.data());
   auto hReflectionOverSignal =
-    new TH1D("hReflectionOverSignal", ";" + sliceVarName + "(" + sliceVarUnit + ");Refl/Signal",
+    new TH1D("hReflectionOverSignal", ";" + sliceVarName + "(" + sliceVarUnit + ");Refl/Signal Final/Init",
              nSliceVarBins, sliceVarLimits.data());
 
   const Int_t nConfigsToSave = 6;
@@ -419,7 +419,7 @@ int runMassFitter(const TString& configFileName)
       hMassForSgn[iSliceVar] = static_cast<TH1*>(hMassSgn[iSliceVar]->Rebin(nRebin[iSliceVar]));
     }
 
-    Double_t reflOverSgn = 0;
+    Double_t reflOverSgnInit = 0;
     double markerSize = 1.;
     constexpr int NSliceVarBinsLarge = 15;
     if (nSliceVarBins > NSliceVarBinsLarge) {
@@ -508,17 +508,17 @@ int runMassFitter(const TString& configFileName)
       setFixedValue(fixSecondSigma, fixSecondSigmaManual, hSecondSigmaToFix, std::bind(&HFInvMassFitter::setFixSecondGaussianSigma, massFitter, std::placeholders::_1), "SECOND SIGMA");
 
       if (enableRefl) {
-        reflOverSgn = hMassForSgn[iSliceVar]->Integral(hMassForSgn[iSliceVar]->FindBin(massMin[iSliceVar] * 1.0001), hMassForSgn[iSliceVar]->FindBin(massMax[iSliceVar] * 0.999));
-        reflOverSgn = hMassForRefl[iSliceVar]->Integral(hMassForRefl[iSliceVar]->FindBin(massMin[iSliceVar] * 1.0001), hMassForRefl[iSliceVar]->FindBin(massMax[iSliceVar] * 0.999)) / reflOverSgn;
-        massFitter->setFixReflOverSgn(reflOverSgn);
+        reflOverSgnInit = hMassForSgn[iSliceVar]->Integral(hMassForSgn[iSliceVar]->FindBin(massMin[iSliceVar] * 1.0001), hMassForSgn[iSliceVar]->FindBin(massMax[iSliceVar] * 0.999));
+        reflOverSgnInit = hMassForRefl[iSliceVar]->Integral(hMassForRefl[iSliceVar]->FindBin(massMin[iSliceVar] * 1.0001), hMassForRefl[iSliceVar]->FindBin(massMax[iSliceVar] * 0.999)) / reflOverSgnInit;
+        massFitter->setFixReflOverSgn(reflOverSgnInit);
         massFitter->setTemplateReflections(hMassRefl[iSliceVar], HFInvMassFitter::DoubleGaus);
       }
 
       if (includeCorrelBg) {
         massFitter->setTemplateCorrelBg(hMassForCorrelBg[iSliceVar]);
-        reflOverSgn = hMassForSgn[iSliceVar]->Integral(hMassForSgn[iSliceVar]->FindBin(massMin[iSliceVar] * 1.0001), hMassForSgn[iSliceVar]->FindBin(massMax[iSliceVar] * 0.999));
-        reflOverSgn = hMassForCorrelBg[iSliceVar]->Integral(hMassForCorrelBg[iSliceVar]->FindBin(massMin[iSliceVar] * 1.0001), hMassForCorrelBg[iSliceVar]->FindBin(massMax[iSliceVar] * 0.999)) / reflOverSgn;
-        massFitter->setInitialReflOverSgn(reflOverSgn);
+        reflOverSgnInit = hMassForSgn[iSliceVar]->Integral(hMassForSgn[iSliceVar]->FindBin(massMin[iSliceVar] * 1.0001), hMassForSgn[iSliceVar]->FindBin(massMax[iSliceVar] * 0.999));
+        reflOverSgnInit = hMassForCorrelBg[iSliceVar]->Integral(hMassForCorrelBg[iSliceVar]->FindBin(massMin[iSliceVar] * 1.0001), hMassForCorrelBg[iSliceVar]->FindBin(massMax[iSliceVar] * 0.999)) / reflOverSgnInit;
+        massFitter->setInitialReflOverSgn(reflOverSgnInit);
       }
 
       massFitter->doFit();
@@ -537,6 +537,7 @@ int runMassFitter(const TString& configFileName)
       const double significanceErr = massFitter->getSignificanceError();
       const double bkg = massFitter->getBkgYield();
       const double bkgErr = massFitter->getBkgYieldError();
+      const double reflOverSgn = massFitter->getReflOverSig();
 
       hRawYieldsSignal->SetBinContent(iSliceVar + 1, rawYield);
       hRawYieldsSignal->SetBinError(iSliceVar + 1, rawYieldErr);
@@ -556,8 +557,8 @@ int runMassFitter(const TString& configFileName)
       hRawYieldsChiSquareBkg->SetBinError(iSliceVar + 1, 1.e-20);
       hRawYieldsChiSquareTotal->SetBinContent(iSliceVar + 1, reducedChiSquareTotal);
       hRawYieldsChiSquareTotal->SetBinError(iSliceVar + 1, 1.e-20);
-      if (enableRefl) {
-        hReflectionOverSignal->SetBinContent(iSliceVar + 1, reflOverSgn);
+      if (enableRefl || includeCorrelBg) {
+        hReflectionOverSignal->SetBinContent(iSliceVar + 1, reflOverSgn/reflOverSgnInit);
       }
 
       if (enableRefl) {
@@ -626,7 +627,7 @@ int runMassFitter(const TString& configFileName)
   hRawYieldsBkg->Write();
   hRawYieldsChiSquareBkg->Write();
   hRawYieldsChiSquareTotal->Write();
-  if (enableRefl) {
+  if (enableRefl || includeCorrelBg) {
     hReflectionOverSignal->Write();
   }
   hFitConfig->Write();

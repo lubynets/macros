@@ -219,8 +219,10 @@ class HFInvMassFitter : public TNamed
   {
     if (mReflPdf) {
       return mReflOverSgn;
+    } else if (mHistoTemplateCorrelBg) {
+      return mRooNCorrelBg->getVal() / mRooNSgn->getVal();
     } else {
-      return 0;
+      return 0.;
     }
   }
   void calculateSignal(Double_t& signal, Double_t& signalErr) const;
