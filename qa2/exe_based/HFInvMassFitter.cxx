@@ -322,7 +322,7 @@ void HFInvMassFitter::doFit()
       mass->setRange("signal", mMass - mNSigmaForSgn * mSigmaSgn, mMass + mNSigmaForSgn * mSigmaSgn);
     }
   }
-  mass->setRange("bkg", mMass - 4 * mSigmaSgn, mMass + 4 * mSigmaSgn);
+  mass->setRange("bkg", mMass - 4 * mSigmaSgn, mMass + 4 * mSigmaSgn); // TODO syncronize 4 with variable (do not magic)
   mass->setRange("full", mMinMass, mMaxMass);
   mInvMassFrame = mass->frame(Title(Form("%s", mHistoInvMass->GetTitle()))); // define the frame to plot
   dataHistogram.plotOn(mInvMassFrame, Name("data_c"));                       // plot data histogram on the frame
@@ -936,8 +936,9 @@ void HFInvMassFitter::calculateSignal(Double_t& signal, Double_t& errSignal) con
 // calculate background yield
 void HFInvMassFitter::calculateBackground(Double_t& bkg, Double_t& errBkg) const
 {
-  bkg = mRooNBkg->getVal();
-  errBkg = mRooNBkg->getError();
+  std::cout << "mIntegralBkg = " << mIntegralBkg << "\n";
+  bkg = mRooNBkg->getVal() * mIntegralBkg;
+  errBkg = mRooNBkg->getError() * mIntegralBkg;
 }
 
 // calculate significance
@@ -955,9 +956,15 @@ void HFInvMassFitter::calculateSignificance(Double_t& significance, Double_t& er
 }
 
 // estimate Signal
-void HFInvMassFitter::checkForSignal(Double_t& estimatedSignal)
+void HFInvMassFitter::checkForSignal(Double_t& estimatedSignal) const
 {
-  const auto [minForSgn, maxForSgn] = getRangesOfSignal();
+  auto [minForSgn, maxForSgn] = getRangesOfSignal();
+  std::cout << "[minForSgn, maxForSgn] = [" << minForSgn << ", " << maxForSgn << "]\n"; // TODO work-in-progress
+
+  minForSgn = mMass - 4 * mSigmaSgn;
+  maxForSgn = mMass + 4 * mSigmaSgn;
+  std::cout << "[minForSgn, maxForSgn] = [" << minForSgn << ", " << maxForSgn << "]\n";
+
   Int_t binForMinSgn = mHistoInvMass->FindBin(minForSgn);
   Int_t binForMaxSgn = mHistoInvMass->FindBin(maxForSgn);
 
@@ -968,6 +975,7 @@ void HFInvMassFitter::checkForSignal(Double_t& estimatedSignal)
   Double_t bkg, errBkg;
   calculateBackground(bkg, errBkg);
   estimatedSignal = sum - bkg;
+  std::cout << "sum = " << sum << "\tbkg = " << bkg << "\n";
 }
 
 std::pair<Double_t, Double_t> HFInvMassFitter::getRangesOfSignal() const {

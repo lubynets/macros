@@ -243,7 +243,7 @@ class HFInvMassFitter : public TNamed
   void calculateBackground(Double_t& bkg, Double_t& bkgErr) const;
   void calculateCorrelatedBackground(Double_t& correlBg, Double_t& correlBgErr) const {/* TODO */};
   void calculateSignificance(Double_t& significance, Double_t& significanceErr) const;
-  void checkForSignal(Double_t& estimatedSignal);
+  void checkForSignal(Double_t& estimatedSignal) const;
   void drawFit(TVirtualPad* c, Int_t writeFitInfo = 2);
   void drawResidual(TVirtualPad* c);
   void drawReflection(TVirtualPad* c);
