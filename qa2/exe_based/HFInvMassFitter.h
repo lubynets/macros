@@ -21,6 +21,7 @@
 #ifndef PWGHF_D2H_MACROS_HFINVMASSFITTER_H_
 #define PWGHF_D2H_MACROS_HFINVMASSFITTER_H_
 
+#include <RooFormulaVar.h>
 #include <RooPlot.h>
 #include <RooRealVar.h>
 #include <RooWorkspace.h>
@@ -308,7 +309,8 @@ class HFInvMassFitter : public TNamed
   RooRealVar* mRooNSgn;              /// total Signal fit function integral
   RooRealVar* mRooNBkg;              /// total background fit function integral
   RooRealVar* mRooNRefl;             /// total reflection fit function integral
-  RooRealVar* mRooNCorrelBg;         /// total correlated background fit function integral
+  RooFormulaVar* mRooNCorrelBg;      /// total correlated background fit function integral
+  RooRealVar* mRooCorrelBg2Sgn;      /// correlated background to signal ratio
   RooRealVar* mRooDscbAlphaL;        /// double sided Crystal Ball alpha left
   RooRealVar* mRooDscbAlphaR;        /// double sided Crystal Ball alpha right
   RooRealVar* mRooDscbNL;            /// double sided Crystal Ball n left

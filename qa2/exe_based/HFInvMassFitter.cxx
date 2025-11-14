@@ -116,6 +116,7 @@ HFInvMassFitter::HFInvMassFitter() : TNamed(),
                                      mRooNBkg(nullptr),
                                      mRooNRefl(nullptr),
                                      mRooNCorrelBg(nullptr),
+                                     mRooCorrelBg2Sgn(nullptr),
                                      mRooDscbAlphaL(nullptr),
                                      mRooDscbAlphaR(nullptr),
                                      mRooDscbNL(nullptr),
@@ -197,6 +198,7 @@ HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit, Double_t minValue, Doubl
                                                                                                                                     mRooNBkg(nullptr),
                                                                                                                                     mRooNRefl(nullptr),
                                                                                                                                     mRooNCorrelBg(nullptr),
+                                                                                                                                    mRooCorrelBg2Sgn(nullptr),
                                                                                                                                     mRooDscbAlphaL(nullptr),
                                                                                                                                     mRooDscbAlphaR(nullptr),
                                                                                                                                     mRooDscbNL(nullptr),
@@ -240,6 +242,7 @@ HFInvMassFitter::~HFInvMassFitter()
   delete mRooNBkg;
   delete mRooNRefl;
   delete mRooNCorrelBg;
+  delete mRooCorrelBg2Sgn;
   delete mRooDscbAlphaL;
   delete mRooDscbAlphaR;
   delete mRooDscbNL;
@@ -365,7 +368,7 @@ void HFInvMassFitter::doFit()
     if (!strcmp(mFitOption.Data(), "Chi2")) {
       mTotalPdf->chi2FitTo(dataHistogram, Range("full"));
     } else {
-      mTotalPdf->fitTo(dataHistogram, Range("full"));
+      mTotalPdf->fitTo(dataHistogram, Range("full"), Extended());
     }
     RooAbsReal* signalIntegralMc = mTotalPdf->createIntegral(*mass, NormSet(*mass), Range("signal")); // sig yield from fit
     mIntegralSgn = signalIntegralMc->getValV();
@@ -379,13 +382,13 @@ void HFInvMassFitter::doFit()
       if (!strcmp(mFitOption.Data(), "Chi2")) {
         mBkgPdf->chi2FitTo(dataHistogram, Range("SBL,SBR,SEC"), Save());
       } else {
-        mBkgPdf->fitTo(dataHistogram, Range("SBL,SBR,SEC"), Save());
+        mBkgPdf->fitTo(dataHistogram, Range("SBL,SBR,SEC"), Extended(), Save());
       }
     } else { // single peak fit
       if (!strcmp(mFitOption.Data(), "Chi2")) {
         mBkgPdf->chi2FitTo(dataHistogramSidebands, Save());
       } else {
-        mBkgPdf->fitTo(dataHistogram, Range("SBL,SBR"), Save());
+        mBkgPdf->fitTo(dataHistogram, Range("SBL,SBR"), Extended(), Save());
       }
       writeBgFitInfo(mHistoInvMass, true);
     }
@@ -419,7 +422,8 @@ void HFInvMassFitter::doFit()
       mRooNSgn->setConstant(kTRUE);
     }
     mSgnPdf = new RooAddPdf("mSgnPdf", "signal fit function", RooArgList(*sgnPdf), RooArgList(*mRooNSgn));
-    mRooNCorrelBg = new RooRealVar("mNCorrelBg", "number of correlated background", mReflOverSgn*estimatedSignal, 0., 10*mReflOverSgn*estimatedSignal);
+    mRooCorrelBg2Sgn = new RooRealVar("mRooCorrelBg2Sgn", "correlated background to signal ratio", mReflOverSgn, 0., 10.*mReflOverSgn);
+    mRooNCorrelBg = new RooFormulaVar("mNCorrelBg", "mRooCorrelBg2Sgn*mNSgn", RooArgList(*mRooCorrelBg2Sgn, *mRooNSgn));
     // create reflection template and fit to reflection
     if (mHistoTemplateRefl) {
       RooAbsPdf* reflPdf = createReflectionFitFunction(mWorkspace); // create reflection pdf
@@ -436,7 +440,7 @@ void HFInvMassFitter::doFit()
       if (!strcmp(mFitOption.Data(), "Chi2")) {
         reflFuncTemp.chi2FitTo(reflHistogram);
       } else {
-        reflFuncTemp.fitTo(reflHistogram);
+        reflFuncTemp.fitTo(reflHistogram, Extended());
       }
       reflFuncTemp.plotOn(mReflOnlyFrame);
 
@@ -447,7 +451,7 @@ void HFInvMassFitter::doFit()
       if (!strcmp(mFitOption.Data(), "Chi2")) {
         mTotalPdf->chi2FitTo(dataHistogram);
       } else {
-        mTotalPdf->fitTo(dataHistogram);
+        mTotalPdf->fitTo(dataHistogram, Extended());
       }
       mTotalPdf->plotOn(mInvMassFrame, Name("Tot_c"));
       mReflPdf = new RooAddPdf("mReflPdf", "reflection fit function", RooArgList(*reflPdf), RooArgList(*mRooNRefl));
@@ -474,7 +478,7 @@ void HFInvMassFitter::doFit()
       if (!strcmp(mFitOption.Data(), "Chi2")) {
         mTotalPdf->chi2FitTo(dataHistogram);
       } else {
-        mTotalPdf->fitTo(dataHistogram);
+        mTotalPdf->fitTo(dataHistogram, Extended());
       }
       writeBgFitInfo(mHistoInvMass, false);
       plotBkg(mTotalPdf);
