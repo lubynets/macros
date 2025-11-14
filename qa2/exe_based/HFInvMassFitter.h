@@ -36,6 +36,7 @@
 
 #include <cstdio>
 #include <string>
+#include <utility>
 #include <vector>
 
 class HFInvMassFitter : public TNamed
@@ -240,6 +241,7 @@ class HFInvMassFitter : public TNamed
   void calculateSignal(Double_t& signal, Double_t& signalErr) const;
   void countSignal(Double_t& signal, Double_t& signalErr) const;
   void calculateBackground(Double_t& bkg, Double_t& bkgErr) const;
+  void calculateCorrelatedBackground(Double_t& correlBg, Double_t& correlBgErr) const {/* TODO */};
   void calculateSignificance(Double_t& significance, Double_t& significanceErr) const;
   void checkForSignal(Double_t& estimatedSignal);
   void drawFit(TVirtualPad* c, Int_t writeFitInfo = 2);
@@ -254,6 +256,7 @@ class HFInvMassFitter : public TNamed
   void fillWorkspace(RooWorkspace& w) const;
   void highlightPeakRegion(const RooPlot* plot, Color_t color = kGray + 1, Width_t width = 1, Style_t style = 2) const;
   void writeBgFitInfo(TH1* hM, const bool isPreFit);
+  std::pair<Double_t, Double_t> getRangesOfSignal() const;
 
   TH1* mHistoInvMass; // histogram to fit
   TString mFitOption;

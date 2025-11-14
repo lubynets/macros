@@ -904,10 +904,7 @@ void HFInvMassFitter::drawReflection(TVirtualPad* pad)
 // calculate signal yield via bin counting
 void HFInvMassFitter::countSignal(Double_t& signal, Double_t& signalErr) const
 {
-  const Double_t mean = mRooMeanSgn->getVal();
-  const Double_t sigma = mRooSigmaSgn->getVal();
-  const Double_t minForSgn = mean - mNSigmaForSgn * sigma;
-  const Double_t maxForSgn = mean + mNSigmaForSgn * sigma;
+  const auto [minForSgn, maxForSgn] = getRangesOfSignal();
   const Int_t binForMinSgn = mHistoInvMass->FindBin(minForSgn);
   const Int_t binForMaxSgn = mHistoInvMass->FindBin(maxForSgn);
   const Double_t binForMinSgnUpperEdge = mHistoInvMass->GetBinLowEdge(binForMinSgn + 1);
@@ -960,8 +957,7 @@ void HFInvMassFitter::calculateSignificance(Double_t& significance, Double_t& er
 // estimate Signal
 void HFInvMassFitter::checkForSignal(Double_t& estimatedSignal)
 {
-  Double_t minForSgn = mMinMass;
-  Double_t maxForSgn = mMaxMass;
+  const auto [minForSgn, maxForSgn] = getRangesOfSignal();
   Int_t binForMinSgn = mHistoInvMass->FindBin(minForSgn);
   Int_t binForMaxSgn = mHistoInvMass->FindBin(maxForSgn);
 
@@ -972,6 +968,20 @@ void HFInvMassFitter::checkForSignal(Double_t& estimatedSignal)
   Double_t bkg, errBkg;
   calculateBackground(bkg, errBkg);
   estimatedSignal = sum - bkg;
+}
+
+std::pair<Double_t, Double_t> HFInvMassFitter::getRangesOfSignal() const {
+  Double_t low, high;
+  const Double_t mean = mRooMeanSgn->getVal();
+  const Double_t sigma = mRooSigmaSgn->getVal();
+  if (mTypeOfSgnPdf == SingleGaus) {
+    low = mean - mNSigmaForSgn * sigma;
+    high = mean + mNSigmaForSgn * sigma;
+  } else {  // TODO Foresee more accurate way to get ranges for non-Gaussian shapes (especially 2-Gaus and Voigt)
+    low = mMinMass;
+    high = mMaxMass;
+  }
+  return std::make_pair(low, high);
 }
 
 // Create Background Fit Function
