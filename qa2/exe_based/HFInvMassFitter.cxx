@@ -1099,7 +1099,11 @@ void HFInvMassFitter::plotBkg(RooAbsPdf* pdf, Color_t color)
   if (mTypeOfBkgPdf < 0 || mTypeOfBkgPdf >= NTypesOfBkgPdf) {
     throw std::runtime_error("plotBkg(): mTypeOfBkgPdf must be within [0; " + std::to_string(NTypesOfBkgPdf) + ") range");
   }
-  pdf->plotOn(mInvMassFrame, Components(namesOfBkgPdf.at(mTypeOfBkgPdf).c_str()), Name("Bkg_c"), LineColor(color));
+  std::string componentsName = namesOfBkgPdf.at(mTypeOfBkgPdf);
+  if (mHistoTemplateCorrelBg) {
+    componentsName.append(",corrBgPdf");
+  }
+  pdf->plotOn(mInvMassFrame, Components(componentsName.c_str()), Name("Bkg_c"), LineColor(color));
 }
 
 // Plot Refl distribution on canvas
