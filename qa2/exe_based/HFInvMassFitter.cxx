@@ -107,6 +107,18 @@ HFInvMassFitter::HFInvMassFitter() : TNamed(),
                                      mChiSquareOverNdfTotal(0),
                                      mChiSquareOverNdfBkg(0),
                                      mFixReflOverSgn(kFALSE),
+                                     mDscbAlphaLInitialValue(1.5),
+                                     mDscbAlphaLLowLimit(0.1),
+                                     mDscbAlphaLUpLimit(5.0),
+                                     mDscbAlphaRInitialValue(1.5),
+                                     mDscbAlphaRLowLimit(0.1),
+                                     mDscbAlphaRUpLimit(5.0),
+                                     mDscbNLInitialValue(2.0),
+                                     mDscbNLLowLimit(0.5),
+                                     mDscbNLUpLimit(50.),
+                                     mDscbNRInitialValue(2.0),
+                                     mDscbNRLowLimit(0.5),
+                                     mDscbNRUpLimit(50.),
                                      mRooMeanSgn(nullptr),
                                      mRooSigmaSgn(nullptr),
                                      mSgnPdf(nullptr),
@@ -193,6 +205,18 @@ HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit,
                                                      mChiSquareOverNdfTotal(0),
                                                      mChiSquareOverNdfBkg(0),
                                                      mFixReflOverSgn(kFALSE),
+                                                     mDscbAlphaLInitialValue(1.5),
+                                                     mDscbAlphaLLowLimit(0.1),
+                                                     mDscbAlphaLUpLimit(5.0),
+                                                     mDscbAlphaRInitialValue(1.5),
+                                                     mDscbAlphaRLowLimit(0.1),
+                                                     mDscbAlphaRUpLimit(5.0),
+                                                     mDscbNLInitialValue(2.0),
+                                                     mDscbNLLowLimit(0.5),
+                                                     mDscbNLUpLimit(50.),
+                                                     mDscbNRInitialValue(2.0),
+                                                     mDscbNRLowLimit(0.5),
+                                                     mDscbNRUpLimit(50.),
                                                      mRooMeanSgn(nullptr),
                                                      mRooSigmaSgn(nullptr),
                                                      mSgnPdf(nullptr),
@@ -717,11 +741,11 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
     sigma.setMax(mSigmaSgn * (1 + mParamSgn));
   }
 // Tail parameters: left side
-  RooRealVar alphaL("alphaL", "left tail alpha", 1.5, 0.1, 10.);
-  RooRealVar nL("nL", "left tail n", 2.0, 0.5, 50.);
+  RooRealVar alphaL("alphaL", "left tail alpha", mDscbAlphaLInitialValue, mDscbAlphaLLowLimit, mDscbAlphaLUpLimit);
+  RooRealVar nL("nL", "left tail n", mDscbNLInitialValue, mDscbNLLowLimit, mDscbNLUpLimit);
 // Tail parameters: right side
-  RooRealVar alphaR("alphaR", "right tail alpha", 1.5, 0.1, 10.);
-  RooRealVar nR("nR", "right tail n", 2.0, 0.5, 50.);
+  RooRealVar alphaR("alphaR", "right tail alpha", mDscbAlphaRInitialValue, mDscbAlphaRLowLimit, mDscbAlphaRUpLimit);
+  RooRealVar nR("nR", "right tail n", mDscbNRInitialValue, mDscbNRLowLimit, mDscbNRUpLimit);
   RooAbsPdf *sgnFuncDSCB = new RooCrystalBall("sgnFuncDSCB", "double sided crystal ball signal", mass, mean, sigma, alphaL, nL, alphaR, nR);
   workspace.import(*sgnFuncDSCB);
   delete sgnFuncDSCB;

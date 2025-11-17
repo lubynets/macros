@@ -308,6 +308,18 @@ class HFInvMassFitter : public TNamed
   Double_t mChiSquareOverNdfTotal;   /// chi2/ndf of the total fit
   Double_t mChiSquareOverNdfBkg;     /// chi2/ndf of the background (sidebands) pre-fit
   Bool_t mFixReflOverSgn;            /// switch for fix refl/signal
+  Double_t mDscbAlphaLInitialValue;  /// double sided Crystal Ball alpha left initial value
+  Double_t mDscbAlphaLLowLimit;      /// double sided Crystal Ball alpha left lower limit
+  Double_t mDscbAlphaLUpLimit;       /// double sided Crystal Ball alpha left upper limit
+  Double_t mDscbAlphaRInitialValue;  /// double sided Crystal Ball alpha right initial value
+  Double_t mDscbAlphaRLowLimit;      /// double sided Crystal Ball alpha right lower limit
+  Double_t mDscbAlphaRUpLimit;       /// double sided Crystal Ball alpha right upper limit
+  Double_t mDscbNLInitialValue;      /// double sided Crystal Ball n left initial value
+  Double_t mDscbNLLowLimit;          /// double sided Crystal Ball n left lower limit
+  Double_t mDscbNLUpLimit;           /// double sided Crystal Ball n left upper limit
+  Double_t mDscbNRInitialValue;      /// double sided Crystal Ball n right initial value
+  Double_t mDscbNRLowLimit;          /// double sided Crystal Ball n right lower limit
+  Double_t mDscbNRUpLimit;           /// double sided Crystal Ball n right upper limit
   RooRealVar* mRooMeanSgn;           /// mean for gaussian of signal
   RooRealVar* mRooSigmaSgn;          /// sigma for gaussian of signal
   RooAbsPdf* mSgnPdf;                /// signal fit function
