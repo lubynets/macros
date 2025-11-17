@@ -187,6 +187,7 @@ int runMassFitter(const TString& configFileName)
 
   const bool drawBgPrefit = config["drawBgPrefit"].GetBool();
   const bool highlightPeakRegion = config["highlightPeakRegion"].GetBool();
+  const bool drawCorrelBg = config.HasMember("drawCorrelBg") ? config["drawCorrelBg"].GetBool() : false;
 
   const Int_t randomSeed = config.HasMember("randomSeed") ? config["randomSeed"].GetInt() : -1;
   const double nSigmaForSideband = config.HasMember("nSigmaForSideband") ? config["nSigmaForSideband"].GetDouble() : 3;
@@ -452,6 +453,7 @@ int runMassFitter(const TString& configFileName)
       massFitter->setNumberOfSigmaForSidebands(nSigmaForSideband);
       massFitter->setRandomSeed(randomSeed);
       massFitter->setDrawBgPrefit(drawBgPrefit);
+      massFitter->setDrawCorrelBg(drawCorrelBg);
       massFitter->setHighlightPeakRegion(highlightPeakRegion);
       massFitter->setInitialGaussianMean(massPDG);
       massFitter->setParticlePdgMass(massPDG);
@@ -517,6 +519,7 @@ int runMassFitter(const TString& configFileName)
       massFitter->setNumberOfSigmaForSidebands(nSigmaForSideband);
       massFitter->setRandomSeed(randomSeed);
       massFitter->setDrawBgPrefit(drawBgPrefit);
+      massFitter->setDrawCorrelBg(drawCorrelBg);
       massFitter->setHighlightPeakRegion(highlightPeakRegion);
       massFitter->setInitialGaussianMean(massPDG);
       massFitter->setParticlePdgMass(massPDG);

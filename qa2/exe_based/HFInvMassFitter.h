@@ -21,6 +21,8 @@
 #ifndef PWGHF_D2H_MACROS_HFINVMASSFITTER_H_
 #define PWGHF_D2H_MACROS_HFINVMASSFITTER_H_
 
+#include <RooAddPdf.h>
+#include <RooFitResult.h>
 #include <RooFormulaVar.h>
 #include <RooPlot.h>
 #include <RooRealVar.h>
@@ -203,6 +205,7 @@ class HFInvMassFitter : public TNamed
   }
   void setTemplateCorrelBg(TH1* histoCorrelBg) { mHistoTemplateCorrelBg = histoCorrelBg; }
   void setDrawBgPrefit(Bool_t value = true) { mDrawBgPrefit = value; }
+  void setDrawCorrelBg(Bool_t value = true) { mDrawCorrelBg = value; }
   void setHighlightPeakRegion(Bool_t value = true) { mHighlightPeakRegion = value; }
   Double_t getChiSquareOverNDFTotal() const { return mChiSquareOverNdfTotal; }
   Double_t getChiSquareOverNDFBkg() const { return mChiSquareOverNdfBkg; }
@@ -240,8 +243,8 @@ class HFInvMassFitter : public TNamed
   }
   void calculateSignal(Double_t& signal, Double_t& signalErr) const;
   void countSignal(Double_t& signal, Double_t& signalErr) const;
-  void calculateBackground(Double_t& bkg, Double_t& bkgErr) const;
-  void calculateCorrelatedBackground(Double_t& correlBg, Double_t& correlBgErr) const {/* TODO */};
+  void calculateBackground(Double_t& bkg, Double_t& bkgErr, Double_t integralBkg=-1.) const;
+  void calculateCorrelatedBackground(Double_t& correlBg, Double_t& correlBgErr) const;
   void calculateSignificance(Double_t& significance, Double_t& significanceErr) const;
   void checkForSignal(Double_t& estimatedSignal) const;
   void drawFit(TVirtualPad* c, Int_t writeFitInfo = 2);
@@ -255,8 +258,9 @@ class HFInvMassFitter : public TNamed
   HFInvMassFitter& operator=(const HFInvMassFitter& source);
   void fillWorkspace(RooWorkspace& w) const;
   void highlightPeakRegion(const RooPlot* plot, Color_t color = kGray + 1, Width_t width = 1, Style_t style = 2) const;
-  void writeBgFitInfo(TH1* hM, const bool isPreFit);
+  void writeBgFitInfo(TH1* hM, const bool isPreFit) const;
   std::pair<Double_t, Double_t> getRangesOfSignal() const;
+  static RooAbsPdf* getPdfByName(const RooAbsPdf* pdfIn, const std::string& name);
 
   TH1* mHistoInvMass; // histogram to fit
   TString mFitOption;
@@ -274,8 +278,8 @@ class HFInvMassFitter : public TNamed
   Double_t mSecMass;                 /// Second peak mean value
   Double_t mSigmaSgn;                /// signal gaussian sigma
   Double_t mSecSigma;                /// Second peak gaussian sigma
-  Int_t mNSigmaForSidebands;         /// number of sigmas to veto the signal peak
-  Int_t mNSigmaForSgn;               /// number of sigmas to veto the signal peak
+  Double_t mNSigmaForSidebands;      /// number of sigmas to veto the signal peak
+  Double_t mNSigmaForSgn;            /// number of sigmas to veto the signal peak
   Double_t mSigmaSgnErr;             /// uncertainty on signal gaussian sigma
   Double_t mSigmaSgnDoubleGaus;      /// signal 2gaussian sigma
   Bool_t mFixedMean;                 /// switch for fix mean of gaussian
@@ -320,6 +324,7 @@ class HFInvMassFitter : public TNamed
   RooRealVar* mRooDscbNR;            /// double sided Crystal Ball n right
   RooRealVar* mRooVoigtWidth;        /// Voigt width
   RooAbsPdf* mTotalPdf;              /// total fit function
+  RooFitResult* mTotalPdfFitResult;  /// total fit function result
   RooPlot* mInvMassFrame;            /// frame of mass
   RooPlot* mReflFrame;               /// reflection frame
   RooPlot* mReflOnlyFrame;           /// reflection frame plot on reflection only
@@ -328,10 +333,10 @@ class HFInvMassFitter : public TNamed
   RooWorkspace* mWorkspace;    /// workspace
   Double_t mIntegralHisto;     /// integral of histogram to fit
   Double_t mIntegralBkg;       /// integral of background fit function
-  Double_t mIntegralSgn;       /// integral of signal fit function
   TH1* mHistoTemplateRefl;     /// reflection histogram
   TH1* mHistoTemplateCorrelBg; /// correlated background histogram
   Bool_t mDrawBgPrefit;        /// draw background after fitting the sidebands
+  Bool_t mDrawCorrelBg;        /// draw correlated background (if any)
   Bool_t mHighlightPeakRegion; /// draw vertical lines showing the peak region (usually +- 3 sigma)
   TRandom3* mRandomGen;
   Int_t mRandomSeed;
