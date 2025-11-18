@@ -185,6 +185,19 @@ class HFInvMassFitter : public TNamed
   }
   void setFixSignalYield(Double_t yield) { mFixedRawYield = yield; }
   void setNumberOfSigmaForSidebands(Double_t numberOfSigma) { mNSigmaForSidebands = numberOfSigma; }
+  void setDscbAlphaLInitialValue(Double_t value) { mDscbAlphaLInitialValue = value; }
+  void setDscbAlphaLLowLimit(Double_t value) { mDscbAlphaLLowLimit = value; }
+  void setDscbAlphaLUpLimit(Double_t value) { mDscbAlphaLUpLimit = value; }
+  void setDscbAlphaRInitialValue(Double_t value) { mDscbAlphaRInitialValue = value; }
+  void setDscbAlphaRLowLimit(Double_t value) { mDscbAlphaRLowLimit = value; }
+  void setDscbAlphaRUpLimit(Double_t value) { mDscbAlphaRUpLimit = value; }
+  void setDscbNLInitialValue(Double_t value) { mDscbNLInitialValue = value; }
+  void setDscbNLLowLimit(Double_t value) { mDscbNLLowLimit = value; }
+  void setDscbNLUpLimit(Double_t value) { mDscbNLUpLimit = value; }
+  void setDscbNRInitialValue(Double_t value) { mDscbNRInitialValue = value; }
+  void setDscbNRLowLimit(Double_t value) { mDscbNRLowLimit = value; }
+  void setDscbNRUpLimit(Double_t value) { mDscbNRUpLimit = value; }
+
   void plotBkg(RooAbsPdf* mFunc, Color_t color = kRed);
   void plotCorrelBg(RooAbsPdf* mFunc, Color_t color = kGreen + 2);
   void plotRefl(RooAbsPdf* mFunc);

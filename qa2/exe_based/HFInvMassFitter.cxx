@@ -135,6 +135,7 @@ HFInvMassFitter::HFInvMassFitter() : TNamed(),
                                      mRooDscbNR(nullptr),
                                      mRooVoigtWidth(nullptr),
                                      mTotalPdf(nullptr),
+                                     mTotalPdfFitResult(nullptr),
                                      mInvMassFrame(nullptr),
                                      mReflFrame(nullptr),
                                      mReflOnlyFrame(nullptr),
@@ -233,6 +234,7 @@ HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit,
                                                      mRooDscbNR(nullptr),
                                                      mRooVoigtWidth(nullptr),
                                                      mTotalPdf(nullptr),
+                                                     mTotalPdfFitResult(nullptr),
                                                      mInvMassFrame(nullptr),
                                                      mReflFrame(nullptr),
                                                      mReflOnlyFrame(nullptr),
@@ -746,6 +748,13 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
 // Tail parameters: right side
   RooRealVar alphaR("alphaR", "right tail alpha", mDscbAlphaRInitialValue, mDscbAlphaRLowLimit, mDscbAlphaRUpLimit);
   RooRealVar nR("nR", "right tail n", mDscbNRInitialValue, mDscbNRLowLimit, mDscbNRUpLimit);
+  // for testing purposes only
+  std::cout << "DSCB parameters:\n";
+  std::cout << "alphaL = [" << alphaL.getVal() << ", " << alphaL.getMin() << ", " << alphaL.getMax() << "]\n";
+  std::cout << "nL     = [" << nL.getVal() << ", " << nL.getMin() << ", " << nL.getMax() << "]\n";
+  std::cout << "alphaR = [" << alphaR.getVal() << ", " << alphaR.getMin() << ", " << alphaR.getMax() << "]\n";
+  std::cout << "nR     = [" << nR.getVal() << ", " << nR.getMin() << ", " << nR.getMax() << "]\n";
+  // end for testing purposes only
   RooAbsPdf *sgnFuncDSCB = new RooCrystalBall("sgnFuncDSCB", "double sided crystal ball signal", mass, mean, sigma, alphaL, nL, alphaR, nR);
   workspace.import(*sgnFuncDSCB);
   delete sgnFuncDSCB;
@@ -952,9 +961,6 @@ void HFInvMassFitter::countSignal(Double_t& signal, Double_t& signalErr) const
 
   Double_t corrBg, errCorrBg;
   calculateCorrelatedBackground(corrBg, errCorrBg);
-
-  std::cout << "countSignal():\n";
-  std::cout << "[sum, bkg, corrBg] = " << sum << "\t" << bkg << "\t" << corrBg << "\n";
 
   signal = sum - bkg - corrBg;
   signalErr = std::sqrt(sum + errBkg * errBkg + errCorrBg * errCorrBg); // sum error squared is equal to sum

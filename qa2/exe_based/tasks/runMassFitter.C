@@ -43,6 +43,17 @@ using namespace rapidjson;
 
 int runMassFitter(const TString& configFileName = "config_massfitter.json");
 
+void readJsonVectorValues(std::vector<double>& vec, const Document& config, const std::string& fieldName);
+
+void readJsonVectorHistogram(std::vector<double>& vec, const Document& config, const std::string& fileNameFieldName, const std::string& histoNameFieldName);
+
+std::string readJsonString(const Document& config, const std::string& fieldName);
+
+TFile* openFileWithNullptrCheck(const std::string& fileName, const std::string& option="read");
+
+template<typename T>
+T* getObjectWithNullPtrCheck(TFile* fileIn, const std::string& objectName);
+
 template <typename ValueType>
 void readArray(const Value& jsonArray, std::vector<ValueType>& output)
 {
@@ -106,6 +117,18 @@ int runMassFitter(const TString& configFileName)
   std::vector<int> nRebin;
   std::vector<int> bkgFunc;
   std::vector<int> sgnFunc;
+  std::vector<double> dscbAlphaLInitial;
+  std::vector<double> dscbAlphaLLower;;
+  std::vector<double> dscbAlphaLUpper;
+  std::vector<double> dscbAlphaRInitial;
+  std::vector<double> dscbAlphaRLower;
+  std::vector<double> dscbAlphaRUpper;
+  std::vector<double> dscbNLInitial;
+  std::vector<double> dscbNLLower;
+  std::vector<double> dscbNLUpper;
+  std::vector<double> dscbNRInitial;
+  std::vector<double> dscbNRLower;
+  std::vector<double> dscbNRUpper;
 
   const Value& inputHistoNameValue = config["InputHistoName"];
   parseStringArray(inputHistoNameValue, inputHistoName);
@@ -191,6 +214,31 @@ int runMassFitter(const TString& configFileName)
 
   const Int_t randomSeed = config.HasMember("randomSeed") ? config["randomSeed"].GetInt() : -1;
   const double nSigmaForSideband = config.HasMember("nSigmaForSideband") ? config["nSigmaForSideband"].GetDouble() : 3;
+
+  readJsonVectorValues(dscbAlphaLInitial, config, "DscbAlphaLInitial");
+  readJsonVectorValues(dscbAlphaLLower, config, "DscbAlphaLLower");
+  readJsonVectorValues(dscbAlphaLUpper, config, "DscbAlphaLUpper");
+  readJsonVectorValues(dscbAlphaRInitial, config, "DscbAlphaRInitial");
+  readJsonVectorValues(dscbAlphaRLower, config, "DscbAlphaRLower");
+  readJsonVectorValues(dscbAlphaRUpper, config, "DscbAlphaRUpper");
+  readJsonVectorValues(dscbNLInitial, config, "DscbNLInitial");
+  readJsonVectorValues(dscbNLLower, config, "DscbNLLower");
+  readJsonVectorValues(dscbNLUpper, config, "DscbNLUpper");
+  readJsonVectorValues(dscbNRInitial, config, "DscbNRInitial");
+  readJsonVectorValues(dscbNRLower, config, "DscbNRLower");
+  readJsonVectorValues(dscbNRUpper, config, "DscbNRUpper");
+  readJsonVectorHistogram(dscbAlphaLInitial, config, "DscbParametersFile", "DscbAlphaLInitialHisto");
+  readJsonVectorHistogram(dscbAlphaLLower, config, "DscbParametersFile", "DscbAlphaLLowerHisto");
+  readJsonVectorHistogram(dscbAlphaLUpper, config, "DscbParametersFile", "DscbAlphaLUpperHisto");
+  readJsonVectorHistogram(dscbAlphaRInitial, config, "DscbParametersFile", "DscbAlphaRInitialHisto");
+  readJsonVectorHistogram(dscbAlphaRLower, config, "DscbParametersFile", "DscbAlphaRLowerHisto");
+  readJsonVectorHistogram(dscbAlphaRUpper, config, "DscbParametersFile", "DscbAlphaRUpperHisto");
+  readJsonVectorHistogram(dscbNLInitial, config, "DscbParametersFile", "DscbNLInitialHisto");
+  readJsonVectorHistogram(dscbNLLower, config, "DscbParametersFile", "DscbNLLowerHisto");
+  readJsonVectorHistogram(dscbNLUpper, config, "DscbParametersFile", "DscbNLUpperHisto");
+  readJsonVectorHistogram(dscbNRInitial, config, "DscbParametersFile", "DscbNRInitialHisto");
+  readJsonVectorHistogram(dscbNRLower, config, "DscbParametersFile", "DscbNRLowerHisto");
+  readJsonVectorHistogram(dscbNRUpper, config, "DscbParametersFile", "DscbNRUpperHisto");
 
   const unsigned int nSliceVarBins = sliceVarMin.size();
   std::vector<double> sliceVarLimits(nSliceVarBins + 1);
@@ -458,6 +506,25 @@ int runMassFitter(const TString& configFileName)
       massFitter->setInitialGaussianMean(massPDG);
       massFitter->setParticlePdgMass(massPDG);
       massFitter->setBoundGaussianMean(massPDG, 0.8 * massPDG, 1.2 * massPDG);
+
+      auto setDscbParameter = [&] (const std::vector<double>& vec, void (HFInvMassFitter::*setter)(double)) {
+          if (vec.size() == nSliceVarBins) {
+            (massFitter->*setter)(vec[iSliceVar]);
+          }
+      };
+      setDscbParameter(dscbAlphaLInitial, &HFInvMassFitter::setDscbAlphaLInitialValue);
+      setDscbParameter(dscbAlphaLLower, &HFInvMassFitter::setDscbAlphaLLowLimit);
+      setDscbParameter(dscbAlphaLUpper, &HFInvMassFitter::setDscbAlphaLUpLimit);
+      setDscbParameter(dscbAlphaRInitial, &HFInvMassFitter::setDscbAlphaRInitialValue);
+      setDscbParameter(dscbAlphaRLower, &HFInvMassFitter::setDscbAlphaRLowLimit);
+      setDscbParameter(dscbAlphaRUpper, &HFInvMassFitter::setDscbAlphaRUpLimit);
+      setDscbParameter(dscbNLInitial, &HFInvMassFitter::setDscbNLInitialValue);
+      setDscbParameter(dscbNLLower, &HFInvMassFitter::setDscbNLLowLimit);
+      setDscbParameter(dscbNLUpper, &HFInvMassFitter::setDscbNLUpLimit);
+      setDscbParameter(dscbNRInitial, &HFInvMassFitter::setDscbNRInitialValue);
+      setDscbParameter(dscbNRLower, &HFInvMassFitter::setDscbNRLowLimit);
+      setDscbParameter(dscbNRUpper, &HFInvMassFitter::setDscbNRUpLimit);
+
       massFitter->doFit();
 
       if (nSliceVarBins > 1) {
@@ -563,6 +630,24 @@ int runMassFitter(const TString& configFileName)
         reflOverSgnInit = hMassForCorrelBg[iSliceVar]->Integral(hMassForCorrelBg[iSliceVar]->FindBin(massMin[iSliceVar] * 1.0001), hMassForCorrelBg[iSliceVar]->FindBin(massMax[iSliceVar] * 0.999)) / reflOverSgnInit;
         massFitter->setInitialReflOverSgn(reflOverSgnInit);
       }
+
+      auto setDscbParameter = [&] (const std::vector<double>& vec, void (HFInvMassFitter::*setter)(double)) {
+          if (vec.size() == nSliceVarBins) {
+            (massFitter->*setter)(vec[iSliceVar]);
+          }
+      };
+      setDscbParameter(dscbAlphaLInitial, &HFInvMassFitter::setDscbAlphaLInitialValue);
+      setDscbParameter(dscbAlphaLLower, &HFInvMassFitter::setDscbAlphaLLowLimit);
+      setDscbParameter(dscbAlphaLUpper, &HFInvMassFitter::setDscbAlphaLUpLimit);
+      setDscbParameter(dscbAlphaRInitial, &HFInvMassFitter::setDscbAlphaRInitialValue);
+      setDscbParameter(dscbAlphaRLower, &HFInvMassFitter::setDscbAlphaRLowLimit);
+      setDscbParameter(dscbAlphaRUpper, &HFInvMassFitter::setDscbAlphaRUpLimit);
+      setDscbParameter(dscbNLInitial, &HFInvMassFitter::setDscbNLInitialValue);
+      setDscbParameter(dscbNLLower, &HFInvMassFitter::setDscbNLLowLimit);
+      setDscbParameter(dscbNLUpper, &HFInvMassFitter::setDscbNLUpLimit);
+      setDscbParameter(dscbNRInitial, &HFInvMassFitter::setDscbNRInitialValue);
+      setDscbParameter(dscbNRLower, &HFInvMassFitter::setDscbNRLowLimit);
+      setDscbParameter(dscbNRUpper, &HFInvMassFitter::setDscbNRUpLimit);
 
       massFitter->doFit();
 
@@ -749,6 +834,57 @@ void divideCanvas(TCanvas* canvas, int nSliceVarBins)
       canvas->Divide(rectangularSideMin + rectangularSidesDiff, rectangularSideMin);
     }
   }
+}
+
+std::string readJsonString(const Document& config, const std::string& fieldName) {
+  if (!config.HasMember(fieldName.c_str())) {
+    return "";
+  }
+  return config[fieldName.c_str()].GetString();
+}
+
+void readJsonVectorValues(std::vector<double>& vec, const Document& config, const std::string& fieldName) {
+  if (!vec.empty()) {
+    throw std::runtime_error("readJsonVectorValues(): vector is not empty!");
+  }
+  if (config.HasMember(fieldName.c_str())) {
+    const Value& jsonArray = config[fieldName.c_str()];
+    readArray(jsonArray, vec);
+  }
+}
+
+void readJsonVectorHistogram(std::vector<double>& vec, const Document& config, const std::string& fileNameFieldName, const std::string& histoNameFieldName) {
+  if (!vec.empty()) {
+    throw std::runtime_error("readJsonVectorHistogram(): vector is not empty!");
+  }
+  const std::string fileName = readJsonString(config, fileNameFieldName);
+  if (fileName.empty()) {
+    return;
+  }
+  const std::string histoName = readJsonString(config, histoNameFieldName);
+  TFile* inputFile = openFileWithNullptrCheck(fileName);
+  TH1* histo = getObjectWithNullPtrCheck<TH1>(inputFile, histoName);
+  for (int iBin = 1; iBin <= histo->GetNbinsX(); iBin++) {
+    vec.push_back(histo->GetBinContent(iBin));
+  }
+  inputFile->Close();
+}
+
+TFile* openFileWithNullptrCheck(const std::string& fileName, const std::string& option) {
+  TFile* file = TFile::Open(fileName.c_str(), option.c_str());
+  if (file == nullptr || file->IsZombie()) {
+    throw std::runtime_error("openFileWithNullptrCheck(): Cannot open file " + fileName);
+  }
+  return file;
+}
+
+template<typename T>
+T* getObjectWithNullPtrCheck(TFile* fileIn, const std::string& objectName) {
+  T* ptr = fileIn->Get<T>(objectName.c_str());
+  if(ptr == nullptr) {
+    throw std::runtime_error("getObjectWithNullptrCheck() - object " + objectName + " in file " + fileIn->GetName() + " is missing");
+  }
+  return ptr;
 }
 
 int main(int argc, char* argv[])
