@@ -203,8 +203,9 @@ void corrBkgLc(const std::string& filenameIn, const bool doRun=true, const int f
     fileTo = std::max(fileTo, fileFrom);
     const bool scaleByBrs = true;
     const bool applyBdt = true;
-    const bool eraseLcToPKPi = true;
+    const bool eraseLcToPKPi = false;
     const bool keepOnlyDToKPiPiAndDsToPiKK = false;
+    const bool doNotDrawEachContributor = true;
     bool saveCanvas = true;
     const int smoothFactor{0};
 
@@ -371,9 +372,10 @@ void corrBkgLc(const std::string& filenameIn, const bool doRun=true, const int f
           for(int iDecay=0; iDecay<nDecays; ++iDecay) {
             const auto& decay = Decays.at(iDecay);
             if(iMother != nMothers && decay.mother_.id_ != Mothers.at(iMother).id_) continue;
-            histos.at(iDecay).back()->Draw("samehist");
+            if(!doNotDrawEachContributor || Decays.at(iDecay).id_ == LcToPKPi) histos.at(iDecay).back()->Draw("samehist");
           }
           if(iMother == nMothers) histos_bkgSum.back()->Draw("samehist");
+          gPad->SetLogy();
           gPad->Update();
           gPad->SetBottomMargin(0.15);
           gPad->SetLeftMargin(0.15);
@@ -420,6 +422,7 @@ void corrBkgLc(const std::string& filenameIn, const bool doRun=true, const int f
 //     for(int iMother=0; iMother<nMothers+1; ++iMother) {
 //       can.at(iMother)->Write();
 //     }
+    can.at(nMothers)->SetLogy();
     if(saveCanvas) can.at(nMothers)->Write();
     for(int sliceVarBin=0; sliceVarBin<sliceVarEdges.size()-1; sliceVarBin++) {
         fout->cd();
