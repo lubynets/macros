@@ -1,0 +1,8 @@
+source ${ROOT_BINDIR}/thisroot.sh
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${CMAKE_INSTALL_PREFIX}/lib
+export ROOT_INCLUDE_PATH=$ROOT_INCLUDE_PATH:${CMAKE_INSTALL_PREFIX}/include
+export PATH=$PATH:${CMAKE_INSTALL_PREFIX}/bin
+alias qa2mji='cd ${CMAKE_BINARY_DIR} ; make -j3 install ; cd -'
+alias qa2mi='cd ${CMAKE_BINARY_DIR} ; make install ; cd -'
+alias qa2mirelease='cd ${CMAKE_BINARY_DIR} ; cmake -DCMAKE_BUILD_TYPE=RELEASE ${CMAKE_SOURCE_DIR} ; make install ; cd -'
+alias qa2midebug='cd ${CMAKE_BINARY_DIR} ; cmake -DCMAKE_BUILD_TYPE=DEBUG ${CMAKE_SOURCE_DIR} ; make install ; cd -'

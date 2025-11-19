@@ -28,6 +28,7 @@ SET(EXECUTABLES
     mass_bdt_qa_thn
     yield_lifetime_qa_thn
     multifit_qa
+    tpc_qa
 )
 
 SET(SOURCES
@@ -42,6 +43,19 @@ list(APPEND HEADERS "BdtEfficiencyCalculator.hpp" "Shapes.hpp")
 
 # Specify the C++ standard
 set(CMAKE_CXX_STANDARD 17)
+
+# by default build optimized code
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE RELEASE)
+endif()
+
+# in DEBUG mode make verbose Makefile
+if(CMAKE_BUILD_TYPE MATCHES DEBUG)
+    set(CMAKE_VERBOSE_MAKEFILE ON)
+endif()
+
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -ggdb -g -Wall -Wextra")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2 -ftree-vectorize -ffast-math")
 
 set(QA_RAPIDJSON_INCLUDE_DIRS "" CACHE STRING "Location of rapidjson include directories")
 
@@ -62,6 +76,8 @@ ROOT_GENERATE_DICTIONARY( G__Qa2 ${HEADERS}
 
 add_library(Qa2 SHARED ${SOURCES} G__Qa2.cxx)
 target_link_libraries(Qa2 PRIVATE ${ROOT_LIBRARIES} ROOT::EG ROOT::RooFit ROOT::RooFitCore)
+
+configure_file(qa2Config.sh.in ${CMAKE_BINARY_DIR}/qa2Config.sh)
 
 install(TARGETS Qa2 EXPORT Qa2Targets
         LIBRARY DESTINATION lib
@@ -88,12 +104,21 @@ install(FILES
         lib
         OPTIONAL)
 
+install(FILES
+        ${CMAKE_BINARY_DIR}/qa2Config.sh
+        DESTINATION
+        bin
+        COMPONENT
+        Devel
+        )
+
 foreach(EXE ${EXECUTABLES})
     # Add the executable
     add_executable(qa2-${EXE} tasks/${EXE}.cpp)
     # Link ROOT libraries to the executable
     target_link_libraries(qa2-${EXE} ${ROOT_LIBRARIES} ROOT::EG Qa2)
     install (TARGETS qa2-${EXE} RUNTIME DESTINATION bin)
+    install (FILES tasks/${EXE}.cpp DESTINATION share)
       # Install a symlink named just ${EXE} that points to qa2-${EXE}
     install(CODE
     "execute_process(

@@ -21,6 +21,9 @@
 #ifndef PWGHF_D2H_MACROS_HFINVMASSFITTER_H_
 #define PWGHF_D2H_MACROS_HFINVMASSFITTER_H_
 
+#include <RooAddPdf.h>
+#include <RooFitResult.h>
+#include <RooFormulaVar.h>
 #include <RooPlot.h>
 #include <RooRealVar.h>
 #include <RooWorkspace.h>
@@ -35,6 +38,7 @@
 
 #include <cstdio>
 #include <string>
+#include <utility>
 #include <vector>
 
 class HFInvMassFitter : public TNamed
@@ -56,6 +60,8 @@ class HFInvMassFitter : public TNamed
     DoubleGaus = 1,
     DoubleGausSigmaRatioPar = 2,
     GausSec = 3,
+    DoubleSidedCrystalBall = 4,
+    Voigt = 5,
     NTypesOfSgnPdf
   };
   enum TypeOfReflPdf {
@@ -179,7 +185,21 @@ class HFInvMassFitter : public TNamed
   }
   void setFixSignalYield(Double_t yield) { mFixedRawYield = yield; }
   void setNumberOfSigmaForSidebands(Double_t numberOfSigma) { mNSigmaForSidebands = numberOfSigma; }
+  void setDscbAlphaLInitialValue(Double_t value) { mDscbAlphaLInitialValue = value; }
+  void setDscbAlphaLLowLimit(Double_t value) { mDscbAlphaLLowLimit = value; }
+  void setDscbAlphaLUpLimit(Double_t value) { mDscbAlphaLUpLimit = value; }
+  void setDscbAlphaRInitialValue(Double_t value) { mDscbAlphaRInitialValue = value; }
+  void setDscbAlphaRLowLimit(Double_t value) { mDscbAlphaRLowLimit = value; }
+  void setDscbAlphaRUpLimit(Double_t value) { mDscbAlphaRUpLimit = value; }
+  void setDscbNLInitialValue(Double_t value) { mDscbNLInitialValue = value; }
+  void setDscbNLLowLimit(Double_t value) { mDscbNLLowLimit = value; }
+  void setDscbNLUpLimit(Double_t value) { mDscbNLUpLimit = value; }
+  void setDscbNRInitialValue(Double_t value) { mDscbNRInitialValue = value; }
+  void setDscbNRLowLimit(Double_t value) { mDscbNRLowLimit = value; }
+  void setDscbNRUpLimit(Double_t value) { mDscbNRUpLimit = value; }
+
   void plotBkg(RooAbsPdf* mFunc, Color_t color = kRed);
+  void plotCorrelBg(RooAbsPdf* mFunc, Color_t color = kGreen + 2);
   void plotRefl(RooAbsPdf* mFunc);
   void setReflFuncFixed();
   void doFit();
@@ -196,7 +216,9 @@ class HFInvMassFitter : public TNamed
     }
     mHistoTemplateRefl = static_cast<TH1*>(histoRefl->Clone("mHistoTemplateRefl"));
   }
+  void setTemplateCorrelBg(TH1* histoCorrelBg) { mHistoTemplateCorrelBg = histoCorrelBg; }
   void setDrawBgPrefit(Bool_t value = true) { mDrawBgPrefit = value; }
+  void setDrawCorrelBg(Bool_t value = true) { mDrawCorrelBg = value; }
   void setHighlightPeakRegion(Bool_t value = true) { mHighlightPeakRegion = value; }
   Double_t getChiSquareOverNDFTotal() const { return mChiSquareOverNdfTotal; }
   Double_t getChiSquareOverNDFBkg() const { return mChiSquareOverNdfBkg; }
@@ -212,19 +234,32 @@ class HFInvMassFitter : public TNamed
   Double_t getMeanUncertainty() const { return mRooMeanSgn->getError(); }
   Double_t getSigma() const { return mRooSigmaSgn->getVal(); }
   Double_t getSigmaUncertainty() const { return mRooSigmaSgn->getError(); }
+  Double_t getDscbAlphaL() const { return mRooDscbAlphaL ? mRooDscbAlphaL->getVal() : 0.; }
+  Double_t getDscbAlphaR() const { return mRooDscbAlphaR ? mRooDscbAlphaR->getVal() : 0.; }
+  Double_t getDscbNL() const { return mRooDscbNL ? mRooDscbNL->getVal() : 0.; }
+  Double_t getDscbNR() const { return mRooDscbNR ? mRooDscbNR->getVal() : 0.; }
+  Double_t getDscbAlphaLUncertainty() const { return mRooDscbAlphaL ? mRooDscbAlphaL->getError() : 0.; }
+  Double_t getDscbAlphaRUncertainty() const { return mRooDscbAlphaR ? mRooDscbAlphaR->getError() : 0.; }
+  Double_t getDscbNLUncertainty() const { return mRooDscbNL ? mRooDscbNL->getError() : 0.; }
+  Double_t getDscbNRUncertainty() const { return mRooDscbNR ? mRooDscbNR->getError() : 0.; }
+  Double_t getVoigtWidth() const { return mRooVoigtWidth ? mRooVoigtWidth->getVal() : 0.; }
+  Double_t getVoigtWidthUncertainty() const { return mRooVoigtWidth ? mRooVoigtWidth->getError() : 0.; }
   Double_t getReflOverSig() const
   {
     if (mReflPdf) {
       return mReflOverSgn;
+    } else if (mHistoTemplateCorrelBg) {
+      return mRooNCorrelBg->getVal() / mRooNSgn->getVal();
     } else {
-      return 0;
+      return 0.;
     }
   }
   void calculateSignal(Double_t& signal, Double_t& signalErr) const;
   void countSignal(Double_t& signal, Double_t& signalErr) const;
-  void calculateBackground(Double_t& bkg, Double_t& bkgErr) const;
+  void calculateBackground(Double_t& bkg, Double_t& bkgErr, Double_t integralBkg=-1.) const;
+  void calculateCorrelatedBackground(Double_t& correlBg, Double_t& correlBgErr) const;
   void calculateSignificance(Double_t& significance, Double_t& significanceErr) const;
-  void checkForSignal(Double_t& estimatedSignal);
+  void checkForSignal(Double_t& estimatedSignal) const;
   void drawFit(TVirtualPad* c, Int_t writeFitInfo = 2);
   void drawResidual(TVirtualPad* c);
   void drawReflection(TVirtualPad* c);
@@ -236,6 +271,9 @@ class HFInvMassFitter : public TNamed
   HFInvMassFitter& operator=(const HFInvMassFitter& source);
   void fillWorkspace(RooWorkspace& w) const;
   void highlightPeakRegion(const RooPlot* plot, Color_t color = kGray + 1, Width_t width = 1, Style_t style = 2) const;
+  void writeBgFitInfo(TH1* hM, const bool isPreFit) const;
+  std::pair<Double_t, Double_t> getRangesOfSignal() const;
+  static RooAbsPdf* getPdfByName(const RooAbsPdf* pdfIn, const std::string& name);
 
   TH1* mHistoInvMass; // histogram to fit
   TString mFitOption;
@@ -253,8 +291,8 @@ class HFInvMassFitter : public TNamed
   Double_t mSecMass;                 /// Second peak mean value
   Double_t mSigmaSgn;                /// signal gaussian sigma
   Double_t mSecSigma;                /// Second peak gaussian sigma
-  Int_t mNSigmaForSidebands;         /// number of sigmas to veto the signal peak
-  Int_t mNSigmaForSgn;               /// number of sigmas to veto the signal peak
+  Double_t mNSigmaForSidebands;      /// number of sigmas to veto the signal peak
+  Double_t mNSigmaForSgn;            /// number of sigmas to veto the signal peak
   Double_t mSigmaSgnErr;             /// uncertainty on signal gaussian sigma
   Double_t mSigmaSgnDoubleGaus;      /// signal 2gaussian sigma
   Bool_t mFixedMean;                 /// switch for fix mean of gaussian
@@ -283,6 +321,18 @@ class HFInvMassFitter : public TNamed
   Double_t mChiSquareOverNdfTotal;   /// chi2/ndf of the total fit
   Double_t mChiSquareOverNdfBkg;     /// chi2/ndf of the background (sidebands) pre-fit
   Bool_t mFixReflOverSgn;            /// switch for fix refl/signal
+  Double_t mDscbAlphaLInitialValue;  /// double sided Crystal Ball alpha left initial value
+  Double_t mDscbAlphaLLowLimit;      /// double sided Crystal Ball alpha left lower limit
+  Double_t mDscbAlphaLUpLimit;       /// double sided Crystal Ball alpha left upper limit
+  Double_t mDscbAlphaRInitialValue;  /// double sided Crystal Ball alpha right initial value
+  Double_t mDscbAlphaRLowLimit;      /// double sided Crystal Ball alpha right lower limit
+  Double_t mDscbAlphaRUpLimit;       /// double sided Crystal Ball alpha right upper limit
+  Double_t mDscbNLInitialValue;      /// double sided Crystal Ball n left initial value
+  Double_t mDscbNLLowLimit;          /// double sided Crystal Ball n left lower limit
+  Double_t mDscbNLUpLimit;           /// double sided Crystal Ball n left upper limit
+  Double_t mDscbNRInitialValue;      /// double sided Crystal Ball n right initial value
+  Double_t mDscbNRLowLimit;          /// double sided Crystal Ball n right lower limit
+  Double_t mDscbNRUpLimit;           /// double sided Crystal Ball n right upper limit
   RooRealVar* mRooMeanSgn;           /// mean for gaussian of signal
   RooRealVar* mRooSigmaSgn;          /// sigma for gaussian of signal
   RooAbsPdf* mSgnPdf;                /// signal fit function
@@ -291,7 +341,15 @@ class HFInvMassFitter : public TNamed
   RooRealVar* mRooNSgn;              /// total Signal fit function integral
   RooRealVar* mRooNBkg;              /// total background fit function integral
   RooRealVar* mRooNRefl;             /// total reflection fit function integral
+  RooFormulaVar* mRooNCorrelBg;      /// total correlated background fit function integral
+  RooRealVar* mRooCorrelBg2Sgn;      /// correlated background to signal ratio
+  RooRealVar* mRooDscbAlphaL;        /// double sided Crystal Ball alpha left
+  RooRealVar* mRooDscbAlphaR;        /// double sided Crystal Ball alpha right
+  RooRealVar* mRooDscbNL;            /// double sided Crystal Ball n left
+  RooRealVar* mRooDscbNR;            /// double sided Crystal Ball n right
+  RooRealVar* mRooVoigtWidth;        /// Voigt width
   RooAbsPdf* mTotalPdf;              /// total fit function
+  RooFitResult* mTotalPdfFitResult;  /// total fit function result
   RooPlot* mInvMassFrame;            /// frame of mass
   RooPlot* mReflFrame;               /// reflection frame
   RooPlot* mReflOnlyFrame;           /// reflection frame plot on reflection only
@@ -300,9 +358,10 @@ class HFInvMassFitter : public TNamed
   RooWorkspace* mWorkspace;    /// workspace
   Double_t mIntegralHisto;     /// integral of histogram to fit
   Double_t mIntegralBkg;       /// integral of background fit function
-  Double_t mIntegralSgn;       /// integral of signal fit function
   TH1* mHistoTemplateRefl;     /// reflection histogram
+  TH1* mHistoTemplateCorrelBg; /// correlated background histogram
   Bool_t mDrawBgPrefit;        /// draw background after fitting the sidebands
+  Bool_t mDrawCorrelBg;        /// draw correlated background (if any)
   Bool_t mHighlightPeakRegion; /// draw vertical lines showing the peak region (usually +- 3 sigma)
   TRandom3* mRandomGen;
   Int_t mRandomSeed;

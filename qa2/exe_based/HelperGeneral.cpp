@@ -227,3 +227,10 @@ std::string HelperGeneral::ReadNthLine(const std::string& fileName) {
 
   return result;
 }
+
+void HelperGeneral::MkDirBash(const std::string& dirName) {
+  const auto status = std::system(("mkdir -p " + dirName).c_str());
+  if(status != 0) {
+    throw std::runtime_error("HelperGeneral::MkDirBash() - could not create directory " + dirName);
+  }
+}

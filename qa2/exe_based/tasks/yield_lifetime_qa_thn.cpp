@@ -16,7 +16,7 @@ using namespace HelperMath;
 
 const std::string lifetimeAxisTitle = "T_{proper} (ps)";
 
-const std::vector<float> pTRanges = {0, 2, 5, 8, 12, 20};
+const std::vector<float> pTRanges = {1, 3, 5, 8, 12, 20};
 const std::string pTAxisTitle = "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})";
 
 const std::vector<float> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.05, 0.08};
@@ -33,8 +33,6 @@ const std::vector<std::string> weightsPresences{"", "_W"};
 std::string GetPtCutName(size_t iPt);
 
 void FillYieldRec(const std::string& fileName, const std::string& filePtWeightName) {
-  if(bdtBgUpperValuesVsPt.size() != pTRanges.size() - 1) throw std::runtime_error("bdtUpperValuesVsPt.size() != pTRanges.size() - 1");
-
   TFile* fileIn = OpenFileWithNullptrCheck(fileName);
   TFile* fileOut = TFile::Open("yield_lifetime_qa_thn.root", "recreate");
   const bool isDoWeight = !filePtWeightName.empty();
@@ -44,7 +42,7 @@ void FillYieldRec(const std::string& fileName, const std::string& filePtWeightNa
   THnSparse* histoRec = GetObjectWithNullptrCheck<THnSparse>(fileIn, "hf-task-lc/hnLcVarsWithBdt");
   const std::map<std::string, int> axesIndices = MapAxesIndices(histoRec);
   THnSparse* histoRecWeighted = dynamic_cast<THnSparse*>(histoRec->Clone());
-  if(isDoWeight) {
+  if (isDoWeight) {
     ScaleTHnSparseWithWeight(histoRecWeighted, axesIndices.at(pTAxisTitle), histoWeight);
   }
   
@@ -81,11 +79,11 @@ void FillYieldRec(const std::string& fileName, const std::string& filePtWeightNa
   };
   
   ProcessTHnSparse(histoRec);
-  if(isDoWeight) ProcessTHnSparse(histoRecWeighted, "_W");
+  if (isDoWeight) ProcessTHnSparse(histoRecWeighted, "_W");
 
   fileOut->Close();
   fileIn->Close();
-  if(isDoWeight) fileWeight->Close();
+  if (isDoWeight) fileWeight->Close();
 }
 
 void FillYieldGen(const std::string& fileName, const std::string& filePtWeightName) {
@@ -138,14 +136,17 @@ std::string GetPtCutName(size_t iPt) {
 int main(int argc, char* argv[]) {
   if (argc < 2) {
     std::cout << "Error! Please use " << std::endl;
-    std::cout << " ./yield_lifetime_qa_thn fileName (filePtWeightName)" << std::endl;
+    std::cout << " ./yield_lifetime_qa_thn fileNameIn (filePtWeightName)" << std::endl;
     exit(EXIT_FAILURE);
   }
+  if(bdtBgUpperValuesVsPt.size() != pTRanges.size() - 1) throw std::runtime_error("bdtUpperValuesVsPt.size() != pTRanges.size() - 1");
 
-  const std::string fileName = argv[1];
+  const std::string fileNameIn = argv[1];
   const std::string filePtWeightName = argc > 2 ? argv[2] : "";
 
   const bool isDoWeight = !filePtWeightName.empty();
+
+  const std::string fileName = ReadNthLine(fileNameIn);
 
   FillYieldRec(fileName, filePtWeightName);
   FillYieldGen(fileName, filePtWeightName);

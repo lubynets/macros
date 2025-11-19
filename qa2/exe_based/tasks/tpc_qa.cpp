@@ -1,3 +1,22 @@
+//
+// Created by oleksii on 04.11.2025.
+//
+#include "HelperGeneral.hpp"
+
+#include <TFile.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TTree.h>
+
+#include <array>
+#include <cmath>
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
+
+using namespace HelperGeneral;
+
 namespace Particles {
 enum Particles : short {
   kProton = 0,
@@ -7,7 +26,7 @@ enum Particles : short {
   kAll,
   nParticles
 };
-};
+}
 
 const std::array<std::string, Particles::nParticles> particleNames{"proton", "pion", "electorn", "kaon", "all"};
 
@@ -19,7 +38,7 @@ std::vector<std::string> GetDFNames(const std::string& fileName);
 short GetParicleByfPidIndex(UChar_t fPidIndex);
 std::string ReadNthLine(const std::string& fileName, int nLine);
 
-void tpc_qa(const std::string& fileList, const bool isV0Tree=true, const int fileFrom=1, const int fileTo=1e6) {
+void TpcQA(const std::string& fileList, const bool isV0Tree, const int fileFrom, const int fileTo) {
   const std::string treeNameBase = isV0Tree ? "O2tpcskimv0" : "O2tpctofskim";
 
   UChar_t fPidIndex;
@@ -112,8 +131,8 @@ void tpc_qa(const std::string& fileList, const bool isV0Tree=true, const int fil
         const float nSigmaTpc = fNSigTPC;
         const float nSigmaTof = fNSigTOF;
 
-  //       if(std::fabs(nSigmaTof) > 3.f && !IsUnmatchedTof(nSigmaTof)) continue;
-  //       if(std::fabs(nSigmaTof) > 3.f) continue;
+        //       if(std::fabs(nSigmaTof) > 3.f && !IsUnmatchedTof(nSigmaTof)) continue;
+        //       if(std::fabs(nSigmaTof) > 3.f) continue;
 
         const short particleId = GetParicleByfPidIndex(fPidIndex);
         if(particleId == -1) continue;
@@ -201,4 +220,21 @@ std::string ReadNthLine(const std::string& fileName, const int nLine) {
 
 bool IsUnmatchedTof(const float nSigmaTof) {
   return std::fabs(nSigmaTof - NSigmaTofUnmatched) > NSigmaTofUnmatchedTolerance;
+}
+
+int main(int argc, char* argv[]) {
+  if (argc < 2) {
+    std::cout << "Error! Please use " << std::endl;
+    std::cout << " ./tpc_qa fileList" << std::endl;
+    exit(EXIT_FAILURE);
+  }
+
+  const std::string fileList = argv[1];
+  const bool isV0Tree = argc > 2 ? string_to_bool(argv[2]) : true;
+  const int fileFrom = argc > 3 ? std::stoi(argv[3]) : 1;
+  const int fileTo = argc > 4 ? std::stoi(argv[4]) : 1e6;
+
+  TpcQA(fileList, isV0Tree, fileFrom, fileTo);
+
+  return 0;
 }

@@ -21,6 +21,7 @@
 #include "HFInvMassFitter.h"
 
 #include <RooAddPdf.h>
+#include <RooCrystalBall.h>
 #include <RooDataHist.h>
 #include <RooExponential.h>
 #include <RooFitResult.h>
@@ -30,12 +31,15 @@
 #include <RooGenericPdf.h>
 #include <RooGlobalFunc.h>
 #include <RooHist.h>
+#include <RooHistPdf.h>
 #include <RooPlot.h>
 #include <RooPolynomial.h>
 #include <RooRealVar.h>
+#include <RooVoigtian.h>
 #include <RooWorkspace.h>
 #include <TColor.h>
 #include <TDatabasePDG.h>
+#include <TFile.h>
 #include <TLine.h>
 #include <TNamed.h>
 #include <TPaveText.h>
@@ -58,7 +62,7 @@ ClassImp(HFInvMassFitter);
 
 HFInvMassFitter::HFInvMassFitter() : TNamed(),
                                      mHistoInvMass(nullptr),
-                                     mFitOption("L,E"),
+                                     mFitOption(""),
                                      mMinMass(0),
                                      mMaxMass(5),
                                      mTypeOfBkgPdf(Expo),
@@ -103,6 +107,18 @@ HFInvMassFitter::HFInvMassFitter() : TNamed(),
                                      mChiSquareOverNdfTotal(0),
                                      mChiSquareOverNdfBkg(0),
                                      mFixReflOverSgn(kFALSE),
+                                     mDscbAlphaLInitialValue(1.5),
+                                     mDscbAlphaLLowLimit(0.1),
+                                     mDscbAlphaLUpLimit(5.0),
+                                     mDscbAlphaRInitialValue(1.5),
+                                     mDscbAlphaRLowLimit(0.1),
+                                     mDscbAlphaRUpLimit(5.0),
+                                     mDscbNLInitialValue(2.0),
+                                     mDscbNLLowLimit(0.5),
+                                     mDscbNLUpLimit(50.),
+                                     mDscbNRInitialValue(2.0),
+                                     mDscbNRLowLimit(0.5),
+                                     mDscbNRUpLimit(50.),
                                      mRooMeanSgn(nullptr),
                                      mRooSigmaSgn(nullptr),
                                      mSgnPdf(nullptr),
@@ -111,7 +127,15 @@ HFInvMassFitter::HFInvMassFitter() : TNamed(),
                                      mRooNSgn(nullptr),
                                      mRooNBkg(nullptr),
                                      mRooNRefl(nullptr),
+                                     mRooNCorrelBg(nullptr),
+                                     mRooCorrelBg2Sgn(nullptr),
+                                     mRooDscbAlphaL(nullptr),
+                                     mRooDscbAlphaR(nullptr),
+                                     mRooDscbNL(nullptr),
+                                     mRooDscbNR(nullptr),
+                                     mRooVoigtWidth(nullptr),
                                      mTotalPdf(nullptr),
+                                     mTotalPdfFitResult(nullptr),
                                      mInvMassFrame(nullptr),
                                      mReflFrame(nullptr),
                                      mReflOnlyFrame(nullptr),
@@ -120,86 +144,112 @@ HFInvMassFitter::HFInvMassFitter() : TNamed(),
                                      mWorkspace(nullptr),
                                      mIntegralHisto(0),
                                      mIntegralBkg(0),
-                                     mIntegralSgn(0),
                                      mHistoTemplateRefl(nullptr),
+                                     mHistoTemplateCorrelBg(nullptr),
                                      mDrawBgPrefit(kFALSE),
+                                     mDrawCorrelBg(kFALSE),
                                      mHighlightPeakRegion(kFALSE),
-                                     mRandomSeed(-1),
-                                     mRandomGen(nullptr)
+                                     mRandomGen(nullptr),
+                                     mRandomSeed(-1)
 {
   // default constructor
 }
 
-HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit, Double_t minValue, Double_t maxValue, Int_t fitTypeBkg, Int_t fitTypeSgn) : TNamed(),
-                                                                                                                                    mHistoInvMass(nullptr),
-                                                                                                                                    mFitOption("L,E"),
-                                                                                                                                    mMinMass(minValue),
-                                                                                                                                    mMaxMass(maxValue),
-                                                                                                                                    mTypeOfBkgPdf(fitTypeBkg),
-                                                                                                                                    mTypeOfSgnPdf(fitTypeSgn),
-                                                                                                                                    mTypeOfReflPdf(1),
-                                                                                                                                    mMassParticle(TDatabasePDG::Instance()->GetParticle("D0")->Mass()),
-                                                                                                                                    mMass(1.865),
-                                                                                                                                    mMassLowLimit(0),
-                                                                                                                                    mMassUpLimit(0),
-                                                                                                                                    mMassReflLowLimit(0),
-                                                                                                                                    mMassReflUpLimit(0),
-                                                                                                                                    mSecMass(1.969),
-                                                                                                                                    mSigmaSgn(0.012),
-                                                                                                                                    mSecSigma(0.006),
-                                                                                                                                    mNSigmaForSidebands(3.),
-                                                                                                                                    mNSigmaForSgn(3.),
-                                                                                                                                    mSigmaSgnErr(0.),
-                                                                                                                                    mSigmaSgnDoubleGaus(0.012),
-                                                                                                                                    mFixedMean(kFALSE),
-                                                                                                                                    mBoundMean(kFALSE),
-                                                                                                                                    mBoundReflMean(kFALSE),
-                                                                                                                                    mFixedSigma(kFALSE),
-                                                                                                                                    mFixedSigmaDoubleGaus(kFALSE),
-                                                                                                                                    mBoundSigma(kFALSE),
-                                                                                                                                    mSigmaValue(0.012),
-                                                                                                                                    mParamSgn(0.1),
-                                                                                                                                    mFracDoubleGaus(0.2),
-                                                                                                                                    mFixedRawYield(-1.),
-                                                                                                                                    mFixedFracDoubleGaus(kFALSE),
-                                                                                                                                    mRatioDoubleGausSigma(0.),
-                                                                                                                                    mFixedRatioDoubleGausSigma(kFALSE),
-                                                                                                                                    mReflOverSgn(0),
-                                                                                                                                    mEnableReflections(kFALSE),
-                                                                                                                                    mRawYield(0),
-                                                                                                                                    mRawYieldErr(0),
-                                                                                                                                    mRawYieldCounted(0),
-                                                                                                                                    mRawYieldCountedErr(0),
-                                                                                                                                    mBkgYield(0),
-                                                                                                                                    mBkgYieldErr(0),
-                                                                                                                                    mSignificance(0),
-                                                                                                                                    mSignificanceErr(0),
-                                                                                                                                    mChiSquareOverNdfTotal(0),
-                                                                                                                                    mChiSquareOverNdfBkg(0),
-                                                                                                                                    mFixReflOverSgn(kFALSE),
-                                                                                                                                    mRooMeanSgn(nullptr),
-                                                                                                                                    mRooSigmaSgn(nullptr),
-                                                                                                                                    mSgnPdf(nullptr),
-                                                                                                                                    mBkgPdf(nullptr),
-                                                                                                                                    mReflPdf(nullptr),
-                                                                                                                                    mRooNSgn(nullptr),
-                                                                                                                                    mRooNBkg(nullptr),
-                                                                                                                                    mRooNRefl(nullptr),
-                                                                                                                                    mTotalPdf(nullptr),
-                                                                                                                                    mInvMassFrame(nullptr),
-                                                                                                                                    mReflFrame(nullptr),
-                                                                                                                                    mReflOnlyFrame(nullptr),
-                                                                                                                                    mResidualFrame(nullptr),
-                                                                                                                                    mResidualFrameForCalculation(nullptr),
-                                                                                                                                    mWorkspace(nullptr),
-                                                                                                                                    mIntegralHisto(0),
-                                                                                                                                    mIntegralBkg(0),
-                                                                                                                                    mIntegralSgn(0),
-                                                                                                                                    mHistoTemplateRefl(nullptr),
-                                                                                                                                    mDrawBgPrefit(kFALSE),
-                                                                                                                                    mHighlightPeakRegion(kFALSE),
-                                                                                                                                    mRandomSeed(-1),
-                                                                                                                                    mRandomGen(nullptr)
+HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit,
+                                 Double_t minValue,
+                                 Double_t maxValue,
+                                 Int_t fitTypeBkg,
+                                 Int_t fitTypeSgn) : TNamed(),
+                                                     mHistoInvMass(nullptr),
+                                                     mFitOption(""),
+                                                     mMinMass(minValue),
+                                                     mMaxMass(maxValue),
+                                                     mTypeOfBkgPdf(fitTypeBkg),
+                                                     mTypeOfSgnPdf(fitTypeSgn),
+                                                     mTypeOfReflPdf(1),
+                                                     mMassParticle(TDatabasePDG::Instance()->GetParticle("D0")->Mass()),
+                                                     mMass(1.865),
+                                                     mMassLowLimit(0),
+                                                     mMassUpLimit(0),
+                                                     mMassReflLowLimit(0),
+                                                     mMassReflUpLimit(0),
+                                                     mSecMass(1.969),
+                                                     mSigmaSgn(0.012),
+                                                     mSecSigma(0.006),
+                                                     mNSigmaForSidebands(3.),
+                                                     mNSigmaForSgn(3.),
+                                                     mSigmaSgnErr(0.),
+                                                     mSigmaSgnDoubleGaus(0.012),
+                                                     mFixedMean(kFALSE),
+                                                     mBoundMean(kFALSE),
+                                                     mBoundReflMean(kFALSE),
+                                                     mFixedSigma(kFALSE),
+                                                     mFixedSigmaDoubleGaus(kFALSE),
+                                                     mBoundSigma(kFALSE),
+                                                     mSigmaValue(0.012),
+                                                     mParamSgn(0.1),
+                                                     mFracDoubleGaus(0.2),
+                                                     mFixedRawYield(-1.),
+                                                     mFixedFracDoubleGaus(kFALSE),
+                                                     mRatioDoubleGausSigma(0.),
+                                                     mFixedRatioDoubleGausSigma(kFALSE),
+                                                     mReflOverSgn(0),
+                                                     mEnableReflections(kFALSE),
+                                                     mRawYield(0),
+                                                     mRawYieldErr(0),
+                                                     mRawYieldCounted(0),
+                                                     mRawYieldCountedErr(0),
+                                                     mBkgYield(0),
+                                                     mBkgYieldErr(0),
+                                                     mSignificance(0),
+                                                     mSignificanceErr(0),
+                                                     mChiSquareOverNdfTotal(0),
+                                                     mChiSquareOverNdfBkg(0),
+                                                     mFixReflOverSgn(kFALSE),
+                                                     mDscbAlphaLInitialValue(1.5),
+                                                     mDscbAlphaLLowLimit(0.1),
+                                                     mDscbAlphaLUpLimit(5.0),
+                                                     mDscbAlphaRInitialValue(1.5),
+                                                     mDscbAlphaRLowLimit(0.1),
+                                                     mDscbAlphaRUpLimit(5.0),
+                                                     mDscbNLInitialValue(2.0),
+                                                     mDscbNLLowLimit(0.5),
+                                                     mDscbNLUpLimit(50.),
+                                                     mDscbNRInitialValue(2.0),
+                                                     mDscbNRLowLimit(0.5),
+                                                     mDscbNRUpLimit(50.),
+                                                     mRooMeanSgn(nullptr),
+                                                     mRooSigmaSgn(nullptr),
+                                                     mSgnPdf(nullptr),
+                                                     mBkgPdf(nullptr),
+                                                     mReflPdf(nullptr),
+                                                     mRooNSgn(nullptr),
+                                                     mRooNBkg(nullptr),
+                                                     mRooNRefl(nullptr),
+                                                     mRooNCorrelBg(nullptr),
+                                                     mRooCorrelBg2Sgn(nullptr),
+                                                     mRooDscbAlphaL(nullptr),
+                                                     mRooDscbAlphaR(nullptr),
+                                                     mRooDscbNL(nullptr),
+                                                     mRooDscbNR(nullptr),
+                                                     mRooVoigtWidth(nullptr),
+                                                     mTotalPdf(nullptr),
+                                                     mTotalPdfFitResult(nullptr),
+                                                     mInvMassFrame(nullptr),
+                                                     mReflFrame(nullptr),
+                                                     mReflOnlyFrame(nullptr),
+                                                     mResidualFrame(nullptr),
+                                                     mResidualFrameForCalculation(nullptr),
+                                                     mWorkspace(nullptr),
+                                                     mIntegralHisto(0),
+                                                     mIntegralBkg(0),
+                                                     mHistoTemplateRefl(nullptr),
+                                                     mHistoTemplateCorrelBg(nullptr),
+                                                     mDrawBgPrefit(kFALSE),
+                                                     mDrawCorrelBg(kFALSE),
+                                                     mHighlightPeakRegion(kFALSE),
+                                                     mRandomGen(nullptr),
+                                                     mRandomSeed(-1)
 {
   // standard constructor
   mHistoInvMass = dynamic_cast<TH1*>(histoToFit->Clone(histoToFit->GetTitle()));
@@ -221,11 +271,58 @@ HFInvMassFitter::~HFInvMassFitter()
   delete mRooNSgn;
   delete mRooNBkg;
   delete mRooNRefl;
+  delete mRooNCorrelBg;
+  delete mRooCorrelBg2Sgn;
+  delete mRooDscbAlphaL;
+  delete mRooDscbAlphaR;
+  delete mRooDscbNL;
+  delete mRooDscbNR;
+  delete mRooVoigtWidth;
   delete mInvMassFrame;
   delete mReflFrame;
   delete mReflOnlyFrame;
   delete mResidualFrame;
   delete mWorkspace;
+}
+
+void HFInvMassFitter::writeBgFitInfo(TH1* hM, const bool isPreFit) const {
+  static int count{0};
+  const std::string option = count == 0 ? "recreate" : "update";
+  TFile* fileOut = TFile::Open("bkgFitInfo.root", option.c_str());
+  const std::string& hName = std::to_string(count/2);
+  ++count;
+  TDirectory* dir = fileOut->GetDirectory(hName.c_str());
+  if (!dir) {
+      dir = fileOut->mkdir(hName.c_str());
+  }
+  dir->cd();  // change into it
+  if(isPreFit) {
+    hM->Write("hM");
+    TArrayD* sb = new TArrayD(2);
+    const double sbl = mWorkspace->var("mass")->getRange("SBL").second;
+    const double sbr = mWorkspace->var("mass")->getRange("SBR").first;
+    sb->AddAt(sbl, 0);
+    sb->AddAt(sbr, 1);
+    dir->WriteObject(sb, "sb");
+    dir->Write();
+  }
+  TArrayD* pars = new TArrayD(4);
+  const double integral = mRooNBkg->getVal();
+
+  RooArgSet* params = mBkgPdf->getParameters(RooArgSet(*mWorkspace->var("mass")));
+  RooRealVar* coef0 = dynamic_cast<RooRealVar*>(params->find("polyParam0"));
+  RooRealVar* coef1 = dynamic_cast<RooRealVar*>(params->find("polyParam1"));
+  RooRealVar* coef2 = dynamic_cast<RooRealVar*>(params->find("polyParam2"));
+  const double p0 = coef0->getVal();
+  const double p1 = coef1->getVal();
+  const double p2 = coef2->getVal();
+  pars->AddAt(integral, 0);
+  pars->AddAt(p0, 1);
+  pars->AddAt(p1, 2);
+  pars->AddAt(p2, 3);
+  dir->WriteObject(pars, isPreFit ? "prefit" : "fit");
+  dir->Write();
+  fileOut->Close();
 }
 
 void HFInvMassFitter::doFit()
@@ -234,6 +331,7 @@ void HFInvMassFitter::doFit()
   if (mRandomSeed >= 0) {
     mRandomGen->SetSeed(mRandomSeed);
   }
+
   mIntegralHisto = mHistoInvMass->Integral(mHistoInvMass->FindBin(mMinMass), mHistoInvMass->FindBin(mMaxMass));
   mWorkspace = new RooWorkspace("mWorkspace");
   fillWorkspace(*mWorkspace);
@@ -247,17 +345,38 @@ void HFInvMassFitter::doFit()
       mass->setRange("SBL", mMinMass, mMass - mNSigmaForSidebands * mSigmaSgn);
       mass->setRange("SBR", mMass + mNSigmaForSidebands * mSigmaSgn, mSecMass - mNSigmaForSidebands * mSecSigma);
       mass->setRange("SEC", mSecMass + mNSigmaForSidebands * mSecSigma, mMaxMass);
-      mass->setRange("signal", mSecMass - mNSigmaForSidebands * mSecSigma, mSecMass + mNSigmaForSidebands * mSecSigma);
+      mass->setRange("signal", mSecMass - mSigmaSgn * mSecSigma, mSecMass + mSigmaSgn * mSecSigma);
     } else { // Single Peak fit range
       mass->setRange("SBL", mMinMass, mMass - mNSigmaForSidebands * mSigmaSgn);
       mass->setRange("SBR", mMass + mNSigmaForSidebands * mSigmaSgn, mMaxMass);
       mass->setRange("signal", mMass - mNSigmaForSgn * mSigmaSgn, mMass + mNSigmaForSgn * mSigmaSgn);
     }
   }
-  mass->setRange("bkg", mMass - 4 * mSigmaSgn, mMass + 4 * mSigmaSgn);
+  mass->setRange("bkg", mMass - mNSigmaForSgn * mSigmaSgn, mMass + mNSigmaForSgn * mSigmaSgn);    // TODO rename bkg to something more meaningful
   mass->setRange("full", mMinMass, mMaxMass);
   mInvMassFrame = mass->frame(Title(Form("%s", mHistoInvMass->GetTitle()))); // define the frame to plot
   dataHistogram.plotOn(mInvMassFrame, Name("data_c"));                       // plot data histogram on the frame
+
+  auto CutHistoSidebands = [&](const TH1* histo) { // TODO generalize for various number of ranges
+    const RooRealVar* mass = mWorkspace->var("mass");
+    const double sblLeft = mass->getRange("SBL").first;
+    const double sblRight = mass->getRange("SBL").second;
+    const double sbrLeft = mass->getRange("SBR").first;
+    const double sbrRight = mass->getRange("SBR").second;
+    TH1* histoOut = dynamic_cast<TH1*>(histo->Clone());
+    for(int iBin=1, nBins=histoOut->GetNbinsX(); iBin<=nBins; ++iBin) {
+      const double binCenter = histoOut->GetBinCenter(iBin);
+      if((binCenter < sblLeft) || (binCenter > sblRight && binCenter < sbrLeft) || (binCenter > sbrRight)) {
+        histoOut->SetBinContent(iBin, 1e-9);
+        histoOut->SetBinError(iBin, 1e9);
+      }
+    }
+
+    return histoOut;
+  };
+
+  TH1* histoInvMassSidebands = CutHistoSidebands(mHistoInvMass);
+  RooDataHist dataHistogramSidebands("dataHistogramSidebands", "dataSB", *mass, Import(*histoInvMassSidebands));
 
   // define number of background and background fit function
   const double rooNBkgLower = 0.;
@@ -277,28 +396,30 @@ void HFInvMassFitter::doFit()
     mRooNSgn = new RooRealVar("mRooNSig", "number of signal", randomizeInitialFitParameter(rooNSigLower, rooNSigUpper, rooNSigInitial, rooNSigSmear), rooNSigLower, rooNSigUpper); // signal yield
     mTotalPdf = new RooAddPdf("mMCFunc", "MC fit function", RooArgList(*sgnPdf), RooArgList(*mRooNSgn));       // create total pdf
     if (!strcmp(mFitOption.Data(), "Chi2")) {
-      mTotalPdf->chi2FitTo(dataHistogram, Range("signal"));
+      mTotalPdf->chi2FitTo(dataHistogram, Range("full"));
     } else {
-      mTotalPdf->fitTo(dataHistogram, Range("signal"));
+      mTotalPdf->fitTo(dataHistogram, Range("full"), Extended());
     }
     RooAbsReal* signalIntegralMc = mTotalPdf->createIntegral(*mass, NormSet(*mass), Range("signal")); // sig yield from fit
-    mIntegralSgn = signalIntegralMc->getValV();
     calculateSignal(mRawYield, mRawYieldErr);        // calculate signal and signal error
+    countSignal(mRawYieldCounted, mRawYieldCountedErr);
     mTotalPdf->plotOn(mInvMassFrame, Name("Tot_c")); // plot total function
+    mChiSquareOverNdfTotal = mInvMassFrame->chiSquare("Tot_c", "data_c"); // calculate reduced chi2 / NDF
   } else {                                           // data
-    mBkgPdf = new RooAddPdf("mBkgPdf", "background fit function", RooArgList(*bkgPdf), RooArgList(*mRooNBkg));
+   mBkgPdf = new RooAddPdf("mBkgPdf", "background fit function", RooArgList(*bkgPdf), RooArgList(*mRooNBkg));
     if (mTypeOfSgnPdf == GausSec) { // two peak fit
       if (!strcmp(mFitOption.Data(), "Chi2")) {
         mBkgPdf->chi2FitTo(dataHistogram, Range("SBL,SBR,SEC"), Save());
       } else {
-        mBkgPdf->fitTo(dataHistogram, Range("SBL,SBR,SEC"), Save());
+        mBkgPdf->fitTo(dataHistogram, Range("SBL,SBR,SEC"), Extended(), Save());
       }
     } else { // single peak fit
       if (!strcmp(mFitOption.Data(), "Chi2")) {
-        mBkgPdf->chi2FitTo(dataHistogram, Range("SBL,SBR"), Save());
+        mBkgPdf->chi2FitTo(dataHistogramSidebands, Save());
       } else {
-        mBkgPdf->fitTo(dataHistogram, Range("SBL,SBR"), Save());
+        mBkgPdf->fitTo(dataHistogram, Range("SBL,SBR"), Extended(), Save());
       }
+      writeBgFitInfo(mHistoInvMass, true);
     }
     // define the frame to evaluate background sidebands chi2 (bg pdf needs to be plotted within sideband ranges)
     RooPlot* frameTemporary = mass->frame(Title(Form("%s_temp", mHistoInvMass->GetTitle())));
@@ -309,7 +430,7 @@ void HFInvMassFitter::doFit()
     RooAbsPdf* mBkgPdfPrefit{nullptr};
     if (mDrawBgPrefit) {
       mBkgPdfPrefit = dynamic_cast<RooAbsPdf*>(mBkgPdf->Clone());
-      mBkgPdfPrefit->plotOn(mInvMassFrame, Range("full"), Name("Bkg_c_prefit"), LineColor(kGray));
+      mBkgPdfPrefit->plotOn(mInvMassFrame, Range("full"), Name("Bkg_c_prefit"), NormRange("SBL,SBR"), LineColor(kGray));
       delete mBkgPdfPrefit;
     }
 
@@ -330,6 +451,8 @@ void HFInvMassFitter::doFit()
       mRooNSgn->setConstant(kTRUE);
     }
     mSgnPdf = new RooAddPdf("mSgnPdf", "signal fit function", RooArgList(*sgnPdf), RooArgList(*mRooNSgn));
+    mRooCorrelBg2Sgn = new RooRealVar("mRooCorrelBg2Sgn", "correlated background to signal ratio", mReflOverSgn, 0., 10.*mReflOverSgn);
+    mRooNCorrelBg = new RooFormulaVar("mNCorrelBg", "mRooCorrelBg2Sgn*mNSgn", RooArgList(*mRooCorrelBg2Sgn, *mRooNSgn));
     // create reflection template and fit to reflection
     if (mHistoTemplateRefl) {
       RooAbsPdf* reflPdf = createReflectionFitFunction(mWorkspace); // create reflection pdf
@@ -346,7 +469,7 @@ void HFInvMassFitter::doFit()
       if (!strcmp(mFitOption.Data(), "Chi2")) {
         reflFuncTemp.chi2FitTo(reflHistogram);
       } else {
-        reflFuncTemp.fitTo(reflHistogram);
+        reflFuncTemp.fitTo(reflHistogram, Extended());
       }
       reflFuncTemp.plotOn(mReflOnlyFrame);
 
@@ -357,7 +480,7 @@ void HFInvMassFitter::doFit()
       if (!strcmp(mFitOption.Data(), "Chi2")) {
         mTotalPdf->chi2FitTo(dataHistogram);
       } else {
-        mTotalPdf->fitTo(dataHistogram);
+        mTotalPdf->fitTo(dataHistogram, Extended());
       }
       mTotalPdf->plotOn(mInvMassFrame, Name("Tot_c"));
       mReflPdf = new RooAddPdf("mReflPdf", "reflection fit function", RooArgList(*reflPdf), RooArgList(*mRooNRefl));
@@ -373,13 +496,24 @@ void HFInvMassFitter::doFit()
       mResidualFrame->addPlotable(residualHistogram, "p");
       mSgnPdf->plotOn(mResidualFrame, Normalization(1.0, RooAbsReal::RelativeExpected), LineColor(kBlue));
     } else {
-      mTotalPdf = new RooAddPdf("mTotalPdf", "background + signal pdf", RooArgList(*bkgPdf, *sgnPdf), RooArgList(*mRooNBkg, *mRooNSgn));
-      if (!strcmp(mFitOption.Data(), "Chi2")) {
-        mTotalPdf->chi2FitTo(dataHistogram);
+      RooDataHist* corrBgDataHist{nullptr};
+      if (mHistoTemplateCorrelBg == nullptr) {
+        mTotalPdf = new RooAddPdf("mTotalPdf", "background + signal pdf", RooArgList(*bkgPdf, *sgnPdf), RooArgList(*mRooNBkg, *mRooNSgn));
       } else {
-        mTotalPdf->fitTo(dataHistogram);
+        corrBgDataHist = new RooDataHist("corrBgDataHist", "correlated background histogram template", RooArgList(*mass), Import(*mHistoTemplateCorrelBg));
+        auto* corrBgPdf = new RooHistPdf("corrBgPdf", "correlated background template pdf", RooArgList(*mass), *corrBgDataHist, 1.);
+        mTotalPdf = new RooAddPdf("modelTotal", "background + signal + correlated bkg", RooArgList( *bkgPdf, *sgnPdf, *corrBgPdf ), RooArgList(*mRooNBkg, *mRooNSgn, *mRooNCorrelBg));
       }
+      if (!strcmp(mFitOption.Data(), "Chi2")) {
+        mTotalPdfFitResult = mTotalPdf->chi2FitTo(dataHistogram, Save());
+      } else {
+        mTotalPdfFitResult = mTotalPdf->fitTo(dataHistogram, Extended(), Save());
+      }
+      writeBgFitInfo(mHistoInvMass, false);
       plotBkg(mTotalPdf);
+      if (corrBgDataHist != nullptr && mDrawCorrelBg) {
+        plotCorrelBg(mTotalPdf);
+      }
       mTotalPdf->plotOn(mInvMassFrame, Name("Tot_c"), LineColor(kBlue));
       mSgnPdf->plotOn(mInvMassFrame, Normalization(1.0, RooAbsReal::RelativeExpected), DrawOption("F"), FillColor(TColor::GetColorTransparent(kBlue, 0.2)), VLines());
       mChiSquareOverNdfTotal = mInvMassFrame->chiSquare("Tot_c", "data_c"); // calculate reduced chi2 / DNF
@@ -395,7 +529,7 @@ void HFInvMassFitter::doFit()
     calculateBackground(mBkgYield, mBkgYieldErr);
 
     RooAbsReal* sgnIntegral = mSgnPdf->createIntegral(*mass, NormSet(*mass), Range("signal"));
-    mIntegralSgn = sgnIntegral->getValV();
+
     calculateSignal(mRawYield, mRawYieldErr);
     countSignal(mRawYieldCounted, mRawYieldCountedErr);
     calculateSignificance(mSignificance, mSignificanceErr);
@@ -591,6 +725,60 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
   RooAbsPdf* reflFuncDoubleGaus = new RooAddPdf("reflFuncDoubleGaus", "reflection pdf", RooArgList(gausRefl1, gausRefl2), fracRefl);
   workspace.import(*reflFuncDoubleGaus);
   delete reflFuncDoubleGaus;
+  // signal DSCB pdf
+  if (mBoundMean) {
+    mean.setMin(mMassLowLimit);
+    mean.setMax(mMassUpLimit);
+  }
+  if (mFixedMean) {
+    mean.setVal(mMass);
+    mean.setConstant(kTRUE);
+  }
+  if (mFixedSigma) {
+    sigma.setVal(mSigmaSgn);
+    sigma.setConstant(kTRUE);
+  }
+  if (mBoundSigma) {
+    sigma.setMin(mSigmaSgn * (1 - mParamSgn));
+    sigma.setMax(mSigmaSgn * (1 + mParamSgn));
+  }
+// Tail parameters: left side
+  RooRealVar alphaL("alphaL", "left tail alpha", mDscbAlphaLInitialValue, mDscbAlphaLLowLimit, mDscbAlphaLUpLimit);
+  RooRealVar nL("nL", "left tail n", mDscbNLInitialValue, mDscbNLLowLimit, mDscbNLUpLimit);
+// Tail parameters: right side
+  RooRealVar alphaR("alphaR", "right tail alpha", mDscbAlphaRInitialValue, mDscbAlphaRLowLimit, mDscbAlphaRUpLimit);
+  RooRealVar nR("nR", "right tail n", mDscbNRInitialValue, mDscbNRLowLimit, mDscbNRUpLimit);
+  // for testing purposes only
+  std::cout << "DSCB parameters:\n";
+  std::cout << "alphaL = [" << alphaL.getVal() << ", " << alphaL.getMin() << ", " << alphaL.getMax() << "]\n";
+  std::cout << "nL     = [" << nL.getVal() << ", " << nL.getMin() << ", " << nL.getMax() << "]\n";
+  std::cout << "alphaR = [" << alphaR.getVal() << ", " << alphaR.getMin() << ", " << alphaR.getMax() << "]\n";
+  std::cout << "nR     = [" << nR.getVal() << ", " << nR.getMin() << ", " << nR.getMax() << "]\n";
+  // end for testing purposes only
+  RooAbsPdf *sgnFuncDSCB = new RooCrystalBall("sgnFuncDSCB", "double sided crystal ball signal", mass, mean, sigma, alphaL, nL, alphaR, nR);
+  workspace.import(*sgnFuncDSCB);
+  delete sgnFuncDSCB;
+  // signal Voigt pdf
+  if (mBoundMean) {
+    mean.setMin(mMassLowLimit);
+    mean.setMax(mMassUpLimit);
+  }
+  if (mFixedMean) {
+    mean.setVal(mMass);
+    mean.setConstant(kTRUE);
+  }
+  if (mFixedSigma) {
+    sigma.setVal(mSigmaSgn);
+    sigma.setConstant(kTRUE);
+  }
+  if (mBoundSigma) {
+    sigma.setMin(mSigmaSgn * (1 - mParamSgn));
+    sigma.setMax(mSigmaSgn * (1 + mParamSgn));
+  }
+  RooRealVar width("width", "width (FWHM) for Breit-Wigner part", mSigmaSgn, mSigmaSgn - 0.01, mSigmaSgn + 0.01);
+  RooAbsPdf* sgnFuncVoigt = new RooVoigtian("sgnFuncVoigt", "signal pdf (Voigtian)", mass, mean, width, sigma, false);
+  workspace.import(*sgnFuncVoigt);
+  delete sgnFuncVoigt;
   // reflection poly3
   const double polyReflParam0Lower = -1.;
   const double polyReflParam0Upper = 1.;
@@ -652,16 +840,16 @@ void HFInvMassFitter::drawFit(TVirtualPad* pad, Int_t writeFitInfo)
     textInfoRight->SetTextColor(kBlue);
     textInfoLeft->AddText(Form("S = %.0f #pm %.0f ", mRawYield, mRawYieldErr));
     textInfoLeft->AddText(Form("S_{count} = %.0f #pm %.0f ", mRawYieldCounted, mRawYieldCountedErr));
+    textInfoLeft->AddText(Form("#chi^{2} / ndf  =  %.3f", mChiSquareOverNdfTotal));
     if (mTypeOfBkgPdf != NoBkg) {
-      textInfoLeft->AddText(Form("B (%d#sigma) = %.0f #pm %.0f", mNSigmaForSidebands, mBkgYield, mBkgYieldErr));
-      textInfoLeft->AddText(Form("S/B (%d#sigma) = %.4g ", mNSigmaForSidebands, mRawYield / mBkgYield));
+      textInfoLeft->AddText(Form("B (%d#sigma) = %.0f #pm %.0f", static_cast<int>(std::round(mNSigmaForSidebands)), mBkgYield, mBkgYieldErr)); // TODO cast float to string with precision / significant digits
+      textInfoLeft->AddText(Form("S/B (%d#sigma) = %.4g ", static_cast<int>(std::round(mNSigmaForSidebands)), mRawYield / mBkgYield));
     }
     if (mReflPdf) {
       textInfoLeft->AddText(Form("Refl/Sig =  %.3f #pm %.3f ", mReflOverSgn, 0.0));
     }
     if (mTypeOfBkgPdf != NoBkg) {
-      textInfoLeft->AddText(Form("Signif (%d#sigma) = %.1f #pm %.1f ", mNSigmaForSidebands, mSignificance, mSignificanceErr));
-      textInfoLeft->AddText(Form("#chi^{2} / ndf  =  %.3f", mChiSquareOverNdfTotal));
+      textInfoLeft->AddText(Form("Signif (%d#sigma) = %.1f #pm %.1f ", static_cast<int>(std::round(mNSigmaForSidebands)), mSignificance, mSignificanceErr));
     }
     if (mFixedMean) {
       textInfoRight->AddText(Form("mean(fixed) = %.3f #pm %.3f", mRooMeanSgn->getVal(), mRooMeanSgn->getError()));
@@ -729,8 +917,8 @@ void HFInvMassFitter::highlightPeakRegion(const RooPlot* plot, Color_t color, Wi
   double yMax = plot->GetMaximum();
   const Double_t mean = mRooMeanSgn->getVal();
   const Double_t sigma = mRooSigmaSgn->getVal();
-  const Double_t minForSgn = mean - mNSigmaForSidebands * sigma;
-  const Double_t maxForSgn = mean + mNSigmaForSidebands * sigma;
+  const Double_t minForSgn = mean - mNSigmaForSgn * sigma;
+  const Double_t maxForSgn = mean + mNSigmaForSgn * sigma;
   TLine* leftLine = new TLine(minForSgn, yMin, minForSgn, yMax);
   TLine* rightLine = new TLine(maxForSgn, yMin, maxForSgn, yMax);
   for (const auto& line : std::array<TLine*, 2>{leftLine, rightLine}) {
@@ -752,10 +940,7 @@ void HFInvMassFitter::drawReflection(TVirtualPad* pad)
 // calculate signal yield via bin counting
 void HFInvMassFitter::countSignal(Double_t& signal, Double_t& signalErr) const
 {
-  const Double_t mean = mRooMeanSgn->getVal();
-  const Double_t sigma = mRooSigmaSgn->getVal();
-  const Double_t minForSgn = mean - mNSigmaForSidebands * sigma;
-  const Double_t maxForSgn = mean + mNSigmaForSidebands * sigma;
+  const auto [minForSgn, maxForSgn] = getRangesOfSignal();
   const Int_t binForMinSgn = mHistoInvMass->FindBin(minForSgn);
   const Int_t binForMaxSgn = mHistoInvMass->FindBin(maxForSgn);
   const Double_t binForMinSgnUpperEdge = mHistoInvMass->GetBinLowEdge(binForMinSgn + 1);
@@ -771,10 +956,14 @@ void HFInvMassFitter::countSignal(Double_t& signal, Double_t& signalErr) const
   sum += mHistoInvMass->GetBinContent(binForMaxSgn) * binForMaxSgnFraction;
 
   Double_t bkg, errBkg;
-  calculateBackground(bkg, errBkg);
+  const Double_t integralBkg = mTypeOfSgnPdf == DoubleSidedCrystalBall ? 1. : mIntegralBkg;
+  calculateBackground(bkg, errBkg, integralBkg);
 
-  signal = sum - bkg;
-  signalErr = std::sqrt(sum + errBkg * errBkg); // sum error squared is equal to sum
+  Double_t corrBg, errCorrBg;
+  calculateCorrelatedBackground(corrBg, errCorrBg);
+
+  signal = sum - bkg - corrBg;
+  signalErr = std::sqrt(sum + errBkg * errBkg + errCorrBg * errCorrBg); // sum error squared is equal to sum
 }
 
 // calculate signal yield
@@ -785,10 +974,27 @@ void HFInvMassFitter::calculateSignal(Double_t& signal, Double_t& errSignal) con
 }
 
 // calculate background yield
-void HFInvMassFitter::calculateBackground(Double_t& bkg, Double_t& errBkg) const
+void HFInvMassFitter::calculateBackground(Double_t& bkg, Double_t& errBkg, Double_t integralBkg) const
 {
-  bkg = mRooNBkg->getVal() * mIntegralBkg;
-  errBkg = mRooNBkg->getError() * mIntegralBkg;
+  if (integralBkg < 0.) integralBkg = mIntegralBkg;
+  bkg = mRooNBkg->getVal() * integralBkg;
+  errBkg = mRooNBkg->getError() * integralBkg;
+}
+
+// calculate correlated background yield
+void HFInvMassFitter::calculateCorrelatedBackground(Double_t& correlBg, Double_t& correlBgErr) const {
+  if (mHistoTemplateCorrelBg == nullptr) {
+    correlBg = 0.;
+    correlBgErr = 0.;
+    return;
+  }
+  const RooAbsPdf* corrBg = getPdfByName(mTotalPdf, "corrBgPdf");
+
+  RooAbsReal* corrBgIntegral = mTotalPdf->createIntegral(*mWorkspace->var("mass"), NormSet(*mWorkspace->var("mass")), Range("bkg")); // bkg integral
+  const auto integralCorrBg = corrBgIntegral->getValV();
+  correlBg = mRooNCorrelBg->getVal() * integralCorrBg;
+  if(mTotalPdfFitResult == nullptr) throw std::runtime_error("calculateCorrelatedBackground() - mTotalPdfFitResult == nullptr");
+  correlBgErr = mRooNCorrelBg->getPropagatedError(*mTotalPdfFitResult) * integralCorrBg;
 }
 
 // calculate significance
@@ -806,10 +1012,15 @@ void HFInvMassFitter::calculateSignificance(Double_t& significance, Double_t& er
 }
 
 // estimate Signal
-void HFInvMassFitter::checkForSignal(Double_t& estimatedSignal)
+void HFInvMassFitter::checkForSignal(Double_t& estimatedSignal) const
 {
-  Double_t minForSgn = mMass - 4 * mSigmaSgn;
-  Double_t maxForSgn = mMass + 4 * mSigmaSgn;
+  auto [minForSgn, maxForSgn] = getRangesOfSignal();
+  std::cout << "[minForSgn, maxForSgn] = [" << minForSgn << ", " << maxForSgn << "]\n"; // TODO work-in-progress
+
+  minForSgn = mMass - 4 * mSigmaSgn;
+  maxForSgn = mMass + 4 * mSigmaSgn;
+  std::cout << "[minForSgn, maxForSgn] = [" << minForSgn << ", " << maxForSgn << "]\n";
+
   Int_t binForMinSgn = mHistoInvMass->FindBin(minForSgn);
   Int_t binForMaxSgn = mHistoInvMass->FindBin(maxForSgn);
 
@@ -820,6 +1031,21 @@ void HFInvMassFitter::checkForSignal(Double_t& estimatedSignal)
   Double_t bkg, errBkg;
   calculateBackground(bkg, errBkg);
   estimatedSignal = sum - bkg;
+  std::cout << "sum = " << sum << "\tbkg = " << bkg << "\n";
+}
+
+std::pair<Double_t, Double_t> HFInvMassFitter::getRangesOfSignal() const {
+  Double_t low, high;
+  const Double_t mean = mRooMeanSgn->getVal();
+  const Double_t sigma = mRooSigmaSgn->getVal();
+  if (mTypeOfSgnPdf == SingleGaus) {
+    low = mean - mNSigmaForSgn * sigma;
+    high = mean + mNSigmaForSgn * sigma;
+  } else {  // TODO Foresee more accurate way to get ranges for non-Gaussian shapes (especially 2-Gaus and Voigt)
+    low = mMinMass;
+    high = mMaxMass;
+  }
+  return std::make_pair(low, high);
 }
 
 // Create Background Fit Function
@@ -842,25 +1068,40 @@ RooAbsPdf* HFInvMassFitter::createSignalFitFunction(RooWorkspace* workspace)
 {
   RooAbsPdf* sgnPdf{nullptr};
   switch (mTypeOfSgnPdf) {
-    case 0: {
+    case SingleGaus: {
       sgnPdf = workspace->pdf("sgnFuncGaus");
       mRooSigmaSgn = workspace->var("sigma");
       mRooMeanSgn = workspace->var("mean");
     } break;
-    case 1: {
+    case DoubleGaus: {
       sgnPdf = workspace->pdf("sgnFuncDoubleGaus");
       mRooSigmaSgn = workspace->var("sigmaDoubleGaus");
       mRooMeanSgn = workspace->var("mean");
     } break;
-    case 2: {
+    case DoubleGausSigmaRatioPar: {
       sgnPdf = workspace->pdf("sgnFuncGausRatio");
       mRooSigmaSgn = workspace->var("sigmaDoubleGausRatio");
       mRooMeanSgn = workspace->var("mean");
     } break;
-    case 3: {
+    case GausSec: {
       sgnPdf = workspace->pdf("sgnFuncDoublePeak");
       mRooSigmaSgn = workspace->var("sigmaSec");
       mRooMeanSgn = workspace->var("meanSec");
+    } break;
+    case DoubleSidedCrystalBall: {
+      sgnPdf = workspace->pdf("sgnFuncDSCB");
+      mRooSigmaSgn = workspace->var("sigma");
+      mRooMeanSgn = workspace->var("mean");
+      mRooDscbAlphaL = workspace->var("alphaL");
+      mRooDscbNL = workspace->var("nL");
+      mRooDscbAlphaR = workspace->var("alphaR");
+      mRooDscbNR = workspace->var("nR");
+    } break;
+    case Voigt: {
+      sgnPdf = workspace->pdf("sgnFuncVoigt");
+      mRooSigmaSgn = workspace->var("sigma");
+      mRooMeanSgn = workspace->var("mean");
+      mRooVoigtWidth = workspace->var("width");
     } break;
     default:
       break;
@@ -888,7 +1129,11 @@ void HFInvMassFitter::plotBkg(RooAbsPdf* pdf, Color_t color)
   if (mTypeOfBkgPdf < 0 || mTypeOfBkgPdf >= NTypesOfBkgPdf) {
     throw std::runtime_error("plotBkg(): mTypeOfBkgPdf must be within [0; " + std::to_string(NTypesOfBkgPdf) + ") range");
   }
-  pdf->plotOn(mInvMassFrame, Components(namesOfBkgPdf.at(mTypeOfBkgPdf).c_str()), Name("Bkg_c"), LineColor(color));
+  std::string componentsName = namesOfBkgPdf.at(mTypeOfBkgPdf);
+  if (mHistoTemplateCorrelBg) {
+    componentsName.append(",corrBgPdf");
+  }
+  pdf->plotOn(mInvMassFrame, Components(componentsName.c_str()), Name("Bkg_c"), LineColor(color));
 }
 
 // Plot Refl distribution on canvas
@@ -898,6 +1143,31 @@ void HFInvMassFitter::plotRefl(RooAbsPdf* pdf)
     throw std::runtime_error("plotRefl(): mTypeOfReflPdf must be within [0; " + std::to_string(NTypesOfReflPdf) + ") range");
   }
   pdf->plotOn(mInvMassFrame, Components(namesOfReflPdf.at(mTypeOfReflPdf).c_str()), Name("Refl_c"), LineColor(kGreen));
+}
+
+// Plot correlated Bkg components of fTotFunction
+void HFInvMassFitter::plotCorrelBg(RooAbsPdf* pdf, Color_t color) {
+  pdf->plotOn(mInvMassFrame, Components("corrBgPdf"), Name("CorrBkg_c"), LineColor(color));
+}
+
+RooAbsPdf* HFInvMassFitter::getPdfByName(const RooAbsPdf* pdfIn, const std::string& name) {
+  const RooAddPdf* pdfInAsAddPdf = dynamic_cast<const RooAddPdf*>(pdfIn);
+    if (pdfInAsAddPdf == nullptr) {
+      throw std::runtime_error("getPdfByName: pdfIn is not a RooAddPdf");
+    }
+
+  const RooArgList& pdfs = pdfInAsAddPdf->pdfList();
+
+  for (int iPdf = 0, nPdfs = pdfs.getSize(); iPdf < nPdfs; ++iPdf) {
+    RooAbsPdf* comp = dynamic_cast<RooAbsPdf*>(pdfs.at(iPdf));
+    if (!comp) continue;
+    if (static_cast<std::string>(comp->GetName()) == name) {
+      return comp;
+    }
+  }
+
+  throw std::runtime_error(("getPdfByName() - no pdf with name " + name).c_str());
+  return nullptr;
 }
 
 // Fix reflection pdf
