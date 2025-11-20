@@ -32,7 +32,11 @@ void MultiFitQa(const bool isVerbose=true) {
     "hRawYieldsSignalCounted",
     "hRawYieldsSigma",
     "hRawYieldsMean",
-    "hRawYieldsChiSquareTotal"
+    "hRawYieldsChiSquareTotal",
+    "hRawYieldsDscbAlphaL",
+    "hRawYieldsDscbAlphaR",
+    "hRawYieldsDscbNL",
+    "hRawYieldsDscbNR"
   };
 
   std::vector<int> trialNumbers(nTrials);
