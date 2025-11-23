@@ -419,7 +419,7 @@ void HFInvMassFitter::doFit()
       } else {
         mBkgPdf->fitTo(dataHistogram, Range("SBL,SBR"), Extended(), Save());
       }
-      writeBgFitInfo(mHistoInvMass, true);
+//       writeBgFitInfo(mHistoInvMass, true);
     }
     // define the frame to evaluate background sidebands chi2 (bg pdf needs to be plotted within sideband ranges)
     RooPlot* frameTemporary = mass->frame(Title(Form("%s_temp", mHistoInvMass->GetTitle())));
@@ -509,7 +509,7 @@ void HFInvMassFitter::doFit()
       } else {
         mTotalPdfFitResult = mTotalPdf->fitTo(dataHistogram, Extended(), Save());
       }
-      writeBgFitInfo(mHistoInvMass, false);
+//       writeBgFitInfo(mHistoInvMass, false);
       plotBkg(mTotalPdf);
       if (corrBgDataHist != nullptr && mDrawCorrelBg) {
         plotCorrelBg(mTotalPdf);
