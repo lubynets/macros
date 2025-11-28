@@ -743,11 +743,11 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
     sigma.setMax(mSigmaSgn * (1 + mParamSgn));
   }
 // Tail parameters: left side
-  RooRealVar alphaL("alphaL", "left tail alpha", mDscbAlphaLInitialValue, mDscbAlphaLLowLimit, mDscbAlphaLUpLimit);
-  RooRealVar nL("nL", "left tail n", mDscbNLInitialValue, mDscbNLLowLimit, mDscbNLUpLimit);
+  RooRealVar alphaL("alphaL", "left tail alpha", randomizeInitialFitParameter(mDscbAlphaLLowLimit, mDscbAlphaLUpLimit, mDscbAlphaLInitialValue), mDscbAlphaLLowLimit, mDscbAlphaLUpLimit);
+  RooRealVar nL("nL", "left tail n", randomizeInitialFitParameter(mDscbNLLowLimit, mDscbNLUpLimit, mDscbNLInitialValue), mDscbNLLowLimit, mDscbNLUpLimit);
 // Tail parameters: right side
-  RooRealVar alphaR("alphaR", "right tail alpha", mDscbAlphaRInitialValue, mDscbAlphaRLowLimit, mDscbAlphaRUpLimit);
-  RooRealVar nR("nR", "right tail n", mDscbNRInitialValue, mDscbNRLowLimit, mDscbNRUpLimit);
+  RooRealVar alphaR("alphaR", "right tail alpha", randomizeInitialFitParameter(mDscbAlphaRLowLimit, mDscbAlphaRUpLimit, mDscbAlphaRInitialValue), mDscbAlphaRLowLimit, mDscbAlphaRUpLimit);
+  RooRealVar nR("nR", "right tail n", randomizeInitialFitParameter(mDscbNRLowLimit, mDscbNRUpLimit, mDscbNRInitialValue), mDscbNRLowLimit, mDscbNRUpLimit);
   // for testing purposes only
   std::cout << "DSCB parameters:\n";
   std::cout << "alphaL = [" << alphaL.getVal() << ", " << alphaL.getMin() << ", " << alphaL.getMax() << "]\n";
@@ -1228,6 +1228,9 @@ void HFInvMassFitter::setReflFuncFixed()
 double HFInvMassFitter::randomizeInitialFitParameter(double valueLower, double valueUpper, double valueInitial, double valueSmear) const {
   if (mRandomSeed < 0) {
     return valueInitial;
+  }
+  if (valueSmear < 0) {
+    valueSmear = (valueUpper - valueLower) / 10.;
   }
   double result;
   int nIter{0};

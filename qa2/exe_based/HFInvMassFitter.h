@@ -264,7 +264,7 @@ class HFInvMassFitter : public TNamed
   void drawResidual(TVirtualPad* c);
   void drawReflection(TVirtualPad* c);
   void setRandomSeed(ULong_t seed) { mRandomSeed = seed; }
-  double randomizeInitialFitParameter(double valueLower, double valueUpper, double valueInitial, double valueSmear) const;
+  double randomizeInitialFitParameter(double valueLower, double valueUpper, double valueInitial, double valueSmear=-1) const;
 
  private:
   HFInvMassFitter(const HFInvMassFitter& source);
