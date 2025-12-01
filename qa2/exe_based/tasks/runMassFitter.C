@@ -47,7 +47,8 @@ void readJsonVectorValues(std::vector<double>& vec, const Document& config, cons
 
 void readJsonVectorHistogram(std::vector<double>& vec, const Document& config, const std::string& fileNameFieldName, const std::string& histoNameFieldName);
 
-std::string readJsonString(const Document& config, const std::string& fieldName);
+template<typename T>
+std::string readJsonField(const Document& config, const std::string& fieldName, const T& defaultValue=T(), bool isMandatory=false);
 
 TFile* openFileWithNullptrCheck(const std::string& fileName, const std::string& option="read");
 
@@ -856,11 +857,19 @@ void divideCanvas(TCanvas* canvas, int nSliceVarBins)
   }
 }
 
-std::string readJsonString(const Document& config, const std::string& fieldName) {
+template<typename T>
+std::string readJsonField(const Document& config, const std::string& fieldName, const T& defaultValue, bool isMandatory) {
   if (!config.HasMember(fieldName.c_str())) {
-    return "";
+    if (isMandatory) {
+      throw std::runtime_error("readJsonField(): missing mandatory field " + fieldName);
+    }
+    return defaultValue;
   }
-  return config[fieldName.c_str()].GetString();
+  const auto& value = config[fieldName.c_str()];
+  if constexpr (std::is_same_v<std::decay_t<T>, std::string>) {
+    return value.GetString();
+  }
+  throw std::runtime_error("readJsonField(): unsupported type!");
 }
 
 void readJsonVectorValues(std::vector<double>& vec, const Document& config, const std::string& fieldName) {
@@ -877,11 +886,11 @@ void readJsonVectorHistogram(std::vector<double>& vec, const Document& config, c
   if (!vec.empty()) {
     throw std::runtime_error("readJsonVectorHistogram(): vector is not empty!");
   }
-  const std::string fileName = readJsonString(config, fileNameFieldName);
+  const std::string fileName = readJsonField<std::string>(config, fileNameFieldName);
   if (fileName.empty()) {
     return;
   }
-  const std::string histoName = readJsonString(config, histoNameFieldName);
+  const std::string histoName = readJsonField<std::string>(config, histoNameFieldName);
   TFile* inputFile = openFileWithNullptrCheck(fileName);
   TH1* histo = getObjectWithNullPtrCheck<TH1>(inputFile, histoName);
   for (int iBin = 1; iBin <= histo->GetNbinsX(); iBin++) {
