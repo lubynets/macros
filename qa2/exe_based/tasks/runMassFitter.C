@@ -48,7 +48,7 @@ void readJsonVectorValues(std::vector<double>& vec, const Document& config, cons
 void readJsonVectorHistogram(std::vector<double>& vec, const Document& config, const std::string& fileNameFieldName, const std::string& histoNameFieldName);
 
 template<typename T>
-std::string readJsonField(const Document& config, const std::string& fieldName, const T& defaultValue=T(), bool isMandatory=false);
+T readJsonField(const Document& config, const std::string& fieldName, const T& defaultValue=T(), bool isMandatory=false);
 
 TFile* openFileWithNullptrCheck(const std::string& fileName, const std::string& option="read");
 
@@ -858,7 +858,7 @@ void divideCanvas(TCanvas* canvas, int nSliceVarBins)
 }
 
 template<typename T>
-std::string readJsonField(const Document& config, const std::string& fieldName, const T& defaultValue, bool isMandatory) {
+T readJsonField(const Document& config, const std::string& fieldName, const T& defaultValue, bool isMandatory) {
   if (!config.HasMember(fieldName.c_str())) {
     if (isMandatory) {
       throw std::runtime_error("readJsonField(): missing mandatory field " + fieldName);
@@ -868,6 +868,12 @@ std::string readJsonField(const Document& config, const std::string& fieldName, 
   const auto& value = config[fieldName.c_str()];
   if constexpr (std::is_same_v<std::decay_t<T>, std::string>) {
     return value.GetString();
+  } else if constexpr (std::is_same_v<std::decay_t<T>, bool>) {
+    return value.GetBool();
+  } else if constexpr (std::is_same_v<std::decay_t<T>, int>) {
+    return value.GetInt();
+  } else if constexpr (std::is_same_v<std::decay_t<T>, double>) {
+    return value.GetDouble();
   }
   throw std::runtime_error("readJsonField(): unsupported type!");
 }
