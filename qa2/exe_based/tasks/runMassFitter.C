@@ -243,10 +243,10 @@ int runMassFitter(const TString& configFileName)
   readJsonVectorHistogram(dscbNRLower, config, "DscbParametersFile", "DscbNRLowerHisto");
   readJsonVectorHistogram(dscbNRUpper, config, "DscbParametersFile", "DscbNRUpperHisto");
 
-  const unsigned int nSliceVarBins = sliceVarMin.size();
+  const int nSliceVarBins = static_cast<int>(sliceVarMin.size());
   std::vector<double> sliceVarLimits(nSliceVarBins + 1);
 
-  for (unsigned int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
+  for (int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
     sliceVarLimits[iSliceVar] = sliceVarMin[iSliceVar];
     sliceVarLimits[iSliceVar + 1] = sliceVarMax[iSliceVar];
 
@@ -300,7 +300,7 @@ int runMassFitter(const TString& configFileName)
   std::vector<TH1*> hMass(nSliceVarBins);
   std::vector<TH1*> hMassCorrBg(nSliceVarBins);
 
-  for (unsigned int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
+  for (int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
     if (!isMc) {
       hMass[iSliceVar] = inputFile->Get<TH1>(inputHistoName[iSliceVar].data());
       if (enableRefl) {
@@ -422,7 +422,7 @@ int runMassFitter(const TString& configFileName)
         const std::string histName = "hRawYields" + var;
         histToFix = fixInputFile->Get<TH1>(histName.data());
         histToFix->SetDirectory(nullptr);
-        if (static_cast<unsigned int>(histToFix->GetNbinsX()) != nSliceVarBins) {
+        if (histToFix->GetNbinsX() != nSliceVarBins) {
           throw std::runtime_error("Different number of bins for this analysis and histo for fixed " + var);
         }
         fixInputFile->Close();
@@ -448,7 +448,7 @@ int runMassFitter(const TString& configFileName)
     canvasSize[1] = 500;
   }
 
-  Int_t nCanvasesMax = 20; // do not put more than 20 bins per canvas to make them visible
+  constexpr Int_t nCanvasesMax = 20; // do not put more than 20 bins per canvas to make them visible
   const Int_t nCanvases = std::ceil(static_cast<float>(nSliceVarBins) / nCanvasesMax);
   std::vector<TCanvas*> canvasMass(nCanvases);
   std::vector<TCanvas*> canvasResiduals(nCanvases);
@@ -467,7 +467,7 @@ int runMassFitter(const TString& configFileName)
     divideCanvas(canvasRefl[iCanvas], nPads);
   }
 
-  for (unsigned int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
+  for (int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
     const Int_t iCanvas = std::floor(static_cast<float>(iSliceVar) / nCanvasesMax);
 
     hMassForFit[iSliceVar] = static_cast<TH1*>(hMass[iSliceVar]->Rebin(nRebin[iSliceVar]));
@@ -538,7 +538,7 @@ int runMassFitter(const TString& configFileName)
       setFixedValue(fixDscbTailParams, dscbNRInitial, nullptr, std::bind(&HFInvMassFitter::setFixDscbNR, massFitter, std::placeholders::_1), "DSCB N RIGHT");
 
       auto setDscbParameter = [&] (const std::vector<double>& vec, void (HFInvMassFitter::*setter)(double)) {
-          if (vec.size() == nSliceVarBins) {
+          if (static_cast<int>(vec.size()) == nSliceVarBins) {
             (massFitter->*setter)(vec[iSliceVar]);
           }
       };
@@ -669,7 +669,7 @@ int runMassFitter(const TString& configFileName)
       }
 
       auto setDscbParameter = [&] (const std::vector<double>& vec, void (HFInvMassFitter::*setter)(double)) {
-          if (vec.size() == nSliceVarBins) {
+          if (static_cast<int>(vec.size()) == nSliceVarBins) {
             (massFitter->*setter)(vec[iSliceVar]);
           }
       };
@@ -800,7 +800,7 @@ int runMassFitter(const TString& configFileName)
     }
   }
 
-  for (unsigned int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
+  for (int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
     hMass[iSliceVar]->Write();
   }
   hRawYieldsSignal->Write();
