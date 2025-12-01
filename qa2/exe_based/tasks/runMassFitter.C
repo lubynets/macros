@@ -507,6 +507,26 @@ int runMassFitter(const TString& configFileName)
       massFitter->setParticlePdgMass(massPDG);
       massFitter->setBoundGaussianMean(massPDG, 0.8 * massPDG, 1.2 * massPDG);
 
+      auto setFixedValue = [&massFitter, &iSliceVar](bool const& isFix, std::vector<double> const& fixManual, const TH1* histToFix, std::function<void(Double_t)> setFunc, std::string const& var) -> void {
+        if (isFix) {
+          if (fixManual.empty()) {
+            setFunc(histToFix->GetBinContent(iSliceVar + 1));
+            printf("*****************************\n");
+            printf("FIXED %s: %f\n", var.data(), histToFix->GetBinContent(iSliceVar + 1));
+            printf("*****************************\n");
+          } else {
+            setFunc(fixManual[iSliceVar]);
+            printf("*****************************\n");
+            printf("FIXED %s: %f\n", var.data(), fixManual[iSliceVar]);
+            printf("*****************************\n");
+          }
+        }
+      };
+
+      setFixedValue(fixMean, fixMeanManual, hMeanToFix, std::bind(&HFInvMassFitter::setFixGaussianMean, massFitter, std::placeholders::_1), "MEAN");
+      setFixedValue(fixSigma, fixSigmaManual, hSigmaToFix, std::bind(&HFInvMassFitter::setFixGaussianSigma, massFitter, std::placeholders::_1), "SIGMA");
+      setFixedValue(fixSecondSigma, fixSecondSigmaManual, hSecondSigmaToFix, std::bind(&HFInvMassFitter::setFixSecondGaussianSigma, massFitter, std::placeholders::_1), "SECOND SIGMA");
+
       auto setDscbParameter = [&] (const std::vector<double>& vec, void (HFInvMassFitter::*setter)(double)) {
           if (vec.size() == nSliceVarBins) {
             (massFitter->*setter)(vec[iSliceVar]);
