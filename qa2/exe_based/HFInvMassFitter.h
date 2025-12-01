@@ -183,6 +183,38 @@ class HFInvMassFitter : public TNamed
     setInitialRatioDoubleGausSigma(sigmaFrac);
     mFixedRatioDoubleGausSigma = kTRUE;
   }
+  void setFixDscbAlphaL(Double_t alphaL)
+  {
+    if (mTypeOfSgnPdf != DoubleSidedCrystalBall) {
+      printf("Fit type should be DSCB!\n");
+    }
+    mFixedDscbTailParams = kTRUE;
+    mDscbAlphaLInitialValue = alphaL;
+  }
+  void setFixDscbAlphaR(Double_t alphaR)
+  {
+    if (mTypeOfSgnPdf != DoubleSidedCrystalBall) {
+      printf("Fit type should be DSCB!\n");
+    }
+    mFixedDscbTailParams = kTRUE;
+    mDscbAlphaRInitialValue = alphaR;
+  }
+  void setFixDscbNL(Double_t nL)
+  {
+    if (mTypeOfSgnPdf != DoubleSidedCrystalBall) {
+      printf("Fit type should be DSCB!\n");
+    }
+    mFixedDscbTailParams = kTRUE;
+    mDscbNLInitialValue = nL;
+  }
+  void setFixDscbNR(Double_t nR)
+  {
+    if (mTypeOfSgnPdf != DoubleSidedCrystalBall) {
+      printf("Fit type should be DSCB!\n");
+    }
+    mFixedDscbTailParams = kTRUE;
+    mDscbNRInitialValue = nR;
+  }
   void setFixSignalYield(Double_t yield) { mFixedRawYield = yield; }
   void setNumberOfSigmaForSidebands(Double_t numberOfSigma) { mNSigmaForSidebands = numberOfSigma; }
   void setDscbAlphaLInitialValue(Double_t value) { mDscbAlphaLInitialValue = value; }
@@ -301,6 +333,7 @@ class HFInvMassFitter : public TNamed
   Bool_t mFixedSigma;                /// fix sigma or not
   Bool_t mFixedSigmaDoubleGaus;      /// fix sigma of 2gaussian or not
   Bool_t mBoundSigma;                /// set bound sigma or not
+  Bool_t mFixedDscbTailParams;       /// switch for fix double sided Crystal Ball tail parameters
   Double_t mSigmaValue;              /// value of sigma
   Double_t mParamSgn;                /// +/- range variation of bound Sigma of gaussian in %
   Double_t mFracDoubleGaus;          /// initialization for fraction of 2nd gaussian in case of k2Gaus or k2GausSigmaRatioPar

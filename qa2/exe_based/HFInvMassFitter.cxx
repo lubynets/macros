@@ -87,6 +87,7 @@ HFInvMassFitter::HFInvMassFitter() : TNamed(),
                                      mFixedSigma(kFALSE),
                                      mFixedSigmaDoubleGaus(kFALSE),
                                      mBoundSigma(kFALSE),
+                                     mFixedDscbTailParams(kFALSE),
                                      mSigmaValue(0.012),
                                      mParamSgn(0.1),
                                      mFracDoubleGaus(0.2),
@@ -186,6 +187,7 @@ HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit,
                                                      mFixedSigma(kFALSE),
                                                      mFixedSigmaDoubleGaus(kFALSE),
                                                      mBoundSigma(kFALSE),
+                                                     mFixedDscbTailParams(kFALSE),
                                                      mSigmaValue(0.012),
                                                      mParamSgn(0.1),
                                                      mFracDoubleGaus(0.2),
@@ -748,6 +750,17 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
 // Tail parameters: right side
   RooRealVar alphaR("alphaR", "right tail alpha", randomizeInitialFitParameter(mDscbAlphaRLowLimit, mDscbAlphaRUpLimit, mDscbAlphaRInitialValue), mDscbAlphaRLowLimit, mDscbAlphaRUpLimit);
   RooRealVar nR("nR", "right tail n", randomizeInitialFitParameter(mDscbNRLowLimit, mDscbNRUpLimit, mDscbNRInitialValue), mDscbNRLowLimit, mDscbNRUpLimit);
+  if (mFixedDscbTailParams) {
+    std::cout << "Fixing DSCB tail parameters to initial values.\n";
+    alphaL.setVal(mDscbAlphaLInitialValue);
+    alphaL.setConstant(kTRUE);
+    alphaR.setVal(mDscbAlphaRInitialValue);
+    alphaR.setConstant(kTRUE);
+    nL.setVal(mDscbNLInitialValue);
+    nL.setConstant(kTRUE);
+    nR.setVal(mDscbNRInitialValue);
+    nR.setConstant(kTRUE);
+  }
   // for testing purposes only
   std::cout << "DSCB parameters:\n";
   std::cout << "alphaL = [" << alphaL.getVal() << ", " << alphaL.getMin() << ", " << alphaL.getMax() << "]\n";

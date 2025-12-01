@@ -177,6 +177,8 @@ int runMassFitter(const TString& configFileName)
   const Value& fixMeanManualValue = config["FixMeanManual"];
   readArray(fixMeanManualValue, fixMeanManual);
 
+  const bool fixDscbTailParams = readJsonField<bool>(config, "FixDscbTailParams", false);
+
   sliceVarName = config["SliceVarName"].GetString();
   sliceVarUnit = config["SliceVarUnit"].GetString();
 
@@ -511,6 +513,9 @@ int runMassFitter(const TString& configFileName)
       auto setFixedValue = [&massFitter, &iSliceVar](bool const& isFix, std::vector<double> const& fixManual, const TH1* histToFix, std::function<void(Double_t)> setFunc, std::string const& var) -> void {
         if (isFix) {
           if (fixManual.empty()) {
+            if (histToFix == nullptr) {
+              throw std::runtime_error("Histogram to fix " + var + " is null while isFix==true and fixManual is empty");
+            }
             setFunc(histToFix->GetBinContent(iSliceVar + 1));
             printf("*****************************\n");
             printf("FIXED %s: %f\n", var.data(), histToFix->GetBinContent(iSliceVar + 1));
@@ -527,6 +532,10 @@ int runMassFitter(const TString& configFileName)
       setFixedValue(fixMean, fixMeanManual, hMeanToFix, std::bind(&HFInvMassFitter::setFixGaussianMean, massFitter, std::placeholders::_1), "MEAN");
       setFixedValue(fixSigma, fixSigmaManual, hSigmaToFix, std::bind(&HFInvMassFitter::setFixGaussianSigma, massFitter, std::placeholders::_1), "SIGMA");
       setFixedValue(fixSecondSigma, fixSecondSigmaManual, hSecondSigmaToFix, std::bind(&HFInvMassFitter::setFixSecondGaussianSigma, massFitter, std::placeholders::_1), "SECOND SIGMA");
+      setFixedValue(fixDscbTailParams, dscbAlphaLInitial, nullptr, std::bind(&HFInvMassFitter::setFixDscbAlphaL, massFitter, std::placeholders::_1), "DSCB ALPHA LEFT");
+      setFixedValue(fixDscbTailParams, dscbAlphaRInitial, nullptr, std::bind(&HFInvMassFitter::setFixDscbAlphaR, massFitter, std::placeholders::_1), "DSCB ALPHA RIGHT");
+      setFixedValue(fixDscbTailParams, dscbNLInitial, nullptr, std::bind(&HFInvMassFitter::setFixDscbNL, massFitter, std::placeholders::_1), "DSCB N LEFT");
+      setFixedValue(fixDscbTailParams, dscbNRInitial, nullptr, std::bind(&HFInvMassFitter::setFixDscbNR, massFitter, std::placeholders::_1), "DSCB N RIGHT");
 
       auto setDscbParameter = [&] (const std::vector<double>& vec, void (HFInvMassFitter::*setter)(double)) {
           if (vec.size() == nSliceVarBins) {
@@ -621,6 +630,9 @@ int runMassFitter(const TString& configFileName)
       auto setFixedValue = [&massFitter, &iSliceVar](bool const& isFix, std::vector<double> const& fixManual, const TH1* histToFix, std::function<void(Double_t)> setFunc, std::string const& var) -> void {
         if (isFix) {
           if (fixManual.empty()) {
+            if (histToFix == nullptr) {
+              throw std::runtime_error("Histogram to fix " + var + " is null while isFix==true and fixManual is empty");
+            }
             setFunc(histToFix->GetBinContent(iSliceVar + 1));
             printf("*****************************\n");
             printf("FIXED %s: %f\n", var.data(), histToFix->GetBinContent(iSliceVar + 1));
@@ -637,6 +649,10 @@ int runMassFitter(const TString& configFileName)
       setFixedValue(fixMean, fixMeanManual, hMeanToFix, std::bind(&HFInvMassFitter::setFixGaussianMean, massFitter, std::placeholders::_1), "MEAN");
       setFixedValue(fixSigma, fixSigmaManual, hSigmaToFix, std::bind(&HFInvMassFitter::setFixGaussianSigma, massFitter, std::placeholders::_1), "SIGMA");
       setFixedValue(fixSecondSigma, fixSecondSigmaManual, hSecondSigmaToFix, std::bind(&HFInvMassFitter::setFixSecondGaussianSigma, massFitter, std::placeholders::_1), "SECOND SIGMA");
+      setFixedValue(fixDscbTailParams, dscbAlphaLInitial, nullptr, std::bind(&HFInvMassFitter::setFixDscbAlphaL, massFitter, std::placeholders::_1), "DSCB ALPHA LEFT");
+      setFixedValue(fixDscbTailParams, dscbAlphaRInitial, nullptr, std::bind(&HFInvMassFitter::setFixDscbAlphaR, massFitter, std::placeholders::_1), "DSCB ALPHA RIGHT");
+      setFixedValue(fixDscbTailParams, dscbNLInitial, nullptr, std::bind(&HFInvMassFitter::setFixDscbNL, massFitter, std::placeholders::_1), "DSCB N LEFT");
+      setFixedValue(fixDscbTailParams, dscbNRInitial, nullptr, std::bind(&HFInvMassFitter::setFixDscbNR, massFitter, std::placeholders::_1), "DSCB N RIGHT");
 
       if (enableRefl) {
         reflOverSgnInit = hMassForSgn[iSliceVar]->Integral(hMassForSgn[iSliceVar]->FindBin(massMin[iSliceVar] * 1.0001), hMassForSgn[iSliceVar]->FindBin(massMax[iSliceVar] * 0.999));
@@ -892,11 +908,11 @@ void readJsonVectorHistogram(std::vector<double>& vec, const Document& config, c
   if (!vec.empty()) {
     throw std::runtime_error("readJsonVectorHistogram(): vector is not empty!");
   }
-  const std::string fileName = readJsonField<std::string>(config, fileNameFieldName);
-  if (fileName.empty()) {
+  const auto fileName = readJsonField<std::string>(config, fileNameFieldName);
+  const auto histoName = readJsonField<std::string>(config, histoNameFieldName);
+  if (fileName.empty() || histoName.empty()) {
     return;
   }
-  const std::string histoName = readJsonField<std::string>(config, histoNameFieldName);
   TFile* inputFile = openFileWithNullptrCheck(fileName);
   TH1* histo = getObjectWithNullPtrCheck<TH1>(inputFile, histoName);
   for (int iBin = 1; iBin <= histo->GetNbinsX(); iBin++) {
