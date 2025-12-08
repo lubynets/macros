@@ -7,6 +7,7 @@ void pt_gen_builder_AT(const std::string fileListName) {
   AnalysisTree::GenericDetector* genParticles{nullptr};
 
   const int ptGenFieldId = treeIn->GetConfiguration()->GetBranchConfig("Generated").GetFieldId("fGen_Pt");
+  const int promptnessFieldId = treeIn->GetConfiguration()->GetBranchConfig("Generated").GetFieldId("fGen_OriginMcGen");
 
   treeIn->SetBranchAddress("Generated.", &genParticles);
 
@@ -20,19 +21,27 @@ void pt_gen_builder_AT(const std::string fileListName) {
     if(pt < 10) pt += 0.01;
     else        pt += 0.1;
   }
-  TH1D* histoPtGen = new TH1D("histoPtGen", "", binEdges.size()-1, binEdges.data());
+  TH1D* histoPtGenPrompt = new TH1D("histoPtGenPrompt", "histoPtGenPrompt", binEdges.size()-1, binEdges.data());
+  TH1D* histoPtGenNonPrompt = new TH1D("histoPtGenNonPrompt", "histoPtGenNonPrompt", binEdges.size()-1, binEdges.data());
   // ================================================================
 
-  histoPtGen->GetXaxis()->SetTitle("#it{p}_{T} (GeV/#it{c})");
-  histoPtGen->GetYaxis()->SetTitle("Entries");
+  for(const auto& h : {histoPtGenPrompt, histoPtGenNonPrompt}) {
+    h->GetXaxis()->SetTitle("#it{p}_{T} (GeV/#it{c})");
+    h->GetYaxis()->SetTitle("Entries");
+  }
 
   const int nEntries = treeIn->GetEntries();
   for(int iEntry=0; iEntry<nEntries; ++iEntry) {
     treeIn->GetEntry(iEntry);
     for(const auto& genParticle : *(genParticles->GetChannels()) ) {
-      histoPtGen->Fill(genParticle.GetField<float>(ptGenFieldId));
+      const float pT = genParticle.GetField<float>(ptGenFieldId);
+      const int promptness = genParticle.GetField<int>(promptnessFieldId);
+
+      if(promptness == 1) histoPtGenPrompt->Fill(pT);
+      else if(promptness == 2) histoPtGenNonPrompt->Fill(pT);
     }
   }
 
-  histoPtGen->SaveAs("ptGen.root");
+  histoPtGenPrompt->SaveAs("ptGenPrompt.root");
+  histoPtGenNonPrompt->SaveAs("ptGenNonPrompt.root");
 }
