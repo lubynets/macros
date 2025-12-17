@@ -1,0 +1,42 @@
+template<typename T>
+inline std::string to_string_with_precision(const T a_value, const int n=2) {
+  std::ostringstream out;
+  out.precision(n);
+  out << std::fixed << a_value;
+  return out.str();
+}
+
+void minvBuilder() {
+  const std::string fileName = "/home/oleksii/alidir/working/cutVar/data/input/mass_bdt_qa_thn.HL.data.HF_LHC23_pass4_Thin_2P3PDstar.574294.ctbin1.root";
+  TFile* fileIn = TFile::Open(fileName.c_str(), "read");
+
+  const std::vector<float> ptRanges = {0, 1, 2, 3, 4, 5, 8, 12, 20};
+  const std::vector<float> ctRanges = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.4, 2.8, 3.2, 3.6, 4.0, 5.0};
+
+  for(int iPt=0, nPts=ptRanges.size()-1; iPt<nPts; ++iPt) {
+    for(int iCt=0, nCts=ctRanges.size()-1; iCt<nCts; ++iCt) {
+      const std::string hName = "pT_" + to_string_with_precision(ptRanges.at(iPt), 0) + "_" + to_string_with_precision(ptRanges.at(iPt+1), 0) + "/T_" + to_string_with_precision(ctRanges.at(iCt)) + "_" + to_string_with_precision(ctRanges.at(iCt+1)) + "/hM_NPgt0.00";
+      TH1* hMass = fileIn->Get<TH1>(hName.c_str());
+      if(hMass == nullptr) throw std::runtime_error(hName.c_str());
+
+      TCanvas cc("cc", "");
+      cc.SetCanvasSize(1000, 1000);
+      hMass->Rebin(4);
+      hMass->SetLineColor(kBlue);
+      hMass->SetLineWidth(2);
+      hMass->Draw("PE");
+
+      TPaveText legText(0.18, 0.78, 0.35, 0.88, "brNDC");
+      legText.AddText(("#it{p}_{T} #in (" + to_string_with_precision(ptRanges.at(iPt), 0) + "; " + to_string_with_precision(ptRanges.at(iPt+1), 0) + ") GeV/#it{c}").c_str());
+      legText.AddText(("t #in (" + to_string_with_precision(ctRanges.at(iCt)) + "; " + to_string_with_precision(ctRanges.at(iCt+1)) + ") ps").c_str());
+      legText.SetFillColor(0);
+      legText.SetTextSize(0.03);
+      legText.SetTextFont(62);
+      legText.Draw("same");
+
+      cc.Print(("pt" + std::to_string(iPt) + "_ct" + std::to_string(iCt) + ".pdf").c_str(), "pdf");
+    }
+  }
+
+  fileIn->Close();
+}
