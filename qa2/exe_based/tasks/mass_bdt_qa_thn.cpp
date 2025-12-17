@@ -13,13 +13,13 @@
 
 using namespace HelperGeneral;
 
-const std::vector<float> lifetimeRanges = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0};
+const std::vector<float> lifetimeRanges = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.4, 2.8, 3.2, 3.6, 4.0, 5.0};
 const std::string lifetimeAxisTitle = "T_{proper} (ps)";
 
-std::vector<float> pTRanges = {1, 3, 5, 8, 12, 20};
+std::vector<float> pTRanges = {0, 1, 2, 3, 4, 5, 8, 12, 20};
 const std::string pTAxisTitle = "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})";
 
-const std::vector<float> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.05, 0.08};
+const std::vector<float> bdtBgUpperValuesVsPt = {0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.1, 0.2};
 const std::string bgAxisTitle = "BDT bkg score (Lc)";
 const std::string npAxisTitle = "BDT non-prompt score (Lc)";
 const std::string massAxisTitle = "inv. mass (p K #pi) (GeV/#it{c}^{2})";
@@ -118,7 +118,7 @@ std::string GetPtCutName(size_t iPt) {
 int main(int argc, char* argv[]) {
   if (argc < 2) {
     std::cout << "Error! Please use " << std::endl;
-    std::cout << " ./mass_bdt_qa_thn fileNameIn (modeRun=0)" << std::endl;
+    std::cout << " ./mass_bdt_qa_thn fileNameIn (modeRun=RunOnly=0 [RunAndMerge=1, MergeOnly=2])" << std::endl;
     exit(EXIT_FAILURE);
   }
 
