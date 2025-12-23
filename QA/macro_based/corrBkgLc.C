@@ -24,13 +24,13 @@ enum DecayChannelMain : int8_t {
   DsToPiPiPi = 8,    // π+ π− π+
   DsToPiPiPiPi0 = 9, // π+ π− π+ π0
   // D*+
-/*[x]*/  DstarToPiKPi = 10,       // π+ K− π+ (from [(D0 → π+ K−) π+])
-/*[x]*/  DstarToPiKPiPi0 = 11,    // π+ K− π+ π0
-/*[ ]*/  DstarToPiKPiPi0Pi0 = 12, // π+ K− π+ π0 π0
-/*[x]*/  DstarToPiKK = 13,        // π+ K− K+
-/*[ ]*/  DstarToPiKKPi0 = 14,     // π+ K− K+ π0
-/*[x]*/  DstarToPiPiPi = 15,      // π+ π− π+
-/*[x]*/  DstarToPiPiPiPi0 = 16,   // π+ π− π+ π0
+  DstarToPiKPi = 10,       // π+ K− π+ (from [(D0 → π+ K−) π+])
+  DstarToPiKPiPi0 = 11,    // π+ K− π+ π0
+  DstarToPiKPiPi0Pi0 = 12, // π+ K− π+ π0 π0
+  DstarToPiKK = 13,        // π+ K− K+
+  DstarToPiKKPi0 = 14,     // π+ K− K+ π0
+  DstarToPiPiPi = 15,      // π+ π− π+
+  DstarToPiPiPiPi0 = 16,   // π+ π− π+ π0
   // Λc+
   LcToPKPi = 17,    // p K− π+
   LcToPKPiPi0 = 18, // p K− π+ π0
