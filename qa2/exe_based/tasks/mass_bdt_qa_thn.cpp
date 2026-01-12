@@ -15,13 +15,13 @@
 
 using namespace HelperGeneral;
 
-const std::vector<float> lifetimeRanges = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.4, 2.8, 3.2, 3.6, 4.0, 5.0};
+const std::vector<float> lifetimeRanges = {0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 1.4, 1.8, 2.4, 3.6, 5.0};
 const std::string lifetimeAxisTitle = "T_{proper} (ps)";
 
-std::vector<float> pTRanges = {0, 1, 2, 3, 4, 5, 8, 12, 20};
+std::vector<float> pTRanges = {1, 2, 3, 4, 5, 8, 12, 20};
 const std::string pTAxisTitle = "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})";
 
-const std::vector<float> bdtBgUpperValuesVsPt = {0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.1, 0.2};
+const std::vector<float> bdtBgUpperValuesVsPt = {0.05, 0.05, 0.05, 0.05, 0.05, 0.1, 0.2};
 const std::string bgAxisTitle = "BDT bkg score (Lc)";
 const std::string npAxisTitle = "BDT non-prompt score (Lc)";
 const std::string massAxisTitle = "inv. mass (p K #pi) (GeV/#it{c}^{2})";
@@ -70,15 +70,10 @@ void MassBdtQaThn(const std::string& fileNameIn, int modeRun) {
   if(bdtBgUpperValuesVsPt.size() != pTRanges.size() - 1) throw std::runtime_error("bdtUpperValuesVsPt.size() != pTRanges.size() - 1");
   if(bdtScanDir != "gt" && bdtScanDir != "lt") throw std::runtime_error("bdtScanDir != \"gt\" && bdtScanDir != \"lt\"");
 
-//   std::vector<double> bdtSignalLowerValues;
-//   for (int iB = 0; iB <= 99; iB++) {
-//     bdtSignalLowerValues.emplace_back(0.01 * iB);
-//   }
-  std::vector<double> bdtBgUperValues;
+  std::vector<double> bdtScanValues;
   for (int iB = 1; iB <= 99; iB++) {
-    bdtBgUperValues.emplace_back(0.01 * iB);
+    bdtScanValues.emplace_back(0.01 * iB);
   }
-  const auto& bdtScanValues = bdtBgUperValues;
 
   std::vector<std::string> pTCutNames, tCutNames;
   for(size_t iPt=0, nPts=pTRanges.size()-1; iPt<nPts; ++iPt) {
