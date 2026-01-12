@@ -21,7 +21,7 @@ const std::string recBranchName = "Candidates";
 const std::pair<float, float> rapidityRanges{-0.8, 0.8};
 const std::vector<float> pTRanges = {1, 2, 3, 4, 5, 8, 12, 20};
 const std::vector<float> bdtBgUpperValuesVsPt = {0.05, 0.05, 0.05, 0.05, 0.05, 0.1, 0.2};
-const std::vector<float> lifetimeRanges = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.4, 2.8, 3.2, 3.6, 4.0, 5.0};
+const std::vector<float> lifetimeRanges = {0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 1.4, 1.8, 2.4, 3.6, 5.0};
 
 const TAxis massAxis = {600, 1.98, 2.58};
 const std::string massAxisTitle = "m_{pK#pi} (GeV/#it{c}^{2})";
@@ -47,7 +47,6 @@ void CorrBgQa(QA::Task& task) {
       SimpleCut lifetimeCut = RangeCut(properLifetime, lifetimeRanges.at(iLifeTimeRange), lifetimeRanges.at(iLifeTimeRange+1));
       const std::string lifetimeCutName = "T_" + HelperFunctions::ToStringWithPrecision(lifetimeRanges.at(iLifeTimeRange), 1) + "_" + HelperFunctions::ToStringWithPrecision(lifetimeRanges.at(iLifeTimeRange+1), 1);
       task.SetTopLevelDirName(pTCutName + "/" + lifetimeCutName);
-      Cuts* cuts = new Cuts(pTCutName + "_" + lifetimeCutName, {rapidityCut, pTCut, bgBdtCut, lifetimeCut});
 
       for(int iDecay=0, nDecays=Decays.size(); iDecay<nDecays && IsIncludeAllChannels; ++iDecay) {
         const auto& decay = Decays.at(iDecay);
