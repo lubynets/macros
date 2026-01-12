@@ -42,7 +42,6 @@ enum DecayChannelMain : int8_t {
   XicToPKK = 22,   // p K− K+
   XicToSPiPi = 23, // Σ+ π− π+
   //
-  NChannelsMain = XicToSPiPi // last channel
 };
 
 std::map<int, float> BRsDplus_PYTHIA = {
@@ -163,40 +162,38 @@ struct Decay {
   std::string daughters_;
   float br_pythia_;
   float br_pdg_;
-  std::string greek_daughters_;
-  int fill_style_;
   bool is_bg_;
 };
 
 const std::vector<Decay> Decays {
-  {DplusToPiKPi,       Mothers[Dplus], "PiKPi",       BRsDplus_PYTHIA[DplusToPiKPi],    BRsDplus_PDG[DplusToPiKPi],    "#pi^{+}K^{#minus}#pi^{+}",               3004, true },
-  {DplusToPiKPiPi0,    Mothers[Dplus], "PiKPiPi0",    BRsDplus_PYTHIA[DplusToPiKPiPi0], BRsDplus_PDG[DplusToPiKPiPi0], "#pi^{+}K^{#minus}#pi^{+}#pi^{0}",        3005, true },
-  {DplusToPiPiPi,      Mothers[Dplus], "PiPiPi",      BRsDplus_PYTHIA[DplusToPiPiPi],   BRsDplus_PDG[DplusToPiPiPi],   "#pi^{+}#pi^{#minus}#pi^{+}",             3006, true },
-  {DplusToPiKK,        Mothers[Dplus], "PiKK",        BRsDplus_PYTHIA[DplusToPiKK],     BRsDplus_PDG[DplusToPiKK],     "K^{+}K^{#minus}#pi^{+}",                 3007, true },
+  {DplusToPiKPi,       Mothers[Dplus], "PiKPi",       BRsDplus_PYTHIA[DplusToPiKPi],    BRsDplus_PDG[DplusToPiKPi],     true },
+  {DplusToPiKPiPi0,    Mothers[Dplus], "PiKPiPi0",    BRsDplus_PYTHIA[DplusToPiKPiPi0], BRsDplus_PDG[DplusToPiKPiPi0],  true },
+  {DplusToPiPiPi,      Mothers[Dplus], "PiPiPi",      BRsDplus_PYTHIA[DplusToPiPiPi],   BRsDplus_PDG[DplusToPiPiPi],    true },
+  {DplusToPiKK,        Mothers[Dplus], "PiKK",        BRsDplus_PYTHIA[DplusToPiKK],     BRsDplus_PDG[DplusToPiKK],      true },
 
-  {DsToPiKK,           Mothers[Ds],    "PiKK",        BRsDs_PYTHIA[DsToPiKK],           BRsDs_PDG[DsToPiKK],           "K^{+}K^{#minus}#pi^{+}",                 3004, true },
-  {DsToPiKKPi0,        Mothers[Ds],    "PiKKPi0",     BRsDs_PYTHIA[DsToPiKKPi0],        BRsDs_PDG[DsToPiKKPi0],        "K^{+}K^{#minus}#pi^{+}#pi^{0}",          3005, true },
-  {DsToPiPiK,          Mothers[Ds],    "PiPiK",       BRsDs_PYTHIA[DsToPiPiK],          BRsDs_PDG[DsToPiPiK],          "#pi^{+}#pi^{#minus}K^{+}",               3006, true },
-  {DsToPiPiPi,         Mothers[Ds],    "PiPiPi",      BRsDs_PYTHIA[DsToPiPiPi],         BRsDs_PDG[DsToPiPiPi],         "#pi^{+}#pi^{#minus}#pi^{+}",             3007, true },
-  {DsToPiPiPiPi0,      Mothers[Ds],    "PiPiPiPi0",   BRsDs_PYTHIA[DsToPiPiPiPi0],      BRsDs_PDG[DsToPiPiPiPi0],      "#pi^{+}#pi^{#minus}#pi^{+}#pi^{0}",      3008, true },
+  {DsToPiKK,           Mothers[Ds],    "PiKK",        BRsDs_PYTHIA[DsToPiKK],           BRsDs_PDG[DsToPiKK],            true },
+  {DsToPiKKPi0,        Mothers[Ds],    "PiKKPi0",     BRsDs_PYTHIA[DsToPiKKPi0],        BRsDs_PDG[DsToPiKKPi0],         true },
+  {DsToPiPiK,          Mothers[Ds],    "PiPiK",       BRsDs_PYTHIA[DsToPiPiK],          BRsDs_PDG[DsToPiPiK],           true },
+  {DsToPiPiPi,         Mothers[Ds],    "PiPiPi",      BRsDs_PYTHIA[DsToPiPiPi],         BRsDs_PDG[DsToPiPiPi],          true },
+  {DsToPiPiPiPi0,      Mothers[Ds],    "PiPiPiPi0",   BRsDs_PYTHIA[DsToPiPiPiPi0],      BRsDs_PDG[DsToPiPiPiPi0],       true },
 
-  {DstarToPiKPi,       Mothers[Dstar], "PiKPi",       BRsD0_PYTHIA[DstarToPiKPi],       BRsD0_PDG[DstarToPiKPi],       "#pi^{+}K^{#minus}#pi^{+}",               3004, true },
-  {DstarToPiKPiPi0,    Mothers[Dstar], "PiKPiPi0",    BRsD0_PYTHIA[DstarToPiKPiPi0],    BRsD0_PDG[DstarToPiKPiPi0],    "#pi^{+}K^{#minus}#pi^{+}#pi^{0}",        3005, true },
-  {DstarToPiKPiPi0Pi0, Mothers[Dstar], "PiKPiPi0Pi0", BRsD0_PYTHIA[DstarToPiKPiPi0Pi0], BRsD0_PDG[DstarToPiKPiPi0Pi0], "#pi^{+}K^{#minus}#pi^{+}#pi^{0}#pi^{0}", 3006, true },
-  {DstarToPiKK,        Mothers[Dstar], "PiKK",        BRsD0_PYTHIA[DstarToPiKK],        BRsD0_PDG[DstarToPiKK],        "K^{+}K^{#minus}#pi^{+}",                 3007, true },
-  {DstarToPiKKPi0,     Mothers[Dstar], "PiKKPi0",     BRsD0_PYTHIA[DstarToPiKKPi0],     BRsD0_PDG[DstarToPiKKPi0],     "K^{+}K^{#minus}#pi^{+}#pi^{0}",          3008, true },
-  {DstarToPiPiPi,      Mothers[Dstar], "PiPiPi",      BRsD0_PYTHIA[DstarToPiPiPi],      BRsD0_PDG[DstarToPiPiPi],      "#pi^{+}#pi^{#minus}#pi^{+}",             3009, true },
-  {DstarToPiPiPiPi0,   Mothers[Dstar], "PiPiPiPi0",   BRsD0_PYTHIA[DstarToPiPiPiPi0],   BRsD0_PDG[DstarToPiPiPiPi0],   "#pi^{+}#pi^{#minus}#pi^{+}#pi^{0}",      3010, true },
+  {DstarToPiKPi,       Mothers[Dstar], "PiKPi",       BRsD0_PYTHIA[DstarToPiKPi],       BRsD0_PDG[DstarToPiKPi],        true },
+  {DstarToPiKPiPi0,    Mothers[Dstar], "PiKPiPi0",    BRsD0_PYTHIA[DstarToPiKPiPi0],    BRsD0_PDG[DstarToPiKPiPi0],     true },
+  {DstarToPiKPiPi0Pi0, Mothers[Dstar], "PiKPiPi0Pi0", BRsD0_PYTHIA[DstarToPiKPiPi0Pi0], BRsD0_PDG[DstarToPiKPiPi0Pi0],  true },
+  {DstarToPiKK,        Mothers[Dstar], "PiKK",        BRsD0_PYTHIA[DstarToPiKK],        BRsD0_PDG[DstarToPiKK],         true },
+  {DstarToPiKKPi0,     Mothers[Dstar], "PiKKPi0",     BRsD0_PYTHIA[DstarToPiKKPi0],     BRsD0_PDG[DstarToPiKKPi0],      true },
+  {DstarToPiPiPi,      Mothers[Dstar], "PiPiPi",      BRsD0_PYTHIA[DstarToPiPiPi],      BRsD0_PDG[DstarToPiPiPi],       true },
+  {DstarToPiPiPiPi0,   Mothers[Dstar], "PiPiPiPi0",   BRsD0_PYTHIA[DstarToPiPiPiPi0],   BRsD0_PDG[DstarToPiPiPiPi0],    true },
 
-  {LcToPKPi,           Mothers[Lc],    "PKPi",        BRsLc_PYTHIA[LcToPKPi],           BRsLc_PDG[LcToPKPi],           "pK^{#minus}#pi^{+}",                     3001, true },
-  {LcToPKPi,           Mothers[Lc],    "PKPi",        BRsLc_PYTHIA[LcToPKPi],           BRsLc_PDG[LcToPKPi],           "pK^{#minus}#pi^{+}",                     3002, false},
-  {LcToPKPiPi0,        Mothers[Lc],    "PKPiPi0",     BRsLc_PYTHIA[LcToPKPiPi0],        BRsLc_PDG[LcToPKPiPi0],        "pK^{#minus}#pi^{+}#pi^{0}",              3004, true },
-  {LcToPPiPi,          Mothers[Lc],    "PPiPi",       BRsLc_PYTHIA[LcToPPiPi],          BRsLc_PDG[LcToPPiPi],          "p#pi^{#minus}#pi^{+}",                   3005, true },
-  {LcToPKK,            Mothers[Lc],    "PKK",         BRsLc_PYTHIA[LcToPKK],            BRsLc_PDG[LcToPKK],            "pK^{#minus}K^{+}",                       3006, true },
+  {LcToPKPi,           Mothers[Lc],    "PKPi",        BRsLc_PYTHIA[LcToPKPi],           BRsLc_PDG[LcToPKPi],            true },
+  {LcToPKPi,           Mothers[Lc],    "PKPi",        BRsLc_PYTHIA[LcToPKPi],           BRsLc_PDG[LcToPKPi],            false},
+  {LcToPKPiPi0,        Mothers[Lc],    "PKPiPi0",     BRsLc_PYTHIA[LcToPKPiPi0],        BRsLc_PDG[LcToPKPiPi0],         true },
+  {LcToPPiPi,          Mothers[Lc],    "PPiPi",       BRsLc_PYTHIA[LcToPPiPi],          BRsLc_PDG[LcToPPiPi],           true },
+  {LcToPKK,            Mothers[Lc],    "PKK",         BRsLc_PYTHIA[LcToPKK],            BRsLc_PDG[LcToPKK],             true },
 
-  {XicToPKPi,          Mothers[Xic],   "PKPi",        BRsXic_PYTHIA[XicToPKPi],         BRsXic_PDG[XicToPKPi],         "pK^{#minus}#pi^{+}",                     3004, true },
-  {XicToPKK,           Mothers[Xic],   "PKK",         BRsXic_PYTHIA[XicToPKK],          BRsXic_PDG[XicToPKK],          "pK^{#minus}K^{+}",                       3005, true },
-  {XicToSPiPi,         Mothers[Xic],   "SPiPi",       BRsXic_PYTHIA[XicToSPiPi],        BRsXic_PDG[XicToSPiPi],        "#Sigma^{+}#pi^{#minus}#pi^{+}",          3006, true }
+  {XicToPKPi,          Mothers[Xic],   "PKPi",        BRsXic_PYTHIA[XicToPKPi],         BRsXic_PDG[XicToPKPi],          true },
+  {XicToPKK,           Mothers[Xic],   "PKK",         BRsXic_PYTHIA[XicToPKK],          BRsXic_PDG[XicToPKK],           true },
+  {XicToSPiPi,         Mothers[Xic],   "SPiPi",       BRsXic_PYTHIA[XicToSPiPi],        BRsXic_PDG[XicToSPiPi],         true }
 };
 
 #endif//ANALYSISTREEQA_CORRBG_QA_H
