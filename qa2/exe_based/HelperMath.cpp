@@ -178,16 +178,17 @@ std::pair<TH1*, TH1*> HelperMath::EvaluateEfficiencyHisto(TH1* hNum, TH1* hDen) 
 }
 
 TH1* HelperMath::MergeHistograms(const std::vector<TH1*>& histos) {
+  bool isSumw2{false};
   for(const auto& h : histos) {
     HelperGeneral::CheckHistogramsForXaxisIdentity(h, histos.at(0));
+    isSumw2 |= h->GetSumw2N() > 0;
   }
-  const bool isSumw2 = histos.at(0)->GetSumw2N() > 0;
 
   TH1* hResult = dynamic_cast<TH1*>(histos.at(0)->Clone("hMerged"));
   Sumw2IfNotYet(hResult);
   hResult->SetDirectory(nullptr);
-  for(size_t iH=1, nHs=histos.size(); iH<nHs; ++iH) {
-    hResult->Add(histos.at(iH));
+  for(const auto& h : histos) {
+    hResult->Add(h);
   }
   Sumw2IfNotYet(hResult, isSumw2);
 
