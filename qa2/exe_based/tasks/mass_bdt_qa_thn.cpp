@@ -21,16 +21,16 @@ const std::string lifetimeAxisTitle = "T_{proper} (ps)";
 std::vector<float> pTRanges = {1, 2, 3, 4, 5, 8, 12, 20};
 const std::string pTAxisTitle = "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})";
 
-const std::vector<float> bdtBgUpperValuesVsPt = {0.05, 0.05, 0.05, 0.05, 0.05, 0.1, 0.2};
+const std::vector<float> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.02, 0.02, 0.04, 0.08};
 const std::string bgAxisTitle = "BDT bkg score (Lc)";
 const std::string npAxisTitle = "BDT non-prompt score (Lc)";
 const std::string massAxisTitle = "inv. mass (p K #pi) (GeV/#it{c}^{2})";
 
-// const std::string bdtScanAxisTitle = npAxisTitle;
-// const std::string bdtScanDir = "gt";
+const std::string bdtScanAxisTitle = npAxisTitle;
+const std::string bdtScanDir = "gt";
 
-const std::string bdtScanAxisTitle = bgAxisTitle;
-const std::string bdtScanDir = "lt";
+// const std::string bdtScanAxisTitle = bgAxisTitle;
+// const std::string bdtScanDir = "lt";
 
 const bool isVerbose{true};
 
