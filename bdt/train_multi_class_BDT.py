@@ -33,6 +33,7 @@ parser.add_argument('--input-files-data-range', nargs=2, type=int, metavar=('fil
 parser.add_argument('--output-directory', dest='output_directory', help='destination directory for the output QA plots.', default='')
 parser.add_argument('--model-directory', dest='model_directory', help='destination directory for the model file in .pkl format.', default='')
 parser.add_argument('--slice-var-interval', nargs=2, type=float, metavar=('slice_var_min', 'slice_var_max'), help='Specify the slice var interval as two floats: min max')
+parser.add_argument('--sidebands', nargs=4, type=float, metavar=('sidebands_left_external', 'sidebands_left_internal', 'sidebands_right_internal', 'sidebands_right_external'), help='Specify the sidebands valus for background dataset')
 args = parser.parse_args()
 ## Check if config files are provided
 if args.config_file == '':
@@ -54,6 +55,7 @@ files_data_from, files_data_to = args.input_files_data_range
 output_directory = args.output_directory
 model_directory = args.model_directory
 slice_var_min, slice_var_max = args.slice_var_interval
+sidebands = args.sidebands
 ## Read config file
 hyperpar_study_file = config["hyperpar_study_file"]
 hyperpar_study_ntrials = config["hyperpar_study_ntrials"]
@@ -63,7 +65,6 @@ model_version = config['model_version']
 slice_var_name = config['slice_var_name']
 slice_var_treename = config['slice_var_treename']
 slice_var_unit = config['slice_var_unit']
-sidebands = config['sidebands']
 training_variables = config['training_variables']
 keep_variables = config['keep_variables']
 draw_vars_dict = config['draw_vars_dict']
