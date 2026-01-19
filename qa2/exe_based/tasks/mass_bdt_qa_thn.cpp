@@ -112,6 +112,10 @@ void MassBdtQaThn(const std::string& fileNameIn, int modeRun) {
   } // pTRanges
 
   if(modeRun != RunOnly) {
+    const int nLowerPtBinsToExclude{2};
+    pTCutNames.erase(pTCutNames.begin(), pTCutNames.begin()+nLowerPtBinsToExclude);
+    pTRanges.erase(pTRanges.begin(), pTRanges.begin()+nLowerPtBinsToExclude);
+
     for (const auto& tcn : tCutNames) {
       for (const auto& bslv : bdtScanValues) {
         std::vector<std::string> histoNames;
