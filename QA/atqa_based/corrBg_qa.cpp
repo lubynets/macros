@@ -19,9 +19,9 @@ constexpr bool IsApplyWeights = true;
 
 const std::string recBranchName = "Candidates";
 const std::pair<float, float> rapidityRanges{-0.8, 0.8};
-const std::vector<float> pTRanges = {1, 2, 3, 4, 5, 8, 12, 20};
-const std::vector<float> bdtBgUpperValuesVsPt = {0.05, 0.05, 0.05, 0.05, 0.05, 0.1, 0.2};
-const std::vector<float> lifetimeRanges = {0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 1.4, 1.8, 2.4, 3.6, 5.0};
+std::vector<float> pTRanges = {1, 2, 3, 4, 5, 8, 12, 20};
+const std::vector<float> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.02, 0.02, 0.04, 0.08};
+const std::vector<float> lifetimeRanges = {0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 1.4, 1.8, 2.4, 3.6, 5.0}; const int lifetimeRangesPrecision = 1;
 
 const TAxis massAxis = {600, 1.98, 2.58};
 const std::string massAxisTitle = "m_{pK#pi} (GeV/#it{c}^{2})";
@@ -39,9 +39,15 @@ enum KfSigBgStatus : int {
   kReflection = 3
 };
 
+enum : int {
+  RunOnly = 0,
+  RunAndMerge,
+  MergeOnly,
+  NModeRuns
+};
+
 void CorrBgQa(QA::Task& task) {
   if(bdtBgUpperValuesVsPt.size() != pTRanges.size() - 1) throw std::runtime_error("bdtUpperValuesVsPt.size() != pTRanges.size() - 1");
-
 
   for(int iPt=0, nPts=pTRanges.size()-1; iPt<nPts; ++iPt) {
     SimpleCut pTCut = RangeCut(recBranchName + ".fLitePt", pTRanges.at(iPt), pTRanges.at(iPt+1));
@@ -49,7 +55,7 @@ void CorrBgQa(QA::Task& task) {
     const std::string pTCutName = "pT_" + HelperFunctions::ToStringWithPrecision(pTRanges.at(iPt), 0) + "_" + HelperFunctions::ToStringWithPrecision(pTRanges.at(iPt+1), 0);
     for(int iLifeTimeRange=0, nLifeTimeRanges=lifetimeRanges.size()-1; iLifeTimeRange<nLifeTimeRanges; ++iLifeTimeRange) {
       SimpleCut lifetimeCut = RangeCut(properLifetime, lifetimeRanges.at(iLifeTimeRange), lifetimeRanges.at(iLifeTimeRange+1));
-      const std::string lifetimeCutName = "T_" + HelperFunctions::ToStringWithPrecision(lifetimeRanges.at(iLifeTimeRange), 1) + "_" + HelperFunctions::ToStringWithPrecision(lifetimeRanges.at(iLifeTimeRange+1), 1);
+      const std::string lifetimeCutName = "T_" + HelperFunctions::ToStringWithPrecision(lifetimeRanges.at(iLifeTimeRange), lifetimeRangesPrecision) + "_" + HelperFunctions::ToStringWithPrecision(lifetimeRanges.at(iLifeTimeRange+1), lifetimeRangesPrecision);
       task.SetTopLevelDirName(pTCutName + "/" + lifetimeCutName);
 
       for(const auto& decay : Decays) {
@@ -108,27 +114,34 @@ void CorrBgQa(QA::Task& task) {
   }
 }
 
-void corrBg_qa(const std::string& filelistname) {
-  auto* man = TaskManager::GetInstance();
-  const std::string fileOutName = "corrBg_qa.root";
+void corrBg_qa(const std::string& fileInName, int modeRun) {
+  const std::string& fileOutName = modeRun != MergeOnly ?  "corrBg_qa.root" : fileInName;
 
-  auto* task = new QA::Task;
-  task->SetOutputFileName(fileOutName);
+  if (modeRun != MergeOnly) {
+    auto* man = TaskManager::GetInstance();
+    auto* task = new QA::Task;
+    task->SetOutputFileName(fileOutName);
 
-  CorrBgQa(*task);
+    CorrBgQa(*task);
 
-  man->AddTask(task);
-  man->Init({filelistname}, {"aTree"});
-  man->SetVerbosityFrequency(10);
-  man->Run();
-  man->Finish();
+    man->AddTask(task);
+    man->Init({fileInName}, {"aTree"});
+    man->SetVerbosityFrequency(10);
+    man->Run();
+    man->Finish();
+  }
+
+  if (modeRun == RunOnly) return;
+
+  const int nLowerPtBinsToExclude{0};
+  pTRanges.erase(pTRanges.begin(), pTRanges.begin()+nLowerPtBinsToExclude);
 
   std::vector<std::string> pTCutNames, TCutNames;
   for(size_t iPt=0, nPts=pTRanges.size()-1; iPt<nPts; ++iPt) {
     pTCutNames.emplace_back(GetCutName(iPt, pTRanges, "pT", 0));
   }
   for(size_t iT=0, nTs=lifetimeRanges.size()-1; iT<nTs; ++iT) {
-    TCutNames.emplace_back(GetCutName(iT, lifetimeRanges, "T", 1));
+    TCutNames.emplace_back(GetCutName(iT, lifetimeRanges, "T", lifetimeRangesPrecision));
   }
   std::vector<Decay> DecaysWithBg{Decays};
   DecaysWithBg.emplace_back(Decay{-1, {}, "", -1.f, -1.f, true});
@@ -165,13 +178,15 @@ std::string GetDecayFormula(const Decay& decay) {
 int main(int argc, char* argv[]){
   if (argc < 2) {
     std::cout << "Error! Please use " << std::endl;
-    std::cout << " ./corrBg_qa filelistname" << std::endl;
+    std::cout << " ./corrBg_qa fileInName (modeRun=RunOnly=0 [RunAndMerge=1, MergeOnly=2])" << std::endl;
     exit(EXIT_FAILURE);
   }
 
-  const std::string filelistname = argv[1];
+  const std::string fileInName = argv[1];
+  const int modeRun = argc > 2 ? std::stoi(argv[2]) : RunOnly;
+  if(modeRun < 0 || modeRun >= NModeRuns) throw std::runtime_error("modeRun < 0 || modeRun >= NModeRuns");
 
-  corrBg_qa(filelistname);
+  corrBg_qa(fileInName, modeRun);
 
   return 0;
 }
