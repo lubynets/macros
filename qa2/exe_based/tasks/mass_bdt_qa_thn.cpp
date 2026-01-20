@@ -71,7 +71,7 @@ void MassBdtQaThn(const std::string& fileNameIn, int modeRun) {
   if(bdtScanDir != "gt" && bdtScanDir != "lt") throw std::runtime_error("bdtScanDir != \"gt\" && bdtScanDir != \"lt\"");
 
   std::vector<double> bdtScanValues;
-  for (int iB = 1; iB <= 99; iB++) {
+  for (int iB = 0; iB <= 99; iB++) {
     bdtScanValues.emplace_back(0.01 * iB);
   }
 

@@ -23,7 +23,7 @@ void MultiFitQa(const bool isVerbose=true) {
   const std::string fileNameTemplate = "RawYields_Lc/RawYields_Lc";
   const int nTrials = 100;
   std::vector<double> bdtScores;
-  for(int i=0; i<=99; i++) {
+  for(int i=1; i<=99; i++) {
     bdtScores.emplace_back(0.01*i);
   }
 
