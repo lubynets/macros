@@ -453,7 +453,9 @@ void HFInvMassFitter::doFit()
       mRooNSgn->setConstant(kTRUE);
     }
     mSgnPdf = new RooAddPdf("mSgnPdf", "signal fit function", RooArgList(*sgnPdf), RooArgList(*mRooNSgn));
-    mRooCorrelBg2Sgn = new RooRealVar("mRooCorrelBg2Sgn", "correlated background to signal ratio", mReflOverSgn, 0., 10.*mReflOverSgn);
+    mRooCorrelBg2Sgn = new RooRealVar("mRooCorrelBg2Sgn", "correlated background to signal ratio", mReflOverSgn);
+    mRooCorrelBg2Sgn->setVal(mReflOverSgn);
+    mRooCorrelBg2Sgn->setConstant(kTRUE);
     mRooNCorrelBg = new RooFormulaVar("mNCorrelBg", "mRooCorrelBg2Sgn*mNSgn", RooArgList(*mRooCorrelBg2Sgn, *mRooNSgn));
     // create reflection template and fit to reflection
     if (mHistoTemplateRefl) {
