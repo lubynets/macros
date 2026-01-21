@@ -8,19 +8,20 @@ inline std::string to_string_with_precision(const T a_value, const int n=2) {
 
 void corrBgBuilder() {
   gStyle->SetOptStat(0);
-  const std::string fileName = "/home/oleksii/alidir/working/correlBG/corrBg_qa.HL.mc.HF_LHC24h1b_All.568123.root";
+  const std::string fileName = "/home/oleksii/alidir/working/correlBG/LHC25e4/corrBg_qa.HL.mc.HF_LHC25e4_All.579594.ctbin3.root";
   TFile* fileIn = TFile::Open(fileName.c_str(), "read");
 
-  const std::vector<float> ptRanges = {1, 20};
-  const std::vector<float> ctRanges = {0.2, 0.35, 0.5, 0.7, 0.9, 1.6}; const int ctPrecision = 2;
-  const int rebinFactor{1};
+//   const std::vector<float> ptRanges = {3,/* 2, 3, 4, 5, 8, 12, */20};
+  const std::vector<float> ptRanges = {3, 4};
+  const std::vector<float> ctRanges = {0.0, 20.0}; const int ctPrecision = 1;
+  const int rebinFactor{4};
 
   for(int iPt=0, nPts=ptRanges.size()-1; iPt<nPts; ++iPt) {
     for(int iCt=0, nCts=ctRanges.size()-1; iCt<nCts; ++iCt) {
       const std::string hPath = "pT_" + to_string_with_precision(ptRanges.at(iPt), 0) + "_" + to_string_with_precision(ptRanges.at(iPt+1), 0) + "/T_" + to_string_with_precision(ctRanges.at(iCt), ctPrecision) + "_" + to_string_with_precision(ctRanges.at(iCt+1), ctPrecision) + "/";
       TH1* hSig = fileIn->Get<TH1>((hPath + "hMass_LcToPKPiSig").c_str());
       TH1* hCorrBg = fileIn->Get<TH1>((hPath + "hMass_bkgSum").c_str());
-      if(hSig == nullptr || hCorrBg == nullptr) throw std::runtime_error("hSig == nullptr || hCorrBg == nullptr");
+      if(hSig == nullptr || hCorrBg == nullptr) throw std::runtime_error("hSig == nullptr || hCorrBg == nullptr for " + hPath);
 
       if(rebinFactor != 1) {
         hSig->Rebin(rebinFactor);
@@ -36,7 +37,7 @@ void corrBgBuilder() {
       TCanvas ccBoth("ccBoth", "");
       for(const auto& cc : {&ccSignal, &ccCorrBg, &ccBoth}) {
         cc->SetCanvasSize(1000, 1000);
-        cc->SetLogy();
+//         cc->SetLogy();
       }
 
       TPaveText legText(0.18, 0.78, 0.35, 0.88, "brNDC");
