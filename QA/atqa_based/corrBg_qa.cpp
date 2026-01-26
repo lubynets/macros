@@ -10,6 +10,7 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
 
 using namespace AnalysisTree;
 using namespace HelperFunctions;
@@ -25,6 +26,8 @@ const std::vector<float> lifetimeRanges = {0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 1.4, 1.
 
 const TAxis massAxis = {600, 1.98, 2.58};
 const std::string massAxisTitle = "m_{pK#pi} (GeV/#it{c}^{2})";
+
+const std::string bdtSignalVarName = "fLiteMlScoreThirdClass"; const std::string bdtSignalShortcut = "NP";
 
 std::string GetCutName(size_t iCut, const std::vector<float>& ranges, const std::string& name, int precision);
 std::string GetDecayFormula(const Decay& decay);
@@ -47,7 +50,12 @@ enum : int {
 };
 
 void CorrBgQa(QA::Task& task) {
-  if(bdtBgUpperValuesVsPt.size() != pTRanges.size() - 1) throw std::runtime_error("bdtUpperValuesVsPt.size() != pTRanges.size() - 1");
+  if(bdtBgUpperValuesVsPt.size() != pTRanges.size() - 1) throw std::runtime_error("bdtBgUpperValuesVsPt.size() != pTRanges.size() - 1");
+
+  std::vector<SimpleCut> bdtSigLowerValuesCuts{};
+  for(int iScore=0; iScore<=99; ++iScore) {
+    bdtSigLowerValuesCuts.emplace_back(RangeCut(recBranchName + "." + bdtSignalVarName, iScore*0.01, 1e6, bdtSignalShortcut + "gt" + HelperFunctions::ToStringWithPrecision(iScore*0.01, 2)));
+  }
 
   for(int iPt=0, nPts=pTRanges.size()-1; iPt<nPts; ++iPt) {
     SimpleCut pTCut = RangeCut(recBranchName + ".fLitePt", pTRanges.at(iPt), pTRanges.at(iPt+1));
@@ -73,13 +81,16 @@ void CorrBgQa(QA::Task& task) {
           }
         });
         const std::string decayFormula = GetDecayFormula(decay);
-        Cuts* cutsDecay = new Cuts(decayFormula + "_" + pTCutName + "_" + lifetimeCutName, {rapidityCut, pTCut, bgBdtCut, lifetimeCut, decayChannelCut});
         Variable decayChannelWeight("decayChannelWeight", {{recBranchName, "ones"}}, [&] (std::vector<double>&) {
           if constexpr (IsApplyWeights) return decay.br_pdg_ / (decay.mother_.pythia_br_scaling_factor_ * decay.br_pythia_);
           else return 1.0;
         });
-        task.AddH1("hMass_" + decayFormula, { massAxisTitle, Variable::FromString(recBranchName + ".fLiteM"), massAxis }, cutsDecay, decayChannelWeight);
-      }
+
+        for(const auto& sigScoreCut : bdtSigLowerValuesCuts) {
+          Cuts* cutsDecay = new Cuts(decayFormula + "_" + pTCutName + "_" + lifetimeCutName, {rapidityCut, pTCut, bgBdtCut, lifetimeCut, decayChannelCut, sigScoreCut});
+          task.AddH1("hMass_" + decayFormula + "_" + sigScoreCut.GetTitle(), { massAxisTitle, Variable::FromString(recBranchName + ".fLiteM"), massAxis }, cutsDecay, decayChannelWeight);
+        }
+      } // Decays
 
       SimpleCut bgChannelCut = SimpleCut({recBranchName + ".fKFSigBgStatus", recBranchName + ".fLiteFlagMc"}, [&] (const std::vector<double>& var) {
         for(const auto& decay : Decays) {
@@ -108,10 +119,12 @@ void CorrBgQa(QA::Task& task) {
         }
       });
 
-      Cuts* cutsBg = new Cuts("Bg_" + pTCutName + "_" + lifetimeCutName, {rapidityCut, pTCut, bgBdtCut, lifetimeCut, bgChannelCut});
-      task.AddH1("hMass_bkgSum", { massAxisTitle, Variable::FromString(recBranchName + ".fLiteM"), massAxis }, cutsBg, bgChannelWeight);
-    }
-  }
+      for(const auto& sigScoreCut : bdtSigLowerValuesCuts) {
+        Cuts* cutsBg = new Cuts("Bg_" + pTCutName + "_" + lifetimeCutName, {rapidityCut, pTCut, bgBdtCut, lifetimeCut, bgChannelCut, sigScoreCut});
+        task.AddH1("hMass_bkgSum_" + sigScoreCut.GetTitle(), { massAxisTitle, Variable::FromString(recBranchName + ".fLiteM"), massAxis }, cutsBg, bgChannelWeight);
+      }
+    } // lifetimeRanges
+  } // pTRanges
 }
 
 void corrBg_qa(const std::string& fileInName, int modeRun) {
@@ -133,6 +146,11 @@ void corrBg_qa(const std::string& fileInName, int modeRun) {
 
   if (modeRun == RunOnly) return;
 
+  std::vector<float> bdtSigLowerValues{};
+  for(int iScore=0; iScore<=99; ++iScore) {
+    bdtSigLowerValues.emplace_back(0.01f*iScore);
+  }
+
   const int nLowerPtBinsToExclude{0};
   pTRanges.erase(pTRanges.begin(), pTRanges.begin()+nLowerPtBinsToExclude);
 
@@ -150,13 +168,15 @@ void corrBg_qa(const std::string& fileInName, int modeRun) {
   for(const auto& decay : DecaysWithBg) {
     if(!IsIncludeAllChannels && (decay.is_bg_ && decay.id_ != -1)) continue;
     for (const auto& tCut : TCutNames) {
-      std::vector<std::string> histoNames;
-      for (const auto& ptcn : pTCutNames) {
-        histoNames.emplace_back(ptcn + "/" + tCut + "/hMass_" + GetDecayFormula(decay));
-      }
-    TH1* histoMerged = HelperFunctions::MergeHistograms(fileOut, histoNames);
-    HelperFunctions::CD(fileOut, GetCutName(pTRanges.size()-1, pTRanges, "pT", 0) + "/" + tCut);
-    histoMerged->Write(("hMass_" + GetDecayFormula(decay)).c_str());
+      for(const auto& bslv : bdtSigLowerValues) {
+        std::vector<std::string> histoNames;
+        for (const auto& ptcn : pTCutNames) {
+          histoNames.emplace_back(ptcn + "/" + tCut + "/hMass_" + GetDecayFormula(decay) + "_" + bdtSignalShortcut + "gt" + HelperFunctions::ToStringWithPrecision(bslv, 2));
+        } // pTCutNames
+        TH1* histoMerged = HelperFunctions::MergeHistograms(fileOut, histoNames);
+        HelperFunctions::CD(fileOut, GetCutName(pTRanges.size()-1, pTRanges, "pT", 0) + "/" + tCut);
+        histoMerged->Write(("hMass_" + GetDecayFormula(decay) + "_" + bdtSignalShortcut + "gt" + HelperFunctions::ToStringWithPrecision(bslv, 2)).c_str());
+      } // bdtSigLowerValues
     } // TCutNames
   } // DecaysWithBg
   fileOut->Close();
