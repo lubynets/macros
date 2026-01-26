@@ -515,12 +515,12 @@ void HFInvMassFitter::doFit()
       }
 //       writeBgFitInfo(mHistoInvMass, false);
       plotBkg(mTotalPdf);
-      if (corrBgDataHist != nullptr && mDrawCorrelBg) {
-        plotCorrelBg(mTotalPdf);
-      }
       mTotalPdf->plotOn(mInvMassFrame, Name("Tot_c"), LineColor(kBlue));
       mSgnPdf->plotOn(mInvMassFrame, Normalization(1.0, RooAbsReal::RelativeExpected), DrawOption("F"), FillColor(TColor::GetColorTransparent(kBlue, 0.2)), VLines());
       mChiSquareOverNdfTotal = mInvMassFrame->chiSquare("Tot_c", "data_c"); // calculate reduced chi2 / DNF
+      if (corrBgDataHist != nullptr && mDrawCorrelBg) {
+        plotCorrelBg(mTotalPdf);
+      }
       // plot residual distribution
       mResidualFrame = mass->frame(Title("Residual Distribution"));
       RooHist* residualHistogram = mInvMassFrame->residHist("data_c", "Bkg_c");
