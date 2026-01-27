@@ -12,6 +12,7 @@
 #include <iostream>
 #include <string>
 #include <string_view>
+#include <vector>
 
 using namespace HelperGeneral;
 using namespace HelperMath;
@@ -25,6 +26,7 @@ const std::vector<float> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.05, 0.08};
 
 const std::string_view lifetimeAxisTitle = "T_{proper} (ps)";
 const std::string_view pTAxisTitle = "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})";
+const std::string_view pTBAxisTitle = "#it{p}_{T}^{B} (GeV/#it{c})";
 const std::string_view bgAxisTitle = "BDT bkg score (Lc)";
 const std::string_view npAxisTitle = "BDT non-prompt score (Lc)";
 const std::string_view signalTypeAxisTitle = "candidates type";
@@ -41,7 +43,7 @@ enum : int {
   MergeOnly,
   NModeRuns
 };
-const std::vector<std::string> weightsPresences{"", "_W"};
+const std::array<std::string, 2> weightsPresences{"", "_W"};
 
 std::string GetPtCutName(size_t iPt);
 
@@ -50,13 +52,15 @@ void FillYield(const std::string& fileName, const std::string& filePtWeightName,
   const std::string fileOpenOption = isRec ? "recreate" : "update";
   TFile* fileOut = TFile::Open(fileOutName.c_str(), fileOpenOption.c_str());
   TFile* fileWeight = gIsDoWeight ? OpenFileWithNullptrCheck(filePtWeightName) : nullptr;
-  TH1* histoWeight = gIsDoWeight ? GetObjectWithNullptrCheck<TH1>(fileWeight, "histoWeight_pT_0_20") : nullptr;
-
+  TH1* histoWeightPrompt = gIsDoWeight ? GetObjectWithNullptrCheck<TH1>(fileWeight, "histoWeight_pT_0_20") : nullptr;
+  TH1* histoWeightNonPrompt = gIsDoWeight ? GetObjectWithNullptrCheck<TH1>(fileWeight, "histoWeight_NonPrompt") : nullptr;
   THnSparse* histoRecOrGen = GetObjectWithNullptrCheck<THnSparse>(fileIn, "hf-task-lc/"s + (isRec ? "hnLcVarsWithBdt" : "hnLcVarsGen"));
   const std::map<std::string_view, int> axesIndices = MapTHnSparseAxesIndices(histoRecOrGen);
-  THnSparse* histoRecOrGenWeighted = dynamic_cast<THnSparse*>(histoRecOrGen->Clone());
+  THnSparse* histoPromptWeighted = gIsDoWeight ? dynamic_cast<THnSparse*>(histoRecOrGen->Clone()) : nullptr;
+  THnSparse* histoNonPromptWeighted = gIsDoWeight ? dynamic_cast<THnSparse*>(histoRecOrGen->Clone()) : nullptr;
   if (gIsDoWeight) {
-    ScaleTHnSparseWithWeight(histoRecOrGenWeighted, axesIndices.at(pTAxisTitle), histoWeight);
+    ScaleTHnSparseWithWeight(histoPromptWeighted, axesIndices.at(pTAxisTitle), histoWeightPrompt);
+    ScaleTHnSparseWithWeight(histoNonPromptWeighted, axesIndices.at(pTBAxisTitle), histoWeightNonPrompt);
   }
   
   auto ProcessTHnSparse = [&](THnSparse* histoIn, const std::string& histoNameSuffix="", const std::vector<std::pair<std::string, float>>& promptnessesToProcess=promptnesses) {
@@ -71,7 +75,7 @@ void FillYield(const std::string& fileName, const std::string& filePtWeightName,
         const std::string dirName = (isRec ? "rec/" : "gen/") + promptness.first + "/" + GetPtCutName(iPt);
         SetTHnSparseAxisRanges(histoIn, axesIndices.at(signalTypeAxisTitle), promptness.second, promptness.second+1.f);
         // for rec - real gBdtSignalLowerValues; for gen - fake 1-element vector for universality reasons
-        const auto& bdtSignalLowerValues = isRec ? gBdtSignalLowerValues : std::vector<float>{-999.f};
+        const auto& bdtSignalLowerValues = isRec ? gBdtSignalLowerValues : std::vector<float>{UndefValueFloat};
         for(const auto& bsc : bdtSignalLowerValues) {
           const std::string histoName = isRec ?
                                         "hT_NPgt" + to_string_with_precision(bsc, 2) + histoNameSuffix :
@@ -91,7 +95,10 @@ void FillYield(const std::string& fileName, const std::string& filePtWeightName,
   };
   
   ProcessTHnSparse(histoRecOrGen);
-  if (gIsDoWeight) ProcessTHnSparse(histoRecOrGenWeighted, "_W", {promptnesses.at(0)});
+  if (gIsDoWeight) {
+    ProcessTHnSparse(histoPromptWeighted, "_W", {promptnesses.at(0)});
+    ProcessTHnSparse(histoNonPromptWeighted, "_W", {promptnesses.at(1)});
+  }
 
   fileOut->Close();
   fileIn->Close();
@@ -146,9 +153,9 @@ int main(int argc, char* argv[]) {
   auto ProcessMerge = [&](const bool isRec) {
     for(const auto& promptness : promptnesses) {
       for(const auto& weightPresence : weightsPresences) {
-        if((promptness.first == "nonprompt" || !gIsDoWeight) && weightPresence == "_W") continue;
+        if(!gIsDoWeight) continue;
         // for rec - real gBdtSignalLowerValues; for gen - fake 1-element vector for universality reasons
-        const auto& bdtSignalLowerValues = isRec ? gBdtSignalLowerValues : std::vector<float>{-999.f};
+        const auto& bdtSignalLowerValues = isRec ? gBdtSignalLowerValues : std::vector<float>{UndefValueFloat};
         for (const auto& bslv : bdtSignalLowerValues) {
           std::vector<std::string> histoNames;
           histoNames.reserve(pTCutNames.size());
