@@ -19,7 +19,7 @@ const std::string lifetimeAxisTitle = "T_{proper} (ps)";
 bool gIsDoWeight{false};
 std::vector<float> gBdtSignalLowerValues{};
 
-const std::vector<float> pTRanges = {1, 3, 5, 8, 12, 20};
+std::vector<float> pTRanges = {1, 3, 5, 8, 12, 20};
 const std::vector<float> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.05, 0.08};
 
 const std::string pTAxisTitle = "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})";
@@ -32,6 +32,12 @@ const std::string fileOutName{"yield_lifetime_qa_thn.root"};
 std::vector<std::pair<std::string, float>> promptnesses {
   {"prompt", 1},
   {"nonprompt", 2}
+};
+enum : int {
+  RunOnly = 0,
+  RunAndMerge,
+  MergeOnly,
+  NModeRuns
 };
 const std::vector<std::string> weightsPresences{"", "_W"};
 
@@ -98,30 +104,42 @@ std::string GetPtCutName(size_t iPt) {
 int main(int argc, char* argv[]) {
   if (argc < 2) {
     std::cout << "Error! Please use " << std::endl;
-    std::cout << " ./yield_lifetime_qa_thn fileNameIn (filePtWeightName)" << std::endl;
+    std::cout << " ./yield_lifetime_qa_thn fileNameIn (modeRun=RunOnly=0 [RunAndMerge=1, MergeOnly=2]) (filePtWeightName)" << std::endl;
     exit(EXIT_FAILURE);
   }
   if(bdtBgUpperValuesVsPt.size() != pTRanges.size() - 1) throw std::runtime_error("bdtUpperValuesVsPt.size() != pTRanges.size() - 1");
 
   const std::string fileNameIn = argv[1];
-  const std::string filePtWeightName = argc > 2 ? argv[2] : "";
+  const int modeRun = argc > 2 ? std::stoi(argv[2]) : RunOnly;
+  const std::string filePtWeightName = argc > 3 ? argv[3] : "";
+
+  if(modeRun < 0 || modeRun >= NModeRuns) throw std::runtime_error("modeRun < 0 || modeRun >= NModeRuns");
 
   gIsDoWeight = !filePtWeightName.empty();
 
-  const std::string fileName = ReadNthLine(fileNameIn);
+  const std::string& fileName = modeRun != MergeOnly ? ReadNthLine(fileNameIn) : fileNameIn;
 
   for (int iB = 0; iB <= 99; iB++) {
     gBdtSignalLowerValues.emplace_back(0.01 * iB);
   }
 
-  FillYield(fileName, filePtWeightName, true);
-  FillYield(fileName, filePtWeightName, false);
+  if(modeRun != MergeOnly) {
+    FillYield(fileName, filePtWeightName, true);
+    FillYield(fileName, filePtWeightName, false);
+  }
+
+  if(modeRun == RunOnly) return 0;
+
+  const int nLowerPtBinsToExclude{1};
+  pTRanges.erase(pTRanges.begin(), pTRanges.begin()+nLowerPtBinsToExclude);
 
   std::vector<std::string> pTCutNames;
   for(size_t iPt=0, nPts=pTRanges.size()-1; iPt<nPts; ++iPt) {
     pTCutNames.emplace_back(GetPtCutName(iPt));
   }
-  TFile* fileOut = OpenFileWithNullptrCheck(fileOutName.c_str(), "update");
+
+  const std::string& mergedFileOutName = modeRun != MergeOnly ? fileOutName : fileName;
+  TFile* fileOut = OpenFileWithNullptrCheck(mergedFileOutName.c_str(), "update");
 
   auto ProcessMerge = [&](const bool isRec) {
     for(const auto& promptness : promptnesses) {
@@ -134,8 +152,8 @@ int main(int argc, char* argv[]) {
           histoNames.reserve(pTCutNames.size());
           for (const auto& ptcn : pTCutNames) {
             histoNames.emplace_back(isRec ?
-                                       "rec/" + promptness.first + "/" + ptcn + "/hT_NPgt" + to_string_with_precision(bslv, 2) + weightPresence :
-                                       "gen/" + promptness.first + "/" + ptcn + "/hT" + weightPresence);
+                                    "rec/" + promptness.first + "/" + ptcn + "/hT_NPgt" + to_string_with_precision(bslv, 2) + weightPresence :
+                                    "gen/" + promptness.first + "/" + ptcn + "/hT" + weightPresence);
           } // pTCutNames
           TH1* histoMerged = MergeHistograms(fileOut, histoNames);
           CD(fileOut, (isRec ? "rec/" : "gen/") + promptness.first + "/" + GetPtCutName(pTRanges.size() - 1));
