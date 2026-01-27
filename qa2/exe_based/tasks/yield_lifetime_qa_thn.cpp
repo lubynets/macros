@@ -17,16 +17,19 @@ using namespace HelperMath;
 const std::string lifetimeAxisTitle = "T_{proper} (ps)";
 
 bool gIsDoWeight{false};
+std::vector<float> gBdtSignalLowerValues{};
 
 const std::vector<float> pTRanges = {1, 3, 5, 8, 12, 20};
-const std::string pTAxisTitle = "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})";
-
 const std::vector<float> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.05, 0.08};
+
+const std::string pTAxisTitle = "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})";
 const std::string bgAxisTitle = "BDT bkg score (Lc)";
 const std::string npAxisTitle = "BDT non-prompt score (Lc)";
 const std::string signalTypeAxisTitle = "candidates type";
 
-std::vector<std::pair<std::string, int>> promptnesses {
+const std::string fileOutName{"yield_lifetime_qa_thn.root"};
+
+std::vector<std::pair<std::string, float>> promptnesses {
   {"prompt", 1},
   {"nonprompt", 2}
 };
@@ -34,9 +37,10 @@ const std::vector<std::string> weightsPresences{"", "_W"};
 
 std::string GetPtCutName(size_t iPt);
 
-void FillYieldRec(const std::string& fileName, const std::string& filePtWeightName) {
+void FillYield(const std::string& fileName, const std::string& filePtWeightName, const bool isRec) {
   TFile* fileIn = OpenFileWithNullptrCheck(fileName);
-  TFile* fileOut = TFile::Open("yield_lifetime_qa_thn.root", "recreate");
+  const std::string fileOpenOption = isRec ? "recreate" : "update";
+  TFile* fileOut = TFile::Open(fileOutName.c_str(), fileOpenOption.c_str());
   TFile* fileWeight = gIsDoWeight ? OpenFileWithNullptrCheck(filePtWeightName) : nullptr;
   TH1* histoWeight = gIsDoWeight ? GetObjectWithNullptrCheck<TH1>(fileWeight, "histoWeight_pT_0_20") : nullptr;
 
@@ -47,25 +51,24 @@ void FillYieldRec(const std::string& fileName, const std::string& filePtWeightNa
     ScaleTHnSparseWithWeight(histoRecWeighted, axesIndices.at(pTAxisTitle), histoWeight);
   }
   
-  auto ProcessTHnSparse = [&](THnSparse* histoIn, const std::string& histoNameSuffix="", const std::vector<std::pair<std::string, int>>& promptnessesToProcess=promptnesses) {
+  auto ProcessTHnSparse = [&](THnSparse* histoIn, const std::string& histoNameSuffix="", const std::vector<std::pair<std::string, float>>& promptnessesToProcess=promptnesses) {
     CheckTAxisForRanges(*histoIn->GetAxis(axesIndices.at(pTAxisTitle)), pTRanges);
-    CheckTAxisForRanges(*histoIn->GetAxis(axesIndices.at(bgAxisTitle)), bdtBgUpperValuesVsPt);
     CheckTAxisForRanges(*histoIn->GetAxis(axesIndices.at(signalTypeAxisTitle)), {1, 2, 3});
-
-    std::vector<float> bdtSignalLowerValues;
-    for (int iB = 0; iB <= 99; iB++) {
-      bdtSignalLowerValues.emplace_back(0.01 * iB);
-    }
+    if(isRec) CheckTAxisForRanges(*histoIn->GetAxis(axesIndices.at(bgAxisTitle)), bdtBgUpperValuesVsPt);
 
     for(size_t iPt=0, nPts=pTRanges.size()-1; iPt<nPts; ++iPt) {
       SetTHnSparseAxisRanges(histoIn, axesIndices.at(pTAxisTitle), pTRanges.at(iPt), pTRanges.at(iPt + 1));
-      SetTHnSparseAxisRanges(histoIn, axesIndices.at(bgAxisTitle), 0., bdtBgUpperValuesVsPt.at(iPt));
+      if(isRec) SetTHnSparseAxisRanges(histoIn, axesIndices.at(bgAxisTitle), 0., bdtBgUpperValuesVsPt.at(iPt));
       for(const auto& promptness : promptnessesToProcess) {
-        const std::string dirName = "rec/" + promptness.first + "/" + GetPtCutName(iPt);
-        SetTHnSparseAxisRanges(histoIn, axesIndices.at(signalTypeAxisTitle), static_cast<float>(promptness.second), static_cast<float>(promptness.second)+1.f);
+        const std::string dirName = (isRec ? "rec/" : "gen/") + promptness.first + "/" + GetPtCutName(iPt);
+        SetTHnSparseAxisRanges(histoIn, axesIndices.at(signalTypeAxisTitle), promptness.second, promptness.second+1.f);
+        // for rec - real gBdtSignalLowerValues; for gen - fake 1-element vector for universality reasons
+        const auto& bdtSignalLowerValues = isRec ? gBdtSignalLowerValues : std::vector<float>{-999.f};
         for(const auto& bsc : bdtSignalLowerValues) {
-          const std::string histoName = "hT_NPgt" + to_string_with_precision(bsc, 2) + histoNameSuffix;
-          SetTHnSparseAxisRanges(histoIn, axesIndices.at(npAxisTitle), bsc, 1.);
+          const std::string histoName = isRec ?
+                                        "hT_NPgt" + to_string_with_precision(bsc, 2) + histoNameSuffix :
+                                        "hT" + histoNameSuffix;
+          if(isRec) SetTHnSparseAxisRanges(histoIn, axesIndices.at(npAxisTitle), bsc, 1.);
           TH1* histoYield = histoIn->Projection(axesIndices.at(lifetimeAxisTitle));
           histoYield->SetDirectory(nullptr);
           CD(fileOut, dirName);
@@ -75,7 +78,7 @@ void FillYieldRec(const std::string& fileName, const std::string& filePtWeightNa
         SetTHnSparseAxisRanges(histoIn, axesIndices.at(signalTypeAxisTitle));
       } // promptnessesToProcess
       SetTHnSparseAxisRanges(histoIn, axesIndices.at(pTAxisTitle));
-      SetTHnSparseAxisRanges(histoIn, axesIndices.at(bgAxisTitle));
+      if(isRec) SetTHnSparseAxisRanges(histoIn, axesIndices.at(bgAxisTitle));
     } // pTRanges
   };
   
@@ -85,47 +88,6 @@ void FillYieldRec(const std::string& fileName, const std::string& filePtWeightNa
   fileOut->Close();
   fileIn->Close();
   if (gIsDoWeight) fileWeight->Close();
-}
-
-void FillYieldGen(const std::string& fileName, const std::string& filePtWeightName) {
-  TFile* fileIn = OpenFileWithNullptrCheck(fileName);
-  TFile* fileOut = TFile::Open("yield_lifetime_qa_thn.root", "update");
-  TFile* fileWeight = gIsDoWeight ? OpenFileWithNullptrCheck(filePtWeightName) : nullptr;
-  TH1* histoWeight = gIsDoWeight ? GetObjectWithNullptrCheck<TH1>(fileWeight, "histoWeight_pT_0_20") : nullptr;
-
-  THnSparse* histoSim = GetObjectWithNullptrCheck<THnSparse>(fileIn, "hf-task-lc/hnLcVarsGen");
-  const std::map<std::string, int> axesIndices = MapAxesIndices(histoSim);
-  THnSparse* histoSimWeighted = dynamic_cast<THnSparse*>(histoSim->Clone());
-  if(gIsDoWeight) {
-    ScaleTHnSparseWithWeight(histoSimWeighted, axesIndices.at(pTAxisTitle), histoWeight);
-  }
-
-  auto ProcessTHnSparse = [&](THnSparse* histoIn, const std::string& histoNameSuffix="", const std::vector<std::pair<std::string, int>>& promptnessesToProcess=promptnesses) {
-    CheckTAxisForRanges(*histoIn->GetAxis(axesIndices.at(pTAxisTitle)), pTRanges);
-    CheckTAxisForRanges(*histoIn->GetAxis(axesIndices.at(signalTypeAxisTitle)), {1, 2, 3});
-
-    for(size_t iPt=0, nPts=pTRanges.size()-1; iPt<nPts; ++iPt) {
-      SetTHnSparseAxisRanges(histoIn, axesIndices.at(pTAxisTitle), pTRanges.at(iPt), pTRanges.at(iPt + 1));
-      for(const auto& promptness : promptnessesToProcess) {
-        const std::string dirName = "gen/" + promptness.first + "/" + GetPtCutName(iPt);
-        SetTHnSparseAxisRanges(histoIn, axesIndices.at(signalTypeAxisTitle), static_cast<float>(promptness.second), static_cast<float>(promptness.second)+1.f);
-        const std::string histoName = "hT" + histoNameSuffix;
-        TH1* histoYield = histoIn->Projection(axesIndices.at(lifetimeAxisTitle));
-        histoYield->SetDirectory(nullptr);
-        CD(fileOut, dirName);
-        histoYield->Write(histoName.c_str());
-        SetTHnSparseAxisRanges(histoIn, axesIndices.at(signalTypeAxisTitle));
-      } // promptnessesToProcess
-      SetTHnSparseAxisRanges(histoIn, axesIndices.at(pTAxisTitle));
-    } // pTRanges
-  };
-
-  ProcessTHnSparse(histoSim);
-  if(gIsDoWeight) ProcessTHnSparse(histoSimWeighted, "_W", {promptnesses.at(0)});
-
-  fileOut->Close();
-  fileIn->Close();
-  if(gIsDoWeight) fileWeight->Close();
 }
 
 std::string GetPtCutName(size_t iPt) {
@@ -148,14 +110,18 @@ int main(int argc, char* argv[]) {
 
   const std::string fileName = ReadNthLine(fileNameIn);
 
-  FillYieldRec(fileName, filePtWeightName);
-  FillYieldGen(fileName, filePtWeightName);
+  for (int iB = 0; iB <= 99; iB++) {
+    gBdtSignalLowerValues.emplace_back(0.01 * iB);
+  }
+
+  FillYield(fileName, filePtWeightName, true);
+  FillYield(fileName, filePtWeightName, false);
 
   std::vector<std::string> pTCutNames;
   for(size_t iPt=0, nPts=pTRanges.size()-1; iPt<nPts; ++iPt) {
     pTCutNames.emplace_back(GetPtCutName(iPt));
   }
-  TFile* fileOut = OpenFileWithNullptrCheck("yield_lifetime_qa_thn.root", "update");
+  TFile* fileOut = OpenFileWithNullptrCheck(fileOutName.c_str(), "update");
   for(const auto& promptness : promptnesses) {
     for(const auto& weightPresence : weightsPresences) {
       if((promptness.first == "nonprompt" || !gIsDoWeight) && weightPresence == "_W") continue;
@@ -169,11 +135,8 @@ int main(int argc, char* argv[]) {
       histoGenMerged->Write(("hT" + weightPresence).c_str());
     } // weightPresences
 
-    std::vector<float> bdtSignalLowerValues;
-    for (int iB = 0; iB <= 99; iB++) {
-      bdtSignalLowerValues.emplace_back(0.01 * iB);
-    }
-    for (const auto& bslv : bdtSignalLowerValues) {
+
+    for (const auto& bslv : gBdtSignalLowerValues) {
       for(const auto& weightPresence : weightsPresences) {
         if((promptness.first == "nonprompt" || !gIsDoWeight) && weightPresence == "_W") continue;
         std::vector<std::string> histoRecNames;
@@ -185,7 +148,7 @@ int main(int argc, char* argv[]) {
         CD(fileOut, "rec/" + promptness.first + "/" + GetPtCutName(pTRanges.size() - 1));
         histoRecMerged->Write(("hT_NPgt" + to_string_with_precision(bslv, 2) + weightPresence).c_str());
       } // weightPresences
-    } // bdtSignalLowerValues
+    } // gBdtSignalLowerValues
   } // promptnesses
   fileOut->Close();
 
