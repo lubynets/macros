@@ -74,7 +74,7 @@ void FillYield(const std::string& fileName, const std::string& filePtWeightName,
           CD(fileOut, dirName);
           histoYield->Write(histoName.c_str());
           SetTHnSparseAxisRanges(histoIn, axesIndices.at(npAxisTitle));
-        } // bdtBgUpperValuesVsPt
+        } // bdtSignalLowerValues
         SetTHnSparseAxisRanges(histoIn, axesIndices.at(signalTypeAxisTitle));
       } // promptnessesToProcess
       SetTHnSparseAxisRanges(histoIn, axesIndices.at(pTAxisTitle));
@@ -122,34 +122,32 @@ int main(int argc, char* argv[]) {
     pTCutNames.emplace_back(GetPtCutName(iPt));
   }
   TFile* fileOut = OpenFileWithNullptrCheck(fileOutName.c_str(), "update");
-  for(const auto& promptness : promptnesses) {
-    for(const auto& weightPresence : weightsPresences) {
-      if((promptness.first == "nonprompt" || !gIsDoWeight) && weightPresence == "_W") continue;
-      std::vector<std::string> histoGenNames;
-      histoGenNames.reserve(pTCutNames.size());
-      for (const auto& ptcn : pTCutNames) {
-        histoGenNames.emplace_back("gen/" + promptness.first + "/" + ptcn + "/hT" + weightPresence);
-      }
-      TH1* histoGenMerged = MergeHistograms(fileOut, histoGenNames);
-      CD(fileOut, "gen/" + promptness.first + "/" + GetPtCutName(pTRanges.size() - 1));
-      histoGenMerged->Write(("hT" + weightPresence).c_str());
-    } // weightPresences
 
-
-    for (const auto& bslv : gBdtSignalLowerValues) {
+  auto ProcessMerge = [&](const bool isRec) {
+    for(const auto& promptness : promptnesses) {
       for(const auto& weightPresence : weightsPresences) {
         if((promptness.first == "nonprompt" || !gIsDoWeight) && weightPresence == "_W") continue;
-        std::vector<std::string> histoRecNames;
-        histoRecNames.reserve(pTCutNames.size());
-        for (const auto& ptcn : pTCutNames) {
-          histoRecNames.emplace_back("rec/" + promptness.first + "/" + ptcn + "/hT_NPgt" + to_string_with_precision(bslv, 2) + weightPresence);
-        }
-        TH1* histoRecMerged = MergeHistograms(fileOut, histoRecNames);
-        CD(fileOut, "rec/" + promptness.first + "/" + GetPtCutName(pTRanges.size() - 1));
-        histoRecMerged->Write(("hT_NPgt" + to_string_with_precision(bslv, 2) + weightPresence).c_str());
+        // for rec - real gBdtSignalLowerValues; for gen - fake 1-element vector for universality reasons
+        const auto& bdtSignalLowerValues = isRec ? gBdtSignalLowerValues : std::vector<float>{-999.f};
+        for (const auto& bslv : bdtSignalLowerValues) {
+          std::vector<std::string> histoNames;
+          histoNames.reserve(pTCutNames.size());
+          for (const auto& ptcn : pTCutNames) {
+            histoNames.emplace_back(isRec ?
+                                       "rec/" + promptness.first + "/" + ptcn + "/hT_NPgt" + to_string_with_precision(bslv, 2) + weightPresence :
+                                       "gen/" + promptness.first + "/" + ptcn + "/hT" + weightPresence);
+          } // pTCutNames
+          TH1* histoMerged = MergeHistograms(fileOut, histoNames);
+          CD(fileOut, (isRec ? "rec/" : "gen/") + promptness.first + "/" + GetPtCutName(pTRanges.size() - 1));
+          histoMerged->Write((isRec ? "hT_NPgt" + to_string_with_precision(bslv, 2) + weightPresence : "hT" + weightPresence).c_str());
+        } // bdtSignalLowerValues
       } // weightPresences
-    } // gBdtSignalLowerValues
-  } // promptnesses
+    } // promptnesses
+  };
+
+  ProcessMerge(true);
+  ProcessMerge(false);
+
   fileOut->Close();
 
   return 0;
