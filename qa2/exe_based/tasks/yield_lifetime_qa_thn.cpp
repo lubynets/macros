@@ -11,12 +11,11 @@
 
 #include <iostream>
 #include <string>
+#include <string_view>
 
 using namespace HelperGeneral;
 using namespace HelperMath;
 using namespace std::string_literals;
-
-const std::string lifetimeAxisTitle = "T_{proper} (ps)";
 
 bool gIsDoWeight{false};
 std::vector<float> gBdtSignalLowerValues{};
@@ -24,10 +23,11 @@ std::vector<float> gBdtSignalLowerValues{};
 std::vector<float> pTRanges = {1, 3, 5, 8, 12, 20};
 const std::vector<float> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.05, 0.08};
 
-const std::string pTAxisTitle = "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})";
-const std::string bgAxisTitle = "BDT bkg score (Lc)";
-const std::string npAxisTitle = "BDT non-prompt score (Lc)";
-const std::string signalTypeAxisTitle = "candidates type";
+const std::string_view lifetimeAxisTitle = "T_{proper} (ps)";
+const std::string_view pTAxisTitle = "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})";
+const std::string_view bgAxisTitle = "BDT bkg score (Lc)";
+const std::string_view npAxisTitle = "BDT non-prompt score (Lc)";
+const std::string_view signalTypeAxisTitle = "candidates type";
 
 const std::string fileOutName{"yield_lifetime_qa_thn.root"};
 
@@ -53,7 +53,7 @@ void FillYield(const std::string& fileName, const std::string& filePtWeightName,
   TH1* histoWeight = gIsDoWeight ? GetObjectWithNullptrCheck<TH1>(fileWeight, "histoWeight_pT_0_20") : nullptr;
 
   THnSparse* histoRecOrGen = GetObjectWithNullptrCheck<THnSparse>(fileIn, "hf-task-lc/"s + (isRec ? "hnLcVarsWithBdt" : "hnLcVarsGen"));
-  const std::map<std::string, int> axesIndices = MapAxesIndices(histoRecOrGen);
+  const std::map<std::string_view, int> axesIndices = MapTHnSparseAxesIndices(histoRecOrGen);
   THnSparse* histoRecOrGenWeighted = dynamic_cast<THnSparse*>(histoRecOrGen->Clone());
   if (gIsDoWeight) {
     ScaleTHnSparseWithWeight(histoRecOrGenWeighted, axesIndices.at(pTAxisTitle), histoWeight);

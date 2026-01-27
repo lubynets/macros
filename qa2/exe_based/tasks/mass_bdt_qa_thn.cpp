@@ -11,6 +11,7 @@
 
 #include <iostream>
 #include <string>
+#include <string_view>
 #include <utility>
 
 using namespace HelperGeneral;
@@ -60,7 +61,7 @@ void MassBdtQaThn(const std::string& fileNameIn, int modeRun) {
 
   THnSparse* histoIn = modeRun != MergeOnly ? GetObjectWithNullptrCheck<THnSparse>(fileIn, "hf-task-lc/hnLcVarsWithBdt") : nullptr;
 
-  const std::map<std::string, int> axesIndices = modeRun != MergeOnly ? MapAxesIndices(histoIn) : std::map<std::string, int>{};
+  const std::map<std::string_view, int> axesIndices = modeRun != MergeOnly ? MapTHnSparseAxesIndices(histoIn) : std::map<std::string_view, int>{};
   if(modeRun != MergeOnly) {
     CheckTAxisForRanges(*histoIn->GetAxis(axesIndices.at(pTAxisTitle)), pTRanges);
     CheckTAxisForRanges(*histoIn->GetAxis(axesIndices.at(bgAxisTitle)), bdtBgUpperValuesVsPt);

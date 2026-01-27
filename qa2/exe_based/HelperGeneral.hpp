@@ -12,6 +12,7 @@
 #include <cmath>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace HelperGeneral {
@@ -67,7 +68,7 @@ void CD(TFile* file, const std::string& dirName);
 
 void CheckHistogramsForXaxisIdentity(const TH1* h1, const TH1* h2);
 
-std::map<std::string, int> MapAxesIndices(const THnSparse* histo);
+std::map<std::string_view, int> MapTHnSparseAxesIndices(const THnSparse* histo);
 
 void CheckTAxisForRanges(const TAxis& axis, const std::vector<float>& ranges);
 
