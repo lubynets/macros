@@ -44,7 +44,15 @@ void MultiFitQa(const bool isVerbose=true) {
 
   const size_t nVars = variables.size();
   const size_t nBdtScores = bdtScores.size();
-  TFile* fileMarkUp = OpenFileWithNullptrCheck("trials/" + std::to_string(trialNumbers.at(0)) + "/" + fileNameTemplate + ".NPgt0.01.root");
+
+  TFile* fileMarkUp{nullptr};
+  int iTrial{0};
+  do {
+    fileMarkUp = TFile::Open(("trials/" + std::to_string(trialNumbers.at(iTrial)) + "/" + fileNameTemplate + ".NPgt" + to_string_with_precision(bdtScores.at(0), 2) + ".root").c_str());
+    ++iTrial;
+  }
+  while(fileMarkUp == nullptr);
+
   TH1* histoMarkUp = GetObjectWithNullptrCheck<TH1>(fileMarkUp, variables.at(0));
   const size_t nLifetimeRanges = histoMarkUp->GetNbinsX();
 
