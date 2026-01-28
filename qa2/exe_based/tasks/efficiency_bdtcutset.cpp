@@ -13,6 +13,7 @@
 #include <TStyle.h>
 
 #include <iostream>
+#include <vector>
 
 using namespace HelperGeneral;
 using namespace HelperMath;
@@ -31,50 +32,59 @@ void efficiency_bdtcutset(const std::string& fileName) {
 
   // ========================= Configuration =================================
   const std::vector<double> lifeTimeRanges = {0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 1.4, 1.8, 2.4, 3.6, 5.0};
-  const std::vector<double> pTRanges = {1, 3, 5, 8, 12, 20};
+  const std::vector<double> pTRanges = {1, 2, 3, 4, 5, 8, 12, 20};
 
   std::vector<float> bdtScores;
   for(int i=0; i<=99; i++) {
     bdtScores.emplace_back(0.01 * i);
   }
+//   bdtScores.emplace_back(0.01);
 
-  const std::string tarSigShortcut = "NP";
+  std::vector<std::pair<double, double>> pTIntervals{};
+  for(size_t iPt = 0, nPts = pTRanges.size() - 1; iPt < nPts; ++iPt) {
+    pTIntervals.emplace_back(std::make_pair(pTRanges.at(iPt), pTRanges.at(iPt+1)));
+  }
+
+  pTIntervals.emplace_back(std::make_pair(1., 20.));
+  pTIntervals.emplace_back(std::make_pair(3., 20.));
+  pTIntervals.emplace_back(std::make_pair(4., 20.));
+
   // ==========================================================================
 
+  const std::string tarSigShortcut = "NP";
   const std::vector<std::string> promptnesses{"prompt", "nonprompt"};
   const std::vector<std::string> weightPresences{"", "_W"};
 
   TFile* fileOut = TFile::Open((fileOutName + ".root").c_str(), "recreate");
-  HelperMath::tensor<TGraphErrors*, 4> grEff = make_tensor<TGraphErrors*, 4>({promptnesses.size(), weightPresences.size(), pTRanges.size(), lifeTimeRanges.size()-1}, nullptr);
+  HelperMath::tensor<TGraphErrors*, 4> grEff = make_tensor<TGraphErrors*, 4>({promptnesses.size(), weightPresences.size(), pTIntervals.size(), lifeTimeRanges.size()-1}, nullptr);
 
-  auto PtRangeString = [&] (size_t iPt) {
-    std::pair<size_t, size_t> iPTMinMax = (iPt == pTRanges.size()-1) ? std::pair<size_t, size_t>{0, pTRanges.size()-1} : std::pair<size_t, size_t>{iPt, iPt+1};
-    return "pT_" + HelperGeneral::to_string_with_precision(pTRanges.at(iPTMinMax.first), 0) + "_" + HelperGeneral::to_string_with_precision(pTRanges.at(iPTMinMax.second), 0);
+  auto PtRangeString = [] (const std::pair<double, double>& pTInterval) {
+    return "pT_" + HelperGeneral::to_string_with_precision(pTInterval.first, 0) + "_" + HelperGeneral::to_string_with_precision(pTInterval.second, 0);
   };
 
-  auto PtRangeTitle = [&] (size_t iPt) {
-    const std::pair<size_t, size_t> iPTMinMax = (iPt == pTRanges.size()-1) ? std::pair<size_t, size_t>{0, pTRanges.size()-1} : std::pair<size_t, size_t>{iPt, iPt+1};
+  auto PtRangeTitle = [] (const std::pair<double, double>& pTInterval) {
     return "#it{p}_{T}#in (" +
-           HelperGeneral::to_string_with_precision(pTRanges.at(iPTMinMax.first), 0) + "#; " +
-           HelperGeneral::to_string_with_precision(pTRanges.at(iPTMinMax.second), 0) + ") GeV/#it{c}";
+           HelperGeneral::to_string_with_precision(pTInterval.first, 0) + "#; " +
+           HelperGeneral::to_string_with_precision(pTInterval.second, 0) + ") GeV/#it{c}";
   };
 
   for(size_t iPromptness=0, nPromptnesses=promptnesses.size(); iPromptness<nPromptnesses; ++iPromptness) {
     const std::string& promptness = promptnesses.at(iPromptness);
     std::cout << "Processing " << promptness << "\n";
     for(size_t iWeightPresence=0, nWeightPresences=weightPresences.size(); iWeightPresence < nWeightPresences; ++iWeightPresence) {
-      for (size_t iPt = 0, nPts = pTRanges.size() - 1; iPt <= nPts; ++iPt) {
-        std::cout << "Processing iPt = " << iPt << "\t" << PtRangeString(iPt) << "\n";
-        TH1* histoGen = GetObjectWithNullptrCheck<TH1>(fileIn, "gen/" + promptness + "/" + PtRangeString(iPt) + "/hT" + weightPresences.at(iWeightPresence));
+      for (size_t iPt = 0, nPts = pTIntervals.size(); iPt < nPts; ++iPt) {
+        std::cout << "Processing iPt = " << iPt << "\t" << PtRangeString(pTIntervals.at(iPt)) << "\n";
+        TH1* histoGen = GetObjectWithNullptrCheck<TH1>(fileIn, "gen/" + promptness + "/" + PtRangeString(pTIntervals.at(iPt)) + "/hT" + weightPresences.at(iWeightPresence));
         RebinHistoToEdges(histoGen, lifeTimeRanges);
         histoGen->UseCurrentStyle();
-        CD(fileOut, "yields/" + promptness + "/" + PtRangeString(iPt));
+        CD(fileOut, "yields/" + promptness + "/" + PtRangeString(pTIntervals.at(iPt)));
         histoGen->Write(("gen" + weightPresences.at(iWeightPresence)).c_str());
 
         for (const auto& score: bdtScores) {
           const std::string sScore = to_string_with_precision(score, 2);
+          if(score == bdtScores.at(0)) std::cout << "Processing iLifeTimeRange ";
           for (size_t iLifeTimeRange = 0; iLifeTimeRange < lifeTimeRanges.size() - 1 && score == bdtScores.at(0); ++iLifeTimeRange) {
-            std::cout << "Processing iLifeTimeRange " << iLifeTimeRange << "\n";
+            std::cout << iLifeTimeRange << " ";
             const Color_t grColor = promptness == "prompt" ? kRed : kBlue;
             const Style_t grLineStyle = weightPresences.at(iWeightPresence) == "" ? 1 : 7;
             const Style_t grMarkerStyle = weightPresences.at(iWeightPresence) == "" ? kFullSquare : kOpenSquare;
@@ -85,7 +95,7 @@ void efficiency_bdtcutset(const std::string& fileName) {
             gr->SetTitle(("bin #" + std::to_string(iLifeTimeRange + 1) + "#; T#in (" +
                           to_string_with_precision(lifeTimeRanges.at(iLifeTimeRange), 2) + "#; " +
                           to_string_with_precision(lifeTimeRanges.at(iLifeTimeRange + 1), 2) + ") ps#; " +
-                          PtRangeTitle(iPt)).c_str());
+                          PtRangeTitle(pTIntervals.at(iPt))).c_str());
             gr->SetMarkerColor(grColor);
             gr->SetLineColor(grColor);
             gr->SetLineStyle(grLineStyle);
@@ -95,25 +105,26 @@ void efficiency_bdtcutset(const std::string& fileName) {
             gr->SetMinimum(1e-5);
             gr->SetMaximum(1);
           }
+          if(score == bdtScores.at(0)) std::cout << "\n";
 
-          TH1* histoRec = GetObjectWithNullptrCheck<TH1>(fileIn, "rec/" + promptness + "/" + PtRangeString(iPt) + "/hT_" + tarSigShortcut + "gt" + sScore + weightPresences.at(iWeightPresence));
+          TH1* histoRec = GetObjectWithNullptrCheck<TH1>(fileIn, "rec/" + promptness + "/" + PtRangeString(pTIntervals.at(iPt)) + "/hT_" + tarSigShortcut + "gt" + sScore + weightPresences.at(iWeightPresence));
           RebinHistoToEdges(histoRec, lifeTimeRanges);
           histoRec->UseCurrentStyle();
 
-          CD(fileOut, "yields/" + promptness + "/" + PtRangeString(iPt));
+          CD(fileOut, "yields/" + promptness + "/" + PtRangeString(pTIntervals.at(iPt)));
           histoRec->Write(("rec_" + tarSigShortcut + "gt" + sScore + weightPresences.at(iWeightPresence)).c_str());
 
           auto [histoEff, histoEffRelErr] = EvaluateEfficiencyHisto(histoRec, histoGen);
 
-          CD(fileOut, "effs/" + promptness + "/" + PtRangeString(iPt));
+          CD(fileOut, "effs/" + promptness + "/" + PtRangeString(pTIntervals.at(iPt)));
           histoEff->Write(("eff_" + tarSigShortcut + "gt" + sScore + weightPresences.at(iWeightPresence)).c_str());
 
-          CD(fileOut, "errs/" + promptness + "/" + PtRangeString(iPt));
+          CD(fileOut, "errs/" + promptness + "/" + PtRangeString(pTIntervals.at(iPt)));
           histoEffRelErr->Write(("err_" + tarSigShortcut + "gt" + sScore + weightPresences.at(iWeightPresence)).c_str());
 
           const std::string openOption = iPromptness + iPt + iWeightPresence == 0 ? "recreate" : "update";
           TFile* fileOutScore = TFile::Open(("Eff_times_Acc_Lc." + tarSigShortcut + "gt" + sScore + ".root").c_str(), openOption.c_str());
-          CD(fileOutScore, PtRangeString(iPt));
+          CD(fileOutScore, PtRangeString(pTIntervals.at(iPt)));
           histoEff->Write((promptness + weightPresences.at(iWeightPresence)).c_str());
           for (size_t iLifeTimeRange = 0; iLifeTimeRange < lifeTimeRanges.size() - 1; ++iLifeTimeRange) {
             auto gr = grEff.at(iPromptness).at(iWeightPresence).at(iPt).at(iLifeTimeRange);
@@ -131,14 +142,13 @@ void efficiency_bdtcutset(const std::string& fileName) {
   for(const auto& promptness : promptnesses) {
     size_t iWeightPresence = 0;
     for(const auto& weightPresence : weightPresences) {
-      if(promptness == "nonprompt" && weightPresence == "_W") continue;
       leg.AddEntry(grEff.at(iPromptness).at(iWeightPresence).at(0).at(0), (promptness + weightPresence).c_str(), "PL");
       ++iWeightPresence;
     }
     ++iPromptness;
   }
 
-  for(size_t iPt=0, nPts=pTRanges.size()-1; iPt<=nPts; ++iPt) {
+  for(size_t iPt=0, nPts=pTIntervals.size(); iPt<nPts; ++iPt) {
     for (size_t iLifeTimeRange = 0; iLifeTimeRange < lifeTimeRanges.size() - 1; ++iLifeTimeRange) {
       const std::string priBra = lifeTimeRanges.size() - 1 == 1 ? "" : iLifeTimeRange == 0 ? "(" : iLifeTimeRange == lifeTimeRanges.size() - 2 ? ")" : "";
       TCanvas cc("cc", "");
@@ -147,8 +157,9 @@ void efficiency_bdtcutset(const std::string& fileName) {
       grEff.at(0).at(0).at(iPt).at(iLifeTimeRange)->Draw("APE"); // 0 stands for prompt, 0 for no-weights
       grEff.at(0).at(1).at(iPt).at(iLifeTimeRange)->Draw("PE same"); // 0 stands for prompt, 1 for weights
       grEff.at(1).at(0).at(iPt).at(iLifeTimeRange)->Draw("PE same"); // 1 stands for nonprompt, 0 for no-weights
+      grEff.at(1).at(1).at(iPt).at(iLifeTimeRange)->Draw("PE same"); // 1 stands for nonprompt, 1 for weights
       leg.Draw("same");
-      cc.Print(("grEff_vs_" + tarSigShortcut + "_" + PtRangeString(iPt) + ".pdf" + priBra).c_str());
+      cc.Print(("grEff_vs_" + tarSigShortcut + "_" + PtRangeString(pTIntervals.at(iPt)) + ".pdf" + priBra).c_str());
     } // lifeTimeRanges
   } // pTRanges
   fileOut->Close();
