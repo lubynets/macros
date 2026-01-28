@@ -30,7 +30,7 @@ void efficiency_bdtcutset(const std::string& fileName) {
   const std::string fileOutName = "efficiency_summary";
 
   // ========================= Configuration =================================
-  const std::vector<double> lifeTimeRanges = {0.2, 0.35, 0.5, 0.7, 0.9, 1.6};
+  const std::vector<double> lifeTimeRanges = {0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 1.4, 1.8, 2.4, 3.6, 5.0};
   const std::vector<double> pTRanges = {1, 3, 5, 8, 12, 20};
 
   std::vector<float> bdtScores;
@@ -63,7 +63,6 @@ void efficiency_bdtcutset(const std::string& fileName) {
     const std::string& promptness = promptnesses.at(iPromptness);
     std::cout << "Processing " << promptness << "\n";
     for(size_t iWeightPresence=0, nWeightPresences=weightPresences.size(); iWeightPresence < nWeightPresences; ++iWeightPresence) {
-      if(promptness == "nonprompt" && weightPresences.at(iWeightPresence) == "_W") continue;
       for (size_t iPt = 0, nPts = pTRanges.size() - 1; iPt <= nPts; ++iPt) {
         std::cout << "Processing iPt = " << iPt << "\t" << PtRangeString(iPt) << "\n";
         TH1* histoGen = GetObjectWithNullptrCheck<TH1>(fileIn, "gen/" + promptness + "/" + PtRangeString(iPt) + "/hT" + weightPresences.at(iWeightPresence));

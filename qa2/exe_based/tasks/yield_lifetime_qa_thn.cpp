@@ -21,8 +21,8 @@ using namespace std::string_literals;
 bool gIsDoWeight{false};
 std::vector<float> gBdtSignalLowerValues{};
 
-std::vector<float> pTRanges = {1, 3, 5, 8, 12, 20};
-const std::vector<float> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.05, 0.08};
+std::vector<float> pTRanges = {1, 2, 3, 4, 5, 8, 12, 20};
+const std::vector<float> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.02, 0.02, 0.04, 0.08};
 
 const std::string_view lifetimeAxisTitle = "T_{proper} (ps)";
 const std::string_view pTAxisTitle = "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})";
@@ -32,6 +32,7 @@ const std::string_view npAxisTitle = "BDT non-prompt score (Lc)";
 const std::string_view signalTypeAxisTitle = "candidates type";
 
 const std::string fileOutName{"yield_lifetime_qa_thn.root"};
+constexpr bool IsVerbose{true};
 
 const std::vector<std::pair<std::string, float>> promptnesses {
   {"prompt", 1},
@@ -48,12 +49,13 @@ const std::array<std::string, 2> weightsPresences{"", "_W"};
 std::string GetPtCutName(size_t iPt);
 
 void FillYield(const std::string& fileName, const std::string& filePtWeightName, const bool isRec) {
+  if(IsVerbose) std::cout << "FillYield() started\n";
   TFile* fileIn = OpenFileWithNullptrCheck(fileName);
   const std::string fileOpenOption = isRec ? "recreate" : "update";
   TFile* fileOut = TFile::Open(fileOutName.c_str(), fileOpenOption.c_str());
   TFile* fileWeight = gIsDoWeight ? OpenFileWithNullptrCheck(filePtWeightName) : nullptr;
   TH1* histoWeightPrompt = gIsDoWeight ? GetObjectWithNullptrCheck<TH1>(fileWeight, "histoWeight_pT_0_20") : nullptr;
-  TH1* histoWeightNonPrompt = gIsDoWeight ? GetObjectWithNullptrCheck<TH1>(fileWeight, "histoWeight_NonPrompt") : nullptr;
+  TH1* histoWeightNonPrompt = gIsDoWeight ? GetObjectWithNullptrCheck<TH1>(fileWeight, "histoNPWeight") : nullptr;
   THnSparse* histoRecOrGen = GetObjectWithNullptrCheck<THnSparse>(fileIn, "hf-task-lc/"s + (isRec ? "hnLcVarsWithBdt" : "hnLcVarsGen"));
   const std::map<std::string_view, int> axesIndices = MapTHnSparseAxesIndices(histoRecOrGen);
   THnSparse* histoPromptWeighted = gIsDoWeight ? dynamic_cast<THnSparse*>(histoRecOrGen->Clone()) : nullptr;
@@ -64,19 +66,24 @@ void FillYield(const std::string& fileName, const std::string& filePtWeightName,
   }
   
   auto ProcessTHnSparse = [&](THnSparse* histoIn, const std::string& histoNameSuffix="", const std::vector<std::pair<std::string, float>>& promptnessesToProcess=promptnesses) {
+    if(IsVerbose) std::cout << "ProcessTHnSparse() started\n";
     CheckTAxisForRanges(*histoIn->GetAxis(axesIndices.at(pTAxisTitle)), pTRanges);
     CheckTAxisForRanges(*histoIn->GetAxis(axesIndices.at(signalTypeAxisTitle)), {1, 2, 3});
     if(isRec) CheckTAxisForRanges(*histoIn->GetAxis(axesIndices.at(bgAxisTitle)), bdtBgUpperValuesVsPt);
 
     for(size_t iPt=0, nPts=pTRanges.size()-1; iPt<nPts; ++iPt) {
+      if(IsVerbose) std::cout << "ProcessTHnSparse(): iPt = " << iPt << "\n";
       SetTHnSparseAxisRanges(histoIn, axesIndices.at(pTAxisTitle), pTRanges.at(iPt), pTRanges.at(iPt + 1));
       if(isRec) SetTHnSparseAxisRanges(histoIn, axesIndices.at(bgAxisTitle), 0., bdtBgUpperValuesVsPt.at(iPt));
       for(const auto& promptness : promptnessesToProcess) {
+        if(IsVerbose) std::cout << "ProcessTHnSparse(): promptness = " << promptness.first << "\n";
         const std::string dirName = (isRec ? "rec/" : "gen/") + promptness.first + "/" + GetPtCutName(iPt);
         SetTHnSparseAxisRanges(histoIn, axesIndices.at(signalTypeAxisTitle), promptness.second, promptness.second+1.f);
         // for rec - real gBdtSignalLowerValues; for gen - fake 1-element vector for universality reasons
         const auto& bdtSignalLowerValues = isRec ? gBdtSignalLowerValues : std::vector<float>{UndefValueFloat};
+        if(IsVerbose) std::cout << "ProcessTHnSparse(): bsc = ";
         for(const auto& bsc : bdtSignalLowerValues) {
+          if(IsVerbose) std::cout << bsc << "\t";
           const std::string histoName = isRec ?
                                         "hT_NPgt" + to_string_with_precision(bsc, 2) + histoNameSuffix :
                                         "hT" + histoNameSuffix;
@@ -87,11 +94,13 @@ void FillYield(const std::string& fileName, const std::string& filePtWeightName,
           histoYield->Write(histoName.c_str());
           if(isRec) SetTHnSparseAxisRanges(histoIn, axesIndices.at(npAxisTitle));
         } // bdtSignalLowerValues
+        if(IsVerbose) std::cout << "\n";
         SetTHnSparseAxisRanges(histoIn, axesIndices.at(signalTypeAxisTitle));
       } // promptnessesToProcess
       SetTHnSparseAxisRanges(histoIn, axesIndices.at(pTAxisTitle));
       if(isRec) SetTHnSparseAxisRanges(histoIn, axesIndices.at(bgAxisTitle));
     } // pTRanges
+    if(IsVerbose) std::cout << "ProcessTHnSparse() finished\n";
   };
   
   ProcessTHnSparse(histoRecOrGen);
@@ -103,6 +112,7 @@ void FillYield(const std::string& fileName, const std::string& filePtWeightName,
   fileOut->Close();
   fileIn->Close();
   if (gIsDoWeight) fileWeight->Close();
+  if(IsVerbose) std::cout << "FillYield() finished\n";
 }
 
 std::string GetPtCutName(size_t iPt) {
@@ -139,7 +149,7 @@ int main(int argc, char* argv[]) {
 
   if(modeRun == RunOnly) return 0;
 
-  const int nLowerPtBinsToExclude{2};
+  const int nLowerPtBinsToExclude{3};
   pTRanges.erase(pTRanges.begin(), pTRanges.begin()+nLowerPtBinsToExclude);
 
   std::vector<std::string> pTCutNames;

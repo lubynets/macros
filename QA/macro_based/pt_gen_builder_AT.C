@@ -16,10 +16,12 @@ void pt_gen_builder_AT(const std::string fileListName) {
   // ================ custom binning ================================
   std::vector<double> binEdges;
   double pt{0.};
-  while(pt <= 20) {
+  bool fineStep{true};
+  while(pt <= 30) {
     binEdges.emplace_back(pt);
-    if(pt < 10) pt += 0.01;
-    else        pt += 0.1;
+    if(fineStep) pt += 0.01;
+    else         pt += 0.1;
+    if(fineStep && std::fabs(pt - 10.) < 1e-4) fineStep = false;
   }
   TH1D* histoPtGenPrompt = new TH1D("histoPtGenPrompt", "histoPtGenPrompt", binEdges.size()-1, binEdges.data());
   TH1D* histoPtGenNonPrompt = new TH1D("histoPtGenNonPrompt", "histoPtGenNonPrompt", binEdges.size()-1, binEdges.data());
@@ -31,9 +33,10 @@ void pt_gen_builder_AT(const std::string fileListName) {
   }
 
   const int nEntries = treeIn->GetEntries();
+  std::cout << "nEntries = " << nEntries << "\n";
   for(int iEntry=0; iEntry<nEntries; ++iEntry) {
     treeIn->GetEntry(iEntry);
-    for(const auto& genParticle : *(genParticles->GetChannels()) ) {
+    for(const auto& genParticle : *genParticles) {
       const float pT = genParticle.GetField<float>(ptGenFieldId);
       const int promptness = genParticle.GetField<int>(promptnessFieldId);
 
