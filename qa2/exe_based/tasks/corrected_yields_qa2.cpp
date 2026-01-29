@@ -20,17 +20,17 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
 
   const bool isMc = !fileNameMC.empty();
 
-  const std::vector<double> lifetimeRanges = {0.2, 0.35, 0.5, 0.7, 0.9, 1.6};
+  const std::vector<double> lifetimeRanges = {0.2, 0.4, 0.6, 0.8, 1.0, 1.4, 1.8};
   const std::string integralOption = "I";
 
   struct Promptness {
-      std::string name_;
-      std::string histo_name_;
+    std::string name_;
+    std::string histo_name_;
   };
 
-  std::vector<Promptness> promptnesses{
-          {"prompt",    "Prompt"},
-          {"nonprompt", "NonPrompt"}
+  const std::vector<Promptness> promptnesses {
+    {"prompt",    "Prompt"},
+    {"nonprompt", "NonPrompt"}
   };
 
   TFile* fileCutVar = OpenFileWithNullptrCheck(fileNameCutVar);
@@ -40,6 +40,7 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
     const std::string promptness = promptnesses.at(iP).name_;
 
     TH1* hCutVar = GetObjectWithNullptrCheck<TH1>(fileCutVar, "hCorrYields" + promptnesses.at(iP).histo_name_);
+    hCutVar = CutSubHistogram(hCutVar, lifetimeRanges.front(), lifetimeRanges.back());
     hCutVar->UseCurrentStyle();
     hCutVar->SetLineColor(kRed);
     hCutVar->SetMarkerColor(kRed);
