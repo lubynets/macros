@@ -7,6 +7,8 @@ void setRowCols(const int size, int& rows, int& cols, int& w, int& h);
 
 std::string ReadNthLine(const std::string& fileName);
 
+bool isBackground(int flagMc, int selFlag, int isSwapped);
+
 /// Channels taken from here: https://github.com/AliceO2Group/O2Physics/blob/87be5da87be8bcef56dccf64b5d960e7f1b7545d/PWGHF/Core/DecayChannels.h#L61-L95
 /// @brief 3-prong candidates: main channels
 enum DecayChannelMain : int8_t {
@@ -22,13 +24,13 @@ enum DecayChannelMain : int8_t {
   DsToPiPiPi = 8,    // π+ π− π+
   DsToPiPiPiPi0 = 9, // π+ π− π+ π0
   // D*+
-/*[x]*/  DstarToPiKPi = 10,       // π+ K− π+ (from [(D0 → π+ K−) π+])
-/*[x]*/  DstarToPiKPiPi0 = 11,    // π+ K− π+ π0
-/*[ ]*/  DstarToPiKPiPi0Pi0 = 12, // π+ K− π+ π0 π0
-/*[x]*/  DstarToPiKK = 13,        // π+ K− K+
-/*[ ]*/  DstarToPiKKPi0 = 14,     // π+ K− K+ π0
-/*[x]*/  DstarToPiPiPi = 15,      // π+ π− π+
-/*[x]*/  DstarToPiPiPiPi0 = 16,   // π+ π− π+ π0
+  DstarToPiKPi = 10,       // π+ K− π+ (from [(D0 → π+ K−) π+])
+  DstarToPiKPiPi0 = 11,    // π+ K− π+ π0
+  DstarToPiKPiPi0Pi0 = 12, // π+ K− π+ π0 π0
+  DstarToPiKK = 13,        // π+ K− K+
+  DstarToPiKKPi0 = 14,     // π+ K− K+ π0
+  DstarToPiPiPi = 15,      // π+ π− π+
+  DstarToPiPiPiPi0 = 16,   // π+ π− π+ π0
   // Λc+
   LcToPKPi = 17,    // p K− π+
   LcToPKPiPi0 = 18, // p K− π+ π0
@@ -163,35 +165,37 @@ struct Decay {
   float br_pdg_;
   std::string greek_daughters_;
   int fill_style_;
+  bool is_bg_;
 };
 std::vector<Decay> Decays {
-  {DplusToPiKPi,       Mothers[Dplus], "PiKPi",       BRsDplus_PYTHIA[DplusToPiKPi],    BRsDplus_PDG[DplusToPiKPi],    "#pi^{+}K^{#minus}#pi^{+}",               3004},
-  {DplusToPiKPiPi0,    Mothers[Dplus], "PiKPiPi0",    BRsDplus_PYTHIA[DplusToPiKPiPi0], BRsDplus_PDG[DplusToPiKPiPi0], "#pi^{+}K^{#minus}#pi^{+}#pi^{0}",        3005},
-  {DplusToPiPiPi,      Mothers[Dplus], "PiPiPi",      BRsDplus_PYTHIA[DplusToPiPiPi],   BRsDplus_PDG[DplusToPiPiPi],   "#pi^{+}#pi^{#minus}#pi^{+}",             3006},
-  {DplusToPiKK,        Mothers[Dplus], "PiKK",        BRsDplus_PYTHIA[DplusToPiKK],     BRsDplus_PDG[DplusToPiKK],     "K^{+}K^{#minus}#pi^{+}",                 3007},
+  {DplusToPiKPi,       Mothers[Dplus], "PiKPi",       BRsDplus_PYTHIA[DplusToPiKPi],    BRsDplus_PDG[DplusToPiKPi],    "#pi^{+}K^{#minus}#pi^{+}",               3004, true },
+  {DplusToPiKPiPi0,    Mothers[Dplus], "PiKPiPi0",    BRsDplus_PYTHIA[DplusToPiKPiPi0], BRsDplus_PDG[DplusToPiKPiPi0], "#pi^{+}K^{#minus}#pi^{+}#pi^{0}",        3005, true },
+  {DplusToPiPiPi,      Mothers[Dplus], "PiPiPi",      BRsDplus_PYTHIA[DplusToPiPiPi],   BRsDplus_PDG[DplusToPiPiPi],   "#pi^{+}#pi^{#minus}#pi^{+}",             3006, true },
+  {DplusToPiKK,        Mothers[Dplus], "PiKK",        BRsDplus_PYTHIA[DplusToPiKK],     BRsDplus_PDG[DplusToPiKK],     "K^{+}K^{#minus}#pi^{+}",                 3007, true },
 
-  {DsToPiKK,           Mothers[Ds],    "PiKK",        BRsDs_PYTHIA[DsToPiKK],           BRsDs_PDG[DsToPiKK],           "K^{+}K^{#minus}#pi^{+}",                 3004},
-  {DsToPiKKPi0,        Mothers[Ds],    "PiKKPi0",     BRsDs_PYTHIA[DsToPiKKPi0],        BRsDs_PDG[DsToPiKKPi0],        "K^{+}K^{#minus}#pi^{+}#pi^{0}",          3005},
-  {DsToPiPiK,          Mothers[Ds],    "PiPiK",       BRsDs_PYTHIA[DsToPiPiK],          BRsDs_PDG[DsToPiPiK],          "#pi^{+}#pi^{#minus}K^{+}",               3006},
-  {DsToPiPiPi,         Mothers[Ds],    "PiPiPi",      BRsDs_PYTHIA[DsToPiPiPi],         BRsDs_PDG[DsToPiPiPi],         "#pi^{+}#pi^{#minus}#pi^{+}",             3007},
-  {DsToPiPiPiPi0,      Mothers[Ds],    "PiPiPiPi0",   BRsDs_PYTHIA[DsToPiPiPiPi0],      BRsDs_PDG[DsToPiPiPiPi0],      "#pi^{+}#pi^{#minus}#pi^{+}#pi^{0}",      3008},
+  {DsToPiKK,           Mothers[Ds],    "PiKK",        BRsDs_PYTHIA[DsToPiKK],           BRsDs_PDG[DsToPiKK],           "K^{+}K^{#minus}#pi^{+}",                 3004, true },
+  {DsToPiKKPi0,        Mothers[Ds],    "PiKKPi0",     BRsDs_PYTHIA[DsToPiKKPi0],        BRsDs_PDG[DsToPiKKPi0],        "K^{+}K^{#minus}#pi^{+}#pi^{0}",          3005, true },
+  {DsToPiPiK,          Mothers[Ds],    "PiPiK",       BRsDs_PYTHIA[DsToPiPiK],          BRsDs_PDG[DsToPiPiK],          "#pi^{+}#pi^{#minus}K^{+}",               3006, true },
+  {DsToPiPiPi,         Mothers[Ds],    "PiPiPi",      BRsDs_PYTHIA[DsToPiPiPi],         BRsDs_PDG[DsToPiPiPi],         "#pi^{+}#pi^{#minus}#pi^{+}",             3007, true },
+  {DsToPiPiPiPi0,      Mothers[Ds],    "PiPiPiPi0",   BRsDs_PYTHIA[DsToPiPiPiPi0],      BRsDs_PDG[DsToPiPiPiPi0],      "#pi^{+}#pi^{#minus}#pi^{+}#pi^{0}",      3008, true },
 
-  {DstarToPiKPi,       Mothers[Dstar], "PiKPi",       BRsD0_PYTHIA[DstarToPiKPi],       BRsD0_PDG[DstarToPiKPi],       "#pi^{+}K^{#minus}#pi^{+}",               3004},
-  {DstarToPiKPiPi0,    Mothers[Dstar], "PiKPiPi0",    BRsD0_PYTHIA[DstarToPiKPiPi0],    BRsD0_PDG[DstarToPiKPiPi0],    "#pi^{+}K^{#minus}#pi^{+}#pi^{0}",        3005},
-  {DstarToPiKPiPi0Pi0, Mothers[Dstar], "PiKPiPi0Pi0", BRsD0_PYTHIA[DstarToPiKPiPi0Pi0], BRsD0_PDG[DstarToPiKPiPi0Pi0], "#pi^{+}K^{#minus}#pi^{+}#pi^{0}#pi^{0}", 3006},
-  {DstarToPiKK,        Mothers[Dstar], "PiKK",        BRsD0_PYTHIA[DstarToPiKK],        BRsD0_PDG[DstarToPiKK],        "K^{+}K^{#minus}#pi^{+}",                 3007},
-  {DstarToPiKKPi0,     Mothers[Dstar], "PiKKPi0",     BRsD0_PYTHIA[DstarToPiKKPi0],     BRsD0_PDG[DstarToPiKKPi0],     "K^{+}K^{#minus}#pi^{+}#pi^{0}",          3008},
-  {DstarToPiPiPi,      Mothers[Dstar], "PiPiPi",      BRsD0_PYTHIA[DstarToPiPiPi],      BRsD0_PDG[DstarToPiPiPi],      "#pi^{+}#pi^{#minus}#pi^{+}",             3009},
-  {DstarToPiPiPiPi0,   Mothers[Dstar], "PiPiPiPi0",   BRsD0_PYTHIA[DstarToPiPiPiPi0],   BRsD0_PDG[DstarToPiPiPiPi0],   "#pi^{+}#pi^{#minus}#pi^{+}#pi^{0}",      3010},
+  {DstarToPiKPi,       Mothers[Dstar], "PiKPi",       BRsD0_PYTHIA[DstarToPiKPi],       BRsD0_PDG[DstarToPiKPi],       "#pi^{+}K^{#minus}#pi^{+}",               3004, true },
+  {DstarToPiKPiPi0,    Mothers[Dstar], "PiKPiPi0",    BRsD0_PYTHIA[DstarToPiKPiPi0],    BRsD0_PDG[DstarToPiKPiPi0],    "#pi^{+}K^{#minus}#pi^{+}#pi^{0}",        3005, true },
+  {DstarToPiKPiPi0Pi0, Mothers[Dstar], "PiKPiPi0Pi0", BRsD0_PYTHIA[DstarToPiKPiPi0Pi0], BRsD0_PDG[DstarToPiKPiPi0Pi0], "#pi^{+}K^{#minus}#pi^{+}#pi^{0}#pi^{0}", 3006, true },
+  {DstarToPiKK,        Mothers[Dstar], "PiKK",        BRsD0_PYTHIA[DstarToPiKK],        BRsD0_PDG[DstarToPiKK],        "K^{+}K^{#minus}#pi^{+}",                 3007, true },
+  {DstarToPiKKPi0,     Mothers[Dstar], "PiKKPi0",     BRsD0_PYTHIA[DstarToPiKKPi0],     BRsD0_PDG[DstarToPiKKPi0],     "K^{+}K^{#minus}#pi^{+}#pi^{0}",          3008, true },
+  {DstarToPiPiPi,      Mothers[Dstar], "PiPiPi",      BRsD0_PYTHIA[DstarToPiPiPi],      BRsD0_PDG[DstarToPiPiPi],      "#pi^{+}#pi^{#minus}#pi^{+}",             3009, true },
+  {DstarToPiPiPiPi0,   Mothers[Dstar], "PiPiPiPi0",   BRsD0_PYTHIA[DstarToPiPiPiPi0],   BRsD0_PDG[DstarToPiPiPiPi0],   "#pi^{+}#pi^{#minus}#pi^{+}#pi^{0}",      3010, true },
 
-  {LcToPKPi,           Mothers[Lc],    "PKPi",        BRsLc_PYTHIA[LcToPKPi],           BRsLc_PDG[LcToPKPi],           "pK^{#minus}#pi^{+}",                     3001},
-  {LcToPKPiPi0,        Mothers[Lc],    "PKPiPi0",     BRsLc_PYTHIA[LcToPKPiPi0],        BRsLc_PDG[LcToPKPiPi0],        "pK^{#minus}#pi^{+}#pi^{0}",              3004},
-  {LcToPPiPi,          Mothers[Lc],    "PPiPi",       BRsLc_PYTHIA[LcToPPiPi],          BRsLc_PDG[LcToPPiPi],          "p#pi^{#minus}#pi^{+}",                   3005},
-  {LcToPKK,            Mothers[Lc],    "PKK",         BRsLc_PYTHIA[LcToPKK],            BRsLc_PDG[LcToPKK],            "pK^{#minus}K^{+}",                       3006},
+  {LcToPKPi,           Mothers[Lc],    "PKPi",        BRsLc_PYTHIA[LcToPKPi],           BRsLc_PDG[LcToPKPi],           "pK^{#minus}#pi^{+}",                     3001, true },
+  {LcToPKPi,           Mothers[Lc],    "PKPi",        BRsLc_PYTHIA[LcToPKPi],           BRsLc_PDG[LcToPKPi],           "pK^{#minus}#pi^{+}",                     3002, false},
+  {LcToPKPiPi0,        Mothers[Lc],    "PKPiPi0",     BRsLc_PYTHIA[LcToPKPiPi0],        BRsLc_PDG[LcToPKPiPi0],        "pK^{#minus}#pi^{+}#pi^{0}",              3004, true },
+  {LcToPPiPi,          Mothers[Lc],    "PPiPi",       BRsLc_PYTHIA[LcToPPiPi],          BRsLc_PDG[LcToPPiPi],          "p#pi^{#minus}#pi^{+}",                   3005, true },
+  {LcToPKK,            Mothers[Lc],    "PKK",         BRsLc_PYTHIA[LcToPKK],            BRsLc_PDG[LcToPKK],            "pK^{#minus}K^{+}",                       3006, true },
 
-  {XicToPKPi,          Mothers[Xic],   "PKPi",        BRsXic_PYTHIA[XicToPKPi],         BRsXic_PDG[XicToPKPi],         "pK^{#minus}#pi^{+}",                     3004},
-  {XicToPKK,           Mothers[Xic],   "PKK",         BRsXic_PYTHIA[XicToPKK],          BRsXic_PDG[XicToPKK],          "pK^{#minus}K^{+}",                       3005},
-  {XicToSPiPi,         Mothers[Xic],   "SPiPi",       BRsXic_PYTHIA[XicToSPiPi],        BRsXic_PDG[XicToSPiPi],        "#Sigma^{+}#pi^{#minus}#pi^{+}",          3006}
+  {XicToPKPi,          Mothers[Xic],   "PKPi",        BRsXic_PYTHIA[XicToPKPi],         BRsXic_PDG[XicToPKPi],         "pK^{#minus}#pi^{+}",                     3004, true },
+  {XicToPKK,           Mothers[Xic],   "PKK",         BRsXic_PYTHIA[XicToPKK],          BRsXic_PDG[XicToPKK],          "pK^{#minus}K^{+}",                       3005, true },
+  {XicToSPiPi,         Mothers[Xic],   "SPiPi",       BRsXic_PYTHIA[XicToSPiPi],        BRsXic_PDG[XicToSPiPi],        "#Sigma^{+}#pi^{#minus}#pi^{+}",          3006, true }
 };
 
 const std::string FromCtToProperLifetimePs{"33.35641"};
@@ -234,12 +238,12 @@ void corrBkgLc(const std::string& filenameIn, const bool doRun=true, const int f
     }
     std::cout << "cuts_bdt = " << cuts_bdt << "\n";
 
-    if(eraseLcToPKPi) Decays.erase(std::remove_if(Decays.begin(), Decays.end(), [](const Decay& decay) { return decay.id_ == LcToPKPi; }), Decays.end());
+    if(eraseLcToPKPi) Decays.erase(std::remove_if(Decays.begin(), Decays.end(), [](const Decay& decay) { return decay.id_ == LcToPKPi && !decay.is_bg_; }), Decays.end());
     if(keepOnlyDToKPiPiAndDsToPiKK) Decays.erase(std::remove_if(Decays.begin(), Decays.end(), [](const Decay& decay) { return decay.id_ != DplusToPiKPi && decay.id_ != DsToPiKK; }), Decays.end());
 
     const size_t nDecays{Decays.size()};
     const size_t nMothers{Mothers.size()};
-    const int indexLcToPKPi = std::distance(Decays.begin(), std::find_if(Decays.begin(), Decays.end(), [](const Decay& decay) { return decay.id_ == LcToPKPi; }));
+    const int indexLcToPKPi = std::distance(Decays.begin(), std::find_if(Decays.begin(), Decays.end(), [](const Decay& decay) { return decay.id_ == LcToPKPi && !decay.is_bg_; }));
     const int indexDplusToPiKPi = std::distance(Decays.begin(), std::find_if(Decays.begin(), Decays.end(), [](const Decay& decay) { return decay.id_ == DplusToPiKPi; }));
 
     TFile* fileForNoRun = !doRun ? TFile::Open(filenameIn.c_str()) : nullptr;
@@ -288,11 +292,15 @@ void corrBkgLc(const std::string& filenameIn, const bool doRun=true, const int f
         std::vector<std::string> cuts;
 
         for(size_t iDecay=0; iDecay<nDecays; ++iDecay) {
-          const std::string decayFormula = Decays.at(iDecay).mother_.name_ + "To" + Decays.at(iDecay).daughters_;
+          const auto& decay = Decays.at(iDecay);
+          std::string decayFormula = decay.mother_.name_ + "To" + decay.daughters_;
+          if(decay.id_ == LcToPKPi) decayFormula.append(decay.is_bg_ ? "Refl" : "Sig");
           histoNames.push_back("histos_" + decayFormula + "_" + sliceVarName + "Bin" + std::to_string(sliceVarBin));
           histos.at(iDecay).emplace_back(doRun ? new TH1D(histoNames.at(iDecay).c_str(), histoNames.at(iDecay).c_str(), binsX, minX, maxX) : fileForNoRun->Get<TH1>((sliceVarName + "Bin" + std::to_string(sliceVarBin) + "/" + histoNames.back()).c_str()));
 
-          const std::string cut = cuts_base + " && (fFlagMc == " + std::to_string(-Decays.at(iDecay).id_) + " || fFlagMc == " + std::to_string(Decays.at(iDecay).id_) + ")";
+          const std::string sbCut = static_cast<std::string>(decay.is_bg_ ? "" : "!") + "isBackground(fFlagMc, fCandidateSelFlag, fIsCandidateSwapped)";
+          const std::string cut = cuts_base + " && (fFlagMc == " + std::to_string(-decay.id_) + " || fFlagMc == " + std::to_string(decay.id_) + ") && " + sbCut;
+
           cuts.push_back(cut);
 
           std::cout << cuts.back() << "\n";
@@ -336,7 +344,7 @@ void corrBkgLc(const std::string& filenameIn, const bool doRun=true, const int f
         for(size_t iDecay=0; iDecay<nDecays; ++iDecay) {
           const auto& decay = Decays.at(iDecay);
           const auto& histo = histos.at(iDecay).back();
-          if(doRun && decay.id_ != LcToPKPi) histos_bkgSum.back()->Add(histo); // this is the signal!
+          if(doRun && decay.is_bg_) histos_bkgSum.back()->Add(histo); // this is the signal!
 
           const auto& color = colors.at(decay.id_-1);
           histo->SetTitle((decay.mother_.greek_name_ + "#rightarrow" + decay.greek_daughters_).c_str());
@@ -372,7 +380,7 @@ void corrBkgLc(const std::string& filenameIn, const bool doRun=true, const int f
           for(int iDecay=0; iDecay<nDecays; ++iDecay) {
             const auto& decay = Decays.at(iDecay);
             if(iMother != nMothers && decay.mother_.id_ != Mothers.at(iMother).id_) continue;
-            if(!doNotDrawEachContributor || Decays.at(iDecay).id_ == LcToPKPi) histos.at(iDecay).back()->Draw("samehist");
+            if(!doNotDrawEachContributor || (Decays.at(iDecay).id_ == LcToPKPi && !decay.is_bg_)) histos.at(iDecay).back()->Draw("samehist");
           }
           if(iMother == nMothers) histos_bkgSum.back()->Draw("samehist");
           gPad->SetLogy();
@@ -549,4 +557,14 @@ std::string ReadNthLine(const std::string& fileName) {
   }
 
   return result;
+}
+
+bool isBackground(const int flagMc, const int selFlag, const int isSwapped) {
+  if(std::abs(flagMc) != LcToPKPi) return true;
+  if((isSwapped==0 && selFlag==1) || (isSwapped==1 && selFlag==2)) return false;
+  else if((isSwapped==0 && selFlag==2) || (isSwapped==1 && selFlag==1)) return true;
+
+  std::cout << "flagMc = " << flagMc << "\tselFlag = " << selFlag << "\tisSwapped = " << isSwapped << "\n";
+  throw std::runtime_error("isBackground() - wrong combination of arguments");
+  return false;
 }

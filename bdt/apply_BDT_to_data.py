@@ -55,6 +55,16 @@ training_variables = config['training_variables']
 keep_variables = config['keep_variables']
 variables_of_interest = list(set(training_variables + keep_variables))
 variables_of_interest.extend(['fLiteMlScoreFirstClass', 'fLiteMlScoreSecondClass', 'fLiteMlScoreThirdClass'])
+variables_of_interest.extend(['fKFNSigTofKa',
+                              'fKFNSigTofPi',
+                              'fKFNSigTofPr',
+                              'fKFNSigTpcKa',
+                              'fKFNSigTpcPi',
+                              'fKFNSigTpcPr',
+                              'fLitePtProng0',
+                              'fLitePtProng1',
+                              'fLitePtProng2',
+                              'fLiteCandidateSelFlag'])
 
 ## Loop over input files
 applied_dfs = []
@@ -84,7 +94,20 @@ column_names =['bkg_score', 'prompt_score', 'non_prompt_score']
 for i_class in range(3):
     df[column_names[i_class]] = prediction[:, i_class]
 
-applied_df = df[['fKFSigBgStatus', 'fKFT', 'fKFPt', 'fKFMassInv', 'bkg_score', 'prompt_score', 'non_prompt_score', 'fLiteMlScoreFirstClass', 'fLiteMlScoreSecondClass', 'fLiteMlScoreThirdClass']]
+applied_df = df[['fKFSigBgStatus', 'fLiteCt', 'fKFPt', 'fLiteM', 'fLiteY', 'bkg_score', 'prompt_score', 'non_prompt_score', 'fLiteMlScoreFirstClass', 'fLiteMlScoreSecondClass', 'fLiteMlScoreThirdClass',
+      'fKFNSigTofKa',
+      'fKFNSigTofPi',
+      'fKFNSigTofPr',
+      'fKFNSigTpcKa',
+      'fKFNSigTpcPi',
+      'fKFNSigTpcPr',
+      'fKFNSigTpcTofPr',
+      'fKFNSigTpcTofKa',
+      'fKFNSigTpcTofPi',
+      'fLitePtProng0',
+      'fLitePtProng1',
+      'fLitePtProng2',
+      'fLiteCandidateSelFlag']]
 applied_dfs.append(applied_df)
 
 ## Free memory

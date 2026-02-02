@@ -22,7 +22,7 @@ void pt_weight_builder(const std::string& fileNamePtGen, const std::string& file
   TFile* fileGen = OpenFileWithNullptrCheck(fileNamePtGen, "read");
   TFile* fileFit = OpenFileWithNullptrCheck(fileNamePtFit, "read");
 
-  TH1* histoGen = GetObjectWithNullptrCheck<TH1>(fileGen, "histoPtGen");
+  TH1* histoGen = GetObjectWithNullptrCheck<TH1>(fileGen, "histoPtGenPrompt");
   TF1* funcFit = GetObjectWithNullptrCheck<TF1>(fileFit, "tsallisFit");
   histoGen->UseCurrentStyle();
   funcFit->UseCurrentStyle();

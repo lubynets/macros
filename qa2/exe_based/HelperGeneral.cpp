@@ -9,6 +9,8 @@
 
 #include <fstream>
 #include <iostream>
+#include <string>
+#include <string_view>
 
 std::vector<std::pair<std::string, std::string>> HelperGeneral::FindCuts(TFile* fileIn, std::string name_start, bool printCuts) {
   if (name_start.back() != '_') name_start.push_back('_');
@@ -120,8 +122,8 @@ void HelperGeneral::CheckHistogramsForXaxisIdentity(const TH1* h1, const TH1* h2
   }
 }
 
-std::map<std::string, int> HelperGeneral::MapAxesIndices(const THnSparse* histo) {
-  std::map<std::string, int> result;
+std::map<std::string_view, int> HelperGeneral::MapTHnSparseAxesIndices(const THnSparse* histo) {
+  std::map<std::string_view, int> result;
   const int nDims = histo->GetNdimensions();
   for(int iDim=0; iDim<nDims; ++iDim) {
     result.insert({histo->GetAxis(iDim)->GetTitle(), iDim});

@@ -97,7 +97,6 @@ void tpc_qa(const std::string& fileList, const bool isV0Tree=true, const int fil
     for(const auto& dirName : dirNames) {
       TFile* fileIn = TFile::Open(fileName.c_str());
       TTree* treeIn = fileIn->Get<TTree>((dirName + "/" + treeNameBase + "tree").c_str());
-      if(treeIn == nullptr) treeIn = fileIn->Get<TTree>((dirName + "/" + treeNameBase + "wde").c_str());
       treeIn->SetBranchAddress("fPidIndex", &fPidIndex);
       treeIn->SetBranchAddress("fTPCInnerParam", &fTPCInnerParam);
       treeIn->SetBranchAddress("fTPCSignal", &fTPCSignal);

@@ -5,6 +5,8 @@
 #   AO2Ds are supposed to be stored                                                                      #
 ##########################################################################################################
 
+exec > >(tee -a "download.log") 2>&1
+
 HYPERLOOP_OUTPUT_DIRECTORIES="$1"
 COPY_SELECTION="${2:-2}"
 
