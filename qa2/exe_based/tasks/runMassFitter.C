@@ -866,7 +866,7 @@ void divideCanvas(TCanvas* canvas, int nSliceVarBins)
 {
   const int rectangularSideMin = std::floor(std::sqrt(nSliceVarBins));
   constexpr int RectangularSidesDiffMax = 2;
-  for (int rectangularSidesDiff = 0; rectangularSidesDiff < RectangularSidesDiffMax; ++rectangularSidesDiff) {
+  for (int rectangularSidesDiff = 0; rectangularSidesDiff <= RectangularSidesDiffMax; ++rectangularSidesDiff) {
     if (rectangularSideMin * (rectangularSideMin + rectangularSidesDiff) >= nSliceVarBins) {
       canvas->Divide(rectangularSideMin + rectangularSidesDiff, rectangularSideMin);
     }
