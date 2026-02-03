@@ -380,12 +380,6 @@ void HFInvMassFitter::doFit()
   TH1* histoInvMassSidebands = CutHistoSidebands(mHistoInvMass);
   RooDataHist dataHistogramSidebands("dataHistogramSidebands", "dataSB", *mass, Import(*histoInvMassSidebands));
 
-  // define number of background and background fit function
-  const double rooNBkgLower = 0.;
-  const double rooNBkgUpper = 1.2 * mIntegralHisto;
-  const double rooNBkgInitial = 0.3 * mIntegralHisto;
-  const double rooNBkgSmear = 0.1 * mIntegralHisto;
-  mRooNBkg = new RooRealVar("mRooNBkg", "number of background", randomizeInitialFitParameter(rooNBkgLower, rooNBkgUpper, rooNBkgInitial, rooNBkgSmear), rooNBkgLower, rooNBkgUpper); // background yield
   RooAbsPdf* bkgPdf = createBackgroundFitFunction(mWorkspace);                                                   // Create background pdf
   RooAbsPdf* sgnPdf = createSignalFitFunction(mWorkspace);                                                       // Create signal pdf
 
@@ -408,7 +402,13 @@ void HFInvMassFitter::doFit()
     mTotalPdf->plotOn(mInvMassFrame, Name("Tot_c")); // plot total function
     mChiSquareOverNdfTotal = mInvMassFrame->chiSquare("Tot_c", "data_c"); // calculate reduced chi2 / NDF
   } else {                                           // data
-   mBkgPdf = new RooAddPdf("mBkgPdf", "background fit function", RooArgList(*bkgPdf), RooArgList(*mRooNBkg));
+    // define number of background and background fit function
+    const double rooNBkgLower = 0.;
+    const double rooNBkgUpper = 1.2 * mIntegralHisto;
+    const double rooNBkgInitial = 0.3 * mIntegralHisto;
+    const double rooNBkgSmear = 0.1 * mIntegralHisto;
+    mRooNBkg = new RooRealVar("mRooNBkg", "number of background", randomizeInitialFitParameter(rooNBkgLower, rooNBkgUpper, rooNBkgInitial, rooNBkgSmear), rooNBkgLower, rooNBkgUpper); // background yield
+    mBkgPdf = new RooAddPdf("mBkgPdf", "background fit function", RooArgList(*bkgPdf), RooArgList(*mRooNBkg));
     if (mTypeOfSgnPdf == GausSec) { // two peak fit
       if (!strcmp(mFitOption.Data(), "Chi2")) {
         mBkgPdf->chi2FitTo(dataHistogram, Range("SBL,SBR,SEC"), Save());
@@ -991,6 +991,11 @@ void HFInvMassFitter::calculateSignal(Double_t& signal, Double_t& errSignal) con
 // calculate background yield
 void HFInvMassFitter::calculateBackground(Double_t& bkg, Double_t& errBkg, Double_t integralBkg) const
 {
+  if (mTypeOfBkgPdf == NoBkg) {
+    bkg = 0.;
+    errBkg = 0.;
+    return;
+  }
   if (integralBkg < 0.) integralBkg = mIntegralBkg;
   bkg = mRooNBkg->getVal() * integralBkg;
   errBkg = mRooNBkg->getError() * integralBkg;
