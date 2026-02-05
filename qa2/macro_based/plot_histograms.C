@@ -1,4 +1,5 @@
 void plot_histograms(const std::string& fileName, const std::string& dirName) {
+  gStyle->SetOptStat("nemruo");
   TFile* f = TFile::Open(fileName.c_str(), "read");
   if (!f || f->IsZombie()) {
     std::cerr << "Cannot open file\n";
