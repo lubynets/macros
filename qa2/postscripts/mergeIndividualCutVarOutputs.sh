@@ -15,6 +15,7 @@ for PRE in "${FILE_NAME_PREFIXES[@]}"; do
 done
 
 if [ -f $FILE_NAME_TEMPLATE.merged.root ]; then
-rm $FILE_NAME_TEMPLATE.merged.root
+  rm $FILE_NAME_TEMPLATE.merged.root
 fi
 hadd $FILE_NAME_TEMPLATE.merged.root ${FILE_NAME_TEMPLATE}*bin*root
+rm ${FILE_NAME_TEMPLATE}*bin*root
