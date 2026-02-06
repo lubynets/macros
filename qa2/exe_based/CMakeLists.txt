@@ -4,38 +4,38 @@ cmake_minimum_required(VERSION 3.10)
 project(qa2)
 
 SET(EXECUTABLES
-    mc_qa2diff
-    treeKF_qa2
-    mc_qa2
-    treeKF_qa2diff
-    pid_qa
-    graph_qa3
-    efficiency
-    ct_mcfit
-    mass_fit
-    mass_fit2
-    ct_fit
-    varCorr_qa2
-    dwrth1
-    bdt_efficiency
-    mass_bdt_qa
-    efficiency_bdtcutset
-    raw_yield_vs_bdt_pdfer
-    corrected_yields_qa2
-    complex_vs_bdt_pdfer
-    tsallis_fit_pt
-    pt_weight_builder
-    mass_bdt_qa_thn
-    yield_lifetime_qa_thn
-    multifit_qa
-    tpc_qa
+    #mc_qa2diff
+    #treeKF_qa2
+    #mc_qa2
+    #treeKF_qa2diff
+    #pid_qa
+    #graph_qa3
+    #efficiency
+    #ct_mcfit
+    #mass_fit
+    #mass_fit2
+    #ct_fit
+    #varCorr_qa2
+    #dwrth1
+    #bdt_efficiency
+    #mass_bdt_qa
+    #efficiency_bdtcutset
+    #raw_yield_vs_bdt_pdfer
+    #corrected_yields_qa2
+    #complex_vs_bdt_pdfer
+    #tsallis_fit_pt
+    #pt_weight_builder
+    #mass_bdt_qa_thn
+    #yield_lifetime_qa_thn
+    #multifit_qa
+    #tpc_qa
 )
 
 SET(SOURCES
-    HelperGeneral.cpp
-    HelperMath.cpp
-    HelperPlot.cpp
-    ShapeFitter.cpp
+    #HelperGeneral.cpp
+    #HelperMath.cpp
+    #HelperPlot.cpp
+    #ShapeFitter.cpp
 )
 
 string(REPLACE ".cpp" ".hpp" HEADERS "${SOURCES}")
