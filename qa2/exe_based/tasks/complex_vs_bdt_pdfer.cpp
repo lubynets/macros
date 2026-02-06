@@ -11,13 +11,14 @@
 
 #include <iostream>
 #include <numeric>
+#include <utility>
 
 using namespace HelperGeneral;
 using namespace HelperMath;
 using namespace HelperPlot;
 
-double EvaluateAverageExcludingOutliers(const std::vector<double>& values, const std::vector<double>& errors, double chi2Max = 1.);
-double EvaluateAverageExcludingOutliers(const TGraphErrors* graph, double from=-1e9, double to=1e9, double chi2Max=1.);
+std::pair<double, double> EvaluateAverageExcludingOutliers(const std::vector<double>& values, const std::vector<double>& errors, double chi2Max = 1.);
+std::pair<double, double> EvaluateAverageExcludingOutliers(const TGraphErrors* graph, double from=-1e9, double to=1e9, double chi2Max=1.);
 
 void complex_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::string& targetSignal, const std::string& wise){
   LoadMacro("styles/mc_qa2.style.cc");
@@ -107,13 +108,20 @@ void complex_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::string
       gra->Draw("APE");
       if(variables.at(iVar) == "RawYieldsMean") HorizontalLine4Graph(massLambdaC, gra)->Draw("same");
       if(variables.at(iVar) == "RawYieldsMean" || variables.at(iVar) == "RawYieldsSigma") {
-        const double ave = EvaluateAverageExcludingOutliers(gra, -0.01, 0.101);
-        auto aveLine = HorizontalLine4Graph(ave, gra);
-        aveLine->SetLineColor(kBlack);
-        aveLine->SetLineStyle(7);
-        aveLine->Draw("same");
+        const auto ave = EvaluateAverageExcludingOutliers(gra, -0.01, 0.101);
+        auto aveLine = HorizontalLine4Graph(ave.first, gra);
+        auto errUpLine = HorizontalLine4Graph(ave.first + ave.second, gra);
+        auto errDownLine = HorizontalLine4Graph(ave.first - ave.second, gra);
+        aveLine->SetLineStyle(1);
+        errUpLine->SetLineStyle(7);
+        errDownLine->SetLineStyle(7);
+        for(const auto& line : {aveLine, errUpLine, errDownLine}) {
+         line->SetLineColor(kBlack);
+         line->Draw("same");
+        }
         auto hFix = variables.at(iVar) == "RawYieldsMean" ? hMeanFix : hSigmaFix;
-        hFix->SetBinContent(iT+1, ave);
+        hFix->SetBinContent(iT+1, ave.first);
+        hFix->SetBinError(iT+1, ave.second);
       }
       cc.Print((ccName + ".pdf" + priBra).c_str(), "pdf");
     } // lifeTimeRanges
@@ -126,21 +134,24 @@ void complex_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::string
   delete hSigmaFix;
 }
 
-double EvaluateAverageExcludingOutliers(const std::vector<double>& values, const std::vector<double>& errors, double chi2Max) {
+std::pair<double, double> EvaluateAverageExcludingOutliers(const std::vector<double>& values, const std::vector<double>& errors, double chi2Max) {
   if(values.size() != errors.size()) throw std::runtime_error("EvaluateAverageExcludingOutliers() - values.size() != errors.size()");
-  const double averagePreliminary = std::accumulate(values.begin(), values.end(), 0.) / values.size();
-  double sum{0.};
+  const double averageValuePreliminary = std::accumulate(values.begin(), values.end(), 0.) / values.size();
+  const double averageErrorPreliminary = std::accumulate(errors.begin(), errors.end(), 0.) / errors.size();
+  double sumValues{0.};
+  double sumErrors{0.};
   int count{0};
   for(int iEl=0, nEls=values.size(); iEl<nEls; ++iEl) {
-    if(std::fabs(values.at(iEl) - averagePreliminary) / errors.at(iEl) > std::sqrt(chi2Max)) continue;
-    sum += values.at(iEl);
+    if(std::fabs(values.at(iEl) - averageValuePreliminary) / errors.at(iEl) > std::sqrt(chi2Max)) continue;
+    sumValues += values.at(iEl);
+    sumErrors += errors.at(iEl);
     ++count;
   }
 
-  return count > 0 ? sum/count : averagePreliminary;
+  return count > 0 ? std::make_pair(sumValues/count, sumErrors/count) : std::make_pair(averageValuePreliminary, averageErrorPreliminary);
 }
 
-double EvaluateAverageExcludingOutliers(const TGraphErrors* graph, double from, double to, double chi2Max) {
+std::pair<double, double> EvaluateAverageExcludingOutliers(const TGraphErrors* graph, double from, double to, double chi2Max) {
   std::vector<double> values, errors;
   for(int iPoint=0, nPoints=graph->GetN(); iPoint<nPoints; ++iPoint) {
     const double x = graph->GetPointX(iPoint);
