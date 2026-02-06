@@ -862,15 +862,11 @@ void setHistoStyle(TH1* histo, Color_t color, Size_t markerSize)
   histo->SetLineColor(color);
 }
 
-void divideCanvas(TCanvas* canvas, int nSliceVarBins)
+void divideCanvas(TCanvas* canvas, int nHistograms)
 {
-  const int rectangularSideMin = std::floor(std::sqrt(nSliceVarBins));
-  constexpr int RectangularSidesDiffMax = 2;
-  for (int rectangularSidesDiff = 0; rectangularSidesDiff <= RectangularSidesDiffMax; ++rectangularSidesDiff) {
-    if (rectangularSideMin * (rectangularSideMin + rectangularSidesDiff) >= nSliceVarBins) {
-      canvas->Divide(rectangularSideMin + rectangularSidesDiff, rectangularSideMin);
-    }
-  }
+  const int nCols = std::ceil(std::sqrt(nHistograms));
+  const int nRows = std::ceil(static_cast<double>(nHistograms) / nCols);
+  canvas->Divide(nCols, nRows);
 }
 
 template<typename T>
