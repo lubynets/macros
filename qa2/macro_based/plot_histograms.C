@@ -16,8 +16,14 @@ void plot_histograms(const std::string& fileName, const std::string& dirName) {
   // Prepare canvas and PDF
   TCanvas canvas("c", "Histograms", 1200, 800);
   canvas.SetLogz();
-  const char* pdfName = "histograms.pdf";
-  canvas.Print(Form("%s[", pdfName));  // Start multi-page PDF
+  std::string pdfName;
+  if(dirName.empty()) {
+    pdfName = "histograms.pdf";
+  } else {
+    pdfName = dirName + ".pdf";
+    std::replace(pdfName.begin(), pdfName.end(), '/', '_');
+  }
+  canvas.Print(Form("%s[", pdfName.c_str()));  // Start multi-page PDF
 
   // Iterate over objects in directory
   TIter keyIter(dir->GetListOfKeys());
@@ -31,10 +37,10 @@ void plot_histograms(const std::string& fileName, const std::string& dirName) {
 
     canvas.Clear();
     h->Draw();
-    canvas.Print(pdfName);  // Add page to PDF
+    canvas.Print(pdfName.c_str());  // Add page to PDF
   }
 
-  canvas.Print(Form("%s]", pdfName));  // End multi-page PDF
+  canvas.Print(Form("%s]", pdfName.c_str()));  // End multi-page PDF
 
   f->Close();
 }

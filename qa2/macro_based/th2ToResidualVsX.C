@@ -1,17 +1,17 @@
 int FindWhoseTH1LowerEdge(TAxis* histo, double value);
 
-void th2ToResidualVsX() {
+void th2ToResidualVsX(const std::string& fileName, const std::string& histoName) {
   gROOT->Macro("/home/oleksii/alidir/macros_on_git/qa2/exe_based/styles/mc_qa2.style.cc");
-
-  const std::string fileName{"/home/oleksii/alidir/working/ctReso/ct_mc_qa.HL.mc.HF_LHC24h1b_All.595984.root"};
-  const std::string histoName{"timeDiffVsRec"};
 
   const std::array binEdges{0.2, 0.4, 0.6, 0.8, 1.0, 1.4, 1.8};
 
   TFile* fileIn = TFile::Open(fileName.c_str(), "read");
-  TH2* histoIn = fileIn->Get<TH2>(histoName.c_str());
+  if(fileIn == nullptr) throw std::runtime_error("File " + fileName + " is missing");
 
-  TGraphErrors grRes;
+  TH2* histoIn = fileIn->Get<TH2>(histoName.c_str());
+  if(histoIn == nullptr) throw std::runtime_error("Histogram " + histoName + " is missing");
+
+  TGraphErrors grRes("grRes");
   grRes.GetXaxis()->SetTitle(histoIn->GetXaxis()->GetTitle());
   grRes.GetYaxis()->SetTitle(("std. dev. of "s + histoIn->GetYaxis()->GetTitle()).c_str());
 
@@ -34,6 +34,8 @@ void th2ToResidualVsX() {
   grRes.Draw("APE");
 
   cc.Print("grRes.pdf", "pdf");
+
+  grRes.SaveAs("grRes.root");
 
   fileIn->Close();
 }
