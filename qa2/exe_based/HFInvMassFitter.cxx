@@ -141,6 +141,7 @@ HFInvMassFitter::HFInvMassFitter() : TNamed(),
                                      mReflFrame(nullptr),
                                      mReflOnlyFrame(nullptr),
                                      mResidualFrame(nullptr),
+                                     mResidualHist(nullptr),
                                      mWorkspace(nullptr),
                                      mIntegralHisto(0),
                                      mIntegralBkg(0),
@@ -240,6 +241,7 @@ HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit,
                                                      mReflFrame(nullptr),
                                                      mReflOnlyFrame(nullptr),
                                                      mResidualFrame(nullptr),
+                                                     mResidualHist(nullptr),
                                                      mWorkspace(nullptr),
                                                      mIntegralHisto(0),
                                                      mIntegralBkg(0),
@@ -493,9 +495,9 @@ void HFInvMassFitter::doFit()
       mChiSquareOverNdfTotal = mInvMassFrame->chiSquare("Tot_c", "data_c"); // calculate reduced chi2 / NDF
 
       // plot residual distribution
-      RooHist* residualHistogram = mInvMassFrame->residHist("data_c", "ReflBkg_c");
+      mResidualHist = mInvMassFrame->residHist("data_c", "ReflBkg_c");
       mResidualFrame = mass->frame(Title("Residual Distribution"));
-      mResidualFrame->addPlotable(residualHistogram, "p");
+      mResidualFrame->addPlotable(mResidualHist, "p");
       mSgnPdf->plotOn(mResidualFrame, Normalization(1.0, RooAbsReal::RelativeExpected), LineColor(kBlue));
     } else {
       RooDataHist* corrBgDataHist{nullptr};
@@ -521,8 +523,8 @@ void HFInvMassFitter::doFit()
       }
       // plot residual distribution
       mResidualFrame = mass->frame(Title("Residual Distribution"));
-      RooHist* residualHistogram = mInvMassFrame->residHist("data_c", "Bkg_c");
-      mResidualFrame->addPlotable(residualHistogram, "P");
+      mResidualHist = mInvMassFrame->residHist("data_c", "Bkg_c");
+      mResidualFrame->addPlotable(mResidualHist, "P");
       mSgnPdf->plotOn(mResidualFrame, Normalization(1.0, RooAbsReal::RelativeExpected), LineColor(kBlue));
     }
     mass->setRange("bkgForSignificance", mRooMeanSgn->getVal() - mNSigmaForSgn * mRooSigmaSgn->getVal(), mRooMeanSgn->getVal() + mNSigmaForSgn * mRooSigmaSgn->getVal());
@@ -953,30 +955,30 @@ void HFInvMassFitter::drawReflection(TVirtualPad* pad)
 // calculate signal yield via bin counting
 void HFInvMassFitter::countSignal(Double_t& signal, Double_t& signalErr) const
 {
+  const double binWidth = mResidualHist->GetX()[1] - mResidualHist->GetX()[0];
+  const double firstBinLowEdge = mResidualHist->GetX()[0] - binWidth / 2;
   const auto [minForSgn, maxForSgn] = getRangesOfSignal();
-  const Int_t binForMinSgn = mHistoInvMass->FindBin(minForSgn);
-  const Int_t binForMaxSgn = mHistoInvMass->FindBin(maxForSgn);
-  const Double_t binForMinSgnUpperEdge = mHistoInvMass->GetBinLowEdge(binForMinSgn + 1);
-  const Double_t binForMaxSgnLowerEdge = mHistoInvMass->GetBinLowEdge(binForMaxSgn);
-  const Double_t binForMinSgnFraction = (binForMinSgnUpperEdge - minForSgn) / mHistoInvMass->GetBinWidth(binForMinSgn);
-  const Double_t binForMaxSgnFraction = (maxForSgn - binForMaxSgnLowerEdge) / mHistoInvMass->GetBinWidth(binForMaxSgn);
+  const Int_t binForMinSgn = static_cast<int>((minForSgn - firstBinLowEdge) / binWidth) + 1;
+  const Int_t binForMaxSgn = static_cast<int>((maxForSgn - firstBinLowEdge) / binWidth) + 1;
+  const Double_t binForMinSgnUpperEdge = firstBinLowEdge + (binForMinSgn - 1) * binWidth + binWidth;
+  const Double_t binForMaxSgnLowerEdge = firstBinLowEdge + (binForMaxSgn - 1) * binWidth;
+  const Double_t binForMinSgnFraction = (binForMinSgnUpperEdge - minForSgn) / binWidth;
+  const Double_t binForMaxSgnFraction = (maxForSgn - binForMaxSgnLowerEdge) / binWidth;
 
-  Double_t sum = 0;
-  sum += mHistoInvMass->GetBinContent(binForMinSgn) * binForMinSgnFraction;
+  auto square = [](double value) { return value*value; };
+
+  double sumValues{}, sumErrorsSquare{};
+  sumValues += mResidualHist->GetY()[binForMinSgn-1] * binForMinSgnFraction;
+  sumErrorsSquare += square(mResidualHist->GetErrorY(binForMinSgn-1) * binForMinSgnFraction);
   for (Int_t iBin = binForMinSgn + 1; iBin <= binForMaxSgn - 1; iBin++) {
-    sum += mHistoInvMass->GetBinContent(iBin);
+    sumValues += mResidualHist->GetY()[iBin-1];
+    sumErrorsSquare += square(mResidualHist->GetErrorY(iBin-1));
   }
-  sum += mHistoInvMass->GetBinContent(binForMaxSgn) * binForMaxSgnFraction;
+  sumValues += mResidualHist->GetY()[binForMaxSgn-1] * binForMaxSgnFraction;
+  sumErrorsSquare += square(mResidualHist->GetErrorY(binForMaxSgn-1) * binForMaxSgnFraction);
 
-  Double_t bkg, errBkg;
-  const Double_t integralBkg = mTypeOfSgnPdf == DoubleSidedCrystalBall ? 1. : mIntegralBkg;
-  calculateBackground(bkg, errBkg, integralBkg);
-
-  Double_t corrBg, errCorrBg;
-  calculateCorrelatedBackground(corrBg, errCorrBg);
-
-  signal = sum - bkg - corrBg;
-  signalErr = std::sqrt(sum + errBkg * errBkg + errCorrBg * errCorrBg); // sum error squared is equal to sum
+  signal = sumValues;
+  signalErr = std::sqrt(sumErrorsSquare);
 }
 
 // calculate signal yield
