@@ -387,7 +387,6 @@ class HFInvMassFitter : public TNamed
   RooPlot* mReflFrame;               /// reflection frame
   RooPlot* mReflOnlyFrame;           /// reflection frame plot on reflection only
   RooPlot* mResidualFrame;           /// residual frame
-  RooPlot* mResidualFrameForCalculation;
   RooWorkspace* mWorkspace;    /// workspace
   Double_t mIntegralHisto;     /// integral of histogram to fit
   Double_t mIntegralBkg;       /// integral of background fit function
