@@ -39,14 +39,17 @@ void CtMcQa(QA::Task& task) {
     Cuts* cutsGeneral = new Cuts("cutsGeneral", {ptCut, rapidityCut, promptness});
     for(int iMcStrategy=0; iMcStrategy<2; ++iMcStrategy) {
       task.SetTopLevelDirName(promptness.GetTitle() + "/" + mcStrategies.at(iMcStrategy));
-      task.AddH2("timeCorr", {"t^{mc} (ps)", tMc.at(iMcStrategy), tAxis}, {"t^{rec} (ps)", tRec, tAxis}, cutsGeneral);
-      task.AddH2("timeDiffVsMc", {"t^{mc} (ps)", tMc.at(iMcStrategy), tAxis}, {"t^{rec} - t^{mc} (ps)", tDiff.at(iMcStrategy), tDiffAxis}, cutsGeneral);
-      task.AddH2("timeDiffVsRec", {"t^{rec} (ps)", tRec, tAxis}, {"t^{rec} - t^{mc} (ps)", tDiff.at(iMcStrategy), tDiffAxis}, cutsGeneral);
+      task.AddH2("timeCorr", {"t^{mc} (ps)",tMc.at(iMcStrategy), tAxis}, {"t^{rec} (ps)", tRec, tAxis}, cutsGeneral);
+      task.AddH2("timeDiffVsMc", {"t^{mc} (ps)",tMc.at(iMcStrategy), tAxis}, {"t^{rec} - t^{mc} (ps)", tDiff.at(iMcStrategy), tDiffAxis}, cutsGeneral);
+      task.AddH2("timeDiffVsRec", {"t^{rec} (ps)",tRec, tAxis}, {"t^{rec} - t^{mc} (ps)", tDiff.at(iMcStrategy), tDiffAxis}, cutsGeneral);
     }
+    task.SetTopLevelDirName(promptness.GetTitle());
+    task.AddH2("pVsRec", {"t^{rec} (ps)",tRec, tAxis}, {"p (GeV/c)", Variable::FromString("Candidates.fKFP"), {400, 0, 20}}, cutsGeneral);
+    task.AddH2("decayLVsRec", {"t^{rec} (ps)",tRec, tAxis}, {"L (cm)", Variable::FromString("Candidates.fLiteDecayLength"), {400, 0, 0.2}}, cutsGeneral);
 
     for(int iT=0, nTs = tRecRanges.size()-1; iT<nTs; ++iT) {
-      SimpleCut tRceCut = RangeCut(tRec, tRecRanges.at(iT), tRecRanges.at(iT+1));
-      Cuts* cutsTSilce = new Cuts("cutsTSilce", {ptCut, rapidityCut, tRceCut, promptness});
+      SimpleCut tRecCut = RangeCut(tRec, tRecRanges.at(iT), tRecRanges.at(iT+1));
+      Cuts* cutsTSilce = new Cuts("cutsTSilce", {ptCut, rapidityCut, tRecCut, promptness});
       const std::string hName = "timeDiff_T_" + HelperFunctions::ToStringWithPrecision(tRecRanges.at(iT), 1) + "_" + HelperFunctions::ToStringWithPrecision(tRecRanges.at(iT+1), 1);
       for(int iMcStrategy=0; iMcStrategy<2; ++iMcStrategy) {
         task.SetTopLevelDirName(promptness.GetTitle() + "/" + mcStrategies.at(iMcStrategy));
