@@ -17,8 +17,6 @@ if [[ -z "$HYPERLOOP_OUTPUT_DIRECTORIES" ]]; then
    exit 1
 fi
 
-source /lustre/alice/users/lubynets/.export_tokens.sh
-
 # Define patterns to search and copy
 file_name=("AO2D.root" "AnalysisResults.root")
 
