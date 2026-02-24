@@ -5,6 +5,8 @@
 #include <AnalysisTree/TaskManager.hpp>
 #include <AnalysisTree/Variable.hpp>
 
+#include <cmath>
+
 using namespace AnalysisTree;
 
 constexpr double MassLambdaCPlus{2.28646};
@@ -16,45 +18,77 @@ void CtMcQa(QA::Task& task) {
     EqualsCut(Variable::FromString("Candidates.fKFSigBgStatus"), 2, "NonPrompt")
   };
 
-  const std::array<std::string, 2> mcStrategies{"Gen", "Kin"};
+  const std::array<std::string, 2> signStrategies{"unsigned", "signed"};
 
   SimpleCut ptCut = RangeCut(Variable::FromString("Candidates.fLitePt"), 3, 20);
   SimpleCut rapidityCut = RangeCut(Variable::FromString("Candidates.fLiteY"), -0.8, 0.8);
-  constexpr std::array tRecRanges{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.4, 1.8, 2.4, 3.6, 5.0};
 
-  Variable tRec("tRec", {{"Candidates", "fLiteCt"}}, []( std::vector<double>& v ) { return 100/2.997*v.at(0);});
-  std::array<Variable, 2> tMc{
-    Variable::FromString("Simulated.fSim_TDecay"),
-    Variable("", {{"Simulated", "fSim_P"}, {"Simulated", "fSim_LDecay"}}, []( const std::vector<double>& v ) { return v.at(1) * MassLambdaCPlus / v.at(0) / LightSpeedCm2PS;})
-  };
-  std::array<Variable, 2> tDiff{
-    Variable("tDiff", {{"Candidates", "fLiteCt"}, {"Simulated", "fSim_TDecay"}}, []( std::vector<double>& v ) { return 100/2.997*v.at(0) - v.at(1);}),
-    Variable("tDiff", {{"Candidates", "fLiteCt"}, {"Simulated", "fSim_P"}, {"Simulated", "fSim_LDecay"}}, []( std::vector<double>& v ) { return 100/2.997*v.at(0) - (v.at(2) * MassLambdaCPlus / v.at(1) / LightSpeedCm2PS);})
+  std::array<Variable, 2> tRec {
+    Variable("tRec", {{"Candidates", "fLiteCt"}}, []( std::vector<double>& v ) { return v.at(0) / LightSpeedCm2PS;}),
+
+    Variable("tRec", {
+      {"Candidates", "fLitePosX"}, // 0
+      {"Candidates", "fLitePosY"}, // 1
+      {"Candidates", "fLitePosZ"}, // 2
+      {"Candidates", "fKFX"},      // 3
+      {"Candidates", "fKFY"},      // 4
+      {"Candidates", "fKFZ"},      // 5
+      {"Candidates", "fLitePt"},   // 6
+      {"Candidates", "fLiteEta"},  // 7
+      {"Candidates", "fLitePhi"}   // 8
+    }, []( std::vector<double>& v ) {
+      const auto dx = v[3] - v[0];
+      const auto dy = v[4] - v[1];
+      const auto dz = v[5] - v[2];
+      const auto px = v[6] * std::cos(v[8]);
+      const auto py = v[6] * std::sin(v[8]);
+      const auto pz = v[6] * std::sinh(v[7]);
+      const auto lp = dx*px + dy*py + dz*pz;
+      const auto p2 = px*px + py*py + pz*pz;
+      return MassLambdaCPlus * lp / LightSpeedCm2PS / p2;
+    })
   };
 
-  const TAxis tAxis{400, 0, 2};
+  Variable tMc("", {{"Simulated", "fSim_P"}, {"Simulated", "fSim_LDecay"}}, []( const std::vector<double>& v ) { return v.at(1) * MassLambdaCPlus / v.at(0) / LightSpeedCm2PS;});
+
+  std::array<Variable, 2> tDiff {
+    Variable("tDiff", {{"Candidates", "fLiteCt"}, {"Simulated", "fSim_P"}, {"Simulated", "fSim_LDecay"}}, []( std::vector<double>& v ) { return v.at(0) / LightSpeedCm2PS - (v.at(2) * MassLambdaCPlus / v.at(1) / LightSpeedCm2PS);}),
+
+    Variable("tDiff", {
+      {"Candidates", "fLitePosX"}, // 0
+      {"Candidates", "fLitePosY"}, // 1
+      {"Candidates", "fLitePosZ"}, // 2
+      {"Candidates", "fKFX"},      // 3
+      {"Candidates", "fKFY"},      // 4
+      {"Candidates", "fKFZ"},      // 5
+      {"Candidates", "fLitePt"},   // 6
+      {"Candidates", "fLiteEta"},  // 7
+      {"Candidates", "fLitePhi"},  // 8
+      {"Simulated", "fSim_P"},     // 9
+      {"Simulated", "fSim_LDecay"} // 10
+    }, []( std::vector<double>& v ) {
+      const auto dx = v[3] - v[0];
+      const auto dy = v[4] - v[1];
+      const auto dz = v[5] - v[2];
+      const auto px = v[6] * std::cos(v[8]);
+      const auto py = v[6] * std::sin(v[8]);
+      const auto pz = v[6] * std::sinh(v[7]);
+      const auto lp = dx*px + dy*py + dz*pz;
+      const auto p2 = px*px + py*py + pz*pz;
+      return MassLambdaCPlus / LightSpeedCm2PS * (lp / p2 - v[10] / v[9]);
+    })
+  };
+
+  const TAxis tAxis{600, -1, 2};
   const TAxis tDiffAxis{500, -0.5, 0.5};
 
   for(const auto& promptness : promptnesses) {
     Cuts* cutsGeneral = new Cuts("cutsGeneral", {ptCut, rapidityCut, promptness});
-    for(int iMcStrategy=0; iMcStrategy<2; ++iMcStrategy) {
-      task.SetTopLevelDirName(promptness.GetTitle() + "/" + mcStrategies.at(iMcStrategy));
-      task.AddH2("timeCorr", {"t^{mc} (ps)",tMc.at(iMcStrategy), tAxis}, {"t^{rec} (ps)", tRec, tAxis}, cutsGeneral);
-      task.AddH2("timeDiffVsMc", {"t^{mc} (ps)",tMc.at(iMcStrategy), tAxis}, {"t^{rec} - t^{mc} (ps)", tDiff.at(iMcStrategy), tDiffAxis}, cutsGeneral);
-      task.AddH2("timeDiffVsRec", {"t^{rec} (ps)",tRec, tAxis}, {"t^{rec} - t^{mc} (ps)", tDiff.at(iMcStrategy), tDiffAxis}, cutsGeneral);
-    }
-    task.SetTopLevelDirName(promptness.GetTitle());
-    task.AddH2("pVsRec", {"t^{rec} (ps)",tRec, tAxis}, {"p (GeV/c)", Variable::FromString("Candidates.fKFP"), {400, 0, 20}}, cutsGeneral);
-    task.AddH2("decayLVsRec", {"t^{rec} (ps)",tRec, tAxis}, {"L (cm)", Variable::FromString("Candidates.fLiteDecayLength"), {400, 0, 0.2}}, cutsGeneral);
-
-    for(int iT=0, nTs = tRecRanges.size()-1; iT<nTs; ++iT) {
-      SimpleCut tRecCut = RangeCut(tRec, tRecRanges.at(iT), tRecRanges.at(iT+1));
-      Cuts* cutsTSilce = new Cuts("cutsTSilce", {ptCut, rapidityCut, tRecCut, promptness});
-      const std::string hName = "timeDiff_T_" + HelperFunctions::ToStringWithPrecision(tRecRanges.at(iT), 1) + "_" + HelperFunctions::ToStringWithPrecision(tRecRanges.at(iT+1), 1);
-      for(int iMcStrategy=0; iMcStrategy<2; ++iMcStrategy) {
-        task.SetTopLevelDirName(promptness.GetTitle() + "/" + mcStrategies.at(iMcStrategy));
-        task.AddH1(hName, {"t^{rec} - t^{mc} (ps)", tDiff.at(iMcStrategy), tDiffAxis}, cutsTSilce);
-      }
+    for(int iSign=0, nSigns=signStrategies.size(); iSign<nSigns; ++iSign) {
+      task.SetTopLevelDirName(promptness.GetTitle() + "/" + signStrategies.at(iSign));
+      task.AddH2("timeCorr", {"t^{mc} (ps)",tMc, tAxis}, {"t^{rec} (ps)", tRec.at(iSign), tAxis}, cutsGeneral);
+      task.AddH2("timeDiffVsMc", {"t^{mc} (ps)",tMc, tAxis}, {"t^{rec} - t^{mc} (ps)", tDiff.at(iSign), tDiffAxis}, cutsGeneral);
+      task.AddH2("timeDiffVsRec", {"t^{rec} (ps)",tRec.at(iSign), tAxis}, {"t^{rec} - t^{mc} (ps)", tDiff.at(iSign), tDiffAxis}, cutsGeneral);
     }
   }
 }
