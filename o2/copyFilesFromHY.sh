@@ -5,8 +5,6 @@
 #   AO2Ds are supposed to be stored                                                                      #
 ##########################################################################################################
 
-exec > >(tee -a "download.log") 2>&1
-
 HYPERLOOP_OUTPUT_DIRECTORIES="$1"
 COPY_SELECTION="${2:-2}"
 
@@ -16,6 +14,24 @@ if [[ -z "$HYPERLOOP_OUTPUT_DIRECTORIES" ]]; then
    echo "N=0 for copy AO2D.root only, 1 for copy AnalysisResults.root only and 2 (default) for copy both"
    exit 1
 fi
+
+TOKENCERT=/tmp/tokencert_${UID}.pem
+TOKENKEY=/tmp/tokenkey_${UID}.pem
+
+if [[ -f $TOKENCERT && -f $TOKENKEY ]]; then
+  :
+elif [[ -n $JALIEN_TOKEN_CERT && -n $JALIEN_TOKEN_KEY ]]; then
+  :
+else
+  echo "ERROR: alien tokens are not present at /tmp and not sourced if they are in a different place"
+  exit 1
+fi
+
+LOGFILE="download.log"
+if [[ -f $LOGFILE ]]; then
+  rm $LOGFILE
+fi
+exec > >(tee -a $LOGFILE) 2>&1
 
 # Define patterns to search and copy
 file_name=("AO2D.root" "AnalysisResults.root")
