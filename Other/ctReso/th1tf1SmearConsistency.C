@@ -41,15 +41,18 @@ public:
       const double sigma = ReadValueFromGraph(graph_sigma_container_, pointToBeTakenFrom);
       const double effGen = efficiency_gen_based_->Interpolate(pointToBeTakenFrom);
       const double effRec = efficiency_rec_based_->Interpolate(x);
+      if(effRec == 0.) continue;
 
       const double funcValue = func_orig_->Eval(pointToBeTakenFrom);
 
       func_smear_->SetParameters(1/std::sqrt(2*PI)/sigma, 0, sigma);
 
       const double smearFactor = func_smear_->Eval(shiftFromPointToBeFilled + mean);
+
       result += funcValue * smearFactor * effGen / effRec;
     }
     result *= step_;
+
     return result;
   }
 
@@ -92,7 +95,7 @@ void th1tf1SmearConsistency() {
 
   const double tau{0.2};
 
-  const int nFills{10000000};
+  const int nFills{100000000};
   TH1* hSmeared = new TH1D("hSmeared", "", nBins, lo, hi);
   for(int iFill=0; iFill<nFills; ++iFill) {
     if(iFill%(nFills/20) == 0) std::cout << "iFill = " << iFill << "\n";
@@ -111,7 +114,7 @@ void th1tf1SmearConsistency() {
     const double mean = ReadValueFromGraph(grResoMean);
     const double sigma = ReadValueFromGraph(grResoSigma);
 
-    const double smearShiftValue = gRandom->Gaus(0, sigma);
+    const double smearShiftValue = gRandom->Gaus(mean, sigma);
     hSmeared->Fill(smearCentralValue + smearShiftValue);
   }
 
@@ -135,8 +138,8 @@ void th1tf1SmearConsistency() {
   const double A = nFills * binWidth / tau / (std::exp(-lo/tau) - std::exp(-hi/tau));
   fitFuncSmeared->SetParameters(A, tau);
 
-//   hSmeared->Draw();
-  fitFuncSmeared->Draw();
+  hSmeared->Draw();
+  fitFuncSmeared->Draw("same");
 
 //   hSmeared->Divide(fitFuncSmeared);
 //   hSmeared->Draw();
