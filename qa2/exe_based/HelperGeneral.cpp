@@ -131,7 +131,7 @@ std::map<std::string_view, int> HelperGeneral::MapTHnSparseAxesIndices(const THn
   return result;
 }
 
-void HelperGeneral::CheckTAxisForRanges(const TAxis& axis, const std::vector<float>& ranges) {
+void HelperGeneral::CheckTAxisForRanges(const TAxis& axis, const std::vector<double>& ranges) {
   const int nBins = axis.GetNbins();
   for(const auto& range : ranges) {
     bool ok{false};

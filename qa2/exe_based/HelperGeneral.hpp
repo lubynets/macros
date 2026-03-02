@@ -5,6 +5,7 @@
 #ifndef QA2_HELPERGENERAL_HPP
 #define QA2_HELPERGENERAL_HPP
 
+#include <TAxis.h>
 #include <THnSparse.h>
 #include <TFile.h>
 #include <TF1.h>
@@ -70,7 +71,7 @@ void CheckHistogramsForXaxisIdentity(const TH1* h1, const TH1* h2);
 
 std::map<std::string_view, int> MapTHnSparseAxesIndices(const THnSparse* histo);
 
-void CheckTAxisForRanges(const TAxis& axis, const std::vector<float>& ranges);
+void CheckTAxisForRanges(const TAxis& axis, const std::vector<double>& ranges);
 
 void SetTHnSparseAxisRanges(THnSparse* histo, int axisNum, float lo= -999., float hi= -999.);
 

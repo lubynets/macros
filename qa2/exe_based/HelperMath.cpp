@@ -91,7 +91,7 @@ void HelperMath::DivideGraph(TGraph* num, const TGraph* den) {
 TF1* HelperMath::FitLifetimeHisto(TH1* histo, const std::string& option) {
   const double lo = histo->GetBinLowEdge(1) + 1e-3;
   const double hi = histo->GetBinLowEdge(histo->GetNbinsX()+1) - 1e-3;
-  auto parEst = HelperMath::EstimateExpoParameters(histo, lo, hi);
+  const auto parEst = HelperMath::EstimateExpoParameters(histo, lo, hi);
   TF1* fitFunc = new TF1("fitFunc", "[0]*TMath::Exp(-x/[1])", lo, hi);
   fitFunc->SetParameters(parEst.first, parEst.second);
   histo->Fit(fitFunc, ("0"+option).c_str(), "", lo, hi);
