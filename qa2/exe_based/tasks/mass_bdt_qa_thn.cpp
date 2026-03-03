@@ -27,7 +27,7 @@ const std::string bgAxisTitle = "BDT bkg score (Lc)";
 const std::string npAxisTitle = "BDT non-prompt score (Lc)";
 const std::string massAxisTitle = "inv. mass (p K #pi) (GeV/#it{c}^{2})";
 
-const std::vector<double> bdtNPUpperValues = {1.00, 0.99, 0.95, 0.90, 0.85, 0.80};
+const std::vector<double> bdtNPUpperValues = {1.00, 0.95, 0.90, 0.85, 0.80};
 
 const std::string bdtScanAxisTitle = npAxisTitle;
 const std::string bdtScanDir = "gt";
@@ -35,7 +35,7 @@ const std::string bdtScanDir = "gt";
 // const std::string bdtScanAxisTitle = bgAxisTitle;
 // const std::string bdtScanDir = "lt";
 
-constexpr int Verobsity{1};
+constexpr int Verobsity{0};
 
 std::string GetPtCutName(size_t iPt);
 
@@ -69,7 +69,7 @@ void MassBdtQaThn(const std::string& fileNameIn, int modeRun) {
   if(bdtScanDir != "gt" && bdtScanDir != "lt") throw std::runtime_error("bdtScanDir != \"gt\" && bdtScanDir != \"lt\"");
 
   std::vector<double> bdtScanValues;
-  for (int iB = 0; iB <= 1; iB++) {
+  for (int iB = 0; iB <= 0; iB++) {
     bdtScanValues.emplace_back(0.01 * iB);
   }
   if(modeRun != MergeOnly) {
