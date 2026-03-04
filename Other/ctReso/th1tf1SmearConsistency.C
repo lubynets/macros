@@ -1,6 +1,7 @@
 constexpr double PI{3.141592654};
 
 TH1* EvaluateEfficiency(const TH1* histoNum, const TH1* histoDen);
+TH1* CutSubHistogram(const TH1* histoIn, double lo, double hi);
 
 class ExpoSmearFunction {
 public:
@@ -65,7 +66,7 @@ private:
   TH1* efficiency_rec_based_{nullptr};
   double smear_range_{1.};
   double step_{};
-  int numer_of_smearing_points_{1000};
+  int numer_of_smearing_points_{100};
   bool is_init_{false};
 };
 
@@ -92,6 +93,7 @@ void th1tf1SmearConsistency() {
   const double lo{0.};
   const double hi{2.};
   const double binWidth = (hi - lo) / nBins;
+  const std::vector<double> edges{0.2, 0.4, 0.6, 0.8, 1.0, 1.4, 1.8};
 
   const double tau{0.2};
 
@@ -133,17 +135,23 @@ void th1tf1SmearConsistency() {
   fitFunctorSmeared.Init();
 
   TF1* fitFuncSmeared = new TF1("fitFuncSmeared", fitFunctorSmeared, 0.0, 2.0, 2);
-  fitFuncSmeared->SetNpx(1000);
+  fitFuncSmeared->SetNpx(100);
 
   const double A = nFills * binWidth / tau / (std::exp(-lo/tau) - std::exp(-hi/tau));
   fitFuncSmeared->SetParameters(A, tau);
 
+
+  hSmeared = CutSubHistogram(hSmeared, edges.front(), edges.back());
+  hSmeared = dynamic_cast<TH1*>(hSmeared->Rebin(edges.size() - 1,hSmeared->GetName(),edges.data()));
+  hSmeared->Scale(1., "width");
+
+
   hSmeared->Draw();
-  fitFuncSmeared->Draw("same");
+//   fitFuncSmeared->Draw("same");
 
-//   hSmeared->Divide(fitFuncSmeared);
-//   hSmeared->Draw();
+  hSmeared->Fit(fitFuncSmeared, "I", "", 0.2, 1.8);
 
+  fitFuncSmeared->SaveAs("fitFuncSmeared.root");
 }
 
 TH1* EvaluateEfficiency(const TH1* histoNum, const TH1* histoDen) {
@@ -152,4 +160,39 @@ TH1* EvaluateEfficiency(const TH1* histoNum, const TH1* histoDen) {
   histoEff->Divide(histoDen);
 
   return histoEff;
+}
+
+TH1* CutSubHistogram(const TH1* histoIn, double lo, double hi) {
+  if(lo >= hi) throw std::runtime_error("CutSubHistogram(): lo >= hi");
+
+  const double tolerance = 1e-6;
+  int binLoIn{-999};
+  bool isEndReached{false};
+  std::vector<double> binEdges;
+  for(int iBin=1, nBins=histoIn->GetNbinsX(); iBin<=nBins+1; ++iBin) {
+    const double binLowEdge = histoIn->GetBinLowEdge(iBin);
+    if(std::fabs(binLowEdge - lo) < tolerance) binLoIn = iBin;
+    if(binLoIn != -999) binEdges.emplace_back(binLowEdge);
+    if(std::fabs(binLowEdge - hi) < tolerance) {
+      isEndReached = true;
+      break;
+    }
+  } // histoIn bins
+  if(binLoIn == -999 || !isEndReached) throw std::runtime_error("CutSubHistogram(): either lo or hi does not match any of histoIn bin edges");
+
+  TH1* histoOut = new TH1D("", "", binEdges.size()-1, binEdges.data());
+  histoOut->SetDirectory(nullptr);
+  const bool isSumw2 = histoIn->GetSumw2N() > 0;
+  histoOut->GetXaxis()->SetTitle(histoIn->GetXaxis()->GetTitle());
+  histoOut->GetYaxis()->SetTitle(histoIn->GetYaxis()->GetTitle());
+  histoOut->SetName(histoIn->GetName());
+  histoOut->SetTitle(histoIn->GetTitle());
+  for(int iBin=1, nBins=binEdges.size()-1; iBin<=nBins; ++iBin) {
+    const double value = histoIn->GetBinContent(binLoIn-1 + iBin);
+    const double error = histoIn->GetBinError(binLoIn-1 + iBin);
+    histoOut->SetBinContent(iBin, value);
+    histoOut->SetBinError(iBin, error);
+  }
+  histoOut->Sumw2(isSumw2);
+  return histoOut;
 }
