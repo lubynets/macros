@@ -76,14 +76,6 @@ bool HelperGeneral::string_to_bool(const std::string& str) {
   else throw std::runtime_error("string_to_bool(): argument must be either true or false");
 }
 
-TFile* HelperGeneral::OpenFileWithNullptrCheck(const std::string& fileName, const std::string& option) {
-  TFile* file = TFile::Open(fileName.c_str(), option.c_str());
-  if(file == nullptr) {
-    throw std::runtime_error("OpenFileWithNullptrCheck() - file " + fileName + " is missing");
-  }
-  return file;
-}
-
 void HelperGeneral::PrintInfoOnTF1(const TF1* f) {
   std::cout << "Name = " << f->GetName() << "\n";
   std::cout << "Title = " << f->GetTitle() << "\n";
