@@ -5,10 +5,12 @@ using namespace HelperGeneral;
 void postprocessFit() {
   const std::string fileName{"2/RawYields_Lc/RawYields_Lc.NPgt0.01.root"};
   const int canvasNumber{4}; // starts from 1
-  const bool isResidual{true};
+  const bool isResidual{false};
 
 
-  gROOT->Macro("/home/oleksii/alidir/macros_on_git/qa2/exe_based/styles/mc_qa2.style.cc");
+  gROOT->Macro("/home/oleksii/alidir/macros_on_git/qa2/macro_based/styles/postprocessFit.style.cc");
+  const double titleSize{0.05};
+  const double legendSize{0.04};
 
   TFile* fileIn = OpenFileWithNullptrCheck(fileName.c_str());
 
@@ -44,9 +46,14 @@ void postprocessFit() {
     histo->SetPointEXhigh(i, 0);
   }
   histo->GetXaxis()->SetTitle("M_{pK#pi} (GeV/#it{c}^{2})");
-  histo->GetXaxis()->SetTitleOffset(1.4);
+  histo->GetXaxis()->SetTitleSize(titleSize);
+  histo->GetXaxis()->SetLabelSize(titleSize);
+  histo->GetXaxis()->SetTitleOffset(1.1);
   histo->GetYaxis()->SetTitle(("Counts per " + to_string_with_precision(binWidth, 0) + " MeV/#it{c}^{2}").c_str());
-  histo->GetYaxis()->SetTitleOffset(2.20);
+  histo->GetYaxis()->SetTitleSize(titleSize);
+  histo->GetYaxis()->SetLabelSize(titleSize);
+  histo->GetYaxis()->SetTitleOffset(2.1);
+  histo->GetYaxis()->SetNdivisions(206);
   histo->SetMarkerSize(1.4);
 
   RooCurve* fitBkg = !isResidual ? dynamic_cast<RooCurve*>(list1->FindObject("Bkg_c")) : nullptr;
@@ -64,16 +71,16 @@ void postprocessFit() {
   TH1* hChi2Ndf = GetObjectWithNullptrCheck<TH1>(fileIn, "hRawYieldsChiSquareTotal");
   const double chi2ndf = hChi2Ndf->GetBinContent(canvasNumber);
 
-  TPaveText* leftText = new TPaveText(0.25, 0.82, 0.35, 0.89, "brNDC");
+  TPaveText* leftText = new TPaveText(0.35, 0.82, 0.45, 0.89, "brNDC");
   leftText->SetFillColor(0);
-  leftText->SetTextSize(0.035);
+  leftText->SetTextSize(legendSize);
   leftText->SetTextFont(62);
   leftText->AddText("#Lambda_{c}^{+}#rightarrow pK^{-}#pi^{+} + c.c.");
   leftText->AddText("pp #sqrt{s} = 13.6 TeV");
 
   TPaveText* rightText = new TPaveText(0.70, 0.82, 0.90, 0.89, "brNDC");
   rightText->SetFillColor(0);
-  rightText->SetTextSize(0.035);
+  rightText->SetTextSize(legendSize);
   rightText->SetTextFont(62);
   rightText->AddText(("S = " + to_string_with_precision(signal, 0) + "#pm " + to_string_with_precision(signalError, 0)).c_str());
   rightText->AddText(("#chi^{2}/ndf = " + to_string_with_precision(chi2ndf, 2)).c_str());
@@ -82,7 +89,7 @@ void postprocessFit() {
 
   TLegend* legend = new TLegend(0.25, 0.62, 0.45, 0.75);
   legend->SetBorderSize(0);
-  legend->SetTextSize(0.035);
+  legend->SetTextSize(legendSize);
   legend->SetTextFont(62);
   if(!isResidual) {
     legend->AddEntry(histo, "Data", "PE");
@@ -94,6 +101,7 @@ void postprocessFit() {
   }
 
   TCanvas* c1 = new TCanvas("c1", "", 1000, 1000);
+  c1->SetTicks(1, 1);
   histo->Draw("AP");
   if(!isResidual) fitBkg->Draw("same");
   fitTotal->Draw("same");

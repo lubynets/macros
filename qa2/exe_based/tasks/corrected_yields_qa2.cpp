@@ -126,14 +126,14 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
     if (isMc) {
       hMcDiff->Draw("E1");
       fitMc->Draw("same");
-      AddOneLineText(fitResultsMC.first, {textX1, textY2 - 1*textYStep, textX2, textY2});
-      AddOneLineText(fitResultsMC.second, {textX1, textY2 - 2*textYStep, textX2, textY2 - 1*textYStep});
+      AddOneLineText(fitResultsMC.first, {textX1, textY2 - 1*textYStep, textX2, textY2}, "brNDC", 0.04);
+      AddOneLineText(fitResultsMC.second, {textX1, textY2 - 2*textYStep, textX2, textY2 - 1*textYStep}, "brNDC", 0.04);
     }
     hCutVarDiff->Draw("E1 same");
     fitCutVar->Draw("same");
-    AddOneLineText(fitResultsCutVar.first, {textX1, textY2 - 3*textYStep, textX2, textY2 - 2*textYStep});
-    AddOneLineText(fitResultsCutVar.second, {textX1, textY2 - 4*textYStep, textX2, textY2 - 3*textYStep});
-    AddOneLineText(lifetimePdg, {textX1, textY2 - 5*textYStep, textX2, textY2 - 4*textYStep});
+    AddOneLineText(fitResultsCutVar.first, {textX1, textY2 - 3*textYStep, textX2, textY2 - 2*textYStep}, "brNDC", 0.04);
+    AddOneLineText(fitResultsCutVar.second, {textX1, textY2 - 4*textYStep, textX2, textY2 - 3*textYStep}, "brNDC", 0.04);
+    AddOneLineText(lifetimePdg, {textX1, textY2 - 5*textYStep, textX2, textY2 - 4*textYStep}, "brNDC", 0.04);
     leg.Draw("same");
     ccFit.Print("ctfit.pdf", "pdf");
     

@@ -3,7 +3,7 @@
 //
 {
 gStyle->SetCanvasPreferGL(true);
-gStyle->SetPadLeftMargin(0.14);
+gStyle->SetPadLeftMargin(0.20);
 gStyle->SetPadRightMargin(0.02);
 gStyle->SetPadBottomMargin(0.12);
 gStyle->SetPadTopMargin(0.07);
@@ -14,8 +14,6 @@ gStyle->SetMarkerSize(2);
 gStyle->SetLineWidth(3);
 gStyle->SetHistLineWidth(3);
 gStyle->SetEndErrorSize(5);
-gStyle->SetPadTickX(1);
-gStyle->SetPadTickY(1);
 
 gStyle->SetTitleSize(0.05, "X");
 gStyle->SetTitleSize(0.05, "Y");
