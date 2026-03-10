@@ -15,6 +15,8 @@ using namespace HelperGeneral;
 using namespace HelperMath;
 using namespace HelperPlot;
 
+constexpr bool IsSaveCanvasAsRoot{true};
+
 void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& fileNameMC) {
   LoadMacro("styles/mc_qa2.style.cc");
 
@@ -44,14 +46,12 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
     hCutVar->UseCurrentStyle();
     hCutVar->SetLineColor(kRed);
     hCutVar->SetMarkerColor(kRed);
-    hCutVar->GetYaxis()->SetMoreLogLabels();
 
     TH1* hMC = isMc ? GetObjectWithNullptrCheck<TH1>(fileMC, "gen/" + promptness + "/hT") : nullptr;
     if (isMc) {
       hMC->UseCurrentStyle();
       hMC->SetLineColor(kBlue);
       hMC->SetMarkerColor(kBlue);
-      hMC->GetYaxis()->SetMoreLogLabels();
 
       hMC = dynamic_cast<TH1D*>(hMC->Rebin(lifetimeRanges.size() - 1, hMC->GetName(),lifetimeRanges.data()));
 
@@ -81,7 +81,7 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
     for(const auto& h : {hCutVarDiff, hMcDiff}) {
       if(h == nullptr) continue;
       h->Scale(1.0, "width");
-      h->GetYaxis()->SetTitle("dN/dT (ps^{-1})");
+      h->GetYaxis()->SetTitle("d#it{N}/d#it{t} (ps^{-1})");
     }
 
     PrintYields("ctfit", hCutVarDiff, hMcDiff, "", "(");
@@ -136,7 +136,8 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
     AddOneLineText(lifetimePdg, {textX1, textY2 - 5*textYStep, textX2, textY2 - 4*textYStep}, "brNDC", 0.04);
     leg.Draw("same");
     ccFit.Print("ctfit.pdf", "pdf");
-    
+    if(IsSaveCanvasAsRoot) ccFit.SaveAs("ccFit.root");
+
     TH1* hCutVarRatio = dynamic_cast<TH1*>(hCutVarDiff->Clone());
     TH1* hMcRatio = isMc ? dynamic_cast<TH1*>(hMcDiff->Clone()) : nullptr;
     ScalePlotVertically(hCutVarRatio, hCutVarDiff, 2);
@@ -158,6 +159,7 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
     hCutVarRatio->Draw("HIST PE same");
     oneline.Draw("same");
     ccRatio.Print("ctfit.pdf)", "pdf");
+    if(IsSaveCanvasAsRoot) ccRatio.SaveAs("ccRatio.root");
   } // promptnesses
 }
 
