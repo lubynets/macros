@@ -5,8 +5,7 @@ using namespace HelperGeneral;
 void postprocessFit() {
   const std::string fileName{"2/RawYields_Lc/RawYields_Lc.NPgt0.01.root"};
   const int canvasNumber{4}; // starts from 1
-  const bool isResidual{false};
-
+  const bool isResidual{true};
 
   gROOT->Macro("/home/oleksii/alidir/macros_on_git/qa2/macro_based/styles/postprocessFit.style.cc");
   const double titleSize{0.05};
@@ -45,7 +44,7 @@ void postprocessFit() {
     histo->SetPointEXlow(i, 0);
     histo->SetPointEXhigh(i, 0);
   }
-  histo->GetXaxis()->SetTitle("M_{pK#pi} (GeV/#it{c}^{2})");
+  histo->GetXaxis()->SetTitle("#it{M}_{pK#pi} (GeV/#it{c}^{2})");
   histo->GetXaxis()->SetTitleSize(titleSize);
   histo->GetXaxis()->SetLabelSize(titleSize);
   histo->GetXaxis()->SetTitleOffset(1.1);
@@ -68,26 +67,21 @@ void postprocessFit() {
   const double decayTimeLo = hSignalYield->GetBinLowEdge(canvasNumber);
   const double decayTimeUp = hSignalYield->GetBinLowEdge(canvasNumber + 1);
 
-  TH1* hChi2Ndf = GetObjectWithNullptrCheck<TH1>(fileIn, "hRawYieldsChiSquareTotal");
-  const double chi2ndf = hChi2Ndf->GetBinContent(canvasNumber);
-
-  TPaveText* leftText = new TPaveText(0.35, 0.82, 0.45, 0.89, "brNDC");
+  TPaveText* leftText = new TPaveText(0.35, 0.77, 0.45, 0.89, "brNDC");
   leftText->SetFillColor(0);
   leftText->SetTextSize(legendSize);
   leftText->SetTextFont(62);
-  leftText->AddText("#Lambda_{c}^{+}#rightarrow pK^{-}#pi^{+} + c.c.");
+  leftText->AddText("#Lambda_{c}^{+}#kern[0.5]{#rightarrow} pK^{-}#pi^{+} + c.c.");
   leftText->AddText("pp #sqrt{s} = 13.6 TeV");
+  leftText->AddText(("t#kern[0.5]{#in} (" + to_string_with_precision(decayTimeLo, 1) + "; " + to_string_with_precision(decayTimeUp, 1) + ") (ps)").c_str());
 
   TPaveText* rightText = new TPaveText(0.70, 0.82, 0.90, 0.89, "brNDC");
   rightText->SetFillColor(0);
   rightText->SetTextSize(legendSize);
   rightText->SetTextFont(62);
-  rightText->AddText(("S = " + to_string_with_precision(signal, 0) + "#pm " + to_string_with_precision(signalError, 0)).c_str());
-  rightText->AddText(("#chi^{2}/ndf = " + to_string_with_precision(chi2ndf, 2)).c_str());
+  rightText->AddText(("S = " + to_string_with_precision(signal, 0) + "#kern[0.5]{#pm} " + to_string_with_precision(signalError, 0)).c_str());
 
-  if(!isResidual) histo->SetTitle(("t#in (" + to_string_with_precision(decayTimeLo, 1) + "#; " + to_string_with_precision(decayTimeUp, 1) + ") (ps)").c_str());
-
-  TLegend* legend = new TLegend(0.25, 0.62, 0.45, 0.75);
+  TLegend* legend = new TLegend(0.25, 0.58, 0.45, 0.71);
   legend->SetBorderSize(0);
   legend->SetTextSize(legendSize);
   legend->SetTextFont(62);
@@ -96,7 +90,7 @@ void postprocessFit() {
     legend->AddEntry(fitTotal, "Fit SIG + BG", "L");
     legend->AddEntry(fitBkg, "Fit BG", "L");
   } else {
-    legend->AddEntry(histo, "Data #minus Fit BG", "PE");
+    legend->AddEntry(histo, "Data#kern[0.5]{#minus} Fit BG", "PE");
     legend->AddEntry(fitTotal, "Fit SIG", "L");
   }
 
