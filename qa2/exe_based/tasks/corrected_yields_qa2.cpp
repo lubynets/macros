@@ -72,7 +72,7 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
       legPrompt.Draw("same");
       cc.Print((ccName + ".pdf" + priBra).c_str(), "pdf");
     };
-    PrintYields("compar", hCutVar, hMC, promptness, EvaluatePrintingBracket(promptnesses, iP));
+    if(isMc) PrintYields("compar", hCutVar, hMC, promptness, EvaluatePrintingBracket(promptnesses, iP));
 
     if(promptness != "prompt") continue;
 
@@ -84,8 +84,6 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
       h->GetYaxis()->SetTitle("d#it{N}/d#it{t} (ps^{-1})");
     }
 
-    PrintYields("ctfit", hCutVarDiff, hMcDiff, "", "(");
-
     TF1* fitCutVar = FitLifetimeHisto(hCutVarDiff, integralOption);
     TF1* fitMc = isMc ? FitLifetimeHisto(hMcDiff, integralOption) : nullptr;
 
@@ -95,7 +93,7 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
                                            " #pm " +
                                            to_string_with_precision(fitFunc->GetParError(1)*1000, 1) +
                                            ") fs";
-      const std::string chi2Value = "#chi^{2} / ndf [" + text + "]= " +
+      const std::string chi2Value = "#chi^{2} / ndf = " +
                                     to_string_with_significant_figures(fitFunc->GetChisquare(), 3) +
                                     " / " +
                                     std::to_string(fitFunc->GetNDF());
@@ -107,18 +105,10 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
     const std::pair<std::string, std::string> fitResultsMC = isMc ? FitResults(fitMc, "MC") : std::pair<std::string, std::string>();
     const std::string lifetimePdg = "#tau_{#Lambda_{c}} [PDG] = (202.6 #pm 1.0) fs";
     
-    const float textX1 = 0.73;
+    const float textX1 = 0.70;
     const float textX2 = 0.86;
-    const float textY2 = 0.78;
+    const float textY2 = 0.86;
     const float textYStep = 0.06;
-
-    TLegend leg(textX1, textY2, textX2, textY2 + 2*textYStep);
-    if (isMc) {
-      leg.AddEntry(hMcDiff, "MC", "PL");
-      leg.AddEntry(hCutVarDiff, "rec", "PL");
-    } else {
-      leg.AddEntry(hCutVarDiff, "Data", "PL");
-    }
 
     TCanvas ccFit("ccFit", "");
     ccFit.SetCanvasSize(1200, 800);
@@ -133,10 +123,14 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
     fitCutVar->Draw("same");
     AddOneLineText(fitResultsCutVar.first, {textX1, textY2 - 3*textYStep, textX2, textY2 - 2*textYStep}, "brNDC", 0.04);
     AddOneLineText(fitResultsCutVar.second, {textX1, textY2 - 4*textYStep, textX2, textY2 - 3*textYStep}, "brNDC", 0.04);
-    AddOneLineText(lifetimePdg, {textX1, textY2 - 5*textYStep, textX2, textY2 - 4*textYStep}, "brNDC", 0.04);
-    leg.Draw("same");
-    ccFit.Print("ctfit.pdf", "pdf");
-    if(IsSaveCanvasAsRoot) ccFit.SaveAs("ccFit.root");
+    AddOneLineText(lifetimePdg, {textX1, textY2 - 5*textYStep, textX2, textY2 - 6*textYStep}, "brNDC", 0.04);
+    ccFit.Print("ctfit.pdf(", "pdf");
+
+    TFile* fileOut = IsSaveCanvasAsRoot ? TFile::Open("ctfit.root", "recreate") : nullptr;
+    if(IsSaveCanvasAsRoot) {
+      fileOut->cd();
+      ccFit.Write();
+    }
 
     TH1* hCutVarRatio = dynamic_cast<TH1*>(hCutVarDiff->Clone());
     TH1* hMcRatio = isMc ? dynamic_cast<TH1*>(hMcDiff->Clone()) : nullptr;
@@ -159,7 +153,11 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
     hCutVarRatio->Draw("HIST PE same");
     oneline.Draw("same");
     ccRatio.Print("ctfit.pdf)", "pdf");
-    if(IsSaveCanvasAsRoot) ccRatio.SaveAs("ccRatio.root");
+    if(IsSaveCanvasAsRoot) {
+      fileOut->cd();
+      ccRatio.Write();
+      fileOut->Close();
+    }
   } // promptnesses
 }
 
