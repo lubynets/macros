@@ -11,7 +11,7 @@
 
 namespace HelperMath {
 
-std::pair<float, float> EstimateExpoParameters(TH1* h, float lo, float hi);
+std::pair<double, double> EstimateExpoParameters(TH1* h);
 
 std::pair<double, double> DetermineWorkingRangesTH1(const TH1* histo, double leftMargin=0.0015, double rightMargin=0.0015);
 

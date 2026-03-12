@@ -44,12 +44,12 @@ void ct_mcfit(const std::string& fileNameEff, const std::string& fileNameYield, 
   histoRecCorrected->Scale(100);
 
   TF1* fitMC = new TF1("fitMC", "[0]*TMath::Exp(-x/[1])", 0, 2);
-  auto pars_est_MC = EstimateExpoParameters(histoRecCorrected, 0.2, 2);
+  auto pars_est_MC = EstimateExpoParameters(histoRecCorrected);
   fitMC->SetParameters(pars_est_MC.first, pars_est_MC.second);
   histoGen->Fit(fitMC, "0", "", 0.2, 2);
 
   TF1* fitRecCorrected = new TF1("fitRecCorrected", "[0]*TMath::Exp(-x/[1])", 0, 2);
-  auto pars_est_Rec = EstimateExpoParameters(histoRecCorrected, 0.2, 2);
+  auto pars_est_Rec = EstimateExpoParameters(histoRecCorrected);
   fitRecCorrected->SetParameters(pars_est_Rec.first, pars_est_Rec.second);
   histoRecCorrected->Fit(fitRecCorrected, "", "", 0.2, 2);
 

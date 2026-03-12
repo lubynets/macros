@@ -54,7 +54,7 @@ void ct_mcfit(const std::string& fileNameYield, const std::string& histoNameYiel
 
   const double lo = histoYieldDiff->GetBinLowEdge(1) + 1e-3;
   const double hi = histoYieldDiff->GetBinLowEdge(histoYieldDiff->GetNbinsX()+1) - 1e-3;
-  auto parEst = EstimateExpoParameters(histoYieldDiff, lo, hi);
+  auto parEst = EstimateExpoParameters(histoYieldDiff);
   TF1* fitFunc = new TF1("fitFunc", "[0]*TMath::Exp(-x/[1])", lo, hi); // TODO Use Helper's implementation
   fitFunc->SetParameters(parEst.first, parEst.second);
   histoYieldDiff->Fit(fitFunc, ("0"+fitIntegralOption).c_str(), "", lo, hi);
