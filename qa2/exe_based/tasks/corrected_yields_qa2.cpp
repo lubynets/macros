@@ -19,7 +19,14 @@ using namespace HelperMath;
 using namespace HelperPlot;
 
 constexpr bool IsSaveCanvasAsRoot{true};
-constexpr bool IsDoBinsDropping{true};
+
+enum RunModes {
+  AllPointsOnly = 0,
+  AllWoOne,
+  AllPossible
+};
+
+constexpr int RunMode{AllPossible};
 
 void ExcludeBin(TH1* h, int binNumber);
 std::vector<int> EvalBinsToDrop(int dropSet);
@@ -103,16 +110,21 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
 
     TGraphErrors grTau;
     TGraphErrors grA;
+    TGraphErrors grChi2;
 
     grTau.SetName("grTau");
-    grTau.GetXaxis()->SetTitle("drop set");
     grTau.GetYaxis()->SetTitle("#tau (fs)");
     grA.SetName("grA");
-    grA.GetXaxis()->SetTitle("drop set");
     grA.GetYaxis()->SetTitle("A");
+    grChi2.SetName("grChi2");
+    grChi2.GetYaxis()->SetTitle("#chi^{2} / ndf");
+
+    for(const auto& gr : {&grTau, &grA, &grChi2}) {
+      gr->GetXaxis()->SetTitle("drop set");
+    }
 
     const int nBins = hCutVarDiff->GetNbinsX();
-    const int nDropSets = IsDoBinsDropping ? 1 << nBins : 1;
+    const int nDropSets = RunMode > AllPointsOnly ? 1 << nBins : 1;
 
     TCanvas emptycanvas("emptycanvas", "", 1200, 800);
     emptycanvas.Print("ctfit.pdf[", "pdf");
@@ -125,6 +137,10 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
       grA.SetPointError(grA.GetN()-1, 0., fitCutVar->GetParError(0)*1000);
       grTau.AddPoint(dropSet, fitCutVar->GetParameter(1)*1000);
       grTau.SetPointError(grTau.GetN()-1, 0., fitCutVar->GetParError(1)*1000);
+
+      const auto chi2 = fitCutVar->GetChisquare();
+      const auto ndf = fitCutVar->GetNDF();
+      if(ndf != 0) grChi2.AddPoint(dropSet, chi2 / ndf);
 
       auto FitResults = [](const TF1* fitFunc, const std::string& text="") {
         const std::string lifetimeFitValue = "#tau_{#Lambda_{c}} [" + text + "] = (" +
@@ -175,7 +191,6 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
       AddOneLineText(fitResultsCutVar.second, {textX1, textY2 - 4*textYStep, textX2, textY2 - 3*textYStep}, "brNDC", 0.04);
       AddOneLineText(lifetimePdg, {textX1, textY2 - 6*textYStep, textX2, textY2 - 5*textYStep}, "brNDC", 0.04);
       const std::string& priBraFit = dropSet == 0 ? "(" : "";
-      std::cout << "priBraFit = " << priBraFit << "\n";
       ccFit.Print("ctfit.pdf", "pdf");
 
       TFile* fileOut{nullptr};
@@ -206,7 +221,6 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
       hCutVarRatio->Draw("HIST PE same");
       oneline.Draw("same");
       const std::string& priBraRatio = dropSet == nDropSets-1 ? ")" : "";
-      std::cout << "priBraRatio = " << priBraRatio << "\n";
       ccRatio.Print("ctfit.pdf", "pdf");
       if(IsSaveCanvasAsRoot && dropSet == 0) {
         fileOut->cd();
@@ -217,13 +231,9 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
 
     for(int iDropSet=0; iDropSet<nDropSets; ++iDropSet) {
       const auto binsToDrop = EvalBinsToDrop(iDropSet);
-      if(static_cast<int>(binsToDrop.size()) >= nBins-1) continue;
-      std::cout << iDropSet << "\t{";
-      for(const auto& v : binsToDrop) {
-        std::cout << v << " ";
-      }
-      std::cout << "}\n";
-
+      const auto binsToDropSize = static_cast<int>(binsToDrop.size());
+      if(RunMode == AllPossible && binsToDropSize >= nBins-1) continue;
+      if(RunMode == AllWoOne && binsToDropSize > 1) continue;
       TH1* hReco = dynamic_cast<TH1*>(hCutVarDiff->Clone());
       TH1* hMc = isMc ? dynamic_cast<TH1*>(hMcDiff->Clone()) : nullptr;
 
@@ -270,7 +280,8 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
     };
 
     PrintCanvasDrops(&grTau, "(");
-    PrintCanvasDrops(&grA, ")");
+    PrintCanvasDrops(&grA, "");
+    PrintCanvasDrops(&grChi2, ")");
 
   } // promptnesses
 }
