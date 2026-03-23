@@ -19,7 +19,7 @@ gStyle->SetTitleSize(0.05, "Y");
 gStyle->SetTitleSize(0.05, "Z");
 
 gStyle->SetLabelSize(0.05, "X");
-gStyle->SetLabelSize(0.05, "Y");
+gStyle->SetLabelSize(0.07, "Y");
 gStyle->SetLabelSize(0.05, "Z");
 
 gStyle->SetLabelOffset(0.003, "X");

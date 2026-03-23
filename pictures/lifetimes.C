@@ -2,7 +2,9 @@ void AddExperimentAbsoluteValue(TGraphErrors* gr, float y, const std::vector<flo
 void AddExperimentRatio(TGraphErrors* gr, float y, const std::vector<float>& t, const std::vector<float>& ref);
 void AddText(const std::string& text, float x, float y);
 
-void lifetimes(bool buildAbsValues=true) {
+void lifetimes(bool buildAbsValues=true, bool drawGammaAxis=false) {
+  drawGammaAxis &= buildAbsValues;
+
   TString currentMacroPath = __FILE__;
   TString directory = currentMacroPath(0, currentMacroPath.Last('/'));
   gROOT->Macro( directory + "/lifetimes.style.cc" );
@@ -38,6 +40,8 @@ void lifetimes(bool buildAbsValues=true) {
     {"Omega_c0", "#Omega^{0}_{c}",  kRed,      {69, 12, 0},  {268, 24, 10},     {276.5, 13.4, 4.5}, {243, 48, 11},       0.32 },
   };
 
+  if(drawGammaAxis) gStyle->SetPadTopMargin(0.06);
+
   TCanvas* cc = new TCanvas("cc", "", 1200, 800);
   for(auto& pa : particles) {
     if(!buildAbsValues && pa.name_ == "Lambda_c") continue;
@@ -63,7 +67,7 @@ void lifetimes(bool buildAbsValues=true) {
     if((buildAbsValues && pa.name_ == "Lambda_c") || (!buildAbsValues && pa.name_ == "Xi_c0")) {
       if(buildAbsValues) {
         gr->GetXaxis()->SetTitle("lifetime (fs)");
-        gr->GetXaxis()->SetLimits(0, 500);
+        gr->GetXaxis()->SetLimits(drawGammaAxis ? 50. : 0., 500);
         gr->GetYaxis()->Set(40, 0, 5);
         gr->GetYaxis()->SetRangeUser(0.25, 5);
       } else {
@@ -75,13 +79,33 @@ void lifetimes(bool buildAbsValues=true) {
       }
       gr->GetYaxis()->SetTickSize(0);
       for(int iExp=0; iExp<experiments.size(); iExp++) {
-        gr->GetYaxis()->SetBinLabel(gr->GetYaxis()->FindBin(experiments.at(iExp).y_value_+0.125), experiments.at(iExp).name_.c_str());
-        gr->GetYaxis()->SetBinLabel(gr->GetYaxis()->FindBin(experiments.at(iExp).y_value_-0.125), experiments.at(iExp).note_.c_str());
+        gr->GetYaxis()->SetBinLabel(gr->GetYaxis()->FindBin(experiments.at(iExp).y_value_+0.15), experiments.at(iExp).name_.c_str());
+        gr->GetYaxis()->SetBinLabel(gr->GetYaxis()->FindBin(experiments.at(iExp).y_value_-0.15), experiments.at(iExp).note_.c_str());
       }
       gr->Draw("AP");
     } else {
       gr->Draw("P");
     }
+
+    if(drawGammaAxis) {
+      gPad->Update();
+
+      const double xmin = gPad->GetUxmin();
+      const double xmax = gPad->GetUxmax();
+      const double ymax = gPad->GetUymax();
+
+      const double hPlanckElectronCharge{658.2};
+      TF1 *f = new TF1("f", "[0]/x", hPlanckElectronCharge/xmax, hPlanckElectronCharge/xmin);
+      f->SetParameter(0, hPlanckElectronCharge);
+
+      TGaxis *axis = new TGaxis(xmin, ymax, xmax, ymax, "f", 206, "-");
+      axis->SetTitleOffset(0.45);
+      axis->SetTitleFont(42);
+      axis->SetLabelFont(42);
+      axis->SetTitle("#Gamma (meV)");
+      axis->Draw();
+    }
+
   }
 
   if(buildAbsValues) {
