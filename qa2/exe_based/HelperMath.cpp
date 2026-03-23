@@ -126,6 +126,20 @@ void HelperMath::DivideHistoByFunction(TH1* histo, TF1* func, const std::string&
   }
 }
 
+void HelperMath::EvalNormDifferenceHistoFromFunction(TH1* histo, TF1* func, const std::string& option) {
+  const bool isIntegral = option == "I" ? true : option.empty() ? false : throw std::runtime_error("HelperMath::EvalNormDifferenceHistoFromFunction() - 'option' must be either empty string or I");
+  for(int iBin=1, nBins=histo->GetNbinsX(); iBin<=nBins; iBin++) {
+    const double histoValue = histo->GetBinContent(iBin);
+    const double histoError = histo->GetBinError(iBin);
+    const double lo = histo->GetBinLowEdge(iBin);
+    const double hi = histo->GetBinLowEdge(iBin+1);
+    const double ce = histo->GetBinCenter(iBin);
+    const double funcValue = isIntegral ? func->Integral(lo, hi) / (hi-lo) : func->Eval(ce);
+    histo->SetBinContent(iBin, histoError != 0. ? (histoValue - funcValue) / histoError : 0.);
+    histo->SetBinError(iBin, 0.);
+  }
+}
+
 void HelperMath::InvertHisto(TH1* histo) {
   Sumw2IfNotYet(histo);
   for(int iBin=1, nBins=histo->GetNbinsX(); iBin<nBins; ++iBin) {

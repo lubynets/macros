@@ -202,15 +202,25 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
 
       TH1* hCutVarRatio = dynamic_cast<TH1*>(histoRec->Clone());
       TH1* hMcRatio = isMc ? dynamic_cast<TH1*>(histoMc->Clone()) : nullptr;
+      TH1* hCutVarResidual = dynamic_cast<TH1*>(histoRec->Clone());
+      TH1* hMcResidual = isMc ? dynamic_cast<TH1*>(histoMc->Clone()) : nullptr;
       ScalePlotVertically(hCutVarRatio, histoRec, 2);
       hCutVarRatio->GetYaxis()->SetTitle("Data / Fit");
       DivideHistoByFunction(hCutVarRatio, fitCutVar, integralOption);
+      ScalePlotVertically(hCutVarResidual, histoRec, 2);
+      hCutVarResidual->GetYaxis()->SetTitle("(Data - Fit) / #sigma_{Data}");
+      EvalNormDifferenceHistoFromFunction(hCutVarResidual, fitCutVar, integralOption);
       if(isMc) {
         ScalePlotVertically(hMcRatio, histoMc, 2);
         hMcRatio->GetYaxis()->SetTitle("Data / Fit");
         DivideHistoByFunction(hMcRatio, fitMc, integralOption);
+        ScalePlotVertically(hMcResidual, histoMc, 2);
+        hMcResidual->GetYaxis()->SetTitle("(Data - Fit) / #sigma_{Data}");
+        EvalNormDifferenceHistoFromFunction(hMcResidual, fitMc, integralOption);
         CustomizeHistogramsYRange({hCutVarRatio, hMcRatio});
+        CustomizeHistogramsYRange({hCutVarResidual, hMcResidual});
       }
+
       TCanvas ccRatio("ccRatio", "");
       ScaleCanvasVertically(&ccRatio, &ccFit, 2);
       TF1 oneline("oneline", "[0]", 0, 2);
@@ -220,11 +230,23 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
       if(isMc) hMcRatio->Draw("HIST PE");
       hCutVarRatio->Draw("HIST PE same");
       oneline.Draw("same");
-      const std::string& priBraRatio = dropSet == nDropSets-1 ? ")" : "";
       ccRatio.Print("ctfit.pdf", "pdf");
+
+      TCanvas ccResidual("ccResidual", "");
+      ScaleCanvasVertically(&ccResidual, &ccFit, 2);
+      TF1 zeroline("oneline", "[0]", 0, 2);
+      zeroline.SetParameter(0, 0);
+      zeroline.SetLineColor(kBlack);
+      zeroline.SetLineStyle(7);
+      if(isMc) hMcResidual->Draw("HIST PE");
+      hCutVarResidual->Draw("HIST PE same");
+      zeroline.Draw("same");
+      ccResidual.Print("ctfit.pdf", "pdf");
+
       if(IsSaveCanvasAsRoot && dropSet == 0) {
         fileOut->cd();
         ccRatio.Write();
+        ccResidual.Write();
         fileOut->Close();
       }
     };
