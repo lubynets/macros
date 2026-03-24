@@ -136,7 +136,7 @@ void HelperMath::EvalNormDifferenceHistoFromFunction(TH1* histo, TF1* func, cons
     const double ce = histo->GetBinCenter(iBin);
     const double funcValue = isIntegral ? func->Integral(lo, hi) / (hi-lo) : func->Eval(ce);
     histo->SetBinContent(iBin, histoError != 0. ? (histoValue - funcValue) / histoError : 0.);
-    histo->SetBinError(iBin, 0.);
+    histo->SetBinError(iBin, histoError != 0. ? 1e-9 : 0.);
   }
 }
 

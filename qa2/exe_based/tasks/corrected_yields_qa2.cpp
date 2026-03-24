@@ -190,7 +190,6 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
       AddOneLineText(fitResultsCutVar.first, {textX1, textY2 - 3*textYStep, textX2, textY2 - 2*textYStep}, "brNDC", 0.04);
       AddOneLineText(fitResultsCutVar.second, {textX1, textY2 - 4*textYStep, textX2, textY2 - 3*textYStep}, "brNDC", 0.04);
       AddOneLineText(lifetimePdg, {textX1, textY2 - 6*textYStep, textX2, textY2 - 5*textYStep}, "brNDC", 0.04);
-      const std::string& priBraFit = dropSet == 0 ? "(" : "";
       ccFit.Print("ctfit.pdf", "pdf");
 
       TFile* fileOut{nullptr};
