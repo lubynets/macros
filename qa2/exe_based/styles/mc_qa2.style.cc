@@ -14,6 +14,8 @@ gStyle->SetMarkerSize(2);
 gStyle->SetLineWidth(3);
 gStyle->SetHistLineWidth(3);
 gStyle->SetEndErrorSize(5);
+gStyle->SetPadTickX(1);
+gStyle->SetPadTickY(1);
 
 gStyle->SetTitleSize(0.05, "X");
 gStyle->SetTitleSize(0.05, "Y");

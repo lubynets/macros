@@ -31,7 +31,7 @@ void efficiency_bdtcutset(const std::string& fileName) {
   const std::string fileOutName = "efficiency_summary";
 
   // ========================= Configuration =================================
-  const std::vector<double> lifeTimeRanges = {0.1, 0.2, 0.4, 0.6, 0.8, 1.0, 1.4, 1.8, 2.4, 3.6, 5.0};
+  const std::vector<double> lifeTimeRanges = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.4, 1.8, 2.4, 3.6, 5.0};
   const std::vector<double> pTRanges = {1, 2, 3, 4, 5, 8, 12, 20};
 
   std::vector<float> bdtScores;
@@ -42,12 +42,12 @@ void efficiency_bdtcutset(const std::string& fileName) {
 
   std::vector<std::pair<double, double>> pTIntervals{};
   for(size_t iPt = 0, nPts = pTRanges.size() - 1; iPt < nPts; ++iPt) {
-    pTIntervals.emplace_back(std::make_pair(pTRanges.at(iPt), pTRanges.at(iPt+1)));
+//     pTIntervals.emplace_back(std::make_pair(pTRanges.at(iPt), pTRanges.at(iPt+1)));
   }
 
-  pTIntervals.emplace_back(std::make_pair(1., 20.));
+//   pTIntervals.emplace_back(std::make_pair(1., 20.));
   pTIntervals.emplace_back(std::make_pair(3., 20.));
-  pTIntervals.emplace_back(std::make_pair(4., 20.));
+//   pTIntervals.emplace_back(std::make_pair(4., 20.));
 
   // ==========================================================================
 

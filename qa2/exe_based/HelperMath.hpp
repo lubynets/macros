@@ -11,7 +11,7 @@
 
 namespace HelperMath {
 
-std::pair<float, float> EstimateExpoParameters(TH1* h, float lo, float hi);
+std::pair<double, double> EstimateExpoParameters(TH1* h);
 
 std::pair<double, double> DetermineWorkingRangesTH1(const TH1* histo, double leftMargin=0.0015, double rightMargin=0.0015);
 
@@ -61,6 +61,8 @@ using tensor3 = tensor<T, 3>;
 TF1* FitLifetimeHisto(TH1* histo, const std::string& option="");
 
 void DivideHistoByFunction(TH1* histo, TF1* func, const std::string& option="");
+
+void EvalNormDifferenceHistoFromFunction(TH1* histo, TF1* func, const std::string& option="");
 
 void InvertHisto(TH1* histo);
 

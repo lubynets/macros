@@ -7,6 +7,7 @@ void ArmenterosPodolanskiCascade() {
   hAP->GetXaxis()->SetTitleOffset(1.75);
   hAP->GetXaxis()->SetTitle("#alpha = #frac{p_{#parallel}^{bach+(V0)} - p_{#parallel}^{V0(bach-)}}{p_{#parallel}^{bach+(V0)} + p_{#parallel}^{V0(bach-)}}");
   hAP->GetYaxis()->SetTitle("#it{q}_{T} (GeV/#it{c})");
+  hAP->GetZaxis()->SetTitle("Counts");
   hAP->SetTitle("");
 
   const double up1 = 0.223;
@@ -38,35 +39,42 @@ void ArmenterosPodolanskiCascade() {
   TLine* qtRight = new TLine(downAlphaEdge, qtMinOuterArc, upAlphaEdge, qtMinOuterArc);
   TLine* qtLeft = new TLine(-upAlphaEdge, qtMinOuterArc, -downAlphaEdge, qtMinOuterArc);
 
-  TPaveText* xi = new TPaveText(0.80, 0.11, 0.84, 0.18);
-  TPaveText* xibar = new TPaveText(-0.84, 0.11, -0.80, 0.18);
+  const std::pair<double, double> xiX{0.65, 0.75};
+  const std::pair<double, double> xiY{0.10, 0.13};
+  TPaveText* xi = new TPaveText(xiX.first, xiY.first, xiX.second, xiY.second);
+  TPaveText* xibar = new TPaveText(-xiX.second, xiY.first, -xiX.first, xiY.second);
   xi->AddText("#Xi^{-}");
   xibar->AddText("#bar{#Xi^{+}}");
   xi->SetTextColor(kBlack);
   xibar->SetTextColor(kBlack);
 
-  TPaveText* omega = new TPaveText(0.35, 0.18, 0.40, 0.28);
-  TPaveText* omegabar = new TPaveText(-0.40, 0.18, -0.35, 0.28);
+  const Color_t omegaColor{kRed};
+
+  const std::pair<double, double> omegaX{0.30, 0.40};
+  const std::pair<double, double> omegaY{0.15, 0.18};
+  TPaveText* omega = new TPaveText(omegaX.first, omegaY.first, omegaX.second, omegaY.second);
+  TPaveText* omegabar = new TPaveText(-omegaX.second, omegaY.first, -omegaX.first, omegaY.second);
   omega->AddText("#Omega^{-}");
   omegabar->AddText("#bar{#Omega^{+}}");
-  omega->SetTextColor(kRed);
-  omegabar->SetTextColor(kRed);
+  omega->SetTextColor(omegaColor);
+  omegabar->SetTextColor(omegaColor);
 
   TCanvas* cc = new TCanvas("cc", "");
   gStyle->SetOptStat(0);
   cc->SetCanvasSize(1200, 800);
   cc->SetBottomMargin(0.17);
-  cc->SetRightMargin(0.01);
+  cc->SetRightMargin(0.12);
   cc->SetTopMargin(0.02);
   cc->SetLogz();
 
-  hAP->Draw();
+  hAP->Draw("colz");
   for(const auto& arc : {upArc, downArc}) {
+    arc->SetLineColor(omegaColor);
     arc->SetLineWidth(3);
     arc->Draw("same");
   }
   for(const auto& line : {/*left, right,*/ qtRight, qtLeft}) {
-    line->SetLineColor(kRed);
+    line->SetLineColor(omegaColor);
     line->SetLineWidth(3);
     line->Draw("same");
   }

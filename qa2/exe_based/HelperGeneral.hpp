@@ -5,6 +5,7 @@
 #ifndef QA2_HELPERGENERAL_HPP
 #define QA2_HELPERGENERAL_HPP
 
+#include <TAxis.h>
 #include <THnSparse.h>
 #include <TFile.h>
 #include <TF1.h>
@@ -25,7 +26,7 @@ constexpr float UndefValueFloat{-999.f};
 constexpr int UndefValueInt{-999};
 
 template<typename T>
-inline std::string to_string_with_precision(const T a_value, const int n=2) {
+std::string to_string_with_precision(const T a_value, const int n=2) {
   std::ostringstream out;
   out.precision(n);
   out << std::fixed << a_value;
@@ -33,7 +34,7 @@ inline std::string to_string_with_precision(const T a_value, const int n=2) {
 }
 
 template<typename T>
-inline std::string to_string_with_significant_figures(const T a_value, const int n=2) {
+std::string to_string_with_significant_figures(const T a_value, const int n=2) {
   if(a_value == 0) return "0";
 
   const double dMag = std::log10(std::abs(a_value)); // scale of the a_value (e.g 1.* for 1.2345, 2.* for 12.345 etc)
@@ -49,13 +50,19 @@ std::vector<std::pair<std::string, std::string>> FindCuts(TFile* fileIn, std::st
 
 bool string_to_bool(const std::string& str);
 
-TFile* OpenFileWithNullptrCheck(const std::string& fileName, const std::string& option = "read");
+inline TFile* OpenFileWithNullptrCheck(const std::string& fileName, const std::string& option="read") {
+  TFile* file = TFile::Open(fileName.c_str(), option.c_str());
+  if(file == nullptr) {
+    throw std::runtime_error("HelperGeneral::OpenFileWithNullptrCheck() - file " + fileName + " is missing");
+  }
+  return file;
+}
 
 template<typename T>
-inline T* GetObjectWithNullptrCheck(TFile* fileIn, const std::string& objectName) {
+T* GetObjectWithNullptrCheck(TFile* fileIn, const std::string& objectName) {
   T* ptr = fileIn->Get<T>(objectName.c_str());
   if(ptr == nullptr) {
-    throw std::runtime_error("GetObjectWithNullptrCheck() - object " + objectName + " in file " + fileIn->GetName() + " is missing");
+    throw std::runtime_error("HelperGeneral::GetObjectWithNullptrCheck() - object " + objectName + " in file " + fileIn->GetName() + " is missing");
   }
   return ptr;
 }
@@ -70,7 +77,7 @@ void CheckHistogramsForXaxisIdentity(const TH1* h1, const TH1* h2);
 
 std::map<std::string_view, int> MapTHnSparseAxesIndices(const THnSparse* histo);
 
-void CheckTAxisForRanges(const TAxis& axis, const std::vector<float>& ranges);
+void CheckTAxisForRanges(const TAxis& axis, const std::vector<double>& ranges);
 
 void SetTHnSparseAxisRanges(THnSparse* histo, int axisNum, float lo= -999., float hi= -999.);
 

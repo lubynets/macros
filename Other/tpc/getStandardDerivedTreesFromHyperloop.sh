@@ -1,7 +1,5 @@
 #!/bin/bash
 
-
-
 ##########################################################################################################
 # To run this script:                                                                                    #
 # - enter an O2Physics environment                                                                       #
@@ -11,6 +9,12 @@
 # - Output will be stored as "SkimmedTree_merged.root", along with the intermediate files in run-number  #
 #   folders.                                                                                             #
 ##########################################################################################################
+
+LOGFILE="download.log"
+if [[ -f $LOGFILE ]]; then
+  rm $LOGFILE
+fi
+exec > >(tee -a $LOGFILE) 2>&1
 
 if [[ $1 != --skip-download ]]; then
 

@@ -19,10 +19,10 @@ using namespace HelperMath;
 using namespace std::string_literals;
 
 bool gIsDoWeight{false};
-std::vector<float> gBdtSignalLowerValues{};
+std::vector<double> gBdtSignalLowerValues{};
 
-std::vector<float> pTRanges = {1, 2, 3, 4, 5, 8, 12, 20};
-const std::vector<float> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.02, 0.02, 0.04, 0.08};
+std::vector<double> pTRanges = {1, 2, 3, 4, 5, 8, 12, 20};
+const std::vector<double> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.02, 0.02, 0.04, 0.08};
 
 const std::string_view lifetimeAxisTitle = "T_{proper} (ps)";
 const std::string_view pTAxisTitle = "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})";
@@ -34,9 +34,9 @@ const std::string_view signalTypeAxisTitle = "candidates type";
 const std::string fileOutName{"yield_lifetime_qa_thn.root"};
 constexpr bool IsVerbose{true};
 
-const std::vector<std::pair<std::string, float>> promptnesses {
-  {"prompt", 1},
-  {"nonprompt", 2}
+const std::vector<std::pair<std::string, double>> promptnesses {
+  {"prompt", 1.},
+  {"nonprompt", 2.}
 };
 enum : int {
   RunOnly = 0,
@@ -65,10 +65,10 @@ void FillYield(const std::string& fileName, const std::string& filePtWeightName,
     ScaleTHnSparseWithWeight(histoNonPromptWeighted, axesIndices.at(pTBAxisTitle), histoWeightNonPrompt);
   }
   
-  auto ProcessTHnSparse = [&](THnSparse* histoIn, const std::string& histoNameSuffix="", const std::vector<std::pair<std::string, float>>& promptnessesToProcess=promptnesses) {
+  auto ProcessTHnSparse = [&](THnSparse* histoIn, const std::string& histoNameSuffix="", const std::vector<std::pair<std::string, double>>& promptnessesToProcess=promptnesses) {
     if(IsVerbose) std::cout << "ProcessTHnSparse() started\n";
     CheckTAxisForRanges(*histoIn->GetAxis(axesIndices.at(pTAxisTitle)), pTRanges);
-    CheckTAxisForRanges(*histoIn->GetAxis(axesIndices.at(signalTypeAxisTitle)), {1, 2, 3});
+    CheckTAxisForRanges(*histoIn->GetAxis(axesIndices.at(signalTypeAxisTitle)), {1., 2., 3.});
     if(isRec) CheckTAxisForRanges(*histoIn->GetAxis(axesIndices.at(bgAxisTitle)), bdtBgUpperValuesVsPt);
 
     for(size_t iPt=0, nPts=pTRanges.size()-1; iPt<nPts; ++iPt) {
@@ -80,7 +80,7 @@ void FillYield(const std::string& fileName, const std::string& filePtWeightName,
         const std::string dirName = (isRec ? "rec/" : "gen/") + promptness.first + "/" + GetPtCutName(iPt);
         SetTHnSparseAxisRanges(histoIn, axesIndices.at(signalTypeAxisTitle), promptness.second, promptness.second+1.f);
         // for rec - real gBdtSignalLowerValues; for gen - fake 1-element vector for universality reasons
-        const auto& bdtSignalLowerValues = isRec ? gBdtSignalLowerValues : std::vector<float>{UndefValueFloat};
+        const auto& bdtSignalLowerValues = isRec ? gBdtSignalLowerValues : std::vector<double>{UndefValueDouble};
         if(IsVerbose) std::cout << "ProcessTHnSparse(): bsc = ";
         for(const auto& bsc : bdtSignalLowerValues) {
           if(IsVerbose) std::cout << bsc << "\t";
@@ -165,7 +165,7 @@ int main(int argc, char* argv[]) {
       for(const auto& weightPresence : weightsPresences) {
         if(!gIsDoWeight) continue;
         // for rec - real gBdtSignalLowerValues; for gen - fake 1-element vector for universality reasons
-        const auto& bdtSignalLowerValues = isRec ? gBdtSignalLowerValues : std::vector<float>{UndefValueFloat};
+        const auto& bdtSignalLowerValues = isRec ? gBdtSignalLowerValues : std::vector<double>{UndefValueDouble};
         for (const auto& bslv : bdtSignalLowerValues) {
           std::vector<std::string> histoNames;
           histoNames.reserve(pTCutNames.size());

@@ -12,13 +12,21 @@
 
 #include <stdexcept>
 
-std::pair<float, float> HelperMath::EstimateExpoParameters(TH1* h, float lo, float hi) {
-  const int ilo = h->FindBin(lo);
-  const int ihi = h->FindBin(hi);
-  const float flo = h->GetBinContent(ilo)/* * h->GetBinWidth(ilo)*/;
-  const float fhi = h->GetBinContent(ihi)/* * h->GetBinWidth(ihi)*/;
-  const float tau = (hi-lo)/std::log(flo/fhi);
-  const float A = flo / std::exp(-lo/tau);
+std::pair<double, double> HelperMath::EstimateExpoParameters(TH1* h) {
+  int ilo{1};
+  while(h->GetBinContent(ilo) == 0.) {
+    ++ilo;
+  }
+  int ihi{h->GetNbinsX()};
+  while(h->GetBinContent(ihi) == 0.) {
+    --ihi;
+  }
+  const double lo = h->GetBinCenter(ilo);
+  const double hi = h->GetBinCenter(ihi);
+  const double flo = h->GetBinContent(ilo);
+  const double fhi = h->GetBinContent(ihi);
+  const double tau = (hi-lo)/std::log(flo/fhi);
+  const double A = flo / std::exp(-lo/tau);
   return std::make_pair(A, tau);
 }
 
@@ -91,7 +99,7 @@ void HelperMath::DivideGraph(TGraph* num, const TGraph* den) {
 TF1* HelperMath::FitLifetimeHisto(TH1* histo, const std::string& option) {
   const double lo = histo->GetBinLowEdge(1) + 1e-3;
   const double hi = histo->GetBinLowEdge(histo->GetNbinsX()+1) - 1e-3;
-  auto parEst = HelperMath::EstimateExpoParameters(histo, lo, hi);
+  const auto parEst = HelperMath::EstimateExpoParameters(histo);
   TF1* fitFunc = new TF1("fitFunc", "[0]*TMath::Exp(-x/[1])", lo, hi);
   fitFunc->SetParameters(parEst.first, parEst.second);
   histo->Fit(fitFunc, ("0"+option).c_str(), "", lo, hi);
@@ -115,6 +123,20 @@ void HelperMath::DivideHistoByFunction(TH1* histo, TF1* func, const std::string&
     }
   } else {
     throw std::runtime_error("HelperMath::DivideHistoByFunction() - 'option' must be either empty string or I");
+  }
+}
+
+void HelperMath::EvalNormDifferenceHistoFromFunction(TH1* histo, TF1* func, const std::string& option) {
+  const bool isIntegral = option == "I" ? true : option.empty() ? false : throw std::runtime_error("HelperMath::EvalNormDifferenceHistoFromFunction() - 'option' must be either empty string or I");
+  for(int iBin=1, nBins=histo->GetNbinsX(); iBin<=nBins; iBin++) {
+    const double histoValue = histo->GetBinContent(iBin);
+    const double histoError = histo->GetBinError(iBin);
+    const double lo = histo->GetBinLowEdge(iBin);
+    const double hi = histo->GetBinLowEdge(iBin+1);
+    const double ce = histo->GetBinCenter(iBin);
+    const double funcValue = isIntegral ? func->Integral(lo, hi) / (hi-lo) : func->Eval(ce);
+    histo->SetBinContent(iBin, histoError != 0. ? (histoValue - funcValue) / histoError : 0.);
+    histo->SetBinError(iBin, histoError != 0. ? 1e-9 : 0.);
   }
 }
 
