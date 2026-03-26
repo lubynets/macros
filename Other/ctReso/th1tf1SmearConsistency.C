@@ -2,6 +2,7 @@ constexpr double PI{3.141592654};
 
 TH1* EvaluateEfficiency(const TH1* histoNum, const TH1* histoDen);
 TH1* CutSubHistogram(const TH1* histoIn, double lo, double hi);
+std::pair<float, float> EstimateExpoParameters(TH1* h, float lo, float hi);
 
 class ExpoSmearFunction {
 public:
@@ -97,31 +98,34 @@ void th1tf1SmearConsistency() {
 
   const double tau{0.2};
 
-  const int nFills{100000000};
-  TH1* hSmeared = new TH1D("hSmeared", "", nBins, lo, hi);
-  for(int iFill=0; iFill<nFills; ++iFill) {
-    if(iFill%(nFills/20) == 0) std::cout << "iFill = " << iFill << "\n";
-    const double smearCentralValue = gRandom->Exp(tau);
-    if(gRandom->Uniform(1) > hEffSim->GetBinContent(hEffSim->FindBin(smearCentralValue))) continue;
+//   const int nFills{100000000};
+//   TH1* hSmeared = new TH1D("hSmeared", "", nBins, lo, hi);
+//   for(int iFill=0; iFill<nFills; ++iFill) {
+//     if(iFill%(nFills/20) == 0) std::cout << "iFill = " << iFill << "\n";
+//     const double smearCentralValue = gRandom->Exp(tau);
+//     if(gRandom->Uniform(1) > hEffSim->GetBinContent(hEffSim->FindBin(smearCentralValue))) continue;
+//
+//     auto ReadValueFromGraph = [&](TGraph* graph) {
+//       if(smearCentralValue < graph->GetX()[0]) {
+//         return  graph->GetY()[0];
+//       } else if(smearCentralValue > graph->GetX()[graph->GetN()-1]) {
+//         return  graph->GetY()[graph->GetN()-1];
+//       } else {
+//         return  graph->Eval(smearCentralValue);
+//       }
+//     };
+//     const double mean = ReadValueFromGraph(grResoMean);
+//     const double sigma = ReadValueFromGraph(grResoSigma);
+//
+//     const double smearShiftValue = gRandom->Gaus(mean, sigma);
+//     hSmeared->Fill(smearCentralValue + smearShiftValue);
+//   }
+//
+//   hSmeared->Sumw2();
+//   hSmeared->Divide(hEffCand);
 
-    auto ReadValueFromGraph = [&](TGraph* graph) {
-      if(smearCentralValue < graph->GetX()[0]) {
-        return  graph->GetY()[0];
-      } else if(smearCentralValue > graph->GetX()[graph->GetN()-1]) {
-        return  graph->GetY()[graph->GetN()-1];
-      } else {
-        return  graph->Eval(smearCentralValue);
-      }
-    };
-    const double mean = ReadValueFromGraph(grResoMean);
-    const double sigma = ReadValueFromGraph(grResoSigma);
-
-    const double smearShiftValue = gRandom->Gaus(mean, sigma);
-    hSmeared->Fill(smearCentralValue + smearShiftValue);
-  }
-
-  hSmeared->Sumw2();
-  hSmeared->Divide(hEffCand);
+  TFile* fileHisto = TFile::Open("CutVarLc.merged.signalGet.root", "read");
+  TH1* hSmeared = fileHisto->Get<TH1>("hCorrYieldsPrompt");
 
   hSmeared->SetLineColor(kBlue);
 
@@ -135,23 +139,29 @@ void th1tf1SmearConsistency() {
   fitFunctorSmeared.Init();
 
   TF1* fitFuncSmeared = new TF1("fitFuncSmeared", fitFunctorSmeared, 0.0, 2.0, 2);
-  fitFuncSmeared->SetNpx(100);
-
-  const double A = nFills * binWidth / tau / (std::exp(-lo/tau) - std::exp(-hi/tau));
-  fitFuncSmeared->SetParameters(A, tau);
-
+  fitFuncSmeared->SetNpx(1000);
 
   hSmeared = CutSubHistogram(hSmeared, edges.front(), edges.back());
   hSmeared = dynamic_cast<TH1*>(hSmeared->Rebin(edges.size() - 1,hSmeared->GetName(),edges.data()));
   hSmeared->Scale(1., "width");
 
+  //   const double A = nFills * binWidth / tau / (std::exp(-lo/tau) - std::exp(-hi/tau));
+  //   fitFuncSmeared->SetParameters(A, tau);
+
+  const auto [parExp1, parExp2] = EstimateExpoParameters(hSmeared, edges.front(), edges.back());
+  fitFuncSmeared->SetParameters(parExp1, parExp2);
+
+  TCanvas cc("cc", "", 989,1088);
+  cc.SetLogy();
 
   hSmeared->Draw();
 //   fitFuncSmeared->Draw("same");
 
   hSmeared->Fit(fitFuncSmeared, "I", "", 0.2, 1.8);
 
-  fitFuncSmeared->SaveAs("fitFuncSmeared.root");
+  cc.Print("cc.pdf", "pdf");
+
+//   fitFuncSmeared->SaveAs("fitFuncSmeared.root");
 }
 
 TH1* EvaluateEfficiency(const TH1* histoNum, const TH1* histoDen) {
@@ -195,4 +205,14 @@ TH1* CutSubHistogram(const TH1* histoIn, double lo, double hi) {
   }
   histoOut->Sumw2(isSumw2);
   return histoOut;
+}
+
+std::pair<float, float> EstimateExpoParameters(TH1* h, float lo, float hi) {
+  const int ilo = h->FindBin(lo);
+  const int ihi = h->FindBin(hi);
+  const float flo = h->GetBinContent(ilo)/* * h->GetBinWidth(ilo)*/;
+  const float fhi = h->GetBinContent(ihi)/* * h->GetBinWidth(ihi)*/;
+  const float tau = (hi-lo)/std::log(flo/fhi);
+  const float A = flo / std::exp(-lo/tau);
+  return std::make_pair(A, tau);
 }
