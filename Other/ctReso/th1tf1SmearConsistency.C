@@ -15,8 +15,8 @@ public:
 
   void SetMeanContainer(TGraph* graph) { graph_mean_container_ = graph; }
   void SetSigmaContainer(TGraph* graph) { graph_sigma_container_ = graph; }
-  void SetEfficiencyGenHistogram(TH1* histo) { efficiency_gen_based_ = histo; }
-  void SetEfficiencyRecHistogram(TH1* histo) { efficiency_rec_based_ = histo; }
+  void SetEfficiencyGenHistogram(TF1* func) { efficiency_gen_based_ = func; }
+  void SetEfficiencyRecHistogram(TF1* func) { efficiency_rec_based_ = func; }
 
   double operator()(double* xx, double* par) {
     if(!is_init_) Init();
@@ -41,8 +41,8 @@ public:
 
       const double mean = ReadValueFromGraph(graph_mean_container_, pointToBeTakenFrom);
       const double sigma = ReadValueFromGraph(graph_sigma_container_, pointToBeTakenFrom);
-      const double effGen = efficiency_gen_based_->Interpolate(pointToBeTakenFrom);
-      const double effRec = efficiency_rec_based_->Interpolate(x);
+      const double effGen = efficiency_gen_based_->Eval(pointToBeTakenFrom);
+      const double effRec = efficiency_rec_based_->Eval(x);
       if(effRec == 0.) continue;
 
       const double funcValue = func_orig_->Eval(pointToBeTakenFrom);
@@ -63,8 +63,8 @@ private:
   TGraph* graph_mean_container_{nullptr};
   TGraph* graph_sigma_container_{nullptr};
   TF1* func_smear_{nullptr};
-  TH1* efficiency_gen_based_{nullptr};
-  TH1* efficiency_rec_based_{nullptr};
+  TF1* efficiency_gen_based_{nullptr};
+  TF1* efficiency_rec_based_{nullptr};
   double smear_range_{1.};
   double step_{};
   int numer_of_smearing_points_{100};
@@ -80,15 +80,11 @@ void th1tf1SmearConsistency() {
   TGraph* grResoSigma = fileReso->Get<TGraph>("sigma");
   if(grResoSigma == nullptr) throw std::runtime_error("grResoSigma == nullptr");
 
-  TFile* fileYield = TFile::Open("ct_yield_qa.HF_LHC24h1b_All.595984.root", "read");
-  if(fileYield == nullptr) throw std::runtime_error("fileYield == nullptr");
-  TH1* hYieldGen = fileYield->Get<TH1>("prompt/hGen");
-  TH1* hYieldCand = fileYield->Get<TH1>("prompt/hCand");
-  TH1* hYieldSim = fileYield->Get<TH1>("prompt/hSim");
-  if(hYieldGen == nullptr || hYieldCand == nullptr || hYieldSim == nullptr) throw std::runtime_error("hYieldGen == nullptr || hYieldCand == nullptr || hYieldSim == nullptr");
-
-  TH1* hEffSim = EvaluateEfficiency(hYieldSim, hYieldGen);
-  TH1* hEffCand = EvaluateEfficiency(hYieldCand, hYieldGen);
+  TFile* fileEff = TFile::Open("eff_fit.HF_LHC24h1b_All.595984.root", "read");
+  if(fileEff == nullptr) throw std::runtime_error("fileEff == nullptr");
+  TF1* effCand = fileEff->Get<TF1>("effCand");
+  TF1* effSim = fileEff->Get<TF1>("effSim");
+  if(effCand == nullptr || effSim == nullptr) throw std::runtime_error("effCand == nullptr || effSim == nullptr");
 
   const int nBins{400};
   const double lo{0.};
@@ -103,7 +99,8 @@ void th1tf1SmearConsistency() {
 //   for(int iFill=0; iFill<nFills; ++iFill) {
 //     if(iFill%(nFills/20) == 0) std::cout << "iFill = " << iFill << "\n";
 //     const double smearCentralValue = gRandom->Exp(tau);
-//     if(gRandom->Uniform(1) > hEffSim->GetBinContent(hEffSim->FindBin(smearCentralValue))) continue;
+// //     if(gRandom->Uniform(1) > hEffSim->GetBinContent(hEffSim->FindBin(smearCentralValue))) continue;
+//     if(gRandom->Uniform(1) > effSim->Eval(smearCentralValue)) continue;
 //
 //     auto ReadValueFromGraph = [&](TGraph* graph) {
 //       if(smearCentralValue < graph->GetX()[0]) {
@@ -122,7 +119,7 @@ void th1tf1SmearConsistency() {
 //   }
 //
 //   hSmeared->Sumw2();
-//   hSmeared->Divide(hEffCand);
+//   hSmeared->Divide(effCand);
 
   TFile* fileHisto = TFile::Open("CutVarLc.merged.signalGet.root", "read");
   TH1* hSmeared = fileHisto->Get<TH1>("hCorrYieldsPrompt");
@@ -134,8 +131,8 @@ void th1tf1SmearConsistency() {
   ExpoSmearFunction fitFunctorSmeared;
   fitFunctorSmeared.SetMeanContainer(grResoMean);
   fitFunctorSmeared.SetSigmaContainer(grResoSigma);
-  fitFunctorSmeared.SetEfficiencyGenHistogram(hEffSim);
-  fitFunctorSmeared.SetEfficiencyRecHistogram(hEffCand);
+  fitFunctorSmeared.SetEfficiencyGenHistogram(effSim);
+  fitFunctorSmeared.SetEfficiencyRecHistogram(effCand);
   fitFunctorSmeared.Init();
 
   TF1* fitFuncSmeared = new TF1("fitFuncSmeared", fitFunctorSmeared, 0.0, 2.0, 2);
@@ -144,12 +141,11 @@ void th1tf1SmearConsistency() {
   hSmeared = CutSubHistogram(hSmeared, edges.front(), edges.back());
   hSmeared = dynamic_cast<TH1*>(hSmeared->Rebin(edges.size() - 1,hSmeared->GetName(),edges.data()));
   hSmeared->Scale(1., "width");
-
-  //   const double A = nFills * binWidth / tau / (std::exp(-lo/tau) - std::exp(-hi/tau));
-  //   fitFuncSmeared->SetParameters(A, tau);
-
   const auto [parExp1, parExp2] = EstimateExpoParameters(hSmeared, edges.front(), edges.back());
   fitFuncSmeared->SetParameters(parExp1, parExp2);
+
+//   const double A = nFills * binWidth / tau / (std::exp(-lo/tau) - std::exp(-hi/tau));
+//   fitFuncSmeared->SetParameters(A, tau);
 
   TCanvas cc("cc", "", 989,1088);
   cc.SetLogy();
