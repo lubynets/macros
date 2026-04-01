@@ -1,1 +1,1 @@
-/home/oleksii/alidir/O2Physics/PWGHF/D2H/Macros/HFInvMassFitter.cxx
+/scratch/alice/lubynets/alice/O2Physics/PWGHF/D2H/Macros/HFInvMassFitter.cxx
