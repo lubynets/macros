@@ -27,8 +27,6 @@ const std::string bgAxisTitle = "BDT bkg score (Lc)";
 const std::string npAxisTitle = "BDT non-prompt score (Lc)";
 const std::string massAxisTitle = "inv. mass (p K #pi) (GeV/#it{c}^{2})";
 
-const std::vector<double> bdtNPUpperValues = {1.00, 0.95, 0.90, 0.85, 0.80};
-
 const std::string bdtScanAxisTitle = npAxisTitle;
 const std::string bdtScanDir = "gt";
 
@@ -69,7 +67,7 @@ void MassBdtQaThn(const std::string& fileNameIn, int modeRun) {
   if(bdtScanDir != "gt" && bdtScanDir != "lt") throw std::runtime_error("bdtScanDir != \"gt\" && bdtScanDir != \"lt\"");
 
   std::vector<double> bdtScanValues;
-  for (int iB = 0; iB <= 0; iB++) {
+  for (int iB = 0; iB <= 99; iB++) {
     bdtScanValues.emplace_back(0.01 * iB);
   }
   if(modeRun != MergeOnly) {
@@ -77,7 +75,6 @@ void MassBdtQaThn(const std::string& fileNameIn, int modeRun) {
     CheckTAxisForRanges(*histoIn->GetAxis(axesIndices.at(bgAxisTitle)), bdtBgUpperValuesVsPt);
     CheckTAxisForRanges(*histoIn->GetAxis(axesIndices.at(lifetimeAxisTitle)), lifetimeRanges);
     CheckTAxisForRanges(*histoIn->GetAxis(axesIndices.at(bdtScanAxisTitle)), bdtScanValues);
-    CheckTAxisForRanges(*histoIn->GetAxis(axesIndices.at(npAxisTitle)), bdtNPUpperValues);
   }
 
   std::vector<std::string> pTCutNames, tCutNames;
@@ -95,25 +92,21 @@ void MassBdtQaThn(const std::string& fileNameIn, int modeRun) {
     for(size_t iT=0, nTs=lifetimeRanges.size()-1; iT<nTs; ++iT) {
       if(Verobsity >= 2) std::cout << "Processing iT = " << iT << "\n";
       SetTHnSparseAxisRanges(histoIn, axesIndices.at(lifetimeAxisTitle), lifetimeRanges.at(iT), lifetimeRanges.at(iT + 1));
-      for(const auto& bdtNpUpper : bdtNPUpperValues) {
-        if(Verobsity >= 2) std::cout << "Processing bdtNpUpper = " << bdtNpUpper << "\n";
-        if(Verobsity >= 3) std::cout << "Processing bdtScan = ";
-        const std::string dirName = pTCutNames.at(iPt) + "/" + tCutNames.at(iT) + "/NPlt" + to_string_with_precision(bdtNpUpper, 2);
-        for (const auto& bdtScan: bdtScanValues) {
-          if(Verobsity >= 3) std::cout << bdtScan << " ";
-          if(bdtScanAxisTitle == bgAxisTitle && bdtScan > bdtBgUpperValuesVsPt.at(iPt)+0.001) continue;
-          if(bdtScanAxisTitle == npAxisTitle && bdtScan >= bdtNpUpper) continue;
-          const auto [bdtFrom, bdtTo] = bdtScanDir == "gt" ? std::make_pair(bdtScan, bdtNpUpper) : std::make_pair(0., bdtScan);
-          SetTHnSparseAxisRanges(histoIn, axesIndices.at(bdtScanAxisTitle), bdtFrom, bdtTo);
-          TH1D* histoMass = histoIn->Projection(axesIndices.at(massAxisTitle));
-          histoMass->SetDirectory(nullptr);
-          const std::string histoName = "hM_" + bdtScanShortCut + bdtScanDir + to_string_with_precision(bdtScan, 2);
-          CD(fileOut, dirName);
-          histoMass->Write(histoName.c_str());
-          SetTHnSparseAxisRanges(histoIn, axesIndices.at(bdtScanAxisTitle));
-        } // bdtScanValues
-        if(Verobsity >= 3) std::cout << "\n";
-      } // bdtNPUpperValues
+      if(Verobsity >= 3) std::cout << "Processing bdtScan = ";
+      const std::string dirName = pTCutNames.at(iPt) + "/" + tCutNames.at(iT);
+      for (const auto& bdtScan: bdtScanValues) {
+        if(Verobsity >= 3) std::cout << bdtScan << " ";
+        if(bdtScanAxisTitle == bgAxisTitle && bdtScan > bdtBgUpperValuesVsPt.at(iPt)+0.001) continue;
+        const auto [bdtFrom, bdtTo] = bdtScanDir == "gt" ? std::make_pair(bdtScan, 1.) : std::make_pair(0., bdtScan);
+        SetTHnSparseAxisRanges(histoIn, axesIndices.at(bdtScanAxisTitle), bdtFrom, bdtTo);
+        TH1D* histoMass = histoIn->Projection(axesIndices.at(massAxisTitle));
+        histoMass->SetDirectory(nullptr);
+        const std::string histoName = "hM_" + bdtScanShortCut + bdtScanDir + to_string_with_precision(bdtScan, 2);
+        CD(fileOut, dirName);
+        histoMass->Write(histoName.c_str());
+        SetTHnSparseAxisRanges(histoIn, axesIndices.at(bdtScanAxisTitle));
+      } // bdtScanValues
+      if(Verobsity >= 3) std::cout << "\n";
       SetTHnSparseAxisRanges(histoIn, axesIndices.at(lifetimeAxisTitle));
       if(Verobsity >= 2) std::cout << "\n";
     } // lifetimeRanges
@@ -127,19 +120,16 @@ void MassBdtQaThn(const std::string& fileNameIn, int modeRun) {
     pTRanges.erase(pTRanges.begin(), pTRanges.begin()+nLowerPtBinsToExclude);
 
     for (const auto& tcn : tCutNames) {
-      for (const auto& bnpuv : bdtNPUpperValues) {
-        for (const auto& bslv : bdtScanValues) {
-          if (bslv >= bnpuv) continue;
-          std::vector<std::string> histoNames;
-          histoNames.reserve(pTCutNames.size());
-          for (const auto& ptcn : pTCutNames) {
-            histoNames.emplace_back(ptcn + "/" + tcn + "/NPlt" + to_string_with_precision(bnpuv, 2) + "/hM_" + bdtScanShortCut + bdtScanDir + to_string_with_precision(bslv, 2));
-          }
-          TH1* histoMerged = HelperMath::MergeHistograms(fileOut, histoNames);
-          HelperGeneral::CD(fileOut, GetPtCutName(pTRanges.size()-1) + "/" + tcn + "/NPlt" + to_string_with_precision(bnpuv, 2));
-          histoMerged->Write(("hM_" + bdtScanShortCut + bdtScanDir + to_string_with_precision(bslv, 2)).c_str());
-        } // bdtScanValues
-      } // bdtNPUpperValues
+      for (const auto& bslv : bdtScanValues) {
+        std::vector<std::string> histoNames;
+        histoNames.reserve(pTCutNames.size());
+        for (const auto& ptcn : pTCutNames) {
+          histoNames.emplace_back(ptcn + "/" + tcn + "/hM_" + bdtScanShortCut + bdtScanDir + to_string_with_precision(bslv, 2));
+        }
+        TH1* histoMerged = HelperMath::MergeHistograms(fileOut, histoNames);
+        HelperGeneral::CD(fileOut, GetPtCutName(pTRanges.size()-1) + "/" + tcn);
+        histoMerged->Write(("hM_" + bdtScanShortCut + bdtScanDir + to_string_with_precision(bslv, 2)).c_str());
+      } // bdtScanValues
     } // TCuts
   } // modeRun != RunOnly
 
