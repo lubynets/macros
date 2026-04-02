@@ -49,9 +49,8 @@ void MultiFitQa(const bool isVerbose=true) {
   const size_t nBdtScores = bdtScores.size();
 
   TFile* fileMarkUp{nullptr};
-  int iTrial{1};
   for(const auto& trial : trialNumbers) {
-    fileMarkUp = TFile::Open(("trials/" + std::to_string(trialNumbers.at(trial)) + "/" + fileNameTemplate + ".NPgt" + to_string_with_precision(bdtScores.at(0), 2) + ".root").c_str());
+    fileMarkUp = TFile::Open(("trials/" + std::to_string(trial) + "/" + fileNameTemplate + ".NPgt" + to_string_with_precision(bdtScores.at(0), 2) + ".root").c_str());
     if(fileMarkUp != nullptr) break;
   }
   if(fileMarkUp == nullptr) throw std::runtime_error("fileMarkUp == nullptr");
@@ -109,8 +108,12 @@ void MultiFitQa(const bool isVerbose=true) {
       }
       for(size_t iVar=0; iVar<nVars; ++iVar) {
         if(isVerbose) std::cout << "Reading histogram" << variables.at(iVar);
-        TH1* histoIn = GetObjectWithNullptrCheck<TH1>(fileIn, variables.at(iVar));
-        TH1* histoChi2 = GetObjectWithNullptrCheck<TH1>(fileIn, "hRawYieldsChiSquareTotal");
+        TH1* histoIn = fileIn->Get<TH1>(variables.at(iVar).c_str());
+        TH1* histoChi2 = fileIn->Get<TH1>("hRawYieldsChiSquareTotal");
+        if(histoIn == nullptr || histoChi2 == nullptr) {
+          if(isVerbose) std::cout << ", " << variables.at(iVar) << " or hRawYieldsChiSquareTotal is missing\n";
+          continue;
+        }
         if(isVerbose) std::cout << ", read successfully\t";
         if(isVerbose) std::cout << "iBin = ";
         for (int iBin = 1; iBin <= static_cast<int>(nLifetimeRanges); ++iBin) {
