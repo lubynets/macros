@@ -27,34 +27,49 @@ void MultiFitQa(const bool isVerbose=true) {
     bdtScores.emplace_back(0.01*i);
   }
 
-  const std::vector<std::string> variables {
-    "hRawYieldsSignal",
-    "hRawYieldsSignalCounted",
-    "hRawYieldsSigma",
-    "hRawYieldsMean",
-    "hRawYieldsChiSquareTotal",
-    "hRawYieldsDscbAlphaL",
-    "hRawYieldsDscbAlphaR",
-    "hRawYieldsDscbNL",
-    "hRawYieldsDscbNR"
+  std::vector<std::string> variables {
+   "hRawYieldsSignal",
+   "hRawYieldsSignalCounted",
+   "hRawYieldsSigma",
+   "hRawYieldsMean",
+   "hRawYieldsSignificance",
+   "hRawYieldsSgnOverBkg",
+   "hRawYieldsBkg",
+   "hRawYieldsChiSquareBkg",
+   "hRawYieldsChiSquareTotal",
+   "hRawYieldsDscbAlphaL",
+   "hRawYieldsDscbAlphaR",
+   "hRawYieldsDscbNL",
+   "hRawYieldsDscbNR"
   };
 
   std::vector<int> trialNumbers(nTrials);
   std::iota(trialNumbers.begin(), trialNumbers.end(), 1);
 
-  const size_t nVars = variables.size();
   const size_t nBdtScores = bdtScores.size();
 
   TFile* fileMarkUp{nullptr};
-  int iTrial{0};
-  do {
-    fileMarkUp = TFile::Open(("trials/" + std::to_string(trialNumbers.at(iTrial)) + "/" + fileNameTemplate + ".NPgt" + to_string_with_precision(bdtScores.at(0), 2) + ".root").c_str());
-    ++iTrial;
+  int iTrial{1};
+  for(const auto& trial : trialNumbers) {
+    fileMarkUp = TFile::Open(("trials/" + std::to_string(trialNumbers.at(trial)) + "/" + fileNameTemplate + ".NPgt" + to_string_with_precision(bdtScores.at(0), 2) + ".root").c_str());
+    if(fileMarkUp != nullptr) break;
   }
-  while(fileMarkUp == nullptr);
+  if(fileMarkUp == nullptr) throw std::runtime_error("fileMarkUp == nullptr");
 
-  TH1* histoMarkUp = GetObjectWithNullptrCheck<TH1>(fileMarkUp, variables.at(0));
-  const size_t nLifetimeRanges = histoMarkUp->GetNbinsX();
+  TH1* histoMarkUp{nullptr};
+  int iExistingVar{0};
+  size_t nLifetimeRanges{0};
+  for(int iVar=0, nVars=variables.size(); iVar<nVars; ++iVar) {
+    histoMarkUp = fileMarkUp->Get<TH1>(variables.at(iExistingVar).c_str());
+    if(histoMarkUp == nullptr) {
+      variables.erase(variables.begin() + iExistingVar);
+      continue;
+    }
+    if(nLifetimeRanges == 0) nLifetimeRanges = histoMarkUp->GetNbinsX();
+    ++iExistingVar;
+  }
+
+  const size_t nVars = variables.size();
 
   tensor<TGraphErrors*, 3> graph = make_tensor<TGraphErrors*, 3>({nVars, nLifetimeRanges, nBdtScores}, nullptr);
   tensor<std::map<double, size_t>, 3> values = make_tensor<std::map<double, size_t>, 3>({nVars, nLifetimeRanges, nBdtScores}, {});
@@ -191,10 +206,10 @@ void MultiFitQa(const bool isVerbose=true) {
           line->Draw("same");
           ++iLine;
         }
-        MkDirBash(variables.at(iVar));
-        MkDirBash(variables.at(iVar) + "VsChi2");
-        cc.Print((variables.at(iVar) + "/" + variables.at(iVar) + "_T_" + std::to_string(iT+1) + ".pdf" + priBra).c_str(), "pdf");
-        ccVsChi2.Print((variables.at(iVar) + "VsChi2" + "/" + variables.at(iVar) + "VsChi2" + "_T_" + std::to_string(iT+1) + ".pdf" + priBra).c_str(), "pdf");
+        MkDirBash("hTrials/" + variables.at(iVar));
+        MkDirBash("hTrials/" + variables.at(iVar) + "VsChi2");
+        cc.Print(("hTrials/" + variables.at(iVar) + "/" + variables.at(iVar) + "_T_" + std::to_string(iT+1) + ".pdf" + priBra).c_str(), "pdf");
+        ccVsChi2.Print(("hTrials/" + variables.at(iVar) + "VsChi2" + "/" + variables.at(iVar) + "VsChi2" + "_T_" + std::to_string(iT+1) + ".pdf" + priBra).c_str(), "pdf");
       } // nLifetimeRanges
       fileSmooth->cd();
       histoSmooth->Write();
