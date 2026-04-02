@@ -19,7 +19,6 @@ using namespace HelperPlot;
 
 void MultiFitQa(const bool isVerbose=true) {
   LoadMacro("styles/mc_qa2.style.cc");
-  const std::string histoName = "hRawYieldsSignal";
   const std::string fileNameTemplate = "RawYields_Lc/RawYields_Lc";
   const int nTrials = 100;
   std::vector<double> bdtScores;
@@ -80,19 +79,19 @@ void MultiFitQa(const bool isVerbose=true) {
       for (size_t iScore = 0; iScore < nBdtScores; ++iScore) {
         auto& gr = graph.at(iVar).at(iT).at(iScore);
         gr = new TGraphErrors();
-        const std::string grName = variables.at(iVar) + "_T" + std::to_string(iT) + "_NPgt" + to_string_with_precision(bdtScores.at(iScore), 2);
-        gr->SetName(grName.c_str());
+        const std::string grName = "T" + std::to_string(iT) + "_NPgt" + to_string_with_precision(bdtScores.at(iScore), 2);
+        gr->SetName((variables.at(iVar) + "_" + grName).c_str());
         gr->SetTitle(grName.c_str());
         gr->GetXaxis()->SetTitle("Trial #");
-        gr->GetYaxis()->SetTitle(histoName.c_str());
+        gr->GetYaxis()->SetTitle(variables.at(iVar).c_str());
 
         auto& grVsChi2 = graphVsChi2.at(iVar).at(iT).at(iScore);
         grVsChi2 = new TGraphErrors();
-        const std::string grVsChi2Name = variables.at(iVar) + "VsChi2" + "_T" + std::to_string(iT) + "_NPgt" + to_string_with_precision(bdtScores.at(iScore), 2);
-        grVsChi2->SetName(grVsChi2Name.c_str());
+        const std::string grVsChi2Name = "T" + std::to_string(iT) + "_NPgt" + to_string_with_precision(bdtScores.at(iScore), 2);
+        grVsChi2->SetName((variables.at(iVar) + "_" + grVsChi2Name).c_str());
         grVsChi2->SetTitle(grVsChi2Name.c_str());
-        grVsChi2->GetXaxis()->SetTitle("hRawYieldsChiSquareTotal");
-        grVsChi2->GetYaxis()->SetTitle(histoName.c_str());
+        grVsChi2->GetXaxis()->SetTitle("#chi^{2}/ndf");
+        grVsChi2->GetYaxis()->SetTitle(variables.at(iVar).c_str());
       } // nBdtScores
     } // nLifetimeRanges
   } // nVars
@@ -187,6 +186,8 @@ void MultiFitQa(const bool isVerbose=true) {
         const double medianError = gr->GetErrorY(medianErrorPoint);
         histoSmooth->SetBinContent(iT + 1, medianValue);
         histoSmooth->SetBinError(iT + 1, medianError);
+        gr->SetTitle((static_cast<std::string>(gr->GetTitle()) + " (" + std::to_string(medianValueTrial) + ", " + std::to_string(medianErrorTrial) + ")").c_str());
+        grVsChi2->SetTitle((static_cast<std::string>(grVsChi2->GetTitle()) + " (" + std::to_string(medianValueTrial) + ", " + std::to_string(medianErrorTrial) + ")").c_str());
         TF1* lineValue = HorizontalLine4Graph(medianValue, gr);
         TF1* lineErrorUp = HorizontalLine4Graph(medianValue + medianError, gr);
         TF1* lineErrorDown = HorizontalLine4Graph(medianValue - medianError, gr);
