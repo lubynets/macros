@@ -29,6 +29,7 @@ SET(EXECUTABLES
     yield_lifetime_qa_thn
     multifit_qa
     tpc_qa
+    corrected_yield_syst_qa
 )
 
 SET(SOURCES
