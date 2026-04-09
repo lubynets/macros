@@ -2,9 +2,15 @@
 // Created by oleksii on 08.04.26.
 //
 #include "HelperGeneral.hpp"
+#include "HelperPlot.hpp"
 
+#include <TBox.h>
 #include <TFile.h>
+#include <TGraphErrors.h>
 #include <TH1.h>
+#include <TLegend.h>
+#include <TLine.h>
+#include <TStyle.h>
 
 #include <array>
 #include <exception>
@@ -13,7 +19,7 @@
 #include <vector>
 
 using namespace HelperGeneral;
-using namespace std::string_literals;
+using namespace HelperPlot;
 
 template <typename T>
 struct SystematicDof {
@@ -23,6 +29,8 @@ struct SystematicDof {
 
 void corrected_yield_syst_qa() {
   LoadMacro("styles/mc_qa2.style.cc");
+  gStyle->SetOptStat("e");
+  gStyle->SetPadRightMargin(0.07);
 
   const std::string meanCutVarFileName{"/lustre/alice/users/lubynets/syst/cutVar/outputs/CutVarLc.merged.root"};
 
@@ -44,7 +52,7 @@ void corrected_yield_syst_qa() {
       const std::string histoName = (histos == &histoGets ? "yieldGet" : "yieldCount") + std::to_string(iCt);
       const double ctLo = histoMean->GetBinLowEdge(iCt);
       const double ctHi = histoMean->GetBinLowEdge(iCt+1);
-      const std::string histoTitle = "Bin no." + std::to_string(iCt) + ", t#in(" + to_string_with_precision(ctLo, 1) + "#; " + to_string_with_precision(ctHi, 1) + ") ps";
+      const std::string histoTitle = "Bin no." + std::to_string(iCt) + ", t#in (" + to_string_with_precision(ctLo, 1) + "#; " + to_string_with_precision(ctHi, 1) + ") ps";
       auto& histo = histos->at(iCt-1);
       histo = new TH1D(histoName.c_str(), histoTitle.c_str(), 100, 0.7*yield, 1.3*yield);
       histo->GetXaxis()->SetTitle("Corrected yield");
@@ -87,8 +95,62 @@ void corrected_yield_syst_qa() {
 
   TFile* fileOut = TFile::Open("corrected_yield_syst_qa.root", "recreate");
   for(int iCt=1; iCt<=nCtBins; ++iCt) {
-    histoGets.at(iCt-1)->Write();
-    histoCounts.at(iCt-1)->Write();
+    auto& histoGet = histoGets.at(iCt-1);
+    auto& histoCount = histoCounts.at(iCt-1);
+    histoGet->Write();
+    histoCount->Write();
+
+    CustomizeHistogramsYRange({histoGet, histoCount}, false, 0.);
+    histoGet->SetLineColor(kBlue);
+    histoCount->SetLineColor(kGreen+2);
+    const double meanValue = histoMean->GetBinContent(iCt);
+    const double meanStatError = histoMean->GetBinError(iCt);
+
+    const std::string priBra = EvaluatePrintingBracket(nCtBins, iCt-1);
+    TCanvas cc("cc", "");
+    cc.SetCanvasSize(1200, 800);
+    histoGet->Draw();
+    histoCount->Draw("same");
+
+    const double yLo = histoGet->GetMinimum();
+    const double yHi = histoGet->GetMaximum();
+
+    TLine meanLine(meanValue, yLo, meanValue, yHi);
+    meanLine.SetLineColor(kRed);
+    meanLine.Draw("same");
+
+    TBox meanErrorBox(meanValue-meanStatError, yLo, meanValue+meanStatError, yHi);
+    meanErrorBox.SetFillStyle(1000);
+    meanErrorBox.SetFillColorAlpha(kRed, 0.2);
+    meanErrorBox.Draw("same");
+
+    auto DrawSystMeanAndError = [&yHi] (const TH1* histo, double height) {
+      const double meanSystValue = histo->GetMean();
+      const double meanSystError = histo->GetStdDev();
+      TGraphErrors* grSyst = new TGraphErrors();
+      grSyst->AddPoint(meanSystValue, height*yHi);
+      grSyst->SetPointError(grSyst->GetN()-1, meanSystError, 0.);
+      grSyst->SetMarkerColor(histo->GetLineColor());
+      grSyst->SetLineColor(histo->GetLineColor());
+      grSyst->SetMarkerStyle(kFullSquare);
+      grSyst->SetMarkerSize(1.6);
+      grSyst->Draw("PE same");
+    };
+
+    DrawSystMeanAndError(histoGet, 0.05);
+    DrawSystMeanAndError(histoCount, 0.1);
+
+    const double underFlowGet = histoGet->GetBinContent(0);
+    const double overFlowGet = histoGet->GetBinContent(histoGet->GetNbinsX()+1);
+    const double underFlowCount = histoCount->GetBinContent(0);
+    const double overFlowCount = histoCount->GetBinContent(histoCount->GetNbinsX()+1);
+
+    TLegend leg(0.15, 0.75, 0.45, 0.85);
+    leg.AddEntry(histoGet, ("Integral, uFl = " + to_string_with_precision(underFlowGet, 0) + ", oFl = " + to_string_with_precision(overFlowGet, 0)).c_str(), "L");
+    leg.AddEntry(histoCount, ("Bin count, uFl = " + to_string_with_precision(underFlowCount, 0) + ", oFl = " + to_string_with_precision(overFlowCount, 0)).c_str(), "L");
+    leg.Draw("same");
+
+    cc.Print(("corrected_yield_syst_qa.pdf" + priBra).c_str(), "pdf");
   }
   fileOut->Close();
 
