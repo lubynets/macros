@@ -35,9 +35,9 @@ void corrected_yield_syst_qa() {
   const std::string meanCutVarFileName{"/lustre/alice/users/lubynets/syst/cutVar/outputs/CutVarLc.merged.root"};
 
   const std::string inputCommonPath{"/lustre/alice/users/lubynets/syst/cutVar/outputs"};
-  SystematicDof<double> leftRanges{"lera", {2.12, 2.14}};
-  SystematicDof<double> rightRanges{"rira", {2.42, 2.40}};
-  SystematicDof<int> rebinFactors{"refa", {1, 2}};
+  SystematicDof<double> leftRanges{"lera", {2.12, 2.14, 2.16, 2.18}};
+  SystematicDof<double> rightRanges{"rira", {2.42, 2.40, 2.38, 2.36}};
+  SystematicDof<int> rebinFactors{"refa", {1, 2, 4, 6, 8, 10}};
   SystematicDof<int> bgFunctions{"bgfu", {2, 5}};
 
   TFile* fileMean = OpenFileWithNullptrCheck(meanCutVarFileName);
@@ -55,7 +55,7 @@ void corrected_yield_syst_qa() {
       const std::string histoTitle = "Bin no." + std::to_string(iCt) + ", t#in (" + to_string_with_precision(ctLo, 1) + "#; " + to_string_with_precision(ctHi, 1) + ") ps";
       auto& histo = histos->at(iCt-1);
       histo = new TH1D(histoName.c_str(), histoTitle.c_str(), 100, 0.7*yield, 1.3*yield);
-      histo->GetXaxis()->SetTitle("Corrected yield");
+      histo->GetXaxis()->SetTitle("Corrected prompt yield");
       histo->GetYaxis()->SetTitle("Entries");
     }
   }
@@ -146,8 +146,8 @@ void corrected_yield_syst_qa() {
     const double overFlowCount = histoCount->GetBinContent(histoCount->GetNbinsX()+1);
 
     TLegend leg(0.15, 0.75, 0.45, 0.85);
-    leg.AddEntry(histoGet, ("Integral, uFl = " + to_string_with_precision(underFlowGet, 0) + ", oFl = " + to_string_with_precision(overFlowGet, 0)).c_str(), "L");
-    leg.AddEntry(histoCount, ("Bin count, uFl = " + to_string_with_precision(underFlowCount, 0) + ", oFl = " + to_string_with_precision(overFlowCount, 0)).c_str(), "L");
+    leg.AddEntry(histoGet, ("Integral, uFlow = " + to_string_with_precision(underFlowGet, 0) + ", oFlow = " + to_string_with_precision(overFlowGet, 0)).c_str(), "L");
+    leg.AddEntry(histoCount, ("Bin count, uFlow = " + to_string_with_precision(underFlowCount, 0) + ", oFlow = " + to_string_with_precision(overFlowCount, 0)).c_str(), "L");
     leg.Draw("same");
 
     cc.Print(("corrected_yield_syst_qa.pdf" + priBra).c_str(), "pdf");
