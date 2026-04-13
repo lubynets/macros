@@ -50,13 +50,7 @@ std::vector<std::pair<std::string, std::string>> FindCuts(TFile* fileIn, std::st
 
 bool string_to_bool(const std::string& str);
 
-inline TFile* OpenFileWithNullptrCheck(const std::string& fileName, const std::string& option="read") {
-  TFile* file = TFile::Open(fileName.c_str(), option.c_str());
-  if(file == nullptr) {
-    throw std::runtime_error("HelperGeneral::OpenFileWithNullptrCheck() - file " + fileName + " is missing");
-  }
-  return file;
-}
+TFile* OpenFileWithNullptrCheck(const std::string& fileName, const std::string& option="read");
 
 template<typename T>
 T* GetObjectWithNullptrCheck(TFile* fileIn, const std::string& objectName) {

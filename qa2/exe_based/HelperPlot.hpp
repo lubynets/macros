@@ -49,7 +49,7 @@ std::vector<TPaveText*> AddMultiLineText(const std::vector<std::string>& texts, 
 void SlightlyShiftXAxis(TGraph* gr, float value = -1);
 
 template<typename T>
-inline void RemoveEdgeLabelFromAxis(T* obj, const std::string& edge, const std::string& axisletter) {
+void RemoveEdgeLabelFromAxis(T* obj, const std::string& edge, const std::string& axisletter) {
   if(axisletter != "x" && axisletter != "y") {
     throw std::runtime_error("HelperPlot::RemoveEdgeLabelFromAxis(): axisletter must be x or y");
   }
@@ -76,7 +76,7 @@ inline void RemoveEdgeLabelFromAxis(T* obj, const std::string& edge, const std::
 }
 
 template<typename T1, typename T2>
-inline void ScalePlotVertically(T1* plotTo, const T2* plotFrom, double scaleFactor) {
+void ScalePlotVertically(T1* plotTo, const T2* plotFrom, double scaleFactor) {
   plotTo->GetXaxis()->SetTitleSize(plotFrom->GetXaxis()->GetTitleSize()*scaleFactor);
   plotTo->GetXaxis()->SetLabelSize(plotFrom->GetXaxis()->GetLabelSize()*scaleFactor);
   plotTo->GetXaxis()->SetTickLength(plotFrom->GetXaxis()->GetTickLength()*scaleFactor);
@@ -94,8 +94,8 @@ inline std::string EvaluatePrintingBracket(size_t vecSize, size_t index) {
 }
 
 template <typename T>
-inline std::string EvaluatePrintingBracket(const std::vector<T>& vec, size_t index) {
-  size_t vecSize = vec.size();
+std::string EvaluatePrintingBracket(const std::vector<T>& vec, size_t index) {
+  const size_t vecSize = vec.size();
   return EvaluatePrintingBracket(vecSize, index);
 }
 };

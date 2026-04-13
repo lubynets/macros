@@ -228,3 +228,11 @@ void HelperGeneral::MkDirBash(const std::string& dirName) {
     throw std::runtime_error("HelperGeneral::MkDirBash() - could not create directory " + dirName);
   }
 }
+
+TFile* HelperGeneral::OpenFileWithNullptrCheck(const std::string& fileName, const std::string& option) {
+  TFile* file = TFile::Open(fileName.c_str(), option.c_str());
+  if(file == nullptr) {
+    throw std::runtime_error("HelperGeneral::OpenFileWithNullptrCheck() - file " + fileName + " is missing");
+  }
+  return file;
+}
