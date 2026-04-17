@@ -60,6 +60,13 @@ void corrected_yield_syst_qa() {
     }
   }
 
+  TH1 *histoStatErrors{}, *histoSystErrors{};
+  for(auto& histoError : {histoStatErrors, histoSystErrors}) {
+    histoError = dynamic_cast<TH1*>(histoMean->Clone());
+    histoError->Clear();
+    histoError->GetYaxis()->SetTitle("#{sigma} #{corrected yield}");
+  }
+
   for(int iLr=0, nLrs=leftRanges.values_.size(); iLr<nLrs; ++iLr) {
     for(int iRr=0, nRrs=rightRanges.values_.size(); iRr<nRrs; ++iRr) {
       for(int iRf=0, nRfs=rebinFactors.values_.size(); iRf<nRfs; ++iRf) {
