@@ -44,8 +44,18 @@ void fitEff() {
   hEffSim->Fit(f, "R", "");
   f->Write("effSim");
 
+  TCanvas cSim("cSim", "", 1200, 800);
+  hEffSim->Draw();
+  f->Draw("same");
+  cSim.Print("cSim.pdf", "pdf");
+
   hEffCand->Fit(f, "R", "");
   f->Write("effCand");
+
+  TCanvas cCand("cCand", "", 1200, 800);
+  hEffCand->Draw();
+  f->Draw("same");
+  cCand.Print("cCand.pdf", "pdf");
 
   fileOut->Close();
   fileYield->Close();
