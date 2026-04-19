@@ -42,6 +42,7 @@ void corrected_yield_syst_qa() {
 
   TFile* fileMean = OpenFileWithNullptrCheck(meanCutVarFileName);
   TH1* histoMean = GetObjectWithNullptrCheck<TH1>(fileMean, "hCorrYieldsPrompt");
+  histoMean->UseCurrentStyle();
 
   const int nCtBins = histoMean->GetNbinsX();
   std::vector<TH1*> histoGets(nCtBins, nullptr);
@@ -60,11 +61,11 @@ void corrected_yield_syst_qa() {
     }
   }
 
-  TH1 *histoStatErrors{}, *histoSystErrors{};
-  for(auto& histoError : {histoStatErrors, histoSystErrors}) {
-    histoError = dynamic_cast<TH1*>(histoMean->Clone());
-    histoError->Clear();
-    histoError->GetYaxis()->SetTitle("#{sigma} #{corrected yield}");
+  TH1 *histoStatErrors{}, *histoSystErrorsGet{}, *histoSystErrorsCount{};
+  for(auto& histoError : {&histoStatErrors, &histoSystErrorsGet, &histoSystErrorsCount}) {
+    *histoError = dynamic_cast<TH1*>(histoMean->Clone());
+    (*histoError)->Clear();
+    (*histoError)->GetYaxis()->SetTitle("#sigma {corrected yield}");
   }
 
   for(int iLr=0, nLrs=leftRanges.values_.size(); iLr<nLrs; ++iLr) {
@@ -113,7 +114,7 @@ void corrected_yield_syst_qa() {
     const double meanValue = histoMean->GetBinContent(iCt);
     const double meanStatError = histoMean->GetBinError(iCt);
 
-    const std::string priBra = EvaluatePrintingBracket(nCtBins, iCt-1);
+    const std::string priBra = EvaluatePrintingBracket(nCtBins+1, iCt-1);
     TCanvas cc("cc", "");
     cc.SetCanvasSize(1200, 800);
     histoGet->Draw();
@@ -133,10 +134,10 @@ void corrected_yield_syst_qa() {
 
     auto DrawSystMeanAndError = [&yHi] (const TH1* histo, double height) {
       const double meanSystValue = histo->GetMean();
-      const double meanSystError = histo->GetStdDev();
+      const double meanSystStdDev = histo->GetStdDev();
       TGraphErrors* grSyst = new TGraphErrors();
       grSyst->AddPoint(meanSystValue, height*yHi);
-      grSyst->SetPointError(grSyst->GetN()-1, meanSystError, 0.);
+      grSyst->SetPointError(grSyst->GetN()-1, meanSystStdDev, 0.);
       grSyst->SetMarkerColor(histo->GetLineColor());
       grSyst->SetLineColor(histo->GetLineColor());
       grSyst->SetMarkerStyle(kFullSquare);
@@ -152,6 +153,16 @@ void corrected_yield_syst_qa() {
     const double underFlowCount = histoCount->GetBinContent(0);
     const double overFlowCount = histoCount->GetBinContent(histoCount->GetNbinsX()+1);
 
+    histoStatErrors->SetBinContent(iCt, meanStatError);
+    auto EvalSystError = [&meanValue] (const TH1* histo) {
+      double result = histo->GetMean() - meanValue;
+      result *= result;
+      result += histo->GetStdDev() * histo->GetStdDev();
+      return std::sqrt(result);
+    };
+    histoSystErrorsGet->SetBinContent(iCt, EvalSystError(histoGet));
+    histoSystErrorsCount->SetBinContent(iCt, EvalSystError(histoCount));
+
     TLegend leg(0.15, 0.75, 0.45, 0.85);
     leg.AddEntry(histoGet, ("Integral, uFlow = " + to_string_with_precision(underFlowGet, 0) + ", oFlow = " + to_string_with_precision(overFlowGet, 0)).c_str(), "L");
     leg.AddEntry(histoCount, ("Bin count, uFlow = " + to_string_with_precision(underFlowCount, 0) + ", oFlow = " + to_string_with_precision(overFlowCount, 0)).c_str(), "L");
@@ -159,6 +170,27 @@ void corrected_yield_syst_qa() {
 
     cc.Print(("corrected_yield_syst_qa.pdf" + priBra).c_str(), "pdf");
   }
+  CustomizeHistogramsYRange({histoStatErrors, histoSystErrorsGet, histoSystErrorsCount});
+  TCanvas cc("cc", "");
+  cc.SetCanvasSize(1200, 800);
+  histoStatErrors->SetMarkerColor(kRed);
+  histoSystErrorsGet->SetMarkerColor(kBlue);
+  histoSystErrorsCount->SetMarkerColor(kGreen+2);
+  for(auto& histoError : {&histoStatErrors, &histoSystErrorsGet, &histoSystErrorsCount}) {
+    const std::string drawOption = histoError == &histoStatErrors ? "HIST P" : "HIST P same";
+    (*histoError)->SetMarkerStyle(kFullSquare);
+    (*histoError)->Draw(drawOption.c_str());
+  }
+  TLegend leg(0.70, 0.75, 0.9, 0.85);
+  leg.AddEntry(histoStatErrors, "Stat", "P");
+  leg.AddEntry(histoSystErrorsGet, "Syst, integral", "P");
+  leg.AddEntry(histoSystErrorsCount, "Syst, count", "P");
+  leg.Draw("same");
+  cc.Print("corrected_yield_syst_qa.pdf)", "pdf");
+
+  histoStatErrors->Write("statErrors");
+  histoSystErrorsGet->Write("systErrorsGet");
+  histoSystErrorsCount->Write("systErrorsCount");
   fileOut->Close();
 
   fileMean->Close();
