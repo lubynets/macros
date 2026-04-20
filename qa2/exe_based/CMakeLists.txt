@@ -63,8 +63,10 @@ set(QA_RAPIDJSON_INCLUDE_DIRS "" CACHE STRING "Location of rapidjson include dir
 # Find the ROOT package (you might need to specify the ROOT_DIR if it's not in the default location)
 find_package(ROOT REQUIRED COMPONENTS RooFit RooFitCore)
 
+find_package(Boost REQUIRED COMPONENTS program_options)
+
 # Specify where ROOT headers are located
-include_directories(${ROOT_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR} ${QA_RAPIDJSON_INCLUDE_DIRS})
+include_directories(${ROOT_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR} ${QA_RAPIDJSON_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 
 set(PCM_FILE_NAME libQa2)
 
@@ -117,7 +119,7 @@ foreach(EXE ${EXECUTABLES})
     # Add the executable
     add_executable(qa2-${EXE} tasks/${EXE}.cpp)
     # Link ROOT libraries to the executable
-    target_link_libraries(qa2-${EXE} ${ROOT_LIBRARIES} ROOT::EG Qa2)
+    target_link_libraries(qa2-${EXE} ${ROOT_LIBRARIES} ROOT::EG Boost::program_options Qa2)
     install (TARGETS qa2-${EXE} RUNTIME DESTINATION bin)
     install (FILES tasks/${EXE}.cpp DESTINATION share)
       # Install a symlink named just ${EXE} that points to qa2-${EXE}
