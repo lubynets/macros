@@ -81,15 +81,18 @@ void corrected_yield_syst_qa() {
           auto ProcessYieldStrategy = [&] (const std::string& strategyName, std::vector<TH1*>& histoTargets) {
             TFile* fileYield{};
             TH1* histoYield{};
+            TH1* histoStatus{};
             try {
               fileYield = OpenFileWithNullptrCheck(filePath + "/" + strategyName + "/CutVarLc.merged.root");
               histoYield = GetObjectWithNullptrCheck<TH1>(fileYield, "hCorrYieldsPrompt");
+              histoStatus = GetObjectWithNullptrCheck<TH1>(fileYield, "hMinimizationStatus");
             } catch(const std::exception&) {
               std::cout << "Info: Processing of " << filePath << "/" << strategyName << " is skipped due to missing file or histogram\n";
               return;
             }
             CheckHistogramsForXaxisIdentity(histoMean, histoYield);
             for(int iCt=1; iCt<=nCtBins; ++iCt) {
+              if(histoStatus->GetBinContent(iCt) != 1) continue;
               const double yield = histoYield->GetBinContent(iCt);
               histoTargets.at(iCt-1)->Fill(yield);
             }
