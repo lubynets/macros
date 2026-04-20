@@ -10,6 +10,8 @@
 #include <TLegend.h>
 #include <TLine.h>
 
+#include <boost/program_options.hpp>
+
 #include <cmath>
 #include <iostream>
 #include <string>
@@ -21,12 +23,18 @@ using namespace HelperPlot;
 constexpr bool IsSaveCanvasAsRoot{true};
 
 enum RunModes {
-  AllPointsOnly = 0,
+  MeanFitOnly = 0,
   AllWoOne,
   AllPossible
 };
+constexpr int RunMode{MeanFitOnly};
 
-constexpr int RunMode{AllPossible};
+enum UncModes {
+  StatOnly = 0,
+  SystOnly,
+  StatAndSyst
+};
+constexpr int UncMode{StatAndSyst};
 
 void ExcludeBin(TH1* h, int binNumber);
 std::vector<int> EvalBinsToDrop(int dropSet);
@@ -38,10 +46,13 @@ enum SubGraphType {
   TwoFit
 };
 
-void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& fileNameMC) {
+void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& fileNameMC, const std::string& fileNameSystUnc) {
   LoadMacro("styles/mc_qa2.style.cc");
 
   const bool isMc = !fileNameMC.empty();
+  const bool isSystUnc = UncMode > StatOnly;
+
+  if(isSystUnc && fileNameSystUnc.empty()) throw std::runtime_error("corrected_yields_qa2() systematic uncertainties file is not provided");
 
   const std::vector<double> lifetimeRanges = {0.2, 0.4, 0.6, 0.8, 1.0, 1.4, 1.8};
   const std::string integralOption = "I";
@@ -58,6 +69,9 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
 
   TFile* fileCutVar = OpenFileWithNullptrCheck(fileNameCutVar);
   TFile* fileMC = isMc ? OpenFileWithNullptrCheck(fileNameMC) : nullptr;
+  TFile* fileSystUnc = isSystUnc ? OpenFileWithNullptrCheck(fileNameSystUnc) : nullptr;
+
+  TH1* histoSystUnc = isSystUnc ? GetObjectWithNullptrCheck<TH1>(fileSystUnc, "systErrorsGet") : nullptr;
 
   for (size_t iP = 0, nP = promptnesses.size(); iP < nP; ++iP) {
     const std::string promptness = promptnesses.at(iP).name_;
@@ -68,6 +82,15 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
     hCutVar->UseCurrentStyle();
     hCutVar->SetLineColor(kRed);
     hCutVar->SetMarkerColor(kRed);
+
+    if(promptness == "prompt" && isSystUnc) {
+      for(int iCt=1, nCts=hCutVar->GetNbinsX(); iCt<=nCts; ++iCt) {
+        const double stat = hCutVar->GetBinError(iCt);
+        const double syst = histoSystUnc->GetBinContent(iCt);
+        const double unc = UncMode == SystOnly ? syst : std::sqrt(stat*stat + syst*syst);
+        hCutVar->SetBinError(iCt, unc);
+      }
+    }
 
     TH1* hMC = isMc ? GetObjectWithNullptrCheck<TH1>(fileMC, "gen/" + promptness + "/hT") : nullptr;
     if (isMc) {
@@ -124,7 +147,7 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
     }
 
     const int nBins = hCutVarDiff->GetNbinsX();
-    const int nDropSets = RunMode > AllPointsOnly ? 1 << nBins : 1;
+    const int nDropSets = RunMode > MeanFitOnly ? 1 << nBins : 1;
 
     TCanvas emptycanvas("emptycanvas", "", 1200, 800);
     emptycanvas.Print("ctfit.pdf[", "pdf");
@@ -144,9 +167,9 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
 
       auto FitResults = [](const TF1* fitFunc, const std::string& text="") {
         const std::string lifetimeFitValue = "#tau_{#Lambda_{c}} [" + text + "] = (" +
-                                            to_string_with_precision(fitFunc->GetParameter(1)*1000, 1) +
+                                            to_string_with_precision(fitFunc->GetParameter(1)*1000, 4) +
                                             " #pm " +
-                                            to_string_with_precision(fitFunc->GetParError(1)*1000, 1) +
+                                            to_string_with_precision(fitFunc->GetParError(1)*1000, 4) +
                                             ") fs";
         const std::string chi2Value = "#chi^{2} / ndf = " +
                                       to_string_with_significant_figures(fitFunc->GetChisquare(), 3) +
@@ -341,16 +364,30 @@ TGraphErrors* GetSubGraph(TGraphErrors* grIn, int subGraphType, Color_t color, i
 }
 
 int main(int argc, char* argv[]) {
-  if (argc < 2) {
-    std::cout << "Error! Please use " << std::endl;
-    std::cout << " ./corrected_yields_qa2 fileNameCutVar (fileNameMC="")" << std::endl;
-    exit(EXIT_FAILURE);
+
+  using namespace boost::program_options;
+  options_description desc ("Allowed options");
+  desc.add_options()
+    ("help,h", "Print usage message")
+    ("input-file,i", value<std::string>()->required(), "file with cut variation output")
+    ("mc-file,m", value<std::string>()->default_value(""), "file with MC")
+    ("syst-errors-file,s", value<std::string>()->default_value(""), "file with syst errors")
+  ;
+
+  variables_map args;
+  store(parse_command_line(argc, argv, desc), args);
+
+  if (args.count("help") || argc < 2) {
+    std::cout << desc << "\n";
+    return 0;
   }
+  notify (args);
 
-  const std::string fileNameCutVar = argv[1];
-  const std::string fileNameMC = argc > 2 ? argv[2] : "";
+  const std::string fileNameCutVar = args["input-file"].as<std::string>();
+  const std::string fileNameMC = args["mc-file"].as<std::string>();
+  const std::string fileNameSystUnc = args["syst-errors-file"].as<std::string>();
 
-  corrected_yields_qa2(fileNameCutVar, fileNameMC);
+  corrected_yields_qa2(fileNameCutVar, fileNameMC, fileNameSystUnc);
 
   return 0;
 }
