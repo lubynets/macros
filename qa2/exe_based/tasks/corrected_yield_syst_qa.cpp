@@ -65,7 +65,10 @@ void corrected_yield_syst_qa() {
   for(auto& histoError : {&histoStatErrors, &histoSystErrorsGet, &histoSystErrorsCount}) {
     *histoError = dynamic_cast<TH1*>(histoMean->Clone());
     (*histoError)->Clear();
-    (*histoError)->GetYaxis()->SetTitle("#sigma {corrected yield}");
+    for(int iCt=1; iCt<=nCtBins; ++iCt) {
+      (*histoError)->SetBinError(iCt, 0.);
+    }
+    (*histoError)->GetYaxis()->SetTitle("#sigma {corrected yield} / (corrected yield), %");
   }
 
   for(int iLr=0, nLrs=leftRanges.values_.size(); iLr<nLrs; ++iLr) {
@@ -173,18 +176,21 @@ void corrected_yield_syst_qa() {
 
     cc.Print(("corrected_yield_syst_qa.pdf" + priBra).c_str(), "pdf");
   }
-  CustomizeHistogramsYRange({histoStatErrors, histoSystErrorsGet, histoSystErrorsCount});
+
   TCanvas cc("cc", "");
   cc.SetCanvasSize(1200, 800);
   histoStatErrors->SetMarkerColor(kRed);
   histoSystErrorsGet->SetMarkerColor(kBlue);
   histoSystErrorsCount->SetMarkerColor(kGreen+2);
   for(auto& histoError : {&histoStatErrors, &histoSystErrorsGet, &histoSystErrorsCount}) {
+    (*histoError)->Divide(histoMean);
+    (*histoError)->Scale(100.);
     const std::string drawOption = histoError == &histoStatErrors ? "HIST P" : "HIST P same";
     (*histoError)->SetMarkerStyle(kFullSquare);
     (*histoError)->Draw(drawOption.c_str());
   }
-  TLegend leg(0.70, 0.75, 0.9, 0.85);
+  CustomizeHistogramsYRange({histoStatErrors, histoSystErrorsGet, histoSystErrorsCount}, false, 0.);
+  TLegend leg(0.20, 0.75, 0.4, 0.85);
   leg.AddEntry(histoStatErrors, "Stat", "P");
   leg.AddEntry(histoSystErrorsGet, "Syst, integral", "P");
   leg.AddEntry(histoSystErrorsCount, "Syst, count", "P");
