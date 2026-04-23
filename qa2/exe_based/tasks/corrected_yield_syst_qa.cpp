@@ -177,6 +177,11 @@ void corrected_yield_syst_qa() {
     cc.Print(("corrected_yield_syst_qa.pdf" + priBra).c_str(), "pdf");
   }
 
+  histoStatErrors->Write("statErrors");
+  histoSystErrorsGet->Write("systErrorsGet");
+  histoSystErrorsCount->Write("systErrorsCount");
+  fileOut->Close();
+
   TCanvas cc("cc", "");
   cc.SetCanvasSize(1200, 800);
   histoStatErrors->SetMarkerColor(kRed);
@@ -197,10 +202,6 @@ void corrected_yield_syst_qa() {
   leg.Draw("same");
   cc.Print("corrected_yield_syst_qa.pdf)", "pdf");
 
-  histoStatErrors->Write("statErrors");
-  histoSystErrorsGet->Write("systErrorsGet");
-  histoSystErrorsCount->Write("systErrorsCount");
-  fileOut->Close();
 
   fileMean->Close();
 }
