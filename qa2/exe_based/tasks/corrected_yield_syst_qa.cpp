@@ -29,15 +29,15 @@ struct SystematicDof {
 
 void corrected_yield_syst_qa() {
   LoadMacro("styles/mc_qa2.style.cc");
-  gStyle->SetOptStat("e");
+  gStyle->SetOptStat("");
   gStyle->SetPadRightMargin(0.07);
 
   const std::string meanCutVarFileName{"/lustre/alice/users/lubynets/syst/cutVar/outputs/CutVarLc.merged.root"};
 
   const std::string inputCommonPath{"/lustre/alice/users/lubynets/syst/cutVar/outputs"};
-  SystematicDof<double> leftRanges{"lera", {2.12, 2.14, 2.16, 2.18}};
-  SystematicDof<double> rightRanges{"rira", {2.42, 2.40, 2.38, 2.36}};
-  SystematicDof<int> rebinFactors{"refa", {1, 2, 4, 6, 8, 10}};
+  SystematicDof<double> leftRanges{"lera", {2.12, 2.13, 2.14, 2.15, 2.16, 2.17, 2.18}};
+  SystematicDof<double> rightRanges{"rira", {2.42, 2.41, 2.40, 2.39, 2.38, 2.37, 2.36}};
+  SystematicDof<int> rebinFactors{"refa", {1, 2, 3, 4, 5, 6, 8, 10}};
   SystematicDof<int> bgFunctions{"bgfu", {2, 5}};
 
   TFile* fileMean = OpenFileWithNullptrCheck(meanCutVarFileName);
