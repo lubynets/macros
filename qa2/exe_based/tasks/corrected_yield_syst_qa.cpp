@@ -27,6 +27,8 @@ struct SystematicDof {
   std::vector<T> values_{};
 };
 
+constexpr bool IsDrawBinCount{false};
+
 void corrected_yield_syst_qa() {
   LoadMacro("styles/mc_qa2.style.cc");
   gStyle->SetOptStat("");
@@ -114,7 +116,7 @@ void corrected_yield_syst_qa() {
     histoGet->Write();
     histoCount->Write();
 
-    CustomizeHistogramsYRange({histoGet, histoCount}, false, 0.);
+    if(IsDrawBinCount) CustomizeHistogramsYRange({histoGet, histoCount}, false, 0.);
     histoGet->SetLineColor(kBlue);
     histoCount->SetLineColor(kGreen+2);
     const double meanValue = histoMean->GetBinContent(iCt);
@@ -124,7 +126,7 @@ void corrected_yield_syst_qa() {
     TCanvas cc("cc", "");
     cc.SetCanvasSize(1200, 800);
     histoGet->Draw();
-    histoCount->Draw("same");
+    if(IsDrawBinCount) histoCount->Draw("same");
 
     const double yLo = histoGet->GetMinimum();
     const double yHi = histoGet->GetMaximum();
@@ -152,7 +154,7 @@ void corrected_yield_syst_qa() {
     };
 
     DrawSystMeanAndError(histoGet, 0.05);
-    DrawSystMeanAndError(histoCount, 0.1);
+    if(IsDrawBinCount) DrawSystMeanAndError(histoCount, 0.1);
 
     const double underFlowGet = histoGet->GetBinContent(0);
     const double overFlowGet = histoGet->GetBinContent(histoGet->GetNbinsX()+1);
@@ -171,7 +173,7 @@ void corrected_yield_syst_qa() {
 
     TLegend leg(0.15, 0.75, 0.45, 0.85);
     leg.AddEntry(histoGet, ("Integral, uFlow = " + to_string_with_precision(underFlowGet, 0) + ", oFlow = " + to_string_with_precision(overFlowGet, 0)).c_str(), "L");
-    leg.AddEntry(histoCount, ("Bin count, uFlow = " + to_string_with_precision(underFlowCount, 0) + ", oFlow = " + to_string_with_precision(overFlowCount, 0)).c_str(), "L");
+    if(IsDrawBinCount) leg.AddEntry(histoCount, ("Bin count, uFlow = " + to_string_with_precision(underFlowCount, 0) + ", oFlow = " + to_string_with_precision(overFlowCount, 0)).c_str(), "L");
     leg.Draw("same");
 
     cc.Print(("corrected_yield_syst_qa.pdf" + priBra).c_str(), "pdf");
@@ -188,17 +190,20 @@ void corrected_yield_syst_qa() {
   histoSystErrorsGet->SetMarkerColor(kBlue);
   histoSystErrorsCount->SetMarkerColor(kGreen+2);
   for(auto& histoError : {&histoStatErrors, &histoSystErrorsGet, &histoSystErrorsCount}) {
+    if(!IsDrawBinCount && histoError == &histoSystErrorsCount) continue;
     (*histoError)->Divide(histoMean);
     (*histoError)->Scale(100.);
     const std::string drawOption = histoError == &histoStatErrors ? "HIST P" : "HIST P same";
     (*histoError)->SetMarkerStyle(kFullSquare);
     (*histoError)->Draw(drawOption.c_str());
   }
-  CustomizeHistogramsYRange({histoStatErrors, histoSystErrorsGet, histoSystErrorsCount}, false, 0.);
+  std::vector<TH1*> histosToCustomize{histoStatErrors, histoSystErrorsGet};
+  if(IsDrawBinCount) histosToCustomize.push_back(histoSystErrorsCount);
+  CustomizeHistogramsYRange(histosToCustomize, false, 0.);
   TLegend leg(0.20, 0.75, 0.4, 0.85);
   leg.AddEntry(histoStatErrors, "Stat", "P");
   leg.AddEntry(histoSystErrorsGet, "Syst, integral", "P");
-  leg.AddEntry(histoSystErrorsCount, "Syst, count", "P");
+  if(IsDrawBinCount) leg.AddEntry(histoSystErrorsCount, "Syst, count", "P");
   leg.Draw("same");
   cc.Print("corrected_yield_syst_qa.pdf)", "pdf");
 
