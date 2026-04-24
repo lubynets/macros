@@ -98,6 +98,7 @@ void corrected_yield_syst_qa() {
             CheckHistogramsForXaxisIdentity(histoMean, histoYield);
             for(int iCt=1; iCt<=nCtBins; ++iCt) {
               if(histoStatus->GetBinContent(iCt) != 1) continue;
+              if((iCt==1 || iCt==2) && bgFunctions.values_.at(iBf) == 2) continue; // ad. hoc.
               const double yield = histoYield->GetBinContent(iCt);
               histoTargets.at(iCt-1)->Fill(yield);
             }
@@ -173,8 +174,8 @@ void corrected_yield_syst_qa() {
 
     TLegend leg(0.15, 0.75, 0.45, 0.85);
     leg.AddEntry(histoGet, ("Integral, uFlow = " + to_string_with_precision(underFlowGet, 0) + ", oFlow = " + to_string_with_precision(overFlowGet, 0)).c_str(), "L");
-    if(IsDrawBinCount) leg.AddEntry(histoCount, ("Bin count, uFlow = " + to_string_with_precision(underFlowCount, 0) + ", oFlow = " + to_string_with_precision(overFlowCount, 0)).c_str(), "L");
-    leg.Draw("same");
+    leg.AddEntry(histoCount, ("Bin count, uFlow = " + to_string_with_precision(underFlowCount, 0) + ", oFlow = " + to_string_with_precision(overFlowCount, 0)).c_str(), "L");
+    if(IsDrawBinCount)leg.Draw("same");
 
     cc.Print(("corrected_yield_syst_qa.pdf" + priBra).c_str(), "pdf");
   }
@@ -200,9 +201,11 @@ void corrected_yield_syst_qa() {
   std::vector<TH1*> histosToCustomize{histoStatErrors, histoSystErrorsGet};
   if(IsDrawBinCount) histosToCustomize.push_back(histoSystErrorsCount);
   CustomizeHistogramsYRange(histosToCustomize, false, 0.);
+  histoStatErrors->SetMinimum(0.);
+
   TLegend leg(0.20, 0.75, 0.4, 0.85);
   leg.AddEntry(histoStatErrors, "Stat", "P");
-  leg.AddEntry(histoSystErrorsGet, "Syst, integral", "P");
+  leg.AddEntry(histoSystErrorsGet, "Syst", "P");
   if(IsDrawBinCount) leg.AddEntry(histoSystErrorsCount, "Syst, count", "P");
   leg.Draw("same");
   cc.Print("corrected_yield_syst_qa.pdf)", "pdf");
