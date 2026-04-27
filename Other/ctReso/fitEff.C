@@ -17,6 +17,9 @@ void fitEff() {
   TH1* hEffSim = EvaluateEfficiency(hYieldSim, hYieldGen);
   TH1* hEffCand = EvaluateEfficiency(hYieldCand, hYieldGen);
 
+  hEffSim->GetYaxis()->SetTitle("#varepsilon, %");
+  hEffCand->GetYaxis()->SetTitle("#varepsilon, %");
+
   auto stitched = [](double *x, double *p) {
       double xx = x[0];
 
