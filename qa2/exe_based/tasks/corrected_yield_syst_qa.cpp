@@ -27,7 +27,7 @@ struct SystematicDof {
   std::vector<T> values_{};
 };
 
-constexpr bool IsDrawBinCount{false};
+constexpr bool IsDrawBinCount{true};
 
 void corrected_yield_syst_qa() {
   LoadMacro("styles/mc_qa2.style.cc");
@@ -44,21 +44,34 @@ void corrected_yield_syst_qa() {
 
   TFile* fileMean = OpenFileWithNullptrCheck(meanCutVarFileName);
   TH1* histoMean = GetObjectWithNullptrCheck<TH1>(fileMean, "hCorrYieldsPrompt");
+  TH1* histoMeanChi2 = GetObjectWithNullptrCheck<TH1>(fileMean, "hChi2OverNdf");
   histoMean->UseCurrentStyle();
 
   const int nCtBins = histoMean->GetNbinsX();
   std::vector<TH1*> histoGets(nCtBins, nullptr);
   std::vector<TH1*> histoCounts(nCtBins, nullptr);
+  std::vector<TH1*> histoGetChi2s(nCtBins, nullptr);
+  std::vector<TH1*> histoCountChi2s(nCtBins, nullptr);
   for(int iCt=1; iCt<=nCtBins; ++iCt) {
     const double yield = histoMean->GetBinContent(iCt);
-    for(auto* histos : {&histoGets, &histoCounts}) {
-      const std::string histoName = (histos == &histoGets ? "yieldGet" : "yieldCount") + std::to_string(iCt);
+    const double chi2 = histoMeanChi2->GetBinContent(iCt);
+    for(auto* histos : {&histoGets, &histoCounts, &histoGetChi2s, &histoCountChi2s}) {
+      std::string histoName = (histos == &histoGets ? "yieldGet" : "yieldCount") + std::to_string(iCt);
+      if     (histos == &histoGets) histoName = "yieldGet" + std::to_string(iCt);
+      else if(histos == &histoCounts) histoName = "yieldCount" + std::to_string(iCt);
+      else if(histos == &histoGetChi2s) histoName = "chi2Get" + std::to_string(iCt);
+      else if(histos == &histoCountChi2s) histoName = "chi2Count" + std::to_string(iCt);
       const double ctLo = histoMean->GetBinLowEdge(iCt);
       const double ctHi = histoMean->GetBinLowEdge(iCt+1);
       const std::string histoTitle = "Bin no." + std::to_string(iCt) + ", t#in (" + to_string_with_precision(ctLo, 1) + "#; " + to_string_with_precision(ctHi, 1) + ") ps";
       auto& histo = histos->at(iCt-1);
-      histo = new TH1D(histoName.c_str(), histoTitle.c_str(), 100, 0.7*yield, 1.3*yield);
-      histo->GetXaxis()->SetTitle("Corrected prompt yield");
+      if(histos == &histoGets || histos == &histoCounts) {
+        histo = new TH1D(histoName.c_str(), histoTitle.c_str(), 100, 0.7*yield, 1.3*yield);
+        histo->GetXaxis()->SetTitle("Corrected prompt yield");
+      } else {
+        histo = new TH1D(histoName.c_str(), histoTitle.c_str(), 100, 0., 10.*chi2);
+        histo->GetXaxis()->SetTitle("#chi^{2}/ndf");
+      }
       histo->GetYaxis()->SetTitle("Entries");
     }
   }
@@ -83,14 +96,16 @@ void corrected_yield_syst_qa() {
                             rebinFactors.prefix_ + "_" + std::to_string(rebinFactors.values_.at(iRf)) + "/" +
                             bgFunctions.prefix_ + "_" + std::to_string(bgFunctions.values_.at(iBf));
           std::cout << "Info: Processing of " << filePath << "\n";
-          auto ProcessYieldStrategy = [&] (const std::string& strategyName, std::vector<TH1*>& histoTargets) {
+          auto ProcessYieldStrategy = [&] (const std::string& strategyName, std::vector<TH1*>& histoTargets, std::vector<TH1*>& histoChi2Targets) {
             TFile* fileYield{};
             TH1* histoYield{};
             TH1* histoStatus{};
+            TH1* histoChi2{};
             try {
               fileYield = OpenFileWithNullptrCheck(filePath + "/" + strategyName + "/CutVarLc.merged.root");
               histoYield = GetObjectWithNullptrCheck<TH1>(fileYield, "hCorrYieldsPrompt");
               histoStatus = GetObjectWithNullptrCheck<TH1>(fileYield, "hMinimizationStatus");
+              histoChi2 = GetObjectWithNullptrCheck<TH1>(fileYield, "hChi2OverNdf");
             } catch(const std::exception&) {
               std::cout << "Info: Processing of " << filePath << "/" << strategyName << " is skipped due to missing file or histogram\n";
               return;
@@ -101,10 +116,12 @@ void corrected_yield_syst_qa() {
               if((iCt==1 || iCt==2) && bgFunctions.values_.at(iBf) == 2) continue; // ad. hoc.
               const double yield = histoYield->GetBinContent(iCt);
               histoTargets.at(iCt-1)->Fill(yield);
+              const double chi2ndf = histoChi2->GetBinContent(iCt);
+              histoChi2Targets.at(iCt-1)->Fill(chi2ndf);
             }
           };
-          ProcessYieldStrategy("get", histoGets);
-          ProcessYieldStrategy("count", histoCounts);
+          ProcessYieldStrategy("get", histoGets, histoGetChi2s);
+          ProcessYieldStrategy("count", histoCounts, histoCountChi2s);
         } // bgFunctions
       } // rebinFactors
     } // rightRanges
@@ -114,10 +131,17 @@ void corrected_yield_syst_qa() {
   for(int iCt=1; iCt<=nCtBins; ++iCt) {
     auto& histoGet = histoGets.at(iCt-1);
     auto& histoCount = histoCounts.at(iCt-1);
+    auto& histoGetChi2 = histoGetChi2s.at(iCt-1);
+    auto& histoCountChi2 = histoCountChi2s.at(iCt-1);
     histoGet->Write();
     histoCount->Write();
+    histoGetChi2->Write();
+    histoCountChi2->Write();
 
-    if(IsDrawBinCount) CustomizeHistogramsYRange({histoGet, histoCount}, false, 0.);
+    if(IsDrawBinCount) {
+      CustomizeHistogramsYRange({histoGet, histoCount}, false, 0.);
+      CustomizeHistogramsYRange({histoGetChi2, histoCountChi2}, false, 0.);
+    }
     histoGet->SetLineColor(kBlue);
     histoCount->SetLineColor(kGreen+2);
     const double meanValue = histoMean->GetBinContent(iCt);
@@ -178,7 +202,23 @@ void corrected_yield_syst_qa() {
     if(IsDrawBinCount)leg.Draw("same");
 
     cc.Print(("corrected_yield_syst_qa.pdf" + priBra).c_str(), "pdf");
+
+    TCanvas ccChi2("ccChi2", "");
+    ccChi2.SetCanvasSize(1200, 800);
+    histoGetChi2->SetLineColor(kBlue);
+    histoCountChi2->SetLineColor(kGreen+2);
+
+    histoGetChi2->Draw();
+    if(IsDrawBinCount) histoCountChi2->Draw("same");
+
+    TLine meanChi2Line(histoMeanChi2->GetBinContent(iCt), histoGetChi2->GetMinimum(), histoMeanChi2->GetBinContent(iCt), histoGetChi2->GetMaximum());
+    meanChi2Line.SetLineColor(kRed);
+    meanChi2Line.Draw("same");
+
+    ccChi2.Print(("corrected_yield_syst_qa_chi2.pdf" + priBra).c_str(), "pdf");
   }
+
+  CloseCanvasPrinting({"corrected_yield_syst_qa_chi2"});
 
   histoStatErrors->Write("statErrors");
   histoSystErrorsGet->Write("systErrorsGet");
