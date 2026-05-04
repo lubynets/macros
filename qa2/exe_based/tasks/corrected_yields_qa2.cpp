@@ -34,7 +34,7 @@ enum UncModes {
   SystOnly,
   StatAndSyst
 };
-constexpr int UncMode{StatAndSyst};
+constexpr int UncMode{StatOnly};
 
 void ExcludeBin(TH1* h, int binNumber);
 std::vector<int> EvalBinsToDrop(int dropSet);
@@ -167,9 +167,9 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
 
       auto FitResults = [](const TF1* fitFunc, const std::string& text="") {
         const std::string lifetimeFitValue = "#tau_{#Lambda_{c}} [" + text + "] = (" +
-                                            to_string_with_precision(fitFunc->GetParameter(1)*1000, 4) +
+                                            to_string_with_precision(fitFunc->GetParameter(1)*1000, 1) +
                                             " #pm " +
-                                            to_string_with_precision(fitFunc->GetParError(1)*1000, 4) +
+                                            to_string_with_precision(fitFunc->GetParError(1)*1000, 1) +
                                             ") fs";
         const std::string chi2Value = "#chi^{2} / ndf = " +
                                       to_string_with_significant_figures(fitFunc->GetChisquare(), 3) +

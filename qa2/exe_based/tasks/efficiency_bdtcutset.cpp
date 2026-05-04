@@ -34,11 +34,11 @@ void efficiency_bdtcutset(const std::string& fileName) {
   const std::vector<double> lifeTimeRanges = {0.2, 0.4, 0.6, 0.8, 1.0, 1.4, 1.8};
   const std::vector<double> pTRanges = {1, 2, 3, 4, 5, 8, 12, 20};
 
-  std::vector<float> bdtScores;
-  for(int i=0; i<=99; i++) {
-    bdtScores.emplace_back(0.01 * i);
-  }
-//   bdtScores.emplace_back(0.01);
+  std::vector<float> bdtScores{0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90};
+//   for(int i=0; i<=99; i++) {
+//     bdtScores.emplace_back(0.01 * i);
+//   }
+// //   bdtScores.emplace_back(0.01);
 
   std::vector<std::pair<double, double>> pTIntervals{};
   for(size_t iPt = 0, nPts = pTRanges.size() - 1; iPt < nPts; ++iPt) {
