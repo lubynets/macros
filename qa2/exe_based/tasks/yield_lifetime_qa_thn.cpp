@@ -21,8 +21,8 @@ using namespace std::string_literals;
 bool gIsDoWeight{false};
 std::vector<double> gBdtSignalLowerValues{};
 
-std::vector<double> pTRanges = {1, 2, 3, 4, 5, 8, 12, 20};
-const std::vector<double> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.02, 0.02, 0.04, 0.08};
+std::vector<double> pTRanges = {3, 4, 5, 8, 12, 20};
+const std::vector<double> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.04, 0.08};
 
 const std::string_view lifetimeAxisTitle = "T_{proper} (ps)";
 const std::string_view pTAxisTitle = "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})";
@@ -138,9 +138,10 @@ int main(int argc, char* argv[]) {
 
   const std::string& fileName = modeRun != MergeOnly ? ReadNthLine(fileNameIn) : fileNameIn;
 
-  for (int iB = 0; iB <= 99; iB++) {
-    gBdtSignalLowerValues.emplace_back(0.01 * iB);
-  }
+//   for (int iB = 0; iB <= 99; iB++) {
+//     gBdtSignalLowerValues.emplace_back(0.01 * iB);
+//   }
+  gBdtSignalLowerValues = {0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90};
 
   if(modeRun != MergeOnly) {
     FillYield(fileName, filePtWeightName, true);
@@ -149,7 +150,7 @@ int main(int argc, char* argv[]) {
 
   if(modeRun == RunOnly) return 0;
 
-  const int nLowerPtBinsToExclude{3};
+  const int nLowerPtBinsToExclude{0};
   pTRanges.erase(pTRanges.begin(), pTRanges.begin()+nLowerPtBinsToExclude);
 
   std::vector<std::string> pTCutNames;
