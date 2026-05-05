@@ -7,12 +7,18 @@
 #include <TCanvas.h>
 #include <TFile.h>
 #include <TH1.h>
+#include <THnSparse.h>
 #include <TLegend.h>
 
 #include <string>
+#include <string_view>
 
 using namespace HelperGeneral;
 using namespace HelperMath;
+using namespace std::string_literals;
+
+const std::string_view signalTypeAxisTitle = "candidates type";
+const std::string_view pTAxisTitle = "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})";
 
 void pt_weight_builder(const std::string& fileNamePtGen, const std::string& fileNamePtFit, bool isGenHistoAccumulated) {
   LoadMacro("styles/mc_qa2.style.cc");
@@ -22,7 +28,12 @@ void pt_weight_builder(const std::string& fileNamePtGen, const std::string& file
   TFile* fileGen = OpenFileWithNullptrCheck(fileNamePtGen, "read");
   TFile* fileFit = OpenFileWithNullptrCheck(fileNamePtFit, "read");
 
-  TH1* histoGen = GetObjectWithNullptrCheck<TH1>(fileGen, "histoPtGenPrompt");
+  THnSparse* histoGenTHn = GetObjectWithNullptrCheck<THnSparse>(fileGen, "hf-task-lc/hnLcVarsGen");
+  const std::map<std::string_view, int> axesIndices = MapTHnSparseAxesIndices(histoGenTHn);
+  SetTHnSparseAxisRanges(histoGenTHn, axesIndices.at(signalTypeAxisTitle), 1., 2.);
+
+  TH1* histoGen = histoGenTHn->Projection(axesIndices.at(pTAxisTitle));
+
   TF1* funcFit = GetObjectWithNullptrCheck<TF1>(fileFit, "tsallisFit");
   histoGen->UseCurrentStyle();
   funcFit->UseCurrentStyle();

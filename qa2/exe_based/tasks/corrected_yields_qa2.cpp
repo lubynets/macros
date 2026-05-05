@@ -27,7 +27,7 @@ enum RunModes {
   AllWoOne,
   AllPossible
 };
-constexpr int RunMode{MeanFitOnly};
+constexpr int RunMode{AllPossible};
 
 enum UncModes {
   StatOnly = 0,
