@@ -23,6 +23,9 @@ const std::string_view pTAxisTitle = "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})";
 void pt_weight_builder(const std::string& fileNamePtGen, const std::string& fileNamePtFit, bool isGenHistoAccumulated) {
   LoadMacro("styles/mc_qa2.style.cc");
 
+  const double loPt{0.};
+  const double hiPt{20.};
+
   const std::string fileOutName = "ptWeight";
 
   TFile* fileGen = OpenFileWithNullptrCheck(fileNamePtGen, "read");
@@ -32,16 +35,13 @@ void pt_weight_builder(const std::string& fileNamePtGen, const std::string& file
   const std::map<std::string_view, int> axesIndices = MapTHnSparseAxesIndices(histoGenTHn);
   SetTHnSparseAxisRanges(histoGenTHn, axesIndices.at(signalTypeAxisTitle), 1., 2.);
 
-  TH1* histoGen = histoGenTHn->Projection(axesIndices.at(pTAxisTitle));
-
-  TF1* funcFit = GetObjectWithNullptrCheck<TF1>(fileFit, "tsallisFit");
-  histoGen->UseCurrentStyle();
-  funcFit->UseCurrentStyle();
-
   TFile* fileOut = TFile::Open((fileOutName + ".root").c_str(), "recreate");
+
+  TH1* histoGen = histoGenTHn->Projection(axesIndices.at(pTAxisTitle));
+  histoGen->UseCurrentStyle();
   histoGen->Write();
 
-  auto ProcessPtRange = [&] (double loPt, double hiPt) {
+  auto ProcessTsallisFunc = [&] (TF1* funcFit, const bool isMean) {
     const std::string ptRangeString = "pT_" + HelperGeneral::to_string_with_precision(loPt, 0) + "_" + HelperGeneral::to_string_with_precision(hiPt, 0);
 
     TH1* histoCut = CutSubHistogram(histoGen, loPt, hiPt);
@@ -69,33 +69,69 @@ void pt_weight_builder(const std::string& fileNamePtGen, const std::string& file
     DivideHistoByFunction(histoWeight, funcFitNorm, "I");
     InvertHisto(histoWeight);
   
-    TCanvas ccShapes("ccShapes", "");
-    ccShapes.SetCanvasSize(1200, 800);
-    ccShapes.SetLogy();
-    histoCutNorm->Draw("HIST");
-    funcFitNorm->Draw("same");
-    TLegend leg(0.7, 0.82, 0.9, 0.9);
-    leg.AddEntry(histoCutNorm, "Pythia", "L");
-    leg.AddEntry(funcFitNorm, "Tsallis", "L");
-    leg.Draw("same");
-    ccShapes.Print((fileOutName + "_" + ptRangeString + ".pdf(").c_str(), "pdf");
+    if(isMean) {
+      TCanvas ccShapes("ccShapes", "");
+      ccShapes.SetCanvasSize(1200, 800);
+      ccShapes.SetLogy();
+      histoCutNorm->Draw("HIST");
+      funcFitNorm->Draw("same");
+      TLegend leg(0.7, 0.82, 0.9, 0.9);
+      leg.AddEntry(histoCutNorm, "Pythia", "L");
+      leg.AddEntry(funcFitNorm, "Tsallis", "L");
+      leg.Draw("same");
+      ccShapes.Print((fileOutName + "_" + ptRangeString + ".pdf(").c_str(), "pdf");
+
+      TCanvas ccWeight("ccWeight", "");
+      ccWeight.SetCanvasSize(1200, 800);
+      histoWeight->Draw();
+      TF1 oneline("oneline", "[0]", loPt, hiPt);
+      oneline.SetParameter(0, 1);
+      oneline.SetLineColor(kBlack);
+      oneline.SetLineStyle(7);
+      oneline.Draw("same");
+      ccWeight.Print((fileOutName + "_" + ptRangeString + ".pdf)").c_str(), "pdf");
+    }
   
-    TCanvas ccWeight("ccWeight", "");
-    ccWeight.SetCanvasSize(1200, 800);
-    histoWeight->Draw();
-    TF1 oneline("oneline", "[0]", loPt, hiPt);
-    oneline.SetParameter(0, 1);
-    oneline.SetLineColor(kBlack);
-    oneline.SetLineStyle(7);
-    oneline.Draw("same");
-    ccWeight.Print((fileOutName + "_" + ptRangeString + ".pdf)").c_str(), "pdf");
-  
-    histoCutNorm->Write(("histoPtGenNorm_" + ptRangeString).c_str());
-    funcFitNorm->Write(("tsallisFitNorm_" + ptRangeString).c_str());
-    histoWeight->Write(("histoWeight_" + ptRangeString).c_str());
+    if(isMean) histoCutNorm->Write("histoPtGenNorm");
+    funcFitNorm->Write((static_cast<std::string>(funcFit->GetName()) + "_Norm").c_str());
+    histoWeight->Write(static_cast<TString>(funcFit->GetName()).ReplaceAll("tsallisFit", "histoWeight"));
   };
 
-  ProcessPtRange(0., 20.);
+  TF1* funcFitMean = GetObjectWithNullptrCheck<TF1>(fileFit, "tsallisFit");
+  funcFitMean->UseCurrentStyle();
+  ProcessTsallisFunc(funcFitMean, true);
+
+  //////////////////////////////////////////////////////////////////////
+  // Save fits with parameters, different by n sigma from the mean value
+  const double nSigmaFitPar{1};
+  const std::array<std::string, 4> parNames{"A", "m", "q", "T"};
+  const std::vector<int> parNumbers{1, 2, 3}; // no 0 since it is a common factor
+  const std::array<int, 3> signs{-1, 0, 1};
+  const std::vector<std::string> signsStr{"minus", "zero", "plus"};
+
+  auto GetSignOfParameter = [&] (int iComb, int iPar) {
+    int divisor = 1;
+
+    for (int k = 0; k < iPar; ++k) {
+      divisor *= signs.size();
+    }
+
+    int n = (iComb / divisor) % signs.size();
+
+    return n;
+  };
+
+  const int nCombinations = std::pow(signs.size(), parNumbers.size());
+  for (int iComb = 0; iComb < nCombinations; ++iComb) {
+    std::string fName = "tsallisFit_" + to_string_with_precision(nSigmaFitPar, 0) + "sigma";
+    for(int iPar=0; iPar<parNumbers.size(); ++iPar) {
+      fName += "_" + signsStr.at(GetSignOfParameter(iComb, iPar)) + parNames.at(parNumbers.at(iPar));
+    }
+    TF1* funcFit = GetObjectWithNullptrCheck<TF1>(fileFit, fName);
+    ProcessTsallisFunc(funcFit, false);
+  }
+
+  //////////////////////////////////////////////////////////////////////
 
   fileGen->Close();
   fileFit->Close();
