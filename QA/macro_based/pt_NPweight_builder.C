@@ -8,7 +8,7 @@ const std::string_view pTBAxisTitle = "#it{p}_{T}^{B} (GeV/#it{c})";
 const double loPt{0.};
 const double hiPt{20.};
 
-void pt_NPweight_builder(const std::string& fileGenName, const std::string& fileFonllName, const std::string& fileInOutName) {
+void pt_NPweight_builder(const std::string& fileGenName, const std::string& fileFonllName, const std::string& fileInOutName, const std::string& suffix="cent") {
   TFile* fileGen = TFile::Open(fileGenName.c_str(), "read");
   TFile* fileFonll = TFile::Open(fileFonllName.c_str(), "read");
 
@@ -17,7 +17,7 @@ void pt_NPweight_builder(const std::string& fileGenName, const std::string& file
   SetTHnSparseAxisRanges(histoGenTHn, axesIndices.at(signalTypeAxisTitle), 2., 3.);
   TH1* histoGen = histoGenTHn->Projection(axesIndices.at(pTBAxisTitle));
 
-  TH1* histoFonll = fileFonll->Get<TH1>("hPtFONLLBcent");
+  TH1* histoFonll = fileFonll->Get<TH1>(("hPtFONLLB" + suffix).c_str());
 
   histoGen = CutSubHistogram(histoGen, loPt, hiPt);
   histoFonll = CutSubHistogram(histoFonll, loPt, hiPt);
@@ -34,7 +34,7 @@ void pt_NPweight_builder(const std::string& fileGenName, const std::string& file
   if(!ok) throw std::runtime_error("histoFonll->Divide(histoGen) was not ok");
 
   TFile* fileOut = TFile::Open(fileInOutName.c_str(), "update");
-  histoFonll->Write("histoNPWeight");
+  histoFonll->Write(("histoNPWeight" + suffix).c_str());
   fileOut->Close();
 
   fileFonll->Close();
