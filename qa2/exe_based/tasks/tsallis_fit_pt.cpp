@@ -52,7 +52,6 @@ void pt_fit(bool isIncludeSysErr, bool isCalculateFitFuncError) {
   }};
   // =========================================================================================
 
-  const double nSigmaFitPar{1};
 
   const std::string ptString = "#it{p}_{T}";
   TH1D* histoCrossSec = new TH1D("histoCrossSec", "", nPoints, pTEdges.data());
@@ -118,38 +117,6 @@ void pt_fit(bool isIncludeSysErr, bool isCalculateFitFuncError) {
   tsallisFitCov.Write("tsallisFitCov");
   ccFit.Write("ccFit");
   ccRatio.Write("ccRatio");
-
-  //////////////////////////////////////////////////////////////////////
-  // Save fits with parameters, different by n sigma from the mean value
-  const std::vector<int> parNumbers{1, 2, 3}; // no 0 since it is a common factor
-  const std::array<int, 3> signs{-1, 0, 1};
-  const std::vector<std::string> signsStr{"minus", "zero", "plus"};
-
-  auto GetSignOfParameter = [&] (int iComb, int iPar) {
-    int divisor = 1;
-
-    for (int k = 0; k < iPar; ++k) {
-      divisor *= signs.size();
-    }
-
-    int n = (iComb / divisor) % signs.size();
-
-    return n;
-  };
-
-  const int nCombinations = std::pow(signs.size(), parNumbers.size());
-  for (int iComb = 0; iComb < nCombinations; ++iComb) {
-    TF1* tsallisFitComb = dynamic_cast<TF1*>(tsallisFit->Clone());
-    std::string fName = "tsallisFit_" + to_string_with_precision(nSigmaFitPar, 0) + "sigma";
-    for(int iPar=0; iPar<parNumbers.size(); ++iPar) {
-      fName += "_" + signsStr.at(GetSignOfParameter(iComb, iPar)) + parNames.at(parNumbers.at(iPar));
-      tsallisFitComb->SetParameter(parNumbers.at(iPar), tsallisFit->GetParameter(parNumbers.at(iPar)) + signs.at(GetSignOfParameter(iComb, iPar)) * nSigmaFitPar * tsallisFit->GetParError(parNumbers.at(iPar)));
-    }
-    tsallisFitComb->SetName(fName.c_str());
-    tsallisFitComb->Write();
-  }
-  //////////////////////////////////////////////////////////////////////
-
   fileOut->Close();
 }
 
