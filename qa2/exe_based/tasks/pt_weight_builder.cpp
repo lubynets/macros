@@ -101,37 +101,6 @@ void pt_weight_builder(const std::string& fileNamePtGen, const std::string& file
   funcFitMean->UseCurrentStyle();
   ProcessTsallisFunc(funcFitMean, true);
 
-  //////////////////////////////////////////////////////////////////////
-  // Save fits with parameters, different by n sigma from the mean value
-  const double nSigmaFitPar{1};
-  const std::array<std::string, 4> parNames{"A", "m", "q", "T"};
-  const std::vector<int> parNumbers{1, 2, 3}; // no 0 since it is a common factor
-  const std::array<int, 3> signs{-1, 0, 1};
-  const std::vector<std::string> signsStr{"minus", "zero", "plus"};
-
-  auto GetSignOfParameter = [&] (int iComb, int iPar) {
-    int divisor = 1;
-
-    for (int k = 0; k < iPar; ++k) {
-      divisor *= signs.size();
-    }
-
-    int n = (iComb / divisor) % signs.size();
-
-    return n;
-  };
-
-  const int nCombinations = std::pow(signs.size(), parNumbers.size());
-  for (int iComb = 0; iComb < nCombinations; ++iComb) {
-    std::string fName = "tsallisFit_" + to_string_with_precision(nSigmaFitPar, 0) + "sigma";
-    for(int iPar=0; iPar<parNumbers.size(); ++iPar) {
-      fName += "_" + signsStr.at(GetSignOfParameter(iComb, iPar)) + parNames.at(parNumbers.at(iPar));
-    }
-    TF1* funcFit = GetObjectWithNullptrCheck<TF1>(fileFit, fName);
-    ProcessTsallisFunc(funcFit, false);
-  }
-
-  //////////////////////////////////////////////////////////////////////
 
   fileGen->Close();
   fileFit->Close();
