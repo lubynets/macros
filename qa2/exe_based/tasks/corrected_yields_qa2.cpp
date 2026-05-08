@@ -27,7 +27,7 @@ enum RunModes {
   AllWoOne,
   AllPossible
 };
-constexpr int RunMode{AllPossible};
+constexpr int RunMode{MeanFitOnly};
 
 enum UncModes {
   StatOnly = 0,
@@ -221,6 +221,7 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
         fileOut->cd();
         ccFit.Write();
       }
+      if(dropSet == 0) fitCutVar->Write();
 
       TH1* hCutVarRatio = dynamic_cast<TH1*>(histoRec->Clone());
       TH1* hMcRatio = isMc ? dynamic_cast<TH1*>(histoMc->Clone()) : nullptr;

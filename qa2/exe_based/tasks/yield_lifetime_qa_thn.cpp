@@ -52,7 +52,7 @@ const std::array<std::string, 2> weightsPresences{"", "_W"};
 
 std::string GetPtCutName(size_t iPt);
 
-void FillYield(const std::string& fileName, const std::string& filePtWeightName, const bool isRec, const double nCtSigmaFromPdg) {
+void FillYield(const std::string& fileName, const std::string& filePtWeightName, const bool isRec, const double nCtSigmaFromPdg, const std::string& pCMM, const std::string& npCMM) {
   const double tauTarget = tauPdg + nCtSigmaFromPdg*sigmaPdg;
 
   TF1* ctWeight = new TF1("ctWeight", "std::exp(-[0]*x)", 0., 2.);
@@ -63,8 +63,8 @@ void FillYield(const std::string& fileName, const std::string& filePtWeightName,
   const std::string fileOpenOption = isRec ? "recreate" : "update";
   TFile* fileOut = TFile::Open(fileOutName.c_str(), fileOpenOption.c_str());
   TFile* fileWeight = gIsDoWeight ? OpenFileWithNullptrCheck(filePtWeightName) : nullptr;
-  TH1* histoWeightPrompt = gIsDoWeight ? GetObjectWithNullptrCheck<TH1>(fileWeight, "histoWeight_pT_0_20") : nullptr;
-  TH1* histoWeightNonPrompt = gIsDoWeight ? GetObjectWithNullptrCheck<TH1>(fileWeight, "histoNPWeight") : nullptr;
+  TH1* histoWeightPrompt = gIsDoWeight ? GetObjectWithNullptrCheck<TH1>(fileWeight, "histoWeight" + pCMM) : nullptr;
+  TH1* histoWeightNonPrompt = gIsDoWeight ? GetObjectWithNullptrCheck<TH1>(fileWeight, "histoNPWeight" + npCMM) : nullptr;
   THnSparse* histoRecOrGen = GetObjectWithNullptrCheck<THnSparse>(fileIn, "hf-task-lc/"s + (isRec ? "hnLcVarsWithBdt" : "hnLcVarsGen"));
   const std::map<std::string_view, int> axesIndices = MapTHnSparseAxesIndices(histoRecOrGen);
   THnSparse* histoPromptWeighted = gIsDoWeight ? dynamic_cast<THnSparse*>(histoRecOrGen->Clone()) : nullptr;
@@ -142,7 +142,10 @@ int main(int argc, char* argv[]) {
   const std::string fileNameIn = argv[1];
   const int modeRun = argc > 2 ? std::stoi(argv[2]) : RunOnly;
   const std::string filePtWeightName = argc > 3 ? argv[3] : "";
-  const double nCtSigmaFromPdg = argc > 4 ? std::atof(argv[4]) : UndefValueDouble;
+  const std::string pCMM = argv[4];
+  const std::string npCMM = argv[5];
+
+  const double nCtSigmaFromPdg = UndefValueDouble;
 
   if(modeRun < 0 || modeRun >= NModeRuns) throw std::runtime_error("modeRun < 0 || modeRun >= NModeRuns");
 
@@ -156,8 +159,8 @@ int main(int argc, char* argv[]) {
   gBdtSignalLowerValues = {0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90};
 
   if(modeRun != MergeOnly) {
-    FillYield(fileName, filePtWeightName, true, nCtSigmaFromPdg);
-    FillYield(fileName, filePtWeightName, false, nCtSigmaFromPdg);
+    FillYield(fileName, filePtWeightName, true, nCtSigmaFromPdg, pCMM, npCMM);
+    FillYield(fileName, filePtWeightName, false, nCtSigmaFromPdg, pCMM, npCMM);
   }
 
   if(modeRun == RunOnly) return 0;
