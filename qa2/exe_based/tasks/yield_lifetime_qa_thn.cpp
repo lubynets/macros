@@ -22,7 +22,8 @@ bool gIsDoWeight{false};
 std::vector<double> gBdtSignalLowerValues{};
 
 std::vector<double> pTRanges = {3, 4, 5, 8, 12, 20};
-const std::vector<double> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.04, 0.08};
+// const std::vector<double> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.04, 0.08}; // standard
+const std::vector<double> bdtBgUpperValuesVsPt = {0.01, 0.01, 0.01, 0.02, 0.04}; // tight
 
 const std::string_view lifetimeAxisTitle = "T_{proper} (ps)";
 const std::string_view pTAxisTitle = "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})";
@@ -142,8 +143,8 @@ int main(int argc, char* argv[]) {
   const std::string fileNameIn = argv[1];
   const int modeRun = argc > 2 ? std::stoi(argv[2]) : RunOnly;
   const std::string filePtWeightName = argc > 3 ? argv[3] : "";
-  const std::string pCMM = argv[4];
-  const std::string npCMM = argv[5];
+  const std::string pCMM = argc> 4 ? argv[4] : "cent";
+  const std::string npCMM = argc > 5 ? argv[5] : "cent";
 
   const double nCtSigmaFromPdg = UndefValueDouble;
 
