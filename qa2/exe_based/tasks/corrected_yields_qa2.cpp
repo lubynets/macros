@@ -27,7 +27,7 @@ enum RunModes {
   AllWoOne,
   AllPossible
 };
-constexpr int RunMode{MeanFitOnly};
+constexpr int RunMode{AllWoOne};
 
 enum UncModes {
   StatOnly = 0,
@@ -149,6 +149,8 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
     const int nBins = hCutVarDiff->GetNbinsX();
     const int nDropSets = RunMode > MeanFitOnly ? 1 << nBins : 1;
 
+    TFile* fileOut = IsSaveCanvasAsRoot ? TFile::Open("ctfit.root", "recreate") : nullptr;
+
     TCanvas emptycanvas("emptycanvas", "", 1200, 800);
     emptycanvas.Print("ctfit.pdf[", "pdf");
 
@@ -215,13 +217,12 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
       AddOneLineText(lifetimePdg, {textX1, textY2 - 6*textYStep, textX2, textY2 - 5*textYStep}, "brNDC", 0.04);
       ccFit.Print("ctfit.pdf", "pdf");
 
-      TFile* fileOut{nullptr};
       if(IsSaveCanvasAsRoot && dropSet == 0) {
-        fileOut = TFile::Open("ctfit.root", "recreate");
         fileOut->cd();
         ccFit.Write();
       }
-      if(dropSet == 0) fitCutVar->Write();
+      const std::string fitCutVarSaveName = dropSet == 0 ? "fitFunc" : "fitFunc_dropSet" + std::to_string(dropSet);
+      if(IsSaveCanvasAsRoot) fitCutVar->Write(fitCutVarSaveName.c_str());
 
       TH1* hCutVarRatio = dynamic_cast<TH1*>(histoRec->Clone());
       TH1* hMcRatio = isMc ? dynamic_cast<TH1*>(histoMc->Clone()) : nullptr;
@@ -270,7 +271,6 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
         fileOut->cd();
         ccRatio.Write();
         ccResidual.Write();
-        fileOut->Close();
       }
     };
 
@@ -290,6 +290,8 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
       FitLifetimeHistos(hReco, hMc, iDropSet);
     } // nDropSets
     emptycanvas.Print("ctfit.pdf]", "pdf");
+
+    if(IsSaveCanvasAsRoot) fileOut->Close();
 
     const double leftEdge = -2.;
     const double rightEdge = grTau.GetPointX(grTau.GetN()-1) + 2;
