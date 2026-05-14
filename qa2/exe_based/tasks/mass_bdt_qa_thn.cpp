@@ -22,9 +22,13 @@ const std::string lifetimeAxisTitle = "T_{proper} (ps)";
 std::vector<double> pTRanges = {3, 4, 5, 8, 12, 20};
 const std::string pTAxisTitle = "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})";
 
-// const std::vector<double> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.04, 0.08}; // standard
+const std::vector<double> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.04, 0.08}; // standard
 // const std::vector<double> bdtBgUpperValuesVsPt = {0.01, 0.01, 0.01, 0.02, 0.04}; // tight
-const std::vector<double> bdtBgUpperValuesVsPt = {0.035, 0.035, 0.035, 0.06, 0.12}; // loose
+// const std::vector<double> bdtBgUpperValuesVsPt = {0.03, 0.03, 0.03, 0.06, 0.12}; // loose
+// const std::vector<double> bdtBgUpperValuesVsPt = {0.015, 0.015, 0.015, 0.03, 0.06}; // semitight
+// const std::vector<double> bdtBgUpperValuesVsPt = {0.05, 0.05, 0.05, 0.08, 0.16}; // veryloose
+// const std::vector<double> bdtBgUpperValuesVsPt = {0.025, 0.025, 0.025, 0.05, 0.10}; // semiloose
+
 const std::string bgAxisTitle = "BDT bkg score (Lc)";
 const std::string npAxisTitle = "BDT non-prompt score (Lc)";
 const std::string massAxisTitle = "inv. mass (p K #pi) (GeV/#it{c}^{2})";
@@ -68,10 +72,10 @@ void MassBdtQaThn(const std::string& fileNameIn, int modeRun) {
   if(bdtBgUpperValuesVsPt.size() != pTRanges.size() - 1) throw std::runtime_error("bdtUpperValuesVsPt.size() != pTRanges.size() - 1");
   if(bdtScanDir != "gt" && bdtScanDir != "lt") throw std::runtime_error("bdtScanDir != \"gt\" && bdtScanDir != \"lt\"");
 
-  std::vector<double> bdtScanValues{0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90};
-//   for (int iB = 0; iB <= 99; iB++) {
-//     bdtScanValues.emplace_back(0.01 * iB);
-//   }
+  std::vector<double> bdtScanValues/*{0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90}*/;
+  for (int iB = 0; iB <= 99; iB++) {
+    bdtScanValues.emplace_back(0.01 * iB);
+  }
   if(modeRun != MergeOnly) {
     CheckTAxisForRanges(*histoIn->GetAxis(axesIndices.at(pTAxisTitle)), pTRanges);
     CheckTAxisForRanges(*histoIn->GetAxis(axesIndices.at(bgAxisTitle)), bdtBgUpperValuesVsPt);
