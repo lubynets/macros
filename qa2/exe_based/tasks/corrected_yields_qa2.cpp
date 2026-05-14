@@ -9,6 +9,7 @@
 #include <TFile.h>
 #include <TLegend.h>
 #include <TLine.h>
+#include <TNamed.h>
 
 #include <boost/program_options.hpp>
 
@@ -27,7 +28,7 @@ enum RunModes {
   AllWoOne,
   AllPossible
 };
-constexpr int RunMode{AllWoOne};
+constexpr int RunMode{AllPossible};
 
 enum UncModes {
   StatOnly = 0,
@@ -38,6 +39,7 @@ constexpr int UncMode{StatOnly};
 
 void ExcludeBin(TH1* h, int binNumber);
 std::vector<int> EvalBinsToDrop(int dropSet);
+int EvalDropSet(const std::vector<int>& bins);
 TGraphErrors* GetSubGraph(TGraphErrors* grIn, int subGraphType, Color_t color, int nFittedPoints);
 
 enum SubGraphType {
@@ -73,12 +75,23 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
 
   TH1* histoSystUnc = isSystUnc ? GetObjectWithNullptrCheck<TH1>(fileSystUnc, "systErrorsGet") : nullptr;
 
+  TH1* histoStatus = GetObjectWithNullptrCheck<TH1>(fileCutVar, "hMinimizationStatus");
+  CheckTAxisForRanges(*histoStatus->GetXaxis(), lifetimeRanges);
+  histoStatus = dynamic_cast<TH1D*>(histoStatus->Rebin(lifetimeRanges.size() - 1, histoStatus->GetName(), lifetimeRanges.data()));
+  std::vector<int> badBins{};
+  for(int iBin=1, nBins=histoStatus->GetNbinsX(); iBin<=nBins; ++iBin) {
+    if(histoStatus->GetBinContent(iBin) != 1) badBins.push_back(iBin);
+  }
+  const int bestDropSet = EvalDropSet(badBins);
+  std::cout << "bestDropSet = " << bestDropSet << "\n";
+  TNamed bestDropSetName("bestDropSet", std::to_string(bestDropSet));
+
   for (size_t iP = 0, nP = promptnesses.size(); iP < nP; ++iP) {
     const std::string promptness = promptnesses.at(iP).name_;
 
     TH1* hCutVar = GetObjectWithNullptrCheck<TH1>(fileCutVar, "hCorrYields" + promptnesses.at(iP).histo_name_);
     CheckTAxisForRanges(*hCutVar->GetXaxis(), lifetimeRanges);
-    hCutVar = dynamic_cast<TH1D*>(hCutVar->Rebin(lifetimeRanges.size() - 1, hCutVar->GetName(),lifetimeRanges.data()));
+    hCutVar = dynamic_cast<TH1D*>(hCutVar->Rebin(lifetimeRanges.size() - 1, hCutVar->GetName(), lifetimeRanges.data()));
     hCutVar->UseCurrentStyle();
     hCutVar->SetLineColor(kRed);
     hCutVar->SetMarkerColor(kRed);
@@ -150,6 +163,7 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
     const int nDropSets = RunMode > MeanFitOnly ? 1 << nBins : 1;
 
     TFile* fileOut = IsSaveCanvasAsRoot ? TFile::Open("ctfit.root", "recreate") : nullptr;
+    if(IsSaveCanvasAsRoot) bestDropSetName.Write();
 
     TCanvas emptycanvas("emptycanvas", "", 1200, 800);
     emptycanvas.Print("ctfit.pdf[", "pdf");
@@ -344,6 +358,16 @@ std::vector<int> EvalBinsToDrop(int dropSet) {
   while(dropSet >> iBit > 0) {
     if((dropSet >> iBit) & 1) result.push_back(iBit+1);
     ++iBit;
+  }
+
+  return result;
+}
+
+int EvalDropSet(const std::vector<int>& bins) {
+  int result = 0;
+
+  for(const auto& bin : bins) {
+    result |= (1 << (bin - 1));
   }
 
   return result;
