@@ -22,9 +22,9 @@ bool gIsDoWeight{false};
 std::vector<double> gBdtSignalLowerValues{};
 
 std::vector<double> pTRanges = {3, 4, 5, 8, 12, 20};
-// const std::vector<double> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.04, 0.08}; // standard
+const std::vector<double> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.04, 0.08}; // standard
 // const std::vector<double> bdtBgUpperValuesVsPt = {0.01, 0.01, 0.01, 0.02, 0.04}; // tight
-const std::vector<double> bdtBgUpperValuesVsPt = {0.03, 0.03, 0.03, 0.06, 0.12}; // loose
+// const std::vector<double> bdtBgUpperValuesVsPt = {0.03, 0.03, 0.03, 0.06, 0.12}; // loose
 // const std::vector<double> bdtBgUpperValuesVsPt = {0.015, 0.015, 0.015, 0.03, 0.06}; // semitight
 // const std::vector<double> bdtBgUpperValuesVsPt = {0.05, 0.05, 0.05, 0.08, 0.16}; // veryloose
 // const std::vector<double> bdtBgUpperValuesVsPt = {0.025, 0.025, 0.025, 0.05, 0.10}; // semiloose
@@ -158,10 +158,10 @@ int main(int argc, char* argv[]) {
 
   const std::string& fileName = modeRun != MergeOnly ? ReadNthLine(fileNameIn) : fileNameIn;
 
-//   for (int iB = 0; iB <= 99; iB++) {
-//     gBdtSignalLowerValues.emplace_back(0.01 * iB);
-//   }
-  gBdtSignalLowerValues = {0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90};
+  for (int iB = 0; iB <= 99; iB++) {
+    gBdtSignalLowerValues.emplace_back(0.01 * iB);
+  }
+//   gBdtSignalLowerValues = {0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90};
 
   if(modeRun != MergeOnly) {
     FillYield(fileName, filePtWeightName, true, nCtSigmaFromPdg, pCMM, npCMM);
