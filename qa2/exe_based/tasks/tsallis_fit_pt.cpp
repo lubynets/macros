@@ -22,10 +22,10 @@ using namespace HelperPlot;
 constexpr bool IsDrawFitWithErrors{true};
 
 struct DataPoint {
-    double cross_section_;
-    double stat_error_;
-    double syst_error_up_;
-    double syst_error_down_;
+  double cross_section_;
+  double stat_error_;
+  double syst_error_up_;
+  double syst_error_down_;
 };
 
 double EvalErrorDataPoint(const DataPoint& datapoint, bool isIncludeSysError= true);
@@ -38,8 +38,8 @@ void pt_fit(bool isIncludeSysErr) {
   // =========================================================================================
   // https://www.hepdata.net/record/ins2697877
   const std::string hepDataName = "www.hepdata.net/record/ins2697877";
-  constexpr int nPoints{11};
-  const std::array<double, nPoints+1> pTEdges {0., 1., 2., 3., 4., 5., 6., 7., 8., 10., 12., 24.};
+  constexpr std::array pTEdges {0., 1., 2., 3., 4., 5., 6., 7., 8., 10., 12., 24.};
+  constexpr int nPoints = pTEdges.size() - 1;
 
   const std::array<DataPoint, nPoints> sigmas {{
     {74.13,  10.237, 8.8693, 8.9308},
