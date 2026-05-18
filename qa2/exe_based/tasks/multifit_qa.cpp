@@ -8,6 +8,7 @@
 #include <TFile.h>
 #include <TGraphErrors.h>
 #include <TH1.h>
+#include <TStyle.h>
 
 #include <algorithm>
 #include <iostream>
@@ -25,8 +26,9 @@ void MultiFitQa(const std::string& strategy) {
   if(strategy != "median" && strategy != "chi2" && strategy != "medianSmart") throw std::runtime_error("MultiFitQa(): strategy must be 'median', 'chi2' or 'medianSmart'");
 
   LoadMacro("styles/mc_qa2.style.cc");
+  gStyle->SetMarkerSize(1);
   const std::string fileNameTemplate = "RawYields_Lc/RawYields_Lc";
-  const int nTrials = 100;
+  const int nTrials = 200;
   std::vector<double> bdtScores;
   for(int i=1; i<=99; i++) {
     bdtScores.emplace_back(0.01*i);
@@ -84,6 +86,8 @@ void MultiFitQa(const std::string& strategy) {
   tensor<std::map<double, size_t>, 3> values = make_tensor<std::map<double, size_t>, 3>({nVars, nLifetimeRanges, nBdtScores}, {});
   tensor<std::map<double, size_t>, 3> errors = make_tensor<std::map<double, size_t>, 3>({nVars, nLifetimeRanges, nBdtScores}, {});
   tensor<TGraphErrors*, 3> graphVsChi2 = make_tensor<TGraphErrors*, 3>({nVars, nLifetimeRanges, nBdtScores}, nullptr);
+  tensor<TGraphErrors*, 3> graphErr = make_tensor<TGraphErrors*, 3>({nVars, nLifetimeRanges, nBdtScores}, nullptr);
+  tensor<TGraphErrors*, 3> graphErrVsChi2 = make_tensor<TGraphErrors*, 3>({nVars, nLifetimeRanges, nBdtScores}, nullptr);
   for(size_t iVar=0; iVar<nVars; ++iVar) {
     for (size_t iT = 0; iT < nLifetimeRanges; ++iT) {
       for (size_t iScore = 0; iScore < nBdtScores; ++iScore) {
@@ -97,11 +101,25 @@ void MultiFitQa(const std::string& strategy) {
 
         auto& grVsChi2 = graphVsChi2.at(iVar).at(iT).at(iScore);
         grVsChi2 = new TGraphErrors();
-        const std::string grVsChi2Name = "T" + std::to_string(iT) + "_NPgt" + to_string_with_precision(bdtScores.at(iScore), 2);
-        grVsChi2->SetName((variables.at(iVar) + "_" + grVsChi2Name).c_str());
-        grVsChi2->SetTitle(grVsChi2Name.c_str());
+        grVsChi2->SetName((variables.at(iVar) + "_" + grName).c_str());
+        grVsChi2->SetTitle(grName.c_str());
         grVsChi2->GetXaxis()->SetTitle("#chi^{2}/ndf");
         grVsChi2->GetYaxis()->SetTitle(variables.at(iVar).c_str());
+
+        auto& grErr = graphErr.at(iVar).at(iT).at(iScore);
+        grErr = new TGraphErrors();
+        const std::string grErrName = "T" + std::to_string(iT) + "_NPgt" + to_string_with_precision(bdtScores.at(iScore), 2);
+        grErr->SetName((variables.at(iVar) + "_" + grName).c_str());
+        grErr->SetTitle(grName.c_str());
+        grErr->GetXaxis()->SetTitle("Trial #");
+        grErr->GetYaxis()->SetTitle((variables.at(iVar) + " error").c_str());
+
+        auto& grErrVsChi2 = graphErrVsChi2.at(iVar).at(iT).at(iScore);
+        grErrVsChi2 = new TGraphErrors();
+        grErrVsChi2->SetName((variables.at(iVar) + "_" + grName).c_str());
+        grErrVsChi2->SetTitle(grName.c_str());
+        grErrVsChi2->GetXaxis()->SetTitle("#chi^{2}/ndf");
+        grErrVsChi2->GetYaxis()->SetTitle((variables.at(iVar) + " error").c_str());
       } // nBdtScores
     } // nLifetimeRanges
   } // nVars
@@ -133,6 +151,7 @@ void MultiFitQa(const std::string& strategy) {
           auto gr = graph.at(iVar).at(iBin - 1).at(iScore);
           gr->AddPoint(trial, value);
           gr->SetPointError(gr->GetN() - 1, 0, error);
+          graphErr.at(iVar).at(iBin - 1).at(iScore)->AddPoint(trial, error);
           values.at(iVar).at(iBin - 1).at(iScore).insert({value, trial});
           errors.at(iVar).at(iBin - 1).at(iScore).insert({error, trial});
 
@@ -140,6 +159,7 @@ void MultiFitQa(const std::string& strategy) {
           auto grVsChi2 = graphVsChi2.at(iVar).at(iBin - 1).at(iScore);
           grVsChi2->AddPoint(chi2, value);
           grVsChi2->SetPointError(grVsChi2->GetN() - 1, 0, error);
+          graphErrVsChi2.at(iVar).at(iBin - 1).at(iScore)->AddPoint(chi2, error);
         } // nLifetimeRanges
         if(IsVerbose) std::cout << "\n";
       } // nVars
@@ -159,7 +179,7 @@ void MultiFitQa(const std::string& strategy) {
   auto FindBadTrials = [](const std::map<double, size_t>& map) {
     const size_t mapSize = map.size();
     auto it = map.begin();
-    std::advance(it, mapSize/4);
+    std::advance(it, mapSize/10);
 
     std::vector<int> badTrials{};
     for (; it != map.end(); ++it) {
@@ -204,19 +224,25 @@ void MultiFitQa(const std::string& strategy) {
       TH1* histoSmooth = dynamic_cast<TH1*>(GetObjectWithNullptrCheck<TH1>(fileMarkUp, variables.at(iVar))->Clone());
       histoSmooth->Reset();
       for (size_t iT = 0; iT < nLifetimeRanges; ++iT) {
-        TCanvas cc("cc", "");
+        TCanvas cc("cc", "", 1200, 800);
+        TCanvas ccErr("ccErr", "", 1200, 800);
         cc.SetGrid();
-        TCanvas ccVsChi2("ccVsChi2", "");
-        cc.SetCanvasSize(1200, 800);
-        ccVsChi2.SetCanvasSize(1200, 800);
+        ccErr.SetGrid();
+        TCanvas ccVsChi2("ccVsChi2", "", 1200, 800);
+        TCanvas ccErrVsChi2("ccErrVsChi2", "", 1200, 800);
         const auto& gr = graph.at(iVar).at(iT).at(iScore);
         const auto& grVsChi2 = graphVsChi2.at(iVar).at(iT).at(iScore);
         cc.cd();
         gr->Draw("APE");
         ccVsChi2.cd();
         grVsChi2->Draw("APE");
+        ccErr.cd();
+        graphErr.at(iVar).at(iT).at(iScore)->Draw("APE");
+        ccErrVsChi2.cd();
+        graphErrVsChi2.at(iVar).at(iT).at(iScore)->Draw("APE");
 
         const auto badTrials = strategy == "medianSmart" ? FindBadTrials(values.at(iChi2).at(iT).at(iScore)) : std::vector<int>{};
+        const double criticalChi2 = values.at(iChi2).at(iT).at(iScore)[badTrials.front()];
         if(iVar != iChi2) RemoveBadTrials(values.at(iVar).at(iT).at(iScore), badTrials);
 
         const size_t bestValueTrial = strategy == "median" || strategy == "medianSmart" ? FindMapMedian(values.at(iVar).at(iT).at(iScore)) : values.at(iChi2).at(iT).at(iScore).begin()->second;
@@ -228,30 +254,40 @@ void MultiFitQa(const std::string& strategy) {
         histoSmooth->SetBinContent(iT + 1, bestValue);
         histoSmooth->SetBinError(iT + 1, bestError);
         gr->SetTitle((static_cast<std::string>(gr->GetTitle()) + " (" + std::to_string(bestValueTrial) + ", " + std::to_string(bestErrorTrial) + ")").c_str());
-        grVsChi2->SetTitle((static_cast<std::string>(grVsChi2->GetTitle()) + " (" + std::to_string(bestValueTrial) + ", " + std::to_string(bestErrorTrial) + ")").c_str());
+        grVsChi2->SetTitle((static_cast<std::string>(grVsChi2->GetTitle()) + " (" + std::to_string(bestValueTrial) + ", " + std::to_string(bestErrorTrial) + ")" + ", chi2 crit. = " + to_string_with_precision(criticalChi2, 1)).c_str());
+        graphErr.at(iVar).at(iT).at(iScore)->SetTitle((static_cast<std::string>(gr->GetTitle()) + " (" + std::to_string(bestValueTrial) + ", " + std::to_string(bestErrorTrial) + ")").c_str());
+        graphErrVsChi2.at(iVar).at(iT).at(iScore)->SetTitle((static_cast<std::string>(grVsChi2->GetTitle()) + " (" + std::to_string(bestValueTrial) + ", " + std::to_string(bestErrorTrial) + ")" + ", chi2 crit. = " + to_string_with_precision(criticalChi2, 1)).c_str());
         TF1* lineValue = HorizontalLine4Graph(bestValue, gr);
         TF1* lineErrorUp = HorizontalLine4Graph(bestValue + bestError, gr);
         TF1* lineErrorDown = HorizontalLine4Graph(bestValue - bestError, gr);
         TF1* lineValueChi2 = HorizontalLine4Graph(bestValue, grVsChi2);
         TF1* lineErrorUpChi2 = HorizontalLine4Graph(bestValue + bestError, grVsChi2);
         TF1* lineErrorDownChi2 = HorizontalLine4Graph(bestValue - bestError, grVsChi2);
+        TF1* lineError = HorizontalLine4Graph(bestError, gr);
+        TF1* lineErrorChi2 = HorizontalLine4Graph(bestError, grVsChi2);
         for (const auto& line: {lineErrorUp, lineErrorDown, lineErrorUpChi2, lineErrorDownChi2}) {
           line->SetLineStyle(7);
           line->SetLineStyle(7);
         }
         int iLine{0};
-        for (const auto& line: {lineValue, lineErrorUp, lineErrorDown, lineValueChi2, lineErrorUpChi2, lineErrorDownChi2}) {
+        for (const auto& line: {lineValue, lineErrorUp, lineErrorDown, lineValueChi2, lineErrorUpChi2, lineErrorDownChi2, lineError, lineErrorChi2}) {
           line->SetLineColor(kRed);
           line->SetLineWidth(2);
           if(iLine<3) cc.cd();
-          else        ccVsChi2.cd();
+          if(iLine >=3 && iLine < 6) ccVsChi2.cd();
+          if(iLine == 6) ccErr.cd();
+          if(iLine == 7) ccErrVsChi2.cd();
           line->Draw("same");
           ++iLine;
         }
         MkDirBash("hTrials/" + variables.at(iVar));
         MkDirBash("hTrials/" + variables.at(iVar) + "VsChi2");
+        MkDirBash("hTrials/err." + variables.at(iVar));
+        MkDirBash("hTrials/err." + variables.at(iVar) + "VsChi2");
         cc.Print(("hTrials/" + variables.at(iVar) + "/" + variables.at(iVar) + "_T_" + std::to_string(iT+1) + ".pdf" + priBra).c_str(), "pdf");
         ccVsChi2.Print(("hTrials/" + variables.at(iVar) + "VsChi2" + "/" + variables.at(iVar) + "VsChi2" + "_T_" + std::to_string(iT+1) + ".pdf" + priBra).c_str(), "pdf");
+        ccErr.Print(("hTrials/err." + variables.at(iVar) + "/" + variables.at(iVar) + "_T_" + std::to_string(iT+1) + ".pdf" + priBra).c_str(), "pdf");
+        ccErrVsChi2.Print(("hTrials/err." + variables.at(iVar) + "VsChi2" + "/" + variables.at(iVar) + "VsChi2" + "_T_" + std::to_string(iT+1) + ".pdf" + priBra).c_str(), "pdf");
       } // nLifetimeRanges
       fileSmooth->cd();
       histoSmooth->Write();
