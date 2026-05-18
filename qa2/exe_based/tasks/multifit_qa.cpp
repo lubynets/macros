@@ -13,6 +13,7 @@
 #include <iostream>
 #include <numeric>
 #include <vector>
+#include <unordered_set>
 
 using namespace HelperGeneral;
 using namespace HelperMath;
@@ -21,7 +22,7 @@ using namespace HelperPlot;
 constexpr bool IsVerbose{false};
 
 void MultiFitQa(const std::string& strategy) {
-  if(strategy != "median" && strategy != "chi2") throw std::runtime_error("MultiFitQa(): strategy must be 'median' or 'chi2'");
+  if(strategy != "median" && strategy != "chi2" && strategy != "medianSmart") throw std::runtime_error("MultiFitQa(): strategy must be 'median', 'chi2' or 'medianSmart'");
 
   LoadMacro("styles/mc_qa2.style.cc");
   const std::string fileNameTemplate = "RawYields_Lc/RawYields_Lc";
@@ -41,11 +42,11 @@ void MultiFitQa(const std::string& strategy) {
 //    "hRawYieldsSgnOverBkg",
 //    "hRawYieldsBkg",
 //    "hRawYieldsChiSquareBkg",
-   "hRawYieldsChiSquareTotal",
 //    "hRawYieldsDscbAlphaL",
 //    "hRawYieldsDscbAlphaR",
 //    "hRawYieldsDscbNL",
 //    "hRawYieldsDscbNR"
+   "hRawYieldsChiSquareTotal"
   };
 
   std::vector<int> trialNumbers(nTrials);
@@ -77,7 +78,7 @@ void MultiFitQa(const std::string& strategy) {
 
   const auto itChi2 = std::find(variables.begin(), variables.end(), "hRawYieldsChiSquareTotal");
   const auto iChi2 = std::distance(variables.begin(), itChi2);
-  if(strategy == "chi2" && iChi2 == nVars) throw std::runtime_error("MultiFitQa(): strategy is 'chi2', but hRawYieldsChiSquareTotal is missing");
+  if((strategy == "chi2" || strategy == "medianSmart") && iChi2 == nVars) throw std::runtime_error("MultiFitQa(): strategy is '" + strategy + "', but hRawYieldsChiSquareTotal is missing");
 
   tensor<TGraphErrors*, 3> graph = make_tensor<TGraphErrors*, 3>({nVars, nLifetimeRanges, nBdtScores}, nullptr);
   tensor<std::map<double, size_t>, 3> values = make_tensor<std::map<double, size_t>, 3>({nVars, nLifetimeRanges, nBdtScores}, {});
@@ -155,6 +156,28 @@ void MultiFitQa(const std::string& strategy) {
     return it->second;
   };
 
+  auto FindBadTrials = [](const std::map<double, size_t>& map) {
+    const size_t mapSize = map.size();
+    auto it = map.begin();
+    std::advance(it, mapSize/4);
+
+    std::vector<int> badTrials{};
+    for (; it != map.end(); ++it) {
+      badTrials.push_back(it->second);
+    }
+
+    return badTrials;
+  };
+
+  auto RemoveBadTrials = [](std::map<double, size_t>& map, const std::vector<int> badTrials) {
+    std::unordered_set<int> badTrialsSet(badTrials.begin(), badTrials.end());
+
+    for(auto it = map.begin(); it != map.end(); ) {
+      if(badTrialsSet.count(it->second)) it = map.erase(it);
+      else ++it;
+    }
+  };
+
   auto FindGraphsPointByX = [](const TGraph* gr, double x) {
     const int nPoints = gr->GetN();
     for(int iPoint=0; iPoint<nPoints; ++ iPoint) {
@@ -192,10 +215,14 @@ void MultiFitQa(const std::string& strategy) {
         gr->Draw("APE");
         ccVsChi2.cd();
         grVsChi2->Draw("APE");
-        const size_t bestValueTrial = strategy == "median" ? FindMapMedian(values.at(iVar).at(iT).at(iScore)) : values.at(iChi2).at(iT).at(iScore).begin()->second;
+
+        const auto badTrials = strategy == "medianSmart" ? FindBadTrials(values.at(iChi2).at(iT).at(iScore)) : std::vector<int>{};
+        if(iVar != iChi2) RemoveBadTrials(values.at(iVar).at(iT).at(iScore), badTrials);
+
+        const size_t bestValueTrial = strategy == "median" || strategy == "medianSmart" ? FindMapMedian(values.at(iVar).at(iT).at(iScore)) : values.at(iChi2).at(iT).at(iScore).begin()->second;
         const int bestValuePoint = FindGraphsPointByX(gr, static_cast<double>(bestValueTrial));
         const double bestValue = gr->GetPointY(bestValuePoint);
-        const size_t bestErrorTrial = strategy == "median" ? FindMapMedian(errors.at(iVar).at(iT).at(iScore)) : values.at(iChi2).at(iT).at(iScore).begin()->second;
+        const size_t bestErrorTrial = strategy == "median" || strategy == "medianSmart" ? FindMapMedian(errors.at(iVar).at(iT).at(iScore)) : values.at(iChi2).at(iT).at(iScore).begin()->second;
         const int bestErrorPoint = FindGraphsPointByX(gr, static_cast<double>(bestErrorTrial));
         const double bestError = gr->GetErrorY(bestErrorPoint);
         histoSmooth->SetBinContent(iT + 1, bestValue);
