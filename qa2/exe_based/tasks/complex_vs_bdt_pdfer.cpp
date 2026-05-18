@@ -93,8 +93,6 @@ void complex_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::string
         auto gra = graphVar.at(iVar).at(iT);
         gra->SetPoint(gra->GetN(), score, histoVar->GetBinContent(iT+1));
         gra->SetPointError(gra->GetN()-1, 0, histoVar->GetBinError(iT+1));
-
-        assert(graphErr.at(iVar).at(iT) != nullptr);
         graphErr.at(iVar).at(iT)->SetPoint(gra->GetN()-1, score, histoVar->GetBinError(iT+1));
       } // lifetimeRanges
     } // variables
@@ -102,9 +100,10 @@ void complex_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::string
   } // bdtScores
 
   std::string priBra, ccName;
-  TH1F* hMeanFix = new TH1F("hRawYieldsMean", "hRawYieldsMean", lifeTimeRanges.size()-1, lifeTimeRanges.data());
-  TH1F* hSigmaFix = new TH1F("hRawYieldsSigma", "hRawYieldsSigma", lifeTimeRanges.size()-1, lifeTimeRanges.data());
+
+  TFile* fileOutFix = TFile::Open((fileNameTemplate + "." + targetSignal + "_fix.root").c_str(), "recreate");
   for(int iVar=0, nVars=variables.size(); iVar<nVars; ++iVar) {
+    TH1* hFix = new TH1F(("h" + variables.at(iVar)).c_str(), ("h" + variables.at(iVar)).c_str(), lifeTimeRanges.size()-1, lifeTimeRanges.data());
     for(int iT=0, nTs=lifeTimeRanges.size()-1; iT<nTs; ++iT) {
       if(wise == "var") {
         priBra = lifeTimeRanges.size()-1 == 1 ? "" : iT == 0 ? "(" : iT == lifeTimeRanges.size()-2 ? ")" : "";
@@ -122,7 +121,13 @@ void complex_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::string
       graphErr.at(iVar).at(iT)->Draw("AP");
 
       if(variables.at(iVar) == "RawYieldsMean") HorizontalLine4Graph(massLambdaC, gra)->Draw("same");
-      if(variables.at(iVar) == "RawYieldsMean" || variables.at(iVar) == "RawYieldsSigma") {
+
+      if(variables.at(iVar) == "RawYieldsMean" ||
+         variables.at(iVar) == "RawYieldsSigma" ||
+         variables.at(iVar) == "RawYieldsDscbAlphaL" ||
+         variables.at(iVar) == "RawYieldsDscbAlphaR" ||
+         variables.at(iVar) == "RawYieldsDscbNL" ||
+         variables.at(iVar) == "RawYieldsDscbNR") {
         const auto ave = EvaluateAverageExcludingOutliers(gra, -0.01, 0.101);
         auto aveLine = HorizontalLine4Graph(ave.first, gra);
         auto errUpLine = HorizontalLine4Graph(ave.first + ave.second, gra);
@@ -130,24 +135,29 @@ void complex_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::string
         aveLine->SetLineStyle(1);
         errUpLine->SetLineStyle(7);
         errDownLine->SetLineStyle(7);
+        ccVar.cd();
         for(const auto& line : {aveLine, errUpLine, errDownLine}) {
-         line->SetLineColor(kBlack);
-         line->Draw("same");
+          line->SetLineColor(kBlack);
+          line->Draw("same");
         }
-        auto hFix = variables.at(iVar) == "RawYieldsMean" ? hMeanFix : hSigmaFix;
         hFix->SetBinContent(iT+1, ave.first);
         hFix->SetBinError(iT+1, ave.second);
       }
+
       ccVar.Print((ccName + ".pdf" + priBra).c_str(), "pdf");
       ccErr.Print(("err." + ccName + ".pdf" + priBra).c_str(), "pdf");
     } // lifeTimeRanges
+    if(variables.at(iVar) == "RawYieldsMean" ||
+       variables.at(iVar) == "RawYieldsSigma" ||
+       variables.at(iVar) == "RawYieldsDscbAlphaL" ||
+       variables.at(iVar) == "RawYieldsDscbAlphaR" ||
+       variables.at(iVar) == "RawYieldsDscbNL" ||
+       variables.at(iVar) == "RawYieldsDscbNR") {
+      hFix->Write();
+    }
+    delete hFix;
   } // variables
-  TFile* fileOutFix = TFile::Open((fileNameTemplate + "." + targetSignal + "_fix.root").c_str(), "recreate");
-  hMeanFix->Write();
-  hSigmaFix->Write();
   fileOutFix->Close();
-  delete hMeanFix;
-  delete hSigmaFix;
 }
 
 std::pair<double, double> EvaluateAverageExcludingOutliers(const std::vector<double>& values, const std::vector<double>& errors, double chi2Max) {
