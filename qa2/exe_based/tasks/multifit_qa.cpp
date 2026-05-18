@@ -9,6 +9,7 @@
 #include <TGraphErrors.h>
 #include <TH1.h>
 
+#include <algorithm>
 #include <iostream>
 #include <numeric>
 #include <vector>
@@ -17,7 +18,11 @@ using namespace HelperGeneral;
 using namespace HelperMath;
 using namespace HelperPlot;
 
-void MultiFitQa(const bool isVerbose=true) {
+constexpr bool IsVerbose{false};
+
+void MultiFitQa(const std::string& strategy) {
+  if(strategy != "median" && strategy != "chi2") throw std::runtime_error("MultiFitQa(): strategy must be 'median' or 'chi2'");
+
   LoadMacro("styles/mc_qa2.style.cc");
   const std::string fileNameTemplate = "RawYields_Lc/RawYields_Lc";
   const int nTrials = 100;
@@ -70,6 +75,10 @@ void MultiFitQa(const bool isVerbose=true) {
 
   const size_t nVars = variables.size();
 
+  const auto itChi2 = std::find(variables.begin(), variables.end(), "hRawYieldsChiSquareTotal");
+  const auto iChi2 = std::distance(variables.begin(), itChi2);
+  if(strategy == "chi2" && iChi2 == nVars) throw std::runtime_error("MultiFitQa(): strategy is 'chi2', but hRawYieldsChiSquareTotal is missing");
+
   tensor<TGraphErrors*, 3> graph = make_tensor<TGraphErrors*, 3>({nVars, nLifetimeRanges, nBdtScores}, nullptr);
   tensor<std::map<double, size_t>, 3> values = make_tensor<std::map<double, size_t>, 3>({nVars, nLifetimeRanges, nBdtScores}, {});
   tensor<std::map<double, size_t>, 3> errors = make_tensor<std::map<double, size_t>, 3>({nVars, nLifetimeRanges, nBdtScores}, {});
@@ -99,25 +108,25 @@ void MultiFitQa(const bool isVerbose=true) {
   for(const auto& trial : trialNumbers) {
     for(size_t iScore=0; iScore<nBdtScores; ++iScore) {
       const std::string fileName = "trials/" + std::to_string(trial) + "/" + fileNameTemplate + ".NPgt" + to_string_with_precision(bdtScores.at(iScore), 2) + ".root";
-      if(isVerbose) std::cout << "Opening " << fileName;
+      if(IsVerbose) std::cout << "Opening " << fileName;
       TFile* fileIn = TFile::Open(fileName.c_str(), "read");
-      if(isVerbose) std::cout << ", opened successfully\n";
+      if(IsVerbose) std::cout << ", opened successfully\n";
       if(fileIn == nullptr) {
-        if(isVerbose) std::cout << ", " << fileName << " is missing\n";
+        if(IsVerbose) std::cout << ", " << fileName << " is missing\n";
         continue;
       }
       for(size_t iVar=0; iVar<nVars; ++iVar) {
-        if(isVerbose) std::cout << "Reading histogram" << variables.at(iVar);
+        if(IsVerbose) std::cout << "Reading histogram" << variables.at(iVar);
         TH1* histoIn = fileIn->Get<TH1>(variables.at(iVar).c_str());
         TH1* histoChi2 = fileIn->Get<TH1>("hRawYieldsChiSquareTotal");
         if(histoIn == nullptr || histoChi2 == nullptr) {
-          if(isVerbose) std::cout << ", " << variables.at(iVar) << " or hRawYieldsChiSquareTotal is missing\n";
+          if(IsVerbose) std::cout << ", " << variables.at(iVar) << " or hRawYieldsChiSquareTotal is missing\n";
           continue;
         }
-        if(isVerbose) std::cout << ", read successfully\t";
-        if(isVerbose) std::cout << "iBin = ";
+        if(IsVerbose) std::cout << ", read successfully\t";
+        if(IsVerbose) std::cout << "iBin = ";
         for (int iBin = 1; iBin <= static_cast<int>(nLifetimeRanges); ++iBin) {
-          if(isVerbose) std::cout << iBin << " ";
+          if(IsVerbose) std::cout << iBin << " ";
           const double value = histoIn->GetBinContent(iBin);
           const double error = histoIn->GetBinError(iBin);
           auto gr = graph.at(iVar).at(iBin - 1).at(iScore);
@@ -131,11 +140,11 @@ void MultiFitQa(const bool isVerbose=true) {
           grVsChi2->AddPoint(chi2, value);
           grVsChi2->SetPointError(grVsChi2->GetN() - 1, 0, error);
         } // nLifetimeRanges
-        if(isVerbose) std::cout << "\n";
+        if(IsVerbose) std::cout << "\n";
       } // nVars
-      if(isVerbose) std::cout << "\nClosing " << fileName;
+      if(IsVerbose) std::cout << "\nClosing " << fileName;
       fileIn->Close();
-      if(isVerbose) std::cout << ", closed successfully\n\n";
+      if(IsVerbose) std::cout << ", closed successfully\n\n";
     } // nBdtScores
   } // trialNumbers
 
@@ -183,22 +192,22 @@ void MultiFitQa(const bool isVerbose=true) {
         gr->Draw("APE");
         ccVsChi2.cd();
         grVsChi2->Draw("APE");
-        const size_t medianValueTrial = FindMapMedian(values.at(iVar).at(iT).at(iScore));
-        const int medianValuePoint = FindGraphsPointByX(gr, static_cast<double>(medianValueTrial));
-        const double medianValue = gr->GetPointY(medianValuePoint);
-        const size_t medianErrorTrial = FindMapMedian(errors.at(iVar).at(iT).at(iScore));
-        const int medianErrorPoint = FindGraphsPointByX(gr, static_cast<double>(medianErrorTrial));
-        const double medianError = gr->GetErrorY(medianErrorPoint);
-        histoSmooth->SetBinContent(iT + 1, medianValue);
-        histoSmooth->SetBinError(iT + 1, medianError);
-        gr->SetTitle((static_cast<std::string>(gr->GetTitle()) + " (" + std::to_string(medianValueTrial) + ", " + std::to_string(medianErrorTrial) + ")").c_str());
-        grVsChi2->SetTitle((static_cast<std::string>(grVsChi2->GetTitle()) + " (" + std::to_string(medianValueTrial) + ", " + std::to_string(medianErrorTrial) + ")").c_str());
-        TF1* lineValue = HorizontalLine4Graph(medianValue, gr);
-        TF1* lineErrorUp = HorizontalLine4Graph(medianValue + medianError, gr);
-        TF1* lineErrorDown = HorizontalLine4Graph(medianValue - medianError, gr);
-        TF1* lineValueChi2 = HorizontalLine4Graph(medianValue, grVsChi2);
-        TF1* lineErrorUpChi2 = HorizontalLine4Graph(medianValue + medianError, grVsChi2);
-        TF1* lineErrorDownChi2 = HorizontalLine4Graph(medianValue - medianError, grVsChi2);
+        const size_t bestValueTrial = strategy == "median" ? FindMapMedian(values.at(iVar).at(iT).at(iScore)) : values.at(iChi2).at(iT).at(iScore).begin()->second;
+        const int bestValuePoint = FindGraphsPointByX(gr, static_cast<double>(bestValueTrial));
+        const double bestValue = gr->GetPointY(bestValuePoint);
+        const size_t bestErrorTrial = strategy == "median" ? FindMapMedian(errors.at(iVar).at(iT).at(iScore)) : values.at(iChi2).at(iT).at(iScore).begin()->second;
+        const int bestErrorPoint = FindGraphsPointByX(gr, static_cast<double>(bestErrorTrial));
+        const double bestError = gr->GetErrorY(bestErrorPoint);
+        histoSmooth->SetBinContent(iT + 1, bestValue);
+        histoSmooth->SetBinError(iT + 1, bestError);
+        gr->SetTitle((static_cast<std::string>(gr->GetTitle()) + " (" + std::to_string(bestValueTrial) + ", " + std::to_string(bestErrorTrial) + ")").c_str());
+        grVsChi2->SetTitle((static_cast<std::string>(grVsChi2->GetTitle()) + " (" + std::to_string(bestValueTrial) + ", " + std::to_string(bestErrorTrial) + ")").c_str());
+        TF1* lineValue = HorizontalLine4Graph(bestValue, gr);
+        TF1* lineErrorUp = HorizontalLine4Graph(bestValue + bestError, gr);
+        TF1* lineErrorDown = HorizontalLine4Graph(bestValue - bestError, gr);
+        TF1* lineValueChi2 = HorizontalLine4Graph(bestValue, grVsChi2);
+        TF1* lineErrorUpChi2 = HorizontalLine4Graph(bestValue + bestError, grVsChi2);
+        TF1* lineErrorDownChi2 = HorizontalLine4Graph(bestValue - bestError, grVsChi2);
         for (const auto& line: {lineErrorUp, lineErrorDown, lineErrorUpChi2, lineErrorDownChi2}) {
           line->SetLineStyle(7);
           line->SetLineStyle(7);
@@ -227,7 +236,7 @@ void MultiFitQa(const bool isVerbose=true) {
 
 int main(int argc, char* argv[]) {
 
-  const bool isVerbose = argc > 1 ? string_to_bool(argv[1]) : false;
+  const std::string strategy = argc > 1 ? argv[1] : "median";
 
-  MultiFitQa(isVerbose);
+  MultiFitQa(strategy);
 }

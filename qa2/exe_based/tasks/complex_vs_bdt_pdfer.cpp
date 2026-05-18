@@ -139,7 +139,7 @@ void complex_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::string
         hFix->SetBinError(iT+1, ave.second);
       }
       ccVar.Print((ccName + ".pdf" + priBra).c_str(), "pdf");
-      ccErr.Print((ccName + ".err.pdf" + priBra).c_str(), "pdf");
+      ccErr.Print(("err." + ccName + ".pdf" + priBra).c_str(), "pdf");
     } // lifeTimeRanges
   } // variables
   TFile* fileOutFix = TFile::Open((fileNameTemplate + "." + targetSignal + "_fix.root").c_str(), "recreate");
