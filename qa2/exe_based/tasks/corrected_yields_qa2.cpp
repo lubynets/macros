@@ -28,7 +28,7 @@ enum RunModes {
   AllWoOne,
   AllPossible
 };
-constexpr int RunMode{AllPossible};
+constexpr int RunMode{MeanFitOnly};
 
 enum UncModes {
   StatOnly = 0,
@@ -56,7 +56,7 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
 
   if(isSystUnc && fileNameSystUnc.empty()) throw std::runtime_error("corrected_yields_qa2() systematic uncertainties file is not provided");
 
-  const std::vector<double> lifetimeRanges = {0.2, 0.4, 0.6, 0.8, 1.0, 1.4, 1.8};
+  const std::vector<double> lifetimeRanges = {/*0.2, */0.4, 0.6, 0.8, 1.0, 1.4/*, 1.8*/};
   const std::string integralOption = "I";
 
   struct Promptness {
@@ -74,6 +74,10 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
   TFile* fileSystUnc = isSystUnc ? OpenFileWithNullptrCheck(fileNameSystUnc) : nullptr;
 
   TH1* histoSystUnc = isSystUnc ? GetObjectWithNullptrCheck<TH1>(fileSystUnc, "systErrorsGet") : nullptr;
+  if(isSystUnc) {
+    CheckTAxisForRanges(*histoSystUnc->GetXaxis(), lifetimeRanges);
+    histoSystUnc = dynamic_cast<TH1D*>(histoSystUnc->Rebin(lifetimeRanges.size() - 1, histoSystUnc->GetName(), lifetimeRanges.data()));
+  }
 
   TH1* histoStatus = GetObjectWithNullptrCheck<TH1>(fileCutVar, "hMinimizationStatus");
   CheckTAxisForRanges(*histoStatus->GetXaxis(), lifetimeRanges);
@@ -248,12 +252,14 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
       ScalePlotVertically(hCutVarResidual, histoRec, 2);
       hCutVarResidual->GetYaxis()->SetTitle("(Data - Fit) / #sigma_{Data}");
       EvalNormDifferenceHistoFromFunction(hCutVarResidual, fitCutVar, integralOption);
+      CustomizeHistogramsYRange({hCutVarRatio}, false, -1e9, 1e9, 0.7);
+      CustomizeHistogramsYRange({hCutVarResidual}, false, -1e9, 1e9, 0.7);
       if(isMc) {
         ScalePlotVertically(hMcRatio, histoMc, 2);
-        hMcRatio->GetYaxis()->SetTitle("Data / Fit");
+        hMcRatio->GetYaxis()->SetTitle("MC / Fit");
         DivideHistoByFunction(hMcRatio, fitMc, integralOption);
         ScalePlotVertically(hMcResidual, histoMc, 2);
-        hMcResidual->GetYaxis()->SetTitle("(Data - Fit) / #sigma_{Data}");
+        hMcResidual->GetYaxis()->SetTitle("(MC - Fit) / #sigma_{MC}");
         EvalNormDifferenceHistoFromFunction(hMcResidual, fitMc, integralOption);
         CustomizeHistogramsYRange({hCutVarRatio, hMcRatio});
         CustomizeHistogramsYRange({hCutVarResidual, hMcResidual});

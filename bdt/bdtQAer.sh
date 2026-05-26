@@ -21,7 +21,7 @@ PLOTS=(
 'shapSummary'
 )
 
-N=8
+N=7
 
 for PL in ${PLOTS[@]}; do
   echo "processing " $PL
