@@ -15,6 +15,7 @@
 #include <numeric>
 #include <vector>
 #include <unordered_set>
+#include <utility>
 
 using namespace HelperGeneral;
 using namespace HelperMath;
@@ -179,14 +180,15 @@ void MultiFitQa(const std::string& strategy) {
   auto FindBadTrials = [](const std::map<double, size_t>& map) {
     const size_t mapSize = map.size();
     auto it = map.begin();
-    std::advance(it, mapSize/10);
+    std::advance(it, mapSize/5);
+    const double criticalChi2 = it->first;
 
     std::vector<int> badTrials{};
     for (; it != map.end(); ++it) {
       badTrials.push_back(it->second);
     }
 
-    return badTrials;
+    return std::pair<std::vector<int>, double>{badTrials, criticalChi2};
   };
 
   auto RemoveBadTrials = [](std::map<double, size_t>& map, const std::vector<int> badTrials) {
@@ -211,11 +213,11 @@ void MultiFitQa(const std::string& strategy) {
     const std::string priBra = EvaluatePrintingBracket(nBdtScores, iScore);
     const std::string fileSmoothName = "smooth/" + fileNameTemplate + ".NPgt" + to_string_with_precision(bdtScores.at(iScore), 2) + ".root";
     auto getDirectory = [](const std::string &s) -> std::string {
-        auto pos = s.rfind('/');  // find last slash
-        if (pos == std::string::npos) {
-          return "";  // no slash found -> return empty string
-        }
-        return s.substr(0, pos);
+      const auto pos = s.rfind('/');  // find last slash
+      if (pos == std::string::npos) {
+        return "";  // no slash found -> return empty string
+      }
+      return s.substr(0, pos);
     };
     const std::string dirSmoothPath = getDirectory(fileSmoothName);
     if(!dirSmoothPath.empty()) MkDirBash(dirSmoothPath);
@@ -241,9 +243,11 @@ void MultiFitQa(const std::string& strategy) {
         ccErrVsChi2.cd();
         graphErrVsChi2.at(iVar).at(iT).at(iScore)->Draw("APE");
 
-        const auto badTrials = strategy == "medianSmart" ? FindBadTrials(values.at(iChi2).at(iT).at(iScore)) : std::vector<int>{};
-        const double criticalChi2 = values.at(iChi2).at(iT).at(iScore)[badTrials.front()];
-        if(iVar != iChi2) RemoveBadTrials(values.at(iVar).at(iT).at(iScore), badTrials);
+        const auto [badTrials, criticalChi2] = strategy == "medianSmart" ? FindBadTrials(values.at(iChi2).at(iT).at(iScore)) : std::pair<std::vector<int>, double>{std::vector<int>{}, UndefValueDouble};
+        if(iVar != iChi2) {
+          RemoveBadTrials(values.at(iVar).at(iT).at(iScore), badTrials);
+          RemoveBadTrials(errors.at(iVar).at(iT).at(iScore), badTrials);
+        }
 
         const size_t bestValueTrial = strategy == "median" || strategy == "medianSmart" ? FindMapMedian(values.at(iVar).at(iT).at(iScore)) : values.at(iChi2).at(iT).at(iScore).begin()->second;
         const int bestValuePoint = FindGraphsPointByX(gr, static_cast<double>(bestValueTrial));
@@ -255,8 +259,8 @@ void MultiFitQa(const std::string& strategy) {
         histoSmooth->SetBinError(iT + 1, bestError);
         gr->SetTitle((static_cast<std::string>(gr->GetTitle()) + " (" + std::to_string(bestValueTrial) + ", " + std::to_string(bestErrorTrial) + ")").c_str());
         grVsChi2->SetTitle((static_cast<std::string>(grVsChi2->GetTitle()) + " (" + std::to_string(bestValueTrial) + ", " + std::to_string(bestErrorTrial) + ")" + ", chi2 crit. = " + to_string_with_precision(criticalChi2, 1)).c_str());
-        graphErr.at(iVar).at(iT).at(iScore)->SetTitle((static_cast<std::string>(gr->GetTitle()) + " (" + std::to_string(bestValueTrial) + ", " + std::to_string(bestErrorTrial) + ")").c_str());
-        graphErrVsChi2.at(iVar).at(iT).at(iScore)->SetTitle((static_cast<std::string>(grVsChi2->GetTitle()) + " (" + std::to_string(bestValueTrial) + ", " + std::to_string(bestErrorTrial) + ")" + ", chi2 crit. = " + to_string_with_precision(criticalChi2, 1)).c_str());
+        graphErr.at(iVar).at(iT).at(iScore)->SetTitle((static_cast<std::string>(graphErr.at(iVar).at(iT).at(iScore)->GetTitle()) + " (" + std::to_string(bestValueTrial) + ", " + std::to_string(bestErrorTrial) + ")").c_str());
+        graphErrVsChi2.at(iVar).at(iT).at(iScore)->SetTitle((static_cast<std::string>(graphErrVsChi2.at(iVar).at(iT).at(iScore)->GetTitle()) + " (" + std::to_string(bestValueTrial) + ", " + std::to_string(bestErrorTrial) + ")" + ", chi2 crit. = " + to_string_with_precision(criticalChi2, 1)).c_str());
         TF1* lineValue = HorizontalLine4Graph(bestValue, gr);
         TF1* lineErrorUp = HorizontalLine4Graph(bestValue + bestError, gr);
         TF1* lineErrorDown = HorizontalLine4Graph(bestValue - bestError, gr);

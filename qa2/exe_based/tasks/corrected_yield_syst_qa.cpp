@@ -27,7 +27,7 @@ struct SystematicDof {
   std::vector<T> values_{};
 };
 
-constexpr bool IsDrawBinCount{true};
+constexpr bool IsDrawBinCount{false};
 
 void corrected_yield_syst_qa() {
   LoadMacro("styles/mc_qa2.style.cc");
@@ -249,7 +249,6 @@ void corrected_yield_syst_qa() {
   if(IsDrawBinCount) leg.AddEntry(histoSystErrorsCount, "Syst, count", "P");
   leg.Draw("same");
   cc.Print("corrected_yield_syst_qa.pdf)", "pdf");
-
 
   fileMean->Close();
 }
