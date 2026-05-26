@@ -121,9 +121,18 @@ void MassBdtQaThn(const std::string& fileNameIn, int modeRun) {
   } // pTRanges
 
   if(modeRun != RunOnly) {
-    const int nLowerPtBinsToExclude{0};
-    pTCutNames.erase(pTCutNames.begin(), pTCutNames.begin()+nLowerPtBinsToExclude);
-    pTRanges.erase(pTRanges.begin(), pTRanges.begin()+nLowerPtBinsToExclude);
+    const double mergePtFrom{3.};
+    const double mergePtTo{20};
+
+    const int skipFirstNBins = std::distance(pTRanges.begin(), std::find(pTRanges.begin(), pTRanges.end(), mergePtFrom));
+    const int skipLastNBins = std::distance(std::find(pTRanges.begin(), pTRanges.end(), mergePtTo), pTRanges.end()) - 1;
+
+    if(skipFirstNBins == pTRanges.size() || skipLastNBins == -1) throw std::runtime_error("MassBdtQaThn(): mergePtFrom or mergePtTo does not correspond to any of pTRanges");
+
+    pTRanges.erase(pTRanges.end()-skipLastNBins, pTRanges.end());
+    pTCutNames.erase(pTCutNames.end()-skipLastNBins, pTCutNames.end());
+    pTRanges.erase(pTRanges.begin(), pTRanges.begin()+skipFirstNBins);
+    pTCutNames.erase(pTCutNames.begin(), pTCutNames.begin()+skipFirstNBins);
 
     for (const auto& tcn : tCutNames) {
       for (const auto& bslv : bdtScanValues) {
