@@ -2,6 +2,7 @@
 // Created by oleksii on 08.04.26.
 //
 #include "HelperGeneral.hpp"
+#include "HelperMath.hpp"
 #include "HelperPlot.hpp"
 
 #include <TBox.h>
@@ -236,6 +237,7 @@ void corrected_yield_syst_qa() {
     (*histoError)->Scale(100.);
     const std::string drawOption = histoError == &histoStatErrors ? "HIST P" : "HIST P same";
     (*histoError)->SetMarkerStyle(kFullSquare);
+    (*histoError) = HelperMath::CutSubHistogram((*histoError), 0.4, 1.4);
     (*histoError)->Draw(drawOption.c_str());
   }
   std::vector<TH1*> histosToCustomize{histoStatErrors, histoSystErrorsGet};
