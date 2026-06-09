@@ -186,7 +186,7 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
       if(ndf != 0) grChi2.AddPoint(dropSet, chi2 / ndf);
 
       auto FitResults = [](const TF1* fitFunc, const std::string& text="") {
-        const std::string lifetimeFitValue = "#tau_{#Lambda_{c}} [" + text + "] = (" +
+        const std::string lifetimeFitValue = "#tau_{#Lambda_{c}} " + text + "= (" +
                                             to_string_with_precision(fitFunc->GetParameter(1)*1000, 1) +
                                             " #pm " +
                                             to_string_with_precision(fitFunc->GetParError(1)*1000, 1) +
@@ -199,8 +199,8 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
         return std::make_pair(lifetimeFitValue, chi2Value);
       };
 
-      const std::pair<std::string, std::string> fitResultsCutVar = FitResults(fitCutVar, "rec");
-      const std::pair<std::string, std::string> fitResultsMC = isMc ? FitResults(fitMc, "MC") : std::pair<std::string, std::string>();
+      const std::pair<std::string, std::string> fitResultsCutVar = FitResults(fitCutVar);
+      const std::pair<std::string, std::string> fitResultsMC = isMc ? FitResults(fitMc, "[MC]") : std::pair<std::string, std::string>();
       const std::string lifetimePdg = "#tau_{#Lambda_{c}} [PDG] = (202.6 #pm 1.0) fs";
 
       const float textX1 = 0.70;
