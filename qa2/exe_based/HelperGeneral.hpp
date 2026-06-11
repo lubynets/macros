@@ -6,6 +6,7 @@
 #define QA2_HELPERGENERAL_HPP
 
 #include <TAxis.h>
+#include <TH1.h>
 #include <THnSparse.h>
 #include <TFile.h>
 #include <TF1.h>
@@ -14,6 +15,7 @@
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <vector>
 
 namespace HelperGeneral {
@@ -50,13 +52,7 @@ std::vector<std::pair<std::string, std::string>> FindCuts(TFile* fileIn, std::st
 
 bool string_to_bool(const std::string& str);
 
-inline TFile* OpenFileWithNullptrCheck(const std::string& fileName, const std::string& option="read") {
-  TFile* file = TFile::Open(fileName.c_str(), option.c_str());
-  if(file == nullptr) {
-    throw std::runtime_error("HelperGeneral::OpenFileWithNullptrCheck() - file " + fileName + " is missing");
-  }
-  return file;
-}
+TFile* OpenFileWithNullptrCheck(const std::string& fileName, const std::string& option="read");
 
 template<typename T>
 T* GetObjectWithNullptrCheck(TFile* fileIn, const std::string& objectName) {
@@ -83,7 +79,48 @@ void SetTHnSparseAxisRanges(THnSparse* histo, int axisNum, float lo= -999., floa
 
 double InterpolateTH1SuppressWarning(const TH1* h, double value);
 
-void ScaleTHnSparseWithWeight(THnSparse* histoIn, int nDim, const TH1* histoWeight);
+template <typename>
+constexpr bool AlwaysFalse = false;
+
+template <typename HOF> // HOF == TH1 || TF1
+void ScaleTHnSparseWithWeight(THnSparse* histoIn, int nDim, const HOF* histoWeight) {
+  const int nDims = histoIn->GetNdimensions();
+  if(nDims <= nDim) {
+    throw std::runtime_error("HelperGeneral::ScaleTHnSparseWithWeight: histoIn->GetNdimensions() <= nDim = " + std::to_string(nDim));
+  }
+  histoIn->Sumw2();
+
+  // Buffers for coordinates
+  // coords[i] will hold bin index along axis i
+  std::vector<int> coords(nDims);
+
+  // Loop over filled bins
+  const Long64_t nFilledBins = histoIn->GetNbins();
+  for (Long64_t iBin = 0; iBin < nFilledBins; ++iBin) {
+    const double content = histoIn->GetBinContent(iBin, coords.data());
+    if (content == 0) continue;
+
+    const int binIndex = coords.at(nDim);  // Note: this is the bin number along that axis
+    const TAxis* axis = histoIn->GetAxis(nDim);
+    const double binCenter = axis->GetBinCenter(binIndex);
+
+    double scaleFactor{};
+    if constexpr (std::is_same_v<std::decay_t<HOF>, TH1>) {
+      scaleFactor = InterpolateTH1SuppressWarning(histoWeight, binCenter);
+    } else if constexpr (std::is_same_v<std::decay_t<HOF>, TF1>) {
+      scaleFactor = histoWeight->Eval(binCenter);
+    } else {
+      static_assert(AlwaysFalse<HOF>, "HelperGeneral::ScaleTHnSparseWithWeight: unsupported type!");
+    }
+
+    const double newContent = content * scaleFactor;
+    histoIn->SetBinContent(coords.data(), newContent);
+
+    const double err = histoIn->GetBinError(iBin);
+    const double newErr = err * scaleFactor;
+    histoIn->SetBinError(coords.data(), newErr);
+  }
+}
 
 std::string ReadNthLine(const std::string& fileName);
 

@@ -9,6 +9,9 @@
 #include <TFile.h>
 #include <TLegend.h>
 #include <TLine.h>
+#include <TNamed.h>
+
+#include <boost/program_options.hpp>
 
 #include <cmath>
 #include <iostream>
@@ -21,15 +24,22 @@ using namespace HelperPlot;
 constexpr bool IsSaveCanvasAsRoot{true};
 
 enum RunModes {
-  AllPointsOnly = 0,
+  MeanFitOnly = 0,
   AllWoOne,
   AllPossible
 };
+constexpr int RunMode{MeanFitOnly};
 
-constexpr int RunMode{AllPossible};
+enum UncModes {
+  StatOnly = 0,
+  SystOnly,
+  StatAndSyst
+};
+constexpr int UncMode{StatOnly};
 
 void ExcludeBin(TH1* h, int binNumber);
 std::vector<int> EvalBinsToDrop(int dropSet);
+int EvalDropSet(const std::vector<int>& bins);
 TGraphErrors* GetSubGraph(TGraphErrors* grIn, int subGraphType, Color_t color, int nFittedPoints);
 
 enum SubGraphType {
@@ -38,12 +48,15 @@ enum SubGraphType {
   TwoFit
 };
 
-void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& fileNameMC) {
+void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& fileNameMC, const std::string& fileNameSystUnc) {
   LoadMacro("styles/mc_qa2.style.cc");
 
   const bool isMc = !fileNameMC.empty();
+  const bool isSystUnc = UncMode > StatOnly;
 
-  const std::vector<double> lifetimeRanges = {0.2, 0.4, 0.6, 0.8, 1.0, 1.4, 1.8};
+  if(isSystUnc && fileNameSystUnc.empty()) throw std::runtime_error("corrected_yields_qa2() systematic uncertainties file is not provided");
+
+  const std::vector<double> lifetimeRanges = {/*0.2, */0.4, 0.6, 0.8, 1.0, 1.4/*, 1.8*/};
   const std::string integralOption = "I";
 
   struct Promptness {
@@ -58,16 +71,43 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
 
   TFile* fileCutVar = OpenFileWithNullptrCheck(fileNameCutVar);
   TFile* fileMC = isMc ? OpenFileWithNullptrCheck(fileNameMC) : nullptr;
+  TFile* fileSystUnc = isSystUnc ? OpenFileWithNullptrCheck(fileNameSystUnc) : nullptr;
+
+  TH1* histoSystUnc = isSystUnc ? GetObjectWithNullptrCheck<TH1>(fileSystUnc, "systErrorsGet") : nullptr;
+  if(isSystUnc) {
+    CheckTAxisForRanges(*histoSystUnc->GetXaxis(), lifetimeRanges);
+    histoSystUnc = dynamic_cast<TH1D*>(histoSystUnc->Rebin(lifetimeRanges.size() - 1, histoSystUnc->GetName(), lifetimeRanges.data()));
+  }
+
+  TH1* histoStatus = GetObjectWithNullptrCheck<TH1>(fileCutVar, "hMinimizationStatus");
+  CheckTAxisForRanges(*histoStatus->GetXaxis(), lifetimeRanges);
+  histoStatus = dynamic_cast<TH1D*>(histoStatus->Rebin(lifetimeRanges.size() - 1, histoStatus->GetName(), lifetimeRanges.data()));
+  std::vector<int> badBins{};
+  for(int iBin=1, nBins=histoStatus->GetNbinsX(); iBin<=nBins; ++iBin) {
+    if(histoStatus->GetBinContent(iBin) != 1) badBins.push_back(iBin);
+  }
+  const int bestDropSet = EvalDropSet(badBins);
+  std::cout << "bestDropSet = " << bestDropSet << "\n";
+  TNamed bestDropSetName("bestDropSet", std::to_string(bestDropSet));
 
   for (size_t iP = 0, nP = promptnesses.size(); iP < nP; ++iP) {
     const std::string promptness = promptnesses.at(iP).name_;
 
     TH1* hCutVar = GetObjectWithNullptrCheck<TH1>(fileCutVar, "hCorrYields" + promptnesses.at(iP).histo_name_);
     CheckTAxisForRanges(*hCutVar->GetXaxis(), lifetimeRanges);
-    hCutVar = dynamic_cast<TH1D*>(hCutVar->Rebin(lifetimeRanges.size() - 1, hCutVar->GetName(),lifetimeRanges.data()));
+    hCutVar = dynamic_cast<TH1D*>(hCutVar->Rebin(lifetimeRanges.size() - 1, hCutVar->GetName(), lifetimeRanges.data()));
     hCutVar->UseCurrentStyle();
     hCutVar->SetLineColor(kRed);
     hCutVar->SetMarkerColor(kRed);
+
+    if(promptness == "prompt" && isSystUnc) {
+      for(int iCt=1, nCts=hCutVar->GetNbinsX(); iCt<=nCts; ++iCt) {
+        const double stat = hCutVar->GetBinError(iCt);
+        const double syst = histoSystUnc->GetBinContent(iCt);
+        const double unc = UncMode == SystOnly ? syst : std::sqrt(stat*stat + syst*syst);
+        hCutVar->SetBinError(iCt, unc);
+      }
+    }
 
     TH1* hMC = isMc ? GetObjectWithNullptrCheck<TH1>(fileMC, "gen/" + promptness + "/hT") : nullptr;
     if (isMc) {
@@ -124,7 +164,10 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
     }
 
     const int nBins = hCutVarDiff->GetNbinsX();
-    const int nDropSets = RunMode > AllPointsOnly ? 1 << nBins : 1;
+    const int nDropSets = RunMode > MeanFitOnly ? 1 << nBins : 1;
+
+    TFile* fileOut = IsSaveCanvasAsRoot ? TFile::Open("ctfit.root", "recreate") : nullptr;
+    if(IsSaveCanvasAsRoot) bestDropSetName.Write();
 
     TCanvas emptycanvas("emptycanvas", "", 1200, 800);
     emptycanvas.Print("ctfit.pdf[", "pdf");
@@ -143,7 +186,7 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
       if(ndf != 0) grChi2.AddPoint(dropSet, chi2 / ndf);
 
       auto FitResults = [](const TF1* fitFunc, const std::string& text="") {
-        const std::string lifetimeFitValue = "#tau_{#Lambda_{c}} [" + text + "] = (" +
+        const std::string lifetimeFitValue = "#tau_{#Lambda_{c}} " + text + "= (" +
                                             to_string_with_precision(fitFunc->GetParameter(1)*1000, 1) +
                                             " #pm " +
                                             to_string_with_precision(fitFunc->GetParError(1)*1000, 1) +
@@ -156,8 +199,8 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
         return std::make_pair(lifetimeFitValue, chi2Value);
       };
 
-      const std::pair<std::string, std::string> fitResultsCutVar = FitResults(fitCutVar, "rec");
-      const std::pair<std::string, std::string> fitResultsMC = isMc ? FitResults(fitMc, "MC") : std::pair<std::string, std::string>();
+      const std::pair<std::string, std::string> fitResultsCutVar = FitResults(fitCutVar);
+      const std::pair<std::string, std::string> fitResultsMC = isMc ? FitResults(fitMc, "[MC]") : std::pair<std::string, std::string>();
       const std::string lifetimePdg = "#tau_{#Lambda_{c}} [PDG] = (202.6 #pm 1.0) fs";
 
       const float textX1 = 0.70;
@@ -192,12 +235,12 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
       AddOneLineText(lifetimePdg, {textX1, textY2 - 6*textYStep, textX2, textY2 - 5*textYStep}, "brNDC", 0.04);
       ccFit.Print("ctfit.pdf", "pdf");
 
-      TFile* fileOut{nullptr};
       if(IsSaveCanvasAsRoot && dropSet == 0) {
-        fileOut = TFile::Open("ctfit.root", "recreate");
         fileOut->cd();
         ccFit.Write();
       }
+      const std::string fitCutVarSaveName = dropSet == 0 ? "fitFunc" : "fitFunc_dropSet" + std::to_string(dropSet);
+      if(IsSaveCanvasAsRoot) fitCutVar->Write(fitCutVarSaveName.c_str());
 
       TH1* hCutVarRatio = dynamic_cast<TH1*>(histoRec->Clone());
       TH1* hMcRatio = isMc ? dynamic_cast<TH1*>(histoMc->Clone()) : nullptr;
@@ -209,12 +252,14 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
       ScalePlotVertically(hCutVarResidual, histoRec, 2);
       hCutVarResidual->GetYaxis()->SetTitle("(Data - Fit) / #sigma_{Data}");
       EvalNormDifferenceHistoFromFunction(hCutVarResidual, fitCutVar, integralOption);
+      CustomizeHistogramsYRange({hCutVarRatio}, false, -1e9, 1e9, 0.7);
+      CustomizeHistogramsYRange({hCutVarResidual}, false, -1e9, 1e9, 0.7);
       if(isMc) {
         ScalePlotVertically(hMcRatio, histoMc, 2);
-        hMcRatio->GetYaxis()->SetTitle("Data / Fit");
+        hMcRatio->GetYaxis()->SetTitle("MC / Fit");
         DivideHistoByFunction(hMcRatio, fitMc, integralOption);
         ScalePlotVertically(hMcResidual, histoMc, 2);
-        hMcResidual->GetYaxis()->SetTitle("(Data - Fit) / #sigma_{Data}");
+        hMcResidual->GetYaxis()->SetTitle("(MC - Fit) / #sigma_{MC}");
         EvalNormDifferenceHistoFromFunction(hMcResidual, fitMc, integralOption);
         CustomizeHistogramsYRange({hCutVarRatio, hMcRatio});
         CustomizeHistogramsYRange({hCutVarResidual, hMcResidual});
@@ -246,7 +291,6 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
         fileOut->cd();
         ccRatio.Write();
         ccResidual.Write();
-        fileOut->Close();
       }
     };
 
@@ -266,6 +310,8 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
       FitLifetimeHistos(hReco, hMc, iDropSet);
     } // nDropSets
     emptycanvas.Print("ctfit.pdf]", "pdf");
+
+    if(IsSaveCanvasAsRoot) fileOut->Close();
 
     const double leftEdge = -2.;
     const double rightEdge = grTau.GetPointX(grTau.GetN()-1) + 2;
@@ -323,6 +369,16 @@ std::vector<int> EvalBinsToDrop(int dropSet) {
   return result;
 }
 
+int EvalDropSet(const std::vector<int>& bins) {
+  int result = 0;
+
+  for(const auto& bin : bins) {
+    result |= (1 << (bin - 1));
+  }
+
+  return result;
+}
+
 TGraphErrors* GetSubGraph(TGraphErrors* grIn, int subGraphType, Color_t color, int nFittedPoints) {
   TGraphErrors* grOut = new TGraphErrors();
   grOut->SetName(grIn->GetName());
@@ -341,16 +397,30 @@ TGraphErrors* GetSubGraph(TGraphErrors* grIn, int subGraphType, Color_t color, i
 }
 
 int main(int argc, char* argv[]) {
-  if (argc < 2) {
-    std::cout << "Error! Please use " << std::endl;
-    std::cout << " ./corrected_yields_qa2 fileNameCutVar (fileNameMC="")" << std::endl;
-    exit(EXIT_FAILURE);
+
+  using namespace boost::program_options;
+  options_description desc ("Allowed options");
+  desc.add_options()
+    ("help,h", "Print usage message")
+    ("input-file,i", value<std::string>()->required(), "file with cut variation output")
+    ("mc-file,m", value<std::string>()->default_value(""), "file with MC")
+    ("syst-errors-file,s", value<std::string>()->default_value(""), "file with syst errors")
+  ;
+
+  variables_map args;
+  store(parse_command_line(argc, argv, desc), args);
+
+  if (args.count("help") || argc < 2) {
+    std::cout << desc << "\n";
+    return 0;
   }
+  notify (args);
 
-  const std::string fileNameCutVar = argv[1];
-  const std::string fileNameMC = argc > 2 ? argv[2] : "";
+  const std::string fileNameCutVar = args["input-file"].as<std::string>();
+  const std::string fileNameMC = args["mc-file"].as<std::string>();
+  const std::string fileNameSystUnc = args["syst-errors-file"].as<std::string>();
 
-  corrected_yields_qa2(fileNameCutVar, fileNameMC);
+  corrected_yields_qa2(fileNameCutVar, fileNameMC, fileNameSystUnc);
 
   return 0;
 }

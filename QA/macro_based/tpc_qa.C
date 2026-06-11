@@ -27,6 +27,7 @@ void tpc_qa(const std::string& fileList, const bool isV0Tree=true, const int fil
   Float_t fTPCSignal;
   Float_t fNSigTPC;
   Float_t fNSigTOF;
+  Bool_t fIsGoodRct;
 
   std::array<TH2D*, Particles::nParticles> hPdEdx;
   std::array<TH1D*, Particles::nParticles> hNSigmaTpc;
@@ -35,6 +36,7 @@ void tpc_qa(const std::string& fileList, const bool isV0Tree=true, const int fil
   std::array<TH2D*, Particles::nParticles> hPNSigmaTof;
   std::array<TH1D*, Particles::nParticles> hP;
   std::array<TH1D*, Particles::nParticles> hPNoMatchedTof;
+  std::array<TH1D*, Particles::nParticles> hGoodRct;
 
   const int nBinsP = 100;
   const double lowP = 0.1;
@@ -87,6 +89,10 @@ void tpc_qa(const std::string& fileList, const bool isV0Tree=true, const int fil
     hPNoMatchedTof.at(kParticle) = new TH1D(("hPNoMatchedTof_" + particleNames.at(kParticle)).c_str(), particleNames.at(kParticle).c_str(), nBinsP, binEdgesP.data());
     hPNoMatchedTof.at(kParticle)->GetXaxis()->SetTitle("#it{p} (GeV/#it{c})");
     hPNoMatchedTof.at(kParticle)->GetYaxis()->SetTitle("Entries");
+
+    hGoodRct.at(kParticle) = new TH1D(("hGoodRct_" + particleNames.at(kParticle)).c_str(), particleNames.at(kParticle).c_str(), 4, -1, 3);
+    hGoodRct.at(kParticle)->GetXaxis()->SetTitle("Is Good RCT");
+    hGoodRct.at(kParticle)->GetYaxis()->SetTitle("Entries");
   }
 
   for(int iFile=fileFrom; iFile<=fileTo; ++iFile) {
@@ -96,12 +102,14 @@ void tpc_qa(const std::string& fileList, const bool isV0Tree=true, const int fil
     const auto dirNames = GetDFNames(fileName);
     for(const auto& dirName : dirNames) {
       TFile* fileIn = TFile::Open(fileName.c_str());
+      if(fileIn == nullptr || fileIn->IsZombie() || fileIn->TestBit(TFile::kRecovered)) continue;
       TTree* treeIn = fileIn->Get<TTree>((dirName + "/" + treeNameBase + "tree").c_str());
       treeIn->SetBranchAddress("fPidIndex", &fPidIndex);
       treeIn->SetBranchAddress("fTPCInnerParam", &fTPCInnerParam);
       treeIn->SetBranchAddress("fTPCSignal", &fTPCSignal);
       treeIn->SetBranchAddress("fNSigTPC", &fNSigTPC);
       treeIn->SetBranchAddress("fNSigTOF", &fNSigTOF);
+      treeIn->SetBranchAddress("fIsGoodRct", &fIsGoodRct);
 
       const int nEntries = treeIn->GetEntries();
       for(int iEntry=0; iEntry<nEntries; ++iEntry) {
@@ -139,6 +147,9 @@ void tpc_qa(const std::string& fileList, const bool isV0Tree=true, const int fil
           hPNoMatchedTof.at(particleId)->Fill(p);
           hPNoMatchedTof.at(Particles::kAll)->Fill(p);
         }
+
+        hGoodRct.at(particleId)->Fill(fIsGoodRct);
+        hGoodRct.at(Particles::kAll)->Fill(fIsGoodRct);
       }
       fileIn->Close();
     }
@@ -153,17 +164,19 @@ void tpc_qa(const std::string& fileList, const bool isV0Tree=true, const int fil
     hPNSigmaTof.at(kParticle)->Write();
     hP.at(kParticle)->Write();
     hPNoMatchedTof.at(kParticle)->Write();
+    hGoodRct.at(kParticle)->Write();
   }
   fileOut->Close();
 }
 
 std::vector<std::string> GetDFNames(const std::string& fileName) {
   TFile* fileIn = TFile::Open(fileName.c_str());
-  if(fileIn == nullptr) {
-    throw std::runtime_error("fileIn == nullptr");
+  std::vector<std::string> result;
+  if(fileIn == nullptr || fileIn->IsZombie() || fileIn->TestBit(TFile::kRecovered)) {
+    std::cout << fileName << " == nullptr || " << fileName << " is zombie || " << fileName << " is unrecovered\n";
+    return result;
   }
 
-  std::vector<std::string> result;
   auto lok = fileIn->GetListOfKeys();
   for(const auto& k : *lok) {
     const std::string dirname = k->GetName();

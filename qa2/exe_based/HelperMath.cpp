@@ -270,6 +270,15 @@ TH1* HelperMath::CutSubHistogram(const TH1* histoIn, double lo, double hi) {
   histoOut->GetYaxis()->SetTitle(histoIn->GetYaxis()->GetTitle());
   histoOut->SetName(histoIn->GetName());
   histoOut->SetTitle(histoIn->GetTitle());
+  histoOut->SetLineColor(histoIn->GetLineColor());
+  histoOut->SetLineWidth(histoIn->GetLineWidth());
+  histoOut->SetLineStyle(histoIn->GetLineStyle());
+  histoOut->SetMarkerColor(histoIn->GetMarkerColor());
+  histoOut->SetMarkerStyle(histoIn->GetMarkerStyle());
+  histoOut->SetMarkerSize(histoIn->GetMarkerSize());
+  histoOut->SetFillColor(histoIn->GetFillColor());
+  histoOut->SetFillStyle(histoIn->GetFillStyle());
+  histoOut->SetOption(histoIn->GetOption());
   for(int iBin=1, nBins=binEdges.size()-1; iBin<=nBins; ++iBin) {
     const double value = histoIn->GetBinContent(binLoIn-1 + iBin);
     const double error = histoIn->GetBinError(binLoIn-1 + iBin);

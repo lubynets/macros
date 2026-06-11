@@ -1,3 +1,9 @@
+template<typename T>
+void checkNullptr(T* t) {
+  if(t != nullptr) std::cout << "checkNullptr success\n";
+  else throw;
+}
+
 std::map<std::string_view, int> MapTHnSparseAxesIndices(const THnSparse* histo);
 void SetTHnSparseAxisRanges(THnSparse* histo, int axisNum, float lo, float hi);
 TH1* CutSubHistogram(const TH1* histoIn, double lo, double hi);
@@ -8,39 +14,55 @@ const std::string_view pTBAxisTitle = "#it{p}_{T}^{B} (GeV/#it{c})";
 const double loPt{0.};
 const double hiPt{20.};
 
-void pt_NPweight_builder(const std::string& fileGenName, const std::string& fileFonllName, const std::string& fileInOutName, const std::string& suffix="cent") {
-  TFile* fileGen = TFile::Open(fileGenName.c_str(), "read");
-  TFile* fileFonll = TFile::Open(fileFonllName.c_str(), "read");
+void plotNPPtshapes() {
+  TFile* fileFonll = TFile::Open("/home/oleksii/alidir/working/tsallis/nonprompt/PtWeigths_NonPromptLc_LHC20l3a_Lb.root");
+  TFile* fileMcBWrong = TFile::Open("/home/oleksii/alidir/working/tsallis/HF_LHC24h1b_All/ptGenNonPrompt.HF_LHC24h1b_All.595984.root");
+  TFile* fileMcBCorrect = TFile::Open("/home/oleksii/alidir/working/cutVar/mcClosure/input/AnalysisResults.HL.mc.HF_LHC24h1b_All.667716.root");
+  TFile* fileMcC = TFile::Open("/home/oleksii/alidir/working/cutVar/mcClosure/input/AnalysisResults.HL.mc.HF_LHC24h1c_All.669133.root");
 
-  THnSparse* histoGenTHn = fileGen->Get<THnSparse>("hf-task-lc/hnLcVarsGen");
-  const std::map<std::string_view, int> axesIndices = MapTHnSparseAxesIndices(histoGenTHn);
-  SetTHnSparseAxisRanges(histoGenTHn, axesIndices.at(signalTypeAxisTitle), 2., 3.);
-  TH1* histoGen = histoGenTHn->Projection(axesIndices.at(pTBAxisTitle));
+  checkNullptr(fileFonll);
+  checkNullptr(fileMcBWrong);
+  checkNullptr(fileMcBCorrect);
+  checkNullptr(fileMcC);
 
-  TH1* histoFonll = fileFonll->Get<TH1>(("hPtFONLLB" + suffix).c_str());
+  TH1* hFonll = fileFonll->Get<TH1>("hPtFONLLBcent");
+  TH1* hWrong = fileMcBWrong->Get<TH1>("hPtLambdaB");
+  THnSparse* hThnCorrect = fileMcBCorrect->Get<THnSparse>("hf-task-lc/hnLcVarsGen");
+  THnSparse* hThnNew = fileMcC->Get<THnSparse>("hf-task-lc/hnLcVarsGen");
 
-  histoGen = CutSubHistogram(histoGen, loPt, hiPt);
-  histoFonll = CutSubHistogram(histoFonll, loPt, hiPt);
+  checkNullptr(hFonll);
+  checkNullptr(hWrong);
+  checkNullptr(hThnCorrect);
+  checkNullptr(hThnNew);
 
-//   histoGen->Rebin(10);
+  const std::map<std::string_view, int> axesIndices = MapTHnSparseAxesIndices(hThnCorrect);
+  SetTHnSparseAxisRanges(hThnCorrect, axesIndices.at(signalTypeAxisTitle), 2., 3.);
+  SetTHnSparseAxisRanges(hThnNew, axesIndices.at(signalTypeAxisTitle), 2., 3.);
 
-  const double integralGen = histoGen->Integral();
-  const double integralFonll = histoFonll->Integral();
+  TH1* hCorrect = hThnCorrect->Projection(axesIndices.at(pTBAxisTitle));
+  TH1* hNew = hThnNew->Projection(axesIndices.at(pTBAxisTitle));
 
-  histoGen->Scale(1./integralGen);
-  histoFonll->Scale(1./integralFonll);
+  checkNullptr(hCorrect);
+  checkNullptr(hNew);
 
-  const bool ok = histoFonll->Divide(histoGen);
-  if(!ok) throw std::runtime_error("histoFonll->Divide(histoGen) was not ok");
+  hWrong->Rebin(10);
+  for(auto& histo : {&hFonll, &hWrong, &hCorrect, &hNew}) {
+    (*histo) = CutSubHistogram(*histo, loPt, hiPt);
+    (*histo)->Scale(1./(*histo)->Integral());
+    (*histo)->SetLineWidth(3);
+  }
 
-  TFile* fileOut = TFile::Open(fileInOutName.c_str(), "update");
-  histoFonll->Write(("histoNPWeight" + suffix).c_str());
-  fileOut->Close();
+  hFonll->SetLineColor(kRed);
+  hWrong->SetLineColor(kGreen+2);
+  hCorrect->SetLineColor(kMagenta);
+  hNew->SetLineColor(kBlue);
 
-  fileFonll->Close();
-  fileGen->Close();
+  TCanvas* cc = new TCanvas("cc", "", 1200, 800);
+  hFonll->Draw();
+  hWrong->Draw("same");
+  hCorrect->Draw("same");
+  hNew->Draw("same");
 }
-
 
 std::map<std::string_view, int> MapTHnSparseAxesIndices(const THnSparse* histo) {
   std::map<std::string_view, int> result;

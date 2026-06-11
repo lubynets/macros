@@ -49,14 +49,15 @@ fi
 
 for i in `seq $start $end`; do
    echo "Processing ${file_name[i]}s"
+   echo
 
    patterns_aod="AOD/[0-9]*/"${file_name[i]}
    patterns_numerated="[0-9]*/"${file_name[i]}
    patterns_single_file=${file_name[i]}
 
    for path in `sed 's/,/\n/g' ${HYPERLOOP_OUTPUT_DIRECTORIES}`; do
+      date
       echo "Processing $path"
-      echo
       if [[ $path == *"/AOD" ]]; then
          path="${path%"/AOD"}"
       fi
@@ -64,13 +65,13 @@ for i in `seq $start $end`; do
       parent_dir=$(dirname "$path")
 
       if [[ $(alien_find -r "$path" ${patterns_single_file}) ]]; then
-         echo "Found single (slim) file at $path - starting copy"
+         echo "Found single (slim) file at $path"
          pattern=$patterns_single_file
       elif [[ $(alien_find -r "$path" ${patterns_aod}) ]]; then
-         echo "Found merged files under AOD at $path - starting copy"
+         echo "Found merged files under AOD at $path"
          pattern=$patterns_aod
       elif [[ $(alien_find -r "$path" ${patterns_numerated}) ]]; then
-         echo "Found unmerged files in numerated directories at $path - starting copy"
+         echo "Found unmerged files in numerated directories at $path"
          pattern=$patterns_numerated
       else
          echo "Nothing was found at $path. Switch to the next parent_dir"

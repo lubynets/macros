@@ -1,0 +1,39 @@
+{
+    "rawyields": {
+        "inputdir": "INPUT_DIR",
+        "inputfiles": [
+            "RAW_YIELD_FILES"
+        ],
+        "histoname": "hRawYieldsSignal"
+    },
+    "efficiencies": {
+        "inputdir": "/lustre/alice/users/lubynets/syst/cutVar/eff",
+        "inputfiles": [
+            "EFFICIENCY_FILES"
+        ],
+        "histonames": {
+            "prompt": "pT_3_20/prompt_W",
+            "nonprompt": "pT_3_20/nonprompt_W"
+        }
+    },
+    "pt_bin_to_process": "PT_BIN_TO_PROCESS",
+    "minimisation": {
+        "correlated": true
+    },
+    "central_efficiency": {
+        "computerawfrac": false,
+        "inputdir": "",
+        "inputfile": "",
+        "histonames": {
+            "prompt": "",
+            "nonprompt": ""
+        }
+    },
+    "output": {
+        "directory": ".",
+        "file": "CutVarLc.root"
+    },
+    "is_draw_title": {
+        "rawy": false
+    }
+}

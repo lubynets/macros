@@ -153,7 +153,7 @@ void HelperPlot::CustomizeHistogramsYRange(const std::vector<TH1*>& histos, bool
   double max = -1e9;
   double min = 1e9;
   for(auto& histo : histos) {
-    auto [hmin, hmax] = HelperPlot::GetMinMaxBinWithError(histo);
+    const auto [hmin, hmax] = HelperPlot::GetMinMaxBinWithError(histo);
     max = std::max(max, hmax);
     min = std::min(min, hmin);
   }

@@ -19,23 +19,27 @@ using namespace HelperGeneral;
 using namespace HelperMath;
 using namespace HelperPlot;
 
+constexpr bool IsDrawFitWithErrors{true};
+
 struct DataPoint {
-    double cross_section_;
-    double stat_error_;
-    double syst_error_up_;
-    double syst_error_down_;
+  double cross_section_;
+  double stat_error_;
+  double syst_error_up_;
+  double syst_error_down_;
 };
 
 double EvalErrorDataPoint(const DataPoint& datapoint, bool isIncludeSysError= true);
 
-void pt_fit(bool isIncludeSysErr, bool isCalculateFitFuncError) {
+TH1* ConvertTF1ToHisto(TF1* func, const TMatrixDSym& cov, const std::string& suffix="cent", int nBins=240);
+
+void pt_fit(bool isIncludeSysErr) {
   LoadMacro("styles/mc_qa2.style.cc");
 
   // =========================================================================================
   // https://www.hepdata.net/record/ins2697877
   const std::string hepDataName = "www.hepdata.net/record/ins2697877";
-  constexpr int nPoints{11};
-  const std::array<double, nPoints+1> pTEdges {0., 1., 2., 3., 4., 5., 6., 7., 8., 10., 12., 24.};
+  constexpr std::array pTEdges {0., 1., 2., 3., 4., 5., 6., 7., 8., 10., 12., 24.};
+  constexpr int nPoints = pTEdges.size() - 1;
 
   const std::array<DataPoint, nPoints> sigmas {{
     {74.13,  10.237, 8.8693, 8.9308},
@@ -75,6 +79,18 @@ void pt_fit(bool isIncludeSysErr, bool isCalculateFitFuncError) {
   TFitResultPtr tsallisFitResPtr = histoCrossSec->Fit(tsallisFit, "RIS0");
   TMatrixDSym tsallisFitCov = tsallisFitResPtr->GetCovarianceMatrix();
 
+  TH1* tsallisFitHistoCent = ConvertTF1ToHisto(tsallisFit, tsallisFitCov);
+  TH1* tsallisFitHistoMin = ConvertTF1ToHisto(tsallisFit, tsallisFitCov, "min");
+  TH1* tsallisFitHistoMax = ConvertTF1ToHisto(tsallisFit, tsallisFitCov, "max");
+  tsallisFitHistoCent->SetName("tsallisFitHistocent");
+  tsallisFitHistoMin->SetName("tsallisFitHistomin");
+  tsallisFitHistoMax->SetName("tsallisFitHistomax");
+  tsallisFitHistoCent->SetLineColor(kRed);
+  tsallisFitHistoMin->SetLineColor(kBlack);
+  tsallisFitHistoMin->SetLineWidth(1);
+  tsallisFitHistoMax->SetLineColor(kBlack);
+  tsallisFitHistoMax->SetLineWidth(1);
+
   const float textX1 = 0.62;
   const float textX2 = 0.9;
   const float textY2 = 0.78;
@@ -84,7 +100,13 @@ void pt_fit(bool isIncludeSysErr, bool isCalculateFitFuncError) {
   ccFit.SetCanvasSize(1200, 800);
   ccFit.SetLogy();
   histoCrossSec->Draw();
-  tsallisFit->Draw("same");
+  if(!IsDrawFitWithErrors) {
+    tsallisFit->Draw("same");
+  } else {
+    tsallisFitHistoCent->Draw("same");
+    tsallisFitHistoMin->Draw("same");
+    tsallisFitHistoMax->Draw("same");
+  }
   auto hepDataText = AddOneLineText("#it{" + hepDataName + "}", {0.3, 0.85, 0.55, 0.90});
   hepDataText->SetTextColor(kGray+2);
   AddOneLineText(parNames.at(0) + ptString + "#sqrt{" + parNames.at(1) + "^{2} + " + ptString + "^{2}} (1 + (" + parNames.at(2) + " - 1)#sqrt{" + parNames.at(1) + "^{2} + " + ptString + "^{2}} / " + parNames.at(3) + ")^{#minus #frac{" + parNames.at(2) + "}{" + parNames.at(2) + " - 1}}", {textX1, textY2 + textYStep, textX2, textY2 + 2*textYStep});
@@ -114,6 +136,9 @@ void pt_fit(bool isIncludeSysErr, bool isCalculateFitFuncError) {
   TFile* fileOut = TFile::Open("pTFit.root", "recreate");
   histoCrossSec->Write("hepData");
   tsallisFit->Write("tsallisFit");
+  tsallisFitHistoCent->Write();
+  tsallisFitHistoMin->Write();
+  tsallisFitHistoMax->Write();
   tsallisFitCov.Write("tsallisFitCov");
   ccFit.Write("ccFit");
   ccRatio.Write("ccRatio");
@@ -122,16 +147,30 @@ void pt_fit(bool isIncludeSysErr, bool isCalculateFitFuncError) {
 
 int main(int argc, char* argv[]) {
   if(argc > 1 && std::strcmp(argv[1], "--help") == 0) {
-    std::cout << "./tsallis_pt_fit (isIncludeSysErr=true isCalculateFitFuncError=false)\n";
+    std::cout << "./tsallis_pt_fit (isIncludeSysErr=true)\n";
     return 0;
   }
 
   const bool isIncludeSysErr = argc > 1 ? HelperGeneral::string_to_bool(argv[1]) : true;
-  const bool isCalculateFitFuncError = argc > 2 ? HelperGeneral::string_to_bool(argv[2]) : false;
 
-  pt_fit(isIncludeSysErr, isCalculateFitFuncError);
+  pt_fit(isIncludeSysErr);
 
   return 0;
+}
+
+TH1* ConvertTF1ToHisto(TF1* func, const TMatrixDSym& cov, const std::string& suffix, const int nBins) {
+  if(suffix != "cent" && suffix != "max" && suffix != "min") throw std::runtime_error("ConvertTF1ToHisto(): suffix must be cent, min or max");
+  const double lo = func->GetXmin();
+  const double hi = func->GetXmax();
+  TH1* hResult = new TH1D("hResult", "", nBins, lo, hi);
+  for(int iBin=1; iBin<=nBins; ++iBin) {
+    const double binCenter = hResult->GetBinCenter(iBin);
+    const double value = func->Eval(binCenter);
+    double error = suffix == "cent" ? 0 : EvalErrorFitFunction(binCenter, func, cov);
+    if(suffix == "min") error = -error;
+    hResult->SetBinContent(iBin, value + error);
+  }
+  return hResult;
 }
 
 double EvalErrorDataPoint(const DataPoint& datapoint, bool isIncludeSysError) {
