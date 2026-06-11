@@ -261,7 +261,6 @@ class HFInvMassFitter : public TNamed
   RooHist* mResidualHist;          /// residual histogram
   RooPlot* mRatioFrame;            /// fit/data ratio frame
   RooWorkspace* mWorkspace;        /// workspace
-  double mIntegralHisto;           /// integral of histogram to fit
   double mIntegralBkg;             /// integral of background fit function
   double mIntegralSgn;             /// integral of signal fit function
   TH1* mHistoTemplateRefl;         /// reflection histogram

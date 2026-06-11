@@ -147,7 +147,6 @@ HFInvMassFitter::HFInvMassFitter(TH1* histoToFit,
                                                    mResidualHist(nullptr),
                                                    mRatioFrame(nullptr),
                                                    mWorkspace(nullptr),
-                                                   mIntegralHisto(0),
                                                    mIntegralBkg(0),
                                                    mIntegralSgn(0),
                                                    mHistoTemplateRefl(nullptr),
@@ -192,7 +191,7 @@ HFInvMassFitter::~HFInvMassFitter()
 
 void HFInvMassFitter::doFit()
 {
-  mIntegralHisto = mHistoInvMass->Integral(mHistoInvMass->FindBin(mMinMass), mHistoInvMass->FindBin(mMaxMass));
+  const double integralHisto = mHistoInvMass->Integral(mHistoInvMass->FindBin(mMinMass), mHistoInvMass->FindBin(mMaxMass));
   mWorkspace = new RooWorkspace("mWorkspace");
   fillWorkspace(*mWorkspace);
   RooRealVar* mass = mWorkspace->var("mass");
@@ -222,7 +221,7 @@ void HFInvMassFitter::doFit()
 
   // fit MC or Data
   if (mTypeOfBkgPdf == NoBkg) { // MC
-    const ParameterRanges rooNSgnParamRanges{0., 1.2 * mIntegralHisto, 0.3 * mIntegralHisto};
+    const ParameterRanges rooNSgnParamRanges{0., 1.2 * integralHisto, 0.3 * integralHisto};
     mRooNSgn = new RooRealVar("mRooNSig", "number of signal", randomizeInitialParameter(rooNSgnParamRanges), rooNSgnParamRanges.lower, rooNSgnParamRanges.upper); // signal yield
     mTotalPdf = new RooAddPdf("mMCFunc", "MC fit function", RooArgList(*sgnPdf), RooArgList(*mRooNSgn));                                                          // create total pdf
     if (strcmp(mFitOption.c_str(), "Chi2") == 0) {
@@ -239,7 +238,7 @@ void HFInvMassFitter::doFit()
     mRatioFrame = mass->frame(Title(Form("%s", mHistoInvMass->GetTitle())));
     calculateFitToDataRatio();
   } else { // data
-    const ParameterRanges rooNBkgParamRanges{0., 1.2 * mIntegralHisto, 0.3 * mIntegralHisto};
+    const ParameterRanges rooNBkgParamRanges{0., 1.2 * integralHisto, 0.3 * integralHisto};
     mRooNBkg = new RooRealVar("mRooNBkg", "number of background", randomizeInitialParameter(rooNBkgParamRanges), rooNBkgParamRanges.lower, rooNBkgParamRanges.upper); // background yield
     mBkgPdf = new RooAddPdf("mBkgPdf", "background fit function", RooArgList(*bkgPdf), RooArgList(*mRooNBkg));
     if (mTypeOfSgnPdf == GausSec) { // two peak fit
