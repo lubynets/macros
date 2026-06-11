@@ -3,17 +3,17 @@
 //
 {
 gStyle->SetCanvasPreferGL(true);
-gStyle->SetPadLeftMargin(0.20);
-gStyle->SetPadRightMargin(0.02);
+gStyle->SetPadLeftMargin(0.12);
+gStyle->SetPadRightMargin(0.01);
 gStyle->SetPadBottomMargin(0.12);
-gStyle->SetPadTopMargin(0.07);
+gStyle->SetPadTopMargin(0.05);
 gStyle->SetLegendBorderSize(0);
 gStyle->SetFrameLineWidth(4);
 gStyle->SetMarkerStyle(kFullSquare);
 gStyle->SetMarkerSize(2);
 gStyle->SetLineWidth(3);
 gStyle->SetHistLineWidth(3);
-gStyle->SetEndErrorSize(5);
+gStyle->SetEndErrorSize(0);
 
 gStyle->SetTitleSize(0.05, "X");
 gStyle->SetTitleSize(0.05, "Y");
