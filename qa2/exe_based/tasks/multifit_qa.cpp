@@ -29,7 +29,7 @@ void MultiFitQa(const std::string& strategy) {
   LoadMacro("styles/mc_qa2.style.cc");
   gStyle->SetMarkerSize(1);
   const std::string fileNameTemplate = "RawYields_Lc/RawYields_Lc";
-  const int nTrials = 200;
+  const int nTrials = 100;
   std::vector<double> bdtScores;
   for(int i=1; i<=99; i++) {
     bdtScores.emplace_back(0.01*i);
