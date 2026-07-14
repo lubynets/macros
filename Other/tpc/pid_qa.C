@@ -68,7 +68,7 @@ void pid_qa(const char* inFileName) {
     {
       "fNSigmaTpc",
       "nsigma",
-      401, -10.02, 10.02,
+      401, -10.025, 10.025,
       "N_{#sigma}^{TPC}(%s)"
     },
     {
@@ -91,7 +91,20 @@ void pid_qa(const char* inFileName) {
     }
   };
 
-  std::map<std::string, ROOT::RDF::RResultPtr<TH2D>> histos;
+  const int nBinsP = 3000;
+  const double pMin = 0.01;
+  const double pMax = 20.;
+
+  std::vector<double> pBins(nBinsP + 1);
+
+  const double logMin = std::log10(pMin);
+  const double logMax = std::log10(pMax);
+
+  for (int i = 0; i <= nBinsP; ++i) {
+    pBins[i] = std::pow(10., logMin + (logMax - logMin) * i / nBinsP);
+  }
+
+  std::map<std::string, ROOT::RDF::RResultPtr<TH1>> histos;
 
   for (const auto& hd : histDefs) {
 
@@ -105,7 +118,7 @@ void pid_qa(const char* inFileName) {
             {
               histName.Data(),
               Form(hd.title, s.symbol),
-              3000, 0.01, 20.,
+              nBinsP, pBins.data(),
               hd.nBinsY, hd.yMin, hd.yMax
             },
             std::strcmp(hd.branch, "fNSigmaTpc") == 0 ? "fP" : "fTPCInnerParam",
@@ -115,6 +128,7 @@ void pid_qa(const char* inFileName) {
       h->GetYaxis()->SetTitle(h->GetTitle());
 
       histos[histName.Data()] = h;
+
     }
   }
 
@@ -125,10 +139,8 @@ void pid_qa(const char* inFileName) {
     output.mkdir(hd.directory);
     output.cd(hd.directory);
 
-    TString prefix = TString(hd.directory) + "_";
-
     for (const auto& s : species) {
-      histos[static_cast<std::string>(prefix + s.name)]->Write(s.name);
+      histos[static_cast<std::string>(hd.directory) + "_" + static_cast<std::string>(s.name)]->Write(s.name);
     }
 
     output.cd();
