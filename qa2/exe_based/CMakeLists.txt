@@ -4,23 +4,23 @@ cmake_minimum_required(VERSION 3.10)
 project(qa2)
 
 SET(EXECUTABLES
-    mc_qa2diff
-    treeKF_qa2
-    mc_qa2
-    treeKF_qa2diff
-    pid_qa
-    graph_qa3
-    efficiency
+    #mc_qa2diff
+    #treeKF_qa2
+    #mc_qa2
+    #treeKF_qa2diff
+    #pid_qa
+    #graph_qa3
+    #efficiency
     ct_mcfit
-    mass_fit
-    mass_fit2
+    #mass_fit
+    #mass_fit2
     ct_fit
-    varCorr_qa2
-    dwrth1
-    bdt_efficiency
-    mass_bdt_qa
+    #varCorr_qa2
+    #dwrth1
+    #bdt_efficiency
+    #mass_bdt_qa
     efficiency_bdtcutset
-    raw_yield_vs_bdt_pdfer
+    #raw_yield_vs_bdt_pdfer
     corrected_yields_qa2
     complex_vs_bdt_pdfer
     tsallis_fit_pt
@@ -36,11 +36,11 @@ SET(SOURCES
     HelperGeneral.cpp
     HelperMath.cpp
     HelperPlot.cpp
-    ShapeFitter.cpp
+    #ShapeFitter.cpp
 )
 
 string(REPLACE ".cpp" ".hpp" HEADERS "${SOURCES}")
-list(APPEND HEADERS "BdtEfficiencyCalculator.hpp" "Shapes.hpp")
+#list(APPEND HEADERS "BdtEfficiencyCalculator.hpp" "Shapes.hpp")
 
 # Specify the C++ standard
 set(CMAKE_CXX_STANDARD 17)
