@@ -8,6 +8,7 @@
 #include <TFile.h>
 #include <TGraphErrors.h>
 #include <TH1.h>
+#include <TH2.h>
 #include <TStyle.h>
 
 #include <algorithm>
@@ -22,6 +23,7 @@ using namespace HelperMath;
 using namespace HelperPlot;
 
 constexpr bool IsVerbose{false};
+constexpr bool IsDrawErrors{false};
 
 void MultiFitQa(const std::string& strategy) {
   if(strategy != "median" && strategy != "chi2" && strategy != "medianSmart") throw std::runtime_error("MultiFitQa(): strategy must be 'median', 'chi2' or 'medianSmart'");
@@ -29,9 +31,9 @@ void MultiFitQa(const std::string& strategy) {
   LoadMacro("styles/mc_qa2.style.cc");
   gStyle->SetMarkerSize(1);
   const std::string fileNameTemplate = "RawYields_Lc/RawYields_Lc";
-  const int nTrials = 100;
+  const int nTrials = 1000;
   std::vector<double> bdtScores;
-  for(int i=1; i<=99; i++) {
+  for(int i=10; i<=20; i++) {
     bdtScores.emplace_back(0.01*i);
   }
 //   bdtScores={0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90};
@@ -135,6 +137,7 @@ void MultiFitQa(const std::string& strategy) {
         if(IsVerbose) std::cout << ", " << fileName << " is missing\n";
         continue;
       }
+      TH2* histoFitResult = fileIn->Get<TH2>("hFitResult");
       for(size_t iVar=0; iVar<nVars; ++iVar) {
         if(IsVerbose) std::cout << "Reading histogram" << variables.at(iVar);
         TH1* histoIn = fileIn->Get<TH1>(variables.at(iVar).c_str());
@@ -147,6 +150,9 @@ void MultiFitQa(const std::string& strategy) {
         if(IsVerbose) std::cout << "iBin = ";
         for (int iBin = 1; iBin <= static_cast<int>(nLifetimeRanges); ++iBin) {
           if(IsVerbose) std::cout << iBin << " ";
+          const int fitStatus = histoFitResult->GetBinContent(1, iBin);
+          const int covQual = histoFitResult->GetBinContent(2, iBin);
+          if(fitStatus != 0 || covQual != 3) continue;
           const double value = histoIn->GetBinContent(iBin);
           const double error = histoIn->GetBinError(iBin);
           auto gr = graph.at(iVar).at(iBin - 1).at(iScore);
@@ -235,13 +241,15 @@ void MultiFitQa(const std::string& strategy) {
         const auto& gr = graph.at(iVar).at(iT).at(iScore);
         const auto& grVsChi2 = graphVsChi2.at(iVar).at(iT).at(iScore);
         cc.cd();
-        gr->Draw("APE");
+        std::string drawOption{"AP"};
+        drawOption.append(IsDrawErrors ? "E" : "X");
+        gr->Draw(drawOption.c_str());
         ccVsChi2.cd();
-        grVsChi2->Draw("APE");
+        grVsChi2->Draw(drawOption.c_str());
         ccErr.cd();
-        graphErr.at(iVar).at(iT).at(iScore)->Draw("APE");
+        graphErr.at(iVar).at(iT).at(iScore)->Draw(drawOption.c_str());
         ccErrVsChi2.cd();
-        graphErrVsChi2.at(iVar).at(iT).at(iScore)->Draw("APE");
+        graphErrVsChi2.at(iVar).at(iT).at(iScore)->Draw(drawOption.c_str());
 
         const auto [badTrials, criticalChi2] = strategy == "medianSmart" ? FindBadTrials(values.at(iChi2).at(iT).at(iScore)) : std::pair<std::vector<int>, double>{std::vector<int>{}, UndefValueDouble};
         if(iVar != iChi2) {
