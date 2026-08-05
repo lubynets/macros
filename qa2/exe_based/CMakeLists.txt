@@ -56,7 +56,7 @@ if(CMAKE_BUILD_TYPE MATCHES DEBUG)
 endif()
 
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -ggdb -g -Wall -Wextra")
-set(CMAKE_CXX_FLAGS_RELEASE "-O2 -ftree-vectorize -ffast-math")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2 -ftree-vectorize")
 
 set(QA_RAPIDJSON_INCLUDE_DIRS "" CACHE STRING "Location of rapidjson include directories")
 
