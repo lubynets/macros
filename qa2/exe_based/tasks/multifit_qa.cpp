@@ -31,12 +31,12 @@ void MultiFitQa(const std::string& strategy) {
   LoadMacro("styles/mc_qa2.style.cc");
   gStyle->SetMarkerSize(1);
   const std::string fileNameTemplate = "RawYields_Lc/RawYields_Lc";
-  const int nTrials = 1000;
+  const int nTrials = 100;
   std::vector<double> bdtScores;
-  for(int i=10; i<=20; i++) {
-    bdtScores.emplace_back(0.01*i);
-  }
-//   bdtScores={0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90};
+//   for(int i=10; i<=20; i++) {
+//     bdtScores.emplace_back(0.01*i);
+//   }
+  bdtScores={0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90};
 
   std::vector<std::string> variables {
    "hRawYieldsSignal",
@@ -80,6 +80,12 @@ void MultiFitQa(const std::string& strategy) {
   }
 
   const size_t nVars = variables.size();
+
+  bdtScores.push_back(2*bdtScores.back() - bdtScores.at(nBdtScores-2)); // fake score for hGoodFits. Since nBdtScores is already fixed, it should not be a problem
+  TH2* hGoodFits = new TH2F("hGoodFits", "", nBdtScores, bdtScores.data(), nLifetimeRanges, 0.5, nLifetimeRanges+0.5);
+  hGoodFits->GetXaxis()->SetTitle("bdt score");
+  hGoodFits->GetYaxis()->SetTitle("lifetime bin");
+
 
   const auto itChi2 = std::find(variables.begin(), variables.end(), "hRawYieldsChiSquareTotal");
   const auto iChi2 = std::distance(variables.begin(), itChi2);
@@ -153,6 +159,7 @@ void MultiFitQa(const std::string& strategy) {
           const int fitStatus = histoFitResult->GetBinContent(1, iBin);
           const int covQual = histoFitResult->GetBinContent(2, iBin);
           if(fitStatus != 0 || covQual != 3) continue;
+          if(iVar == 0) hGoodFits->Fill(bdtScores.at(iScore), iBin);
           const double value = histoIn->GetBinContent(iBin);
           const double error = histoIn->GetBinError(iBin);
           auto gr = graph.at(iVar).at(iBin - 1).at(iScore);
@@ -306,6 +313,9 @@ void MultiFitQa(const std::string& strategy) {
     } // nVars
      fileSmooth->Close();
   } // nBdtScores
+
+  hGoodFits->SaveAs("hTrials/hGoodFits.root");
+
   fileMarkUp->Close();
 }
 
