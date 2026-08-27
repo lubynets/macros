@@ -66,6 +66,8 @@ void MultiFitQa(const std::string& strategy) {
   }
   if(fileMarkUp == nullptr) throw std::runtime_error("fileMarkUp == nullptr");
 
+  std::vector<double> hGoodFitsYaxisBinEdges{};
+
   TH1* histoMarkUp{nullptr};
   int iExistingVar{0};
   size_t nLifetimeRanges{0};
@@ -75,17 +77,28 @@ void MultiFitQa(const std::string& strategy) {
       variables.erase(variables.begin() + iExistingVar);
       continue;
     }
-    if(nLifetimeRanges == 0) nLifetimeRanges = histoMarkUp->GetNbinsX();
+    if(nLifetimeRanges == 0) {
+      nLifetimeRanges = histoMarkUp->GetNbinsX();
+      for(int iBin=1; iBin<=nLifetimeRanges+1; ++iBin) {
+        hGoodFitsYaxisBinEdges.push_back(histoMarkUp->GetBinLowEdge(iBin));
+      }
+    }
     ++iExistingVar;
   }
 
   const size_t nVars = variables.size();
 
-  bdtScores.push_back(2*bdtScores.back() - bdtScores.at(nBdtScores-2)); // fake score for hGoodFits. Since nBdtScores is already fixed, it should not be a problem
-  TH2* hGoodFits = new TH2F("hGoodFits", "", nBdtScores, bdtScores.data(), nLifetimeRanges, 0.5, nLifetimeRanges+0.5);
-  hGoodFits->GetXaxis()->SetTitle("bdt score");
-  hGoodFits->GetYaxis()->SetTitle("lifetime bin");
+  std::vector<double> hGoodFitsXaxisBinEdges{};
+  hGoodFitsXaxisBinEdges.push_back(bdtScores.front() - (bdtScores.at(1) - bdtScores.front()) / 2);
+  for(int iBdtScore=1; iBdtScore<nBdtScores; ++iBdtScore) {
+    hGoodFitsXaxisBinEdges.push_back((bdtScores.at(iBdtScore) + bdtScores.at(iBdtScore-1)) / 2);
+  }
+  hGoodFitsXaxisBinEdges.push_back(bdtScores.back() + (bdtScores.back() - bdtScores.at(nBdtScores-2))/2);
 
+  TH2* hGoodFits = new TH2F("hGoodFits", "", nBdtScores, hGoodFitsXaxisBinEdges.data(), nLifetimeRanges, hGoodFitsYaxisBinEdges.data());
+  hGoodFits->GetXaxis()->SetTitle("bdt score");
+  hGoodFits->GetYaxis()->SetTitle("#it{t} (ps)");
+  hGoodFits->GetZaxis()->SetTitle("Successful trials rate");
 
   const auto itChi2 = std::find(variables.begin(), variables.end(), "hRawYieldsChiSquareTotal");
   const auto iChi2 = std::distance(variables.begin(), itChi2);
@@ -159,7 +172,7 @@ void MultiFitQa(const std::string& strategy) {
           const int fitStatus = histoFitResult->GetBinContent(1, iBin);
           const int covQual = histoFitResult->GetBinContent(2, iBin);
           if(fitStatus != 0 || covQual != 3) continue;
-          if(iVar == 0) hGoodFits->Fill(bdtScores.at(iScore), iBin);
+          if(iVar == 0) hGoodFits->Fill(bdtScores.at(iScore), hGoodFits->GetYaxis()->GetBinCenter(iBin));
           const double value = histoIn->GetBinContent(iBin);
           const double error = histoIn->GetBinError(iBin);
           auto gr = graph.at(iVar).at(iBin - 1).at(iScore);
@@ -314,6 +327,7 @@ void MultiFitQa(const std::string& strategy) {
      fileSmooth->Close();
   } // nBdtScores
 
+  hGoodFits->Scale(1./nTrials);
   hGoodFits->SaveAs("hTrials/hGoodFits.root");
 
   fileMarkUp->Close();
