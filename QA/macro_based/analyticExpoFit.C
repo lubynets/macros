@@ -56,6 +56,12 @@ void analyticExpoFit() {
     // relative loss of precision
     eta.push_back((sAm - sA)/sA);
 
+    const double weightFraction = w[i] / S;
+    const double slopeFraction  = f[i];
+
+    const double leverage = weightFraction + slopeFraction;
+
+    const double etaAnalytic = std::sqrt(1. + slopeFraction / (1. - leverage)) - 1.;
 
     std::cout
     << i+1
@@ -69,6 +75,10 @@ void analyticExpoFit() {
     << "  f=" << f[i]
     << "  eta=" << eta[i]
     << " (" << 100.*eta[i] << "%)"
+    << "  w/S=" << weightFraction // how statistically strong is the measurement overall?
+    << "  f=" << slopeFraction // how much slope information does its precision x lever arm provide?
+    << "  h=" << leverage // how strongly can this observation control the regression fit because of its precision and location?
+    << "  etaAnalytic=" << etaAnalytic // how much slope precision do I actually lose if I don't perform that measurement?
     << std::endl;
 
   }
