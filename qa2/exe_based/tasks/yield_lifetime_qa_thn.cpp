@@ -8,6 +8,7 @@
 #include <TAxis.h>
 #include <THnSparse.h>
 #include <TH1.h>
+#include <TH2.h>
 
 #include <iostream>
 #include <string>
@@ -29,12 +30,13 @@ const std::vector<double> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.04, 0.08};
 // const std::vector<double> bdtBgUpperValuesVsPt = {0.05, 0.05, 0.05, 0.08, 0.16}; // veryloose
 // const std::vector<double> bdtBgUpperValuesVsPt = {0.025, 0.025, 0.025, 0.05, 0.10}; // semiloose
 
-const std::string_view lifetimeAxisTitle = "T_{proper} (ps)";
-const std::string_view pTAxisTitle = "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})";
-const std::string_view pTBAxisTitle = "#it{p}_{T}^{B} (GeV/#it{c})";
-const std::string_view bgAxisTitle = "BDT bkg score (Lc)";
-const std::string_view npAxisTitle = "BDT non-prompt score (Lc)";
-const std::string_view signalTypeAxisTitle = "candidates type";
+constexpr std::string_view LifetimeAxisTitle = /*"T_{proper} (ps)"*/"#it{t}_{proper} (ps)";
+constexpr std::string_view LifetimeGenAxisTitle = "#it{t}_{proper, gen} (ps)";
+constexpr std::string_view PtAxisTitle = "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})";
+constexpr std::string_view PtBAxisTitle = "#it{p}_{T}^{B} (GeV/#it{c})";
+constexpr std::string_view BgAxisTitle = "BDT bkg score (Lc)";
+constexpr std::string_view NpAxisTitle = "BDT non-prompt score (Lc)";
+constexpr std::string_view SignalTypeAxisTitle = "candidates type";
 
 const std::string fileOutName{"yield_lifetime_qa_thn.root"};
 constexpr bool IsVerbose{true};
@@ -75,26 +77,26 @@ void FillYield(const std::string& fileName, const std::string& filePtWeightName,
   THnSparse* histoPromptWeighted = gIsDoWeight ? dynamic_cast<THnSparse*>(histoRecOrGen->Clone()) : nullptr;
   THnSparse* histoNonPromptWeighted = gIsDoWeight ? dynamic_cast<THnSparse*>(histoRecOrGen->Clone()) : nullptr;
   if (gIsDoWeight) {
-    ScaleTHnSparseWithWeight(histoPromptWeighted, axesIndices.at(pTAxisTitle), histoWeightPrompt);
-    ScaleTHnSparseWithWeight(histoNonPromptWeighted, axesIndices.at(pTBAxisTitle), histoWeightNonPrompt);
+    ScaleTHnSparseWithWeight(histoPromptWeighted, axesIndices.at(PtAxisTitle), histoWeightPrompt);
+    ScaleTHnSparseWithWeight(histoNonPromptWeighted, axesIndices.at(PtBAxisTitle), histoWeightNonPrompt);
 
-    if(nCtSigmaFromPdg != UndefValueDouble) ScaleTHnSparseWithWeight(histoPromptWeighted, axesIndices.at(lifetimeAxisTitle), ctWeight);
+    if(nCtSigmaFromPdg != UndefValueDouble) ScaleTHnSparseWithWeight(histoPromptWeighted, axesIndices.at(LifetimeAxisTitle), ctWeight);
   }
   
   auto ProcessTHnSparse = [&](THnSparse* histoIn, const std::string& histoNameSuffix="", const std::vector<std::pair<std::string, double>>& promptnessesToProcess=promptnesses) {
     if(IsVerbose) std::cout << "ProcessTHnSparse() started\n";
-    CheckTAxisForRanges(*histoIn->GetAxis(axesIndices.at(pTAxisTitle)), pTRanges);
-    CheckTAxisForRanges(*histoIn->GetAxis(axesIndices.at(signalTypeAxisTitle)), {1., 2., 3.});
-    if(isRec) CheckTAxisForRanges(*histoIn->GetAxis(axesIndices.at(bgAxisTitle)), bdtBgUpperValuesVsPt);
+    CheckTAxisForRanges(*histoIn->GetAxis(axesIndices.at(PtAxisTitle)), pTRanges);
+    CheckTAxisForRanges(*histoIn->GetAxis(axesIndices.at(SignalTypeAxisTitle)), {1., 2., 3.});
+    if(isRec) CheckTAxisForRanges(*histoIn->GetAxis(axesIndices.at(BgAxisTitle)), bdtBgUpperValuesVsPt);
 
     for(size_t iPt=0, nPts=pTRanges.size()-1; iPt<nPts; ++iPt) {
       if(IsVerbose) std::cout << "ProcessTHnSparse(): iPt = " << iPt << "\n";
-      SetTHnSparseAxisRanges(histoIn, axesIndices.at(pTAxisTitle), pTRanges.at(iPt), pTRanges.at(iPt + 1));
-      if(isRec) SetTHnSparseAxisRanges(histoIn, axesIndices.at(bgAxisTitle), 0., bdtBgUpperValuesVsPt.at(iPt));
+      SetTHnSparseAxisRanges(histoIn, axesIndices.at(PtAxisTitle), pTRanges.at(iPt), pTRanges.at(iPt + 1));
+      if(isRec) SetTHnSparseAxisRanges(histoIn, axesIndices.at(BgAxisTitle), 0., bdtBgUpperValuesVsPt.at(iPt));
       for(const auto& promptness : promptnessesToProcess) {
         if(IsVerbose) std::cout << "ProcessTHnSparse(): promptness = " << promptness.first << "\n";
         const std::string dirName = (isRec ? "rec/" : "gen/") + promptness.first + "/" + GetPtCutName(iPt);
-        SetTHnSparseAxisRanges(histoIn, axesIndices.at(signalTypeAxisTitle), promptness.second, promptness.second+1.f);
+        SetTHnSparseAxisRanges(histoIn, axesIndices.at(SignalTypeAxisTitle), promptness.second, promptness.second+1.f);
         // for rec - real gBdtSignalLowerValues; for gen - fake 1-element vector for universality reasons
         const auto& bdtSignalLowerValues = isRec ? gBdtSignalLowerValues : std::vector<double>{UndefValueDouble};
         if(IsVerbose) std::cout << "ProcessTHnSparse(): bsc = ";
@@ -103,18 +105,27 @@ void FillYield(const std::string& fileName, const std::string& filePtWeightName,
           const std::string histoName = isRec ?
                                         "hT_NPgt" + to_string_with_precision(bsc, 2) + histoNameSuffix :
                                         "hT" + histoNameSuffix;
-          if(isRec) SetTHnSparseAxisRanges(histoIn, axesIndices.at(npAxisTitle), bsc, 1.);
-          TH1* histoYield = histoIn->Projection(axesIndices.at(lifetimeAxisTitle));
+
+          if(isRec) SetTHnSparseAxisRanges(histoIn, axesIndices.at(NpAxisTitle), bsc, 1.);
+          TH1* histoYield = histoIn->Projection(axesIndices.at(LifetimeAxisTitle));
           histoYield->SetDirectory(nullptr);
           CD(fileOut, dirName);
           histoYield->Write(histoName.c_str());
-          if(isRec) SetTHnSparseAxisRanges(histoIn, axesIndices.at(npAxisTitle));
+          if(isRec) {
+            std::string histoName2D{histoName};
+            ReplaceSubstrInStr(histoName2D, "hT", "h2T");
+            TH2* histoYield2D = histoIn->Projection(axesIndices.at(LifetimeGenAxisTitle), axesIndices.at(LifetimeAxisTitle));
+            histoYield2D->SetDirectory(nullptr);
+            CD(fileOut, dirName);
+            histoYield2D->Write(histoName2D.c_str());
+          }
+          if(isRec) SetTHnSparseAxisRanges(histoIn, axesIndices.at(NpAxisTitle));
         } // bdtSignalLowerValues
         if(IsVerbose) std::cout << "\n";
-        SetTHnSparseAxisRanges(histoIn, axesIndices.at(signalTypeAxisTitle));
+        SetTHnSparseAxisRanges(histoIn, axesIndices.at(SignalTypeAxisTitle));
       } // promptnessesToProcess
-      SetTHnSparseAxisRanges(histoIn, axesIndices.at(pTAxisTitle));
-      if(isRec) SetTHnSparseAxisRanges(histoIn, axesIndices.at(bgAxisTitle));
+      SetTHnSparseAxisRanges(histoIn, axesIndices.at(PtAxisTitle));
+      if(isRec) SetTHnSparseAxisRanges(histoIn, axesIndices.at(BgAxisTitle));
     } // pTRanges
     if(IsVerbose) std::cout << "ProcessTHnSparse() finished\n";
   };
@@ -158,10 +169,10 @@ int main(int argc, char* argv[]) {
 
   const std::string& fileName = modeRun != MergeOnly ? ReadNthLine(fileNameIn) : fileNameIn;
 
-  for (int iB = 0; iB <= 99; iB++) {
-    gBdtSignalLowerValues.emplace_back(0.01 * iB);
-  }
-//   gBdtSignalLowerValues = {0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90};
+//   for (int iB = 0; iB <= 99; iB++) {
+//     gBdtSignalLowerValues.emplace_back(0.01 * iB);
+//   }
+  gBdtSignalLowerValues = {0.20, 0.25/*, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90*/};
 
   if(modeRun != MergeOnly) {
     FillYield(fileName, filePtWeightName, true, nCtSigmaFromPdg, pCMM, npCMM);
@@ -170,13 +181,23 @@ int main(int argc, char* argv[]) {
 
   if(modeRun == RunOnly) return 0;
 
-  const int nLowerPtBinsToExclude{0};
-  pTRanges.erase(pTRanges.begin(), pTRanges.begin()+nLowerPtBinsToExclude);
-
   std::vector<std::string> pTCutNames;
   for(size_t iPt=0, nPts=pTRanges.size()-1; iPt<nPts; ++iPt) {
     pTCutNames.emplace_back(GetPtCutName(iPt));
   }
+
+  const double mergePtFrom{3.};
+  const double mergePtTo{20.};
+
+  const int skipFirstNBins = std::distance(pTRanges.begin(), std::find(pTRanges.begin(), pTRanges.end(), mergePtFrom));
+  const int skipLastNBins = std::distance(std::find(pTRanges.begin(), pTRanges.end(), mergePtTo), pTRanges.end()) - 1;
+
+  if(skipFirstNBins == pTRanges.size() || skipLastNBins == -1) throw std::runtime_error("main(): mergePtFrom or mergePtTo does not correspond to any of pTRanges");
+
+  pTRanges.erase(pTRanges.end()-skipLastNBins, pTRanges.end());
+  pTCutNames.erase(pTCutNames.end()-skipLastNBins, pTCutNames.end());
+  pTRanges.erase(pTRanges.begin(), pTRanges.begin()+skipFirstNBins);
+  pTCutNames.erase(pTCutNames.begin(), pTCutNames.begin()+skipFirstNBins);
 
   const std::string& mergedFileOutName = modeRun != MergeOnly ? fileOutName : fileName;
   TFile* fileOut = OpenFileWithNullptrCheck(mergedFileOutName.c_str(), "update");
@@ -184,7 +205,7 @@ int main(int argc, char* argv[]) {
   auto ProcessMerge = [&](const bool isRec) {
     for(const auto& promptness : promptnesses) {
       for(const auto& weightPresence : weightsPresences) {
-        if(!gIsDoWeight) continue;
+        if(!gIsDoWeight && weightPresence == "_W") continue;
         // for rec - real gBdtSignalLowerValues; for gen - fake 1-element vector for universality reasons
         const auto& bdtSignalLowerValues = isRec ? gBdtSignalLowerValues : std::vector<double>{UndefValueDouble};
         for (const auto& bslv : bdtSignalLowerValues) {
@@ -195,9 +216,17 @@ int main(int argc, char* argv[]) {
                                     "rec/" + promptness.first + "/" + ptcn + "/hT_NPgt" + to_string_with_precision(bslv, 2) + weightPresence :
                                     "gen/" + promptness.first + "/" + ptcn + "/hT" + weightPresence);
           } // pTCutNames
-          TH1* histoMerged = MergeHistograms(fileOut, histoNames);
+          TH1* histoMerged = MergeHistograms<TH1>(fileOut, histoNames);
           CD(fileOut, (isRec ? "rec/" : "gen/") + promptness.first + "/" + GetPtCutName(pTRanges.size() - 1));
           histoMerged->Write((isRec ? "hT_NPgt" + to_string_with_precision(bslv, 2) + weightPresence : "hT" + weightPresence).c_str());
+          if(isRec) {
+            for(auto& hN : histoNames) {
+              ReplaceSubstrInStr(hN, "hT", "h2T");
+            }
+            TH2* histoMerged = MergeHistograms<TH2>(fileOut, histoNames);
+            CD(fileOut, "rec/" + promptness.first + "/" + GetPtCutName(pTRanges.size() - 1));
+            histoMerged->Write(("h2T_NPgt" + to_string_with_precision(bslv, 2) + weightPresence).c_str());
+          }
         } // bdtSignalLowerValues
       } // weightPresences
     } // promptnesses
