@@ -69,7 +69,32 @@ void LoadMacro(const std::string& macroName);
 
 void CD(TFile* file, const std::string& dirName);
 
-void CheckHistogramsForXaxisIdentity(const TH1* h1, const TH1* h2);
+template <typename T>
+void CheckHistogramsForAxisIdentity(const T* h1, const T* h2, const std::string& axis) {
+  const TAxis* a1{};
+  const TAxis* a2{};
+  if(axis == "X" || axis == "x") {
+    a1 = h1->GetXaxis();
+    a2 = h2->GetXaxis();
+  } else if(axis == "Y" || axis == "y") {
+    a1 = h1->GetYaxis();
+    a2 = h2->GetYaxis();
+  } else throw std::runtime_error("HelperGeneral::CheckHistogramsForAxisIdentity(): axis must be either X or Y");
+  if(a1->GetNbins() != a2->GetNbins()) {
+    throw std::runtime_error("HelperGeneral::CheckHistogramsForAxisIdentity(): nBins at " + axis + " axis do not match for " + static_cast<std::string>(h1->GetName()) + " and " + h2->GetName());
+  }
+  const int nBins = a1->GetNbins();
+  for(int iBin=1; iBin<=nBins; iBin++) {
+    if(std::abs(a1->GetBinCenter(iBin) - a2->GetBinCenter(iBin)) > 1e-6) {
+      throw std::runtime_error("HelperGeneral::CheckHistogramsForAxisIdentity(): bins do not coincide for " + static_cast<std::string>(h1->GetName()) + " and " + h2->GetName());
+    }
+  }
+}
+
+template <typename T>
+void CheckHistogramsForXaxisIdentity(const T* h1, const T* h2) {
+  CheckHistogramsForAxisIdentity(h1, h2, "X");
+}
 
 std::map<std::string_view, int> MapTHnSparseAxesIndices(const THnSparse* histo);
 
@@ -125,6 +150,8 @@ void ScaleTHnSparseWithWeight(THnSparse* histoIn, int nDim, const HOF* histoWeig
 std::string ReadNthLine(const std::string& fileName);
 
 void MkDirBash(const std::string& dirName);
+
+void ReplaceSubstrInStr(std::string& s, const std::string& from, const std::string& to);
 };
 
 

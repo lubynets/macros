@@ -102,18 +102,6 @@ void HelperGeneral::CD(TFile* file, const std::string& dirName) {
   file->cd(dirName.c_str());
 }
 
-void HelperGeneral::CheckHistogramsForXaxisIdentity(const TH1* h1, const TH1* h2) {
-  if(h1->GetNbinsX() != h2->GetNbinsX()) {
-    throw std::runtime_error("HelperGeneral::CheckHistogramsForXaxisIdentity(): nBinsX do not match for " + static_cast<std::string>(h1->GetName()) + " and " + h2->GetName());
-  }
-  const int nBins = h1->GetNbinsX();
-  for(int iBin=1; iBin<=nBins; iBin++) {
-    if(std::abs(h1->GetBinCenter(iBin) - h2->GetBinCenter(iBin)) > 1e-6) {
-      throw std::runtime_error("HelperGeneral::CheckHistogramsForXaxisIdentity(): bins do not coincide for " + static_cast<std::string>(h1->GetName()) + " and " + h2->GetName());
-    }
-  }
-}
-
 std::map<std::string_view, int> HelperGeneral::MapTHnSparseAxesIndices(const THnSparse* histo) {
   std::map<std::string_view, int> result;
   const int nDims = histo->GetNdimensions();
@@ -203,4 +191,16 @@ TFile* HelperGeneral::OpenFileWithNullptrCheck(const std::string& fileName, cons
     throw std::runtime_error("HelperGeneral::OpenFileWithNullptrCheck() - file " + fileName + " is missing");
   }
   return file;
+}
+
+void HelperGeneral::ReplaceSubstrInStr(std::string& s, const std::string& from, const std::string& to) {
+  if (from.empty())
+    return;
+
+  std::size_t pos = 0;
+
+  while ((pos = s.find(from, pos)) != std::string::npos) {
+    s.replace(pos, from.size(), to);
+    pos += to.size();
+  }
 }

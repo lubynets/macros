@@ -5,6 +5,8 @@
 #ifndef QA2_HELPERMATH_HPP
 #define QA2_HELPERMATH_HPP
 
+#include "HelperGeneral.hpp"
+
 #include <TFile.h>
 #include <TGraph.h>
 #include <TMatrixDSym.h>
@@ -68,14 +70,49 @@ void InvertHisto(TH1* histo);
 
 std::pair<TH1*, TH1*> EvaluateEfficiencyHisto(TH1* hNum, TH1* hDen);
 
-TH1* MergeHistograms(const std::vector<TH1*>& histos);
-TH1* MergeHistograms(TFile* fileIn, const std::vector<std::string>& histoNames);
+template<typename T>
+void Sumw2IfNotYet(T* histo, bool value = true) {
+  const bool isSumw2Already = histo->GetSumw2N() > 0;
+  if (isSumw2Already != value) histo->Sumw2(value);
+}
+
+template<typename T>
+T* MergeHistograms(const std::vector<T*>& histos) {
+  bool isSumw2{false};
+  const bool is2D = TString(histos.at(0)->ClassName()).Contains("TH2");
+  for(const auto& h : histos) {
+    HelperGeneral::CheckHistogramsForAxisIdentity(h, histos.at(0), "X");
+    if(is2D) HelperGeneral::CheckHistogramsForAxisIdentity(h, histos.at(0), "Y");
+    isSumw2 |= h->GetSumw2N() > 0;
+  }
+
+  T* hResult = dynamic_cast<T*>(histos.at(0)->Clone("hMerged"));
+  Sumw2IfNotYet(hResult);
+  hResult->SetDirectory(nullptr);
+  for(size_t iH=1, nHs=histos.size(); iH<nHs; ++iH) {
+    hResult->Add(histos.at(iH));
+  }
+  Sumw2IfNotYet(hResult, isSumw2);
+
+  return hResult;
+}
+
+template<typename T>
+T* MergeHistograms(TFile* fileIn, const std::vector<std::string>& histoNames) {
+  std::vector<T*> histos;
+  histos.reserve(histoNames.size());
+  for (const auto& hN : histoNames) {
+    histos.emplace_back(HelperGeneral::GetObjectWithNullptrCheck<T>(fileIn, hN));
+  }
+  T* hResult = MergeHistograms(histos);
+
+  return hResult;
+}
 
 [[nodiscard]] TH1* CutSubHistogram(const TH1* histoIn, double lo, double hi);
 
 double EvalErrorFitFunction(double x, TF1* func, const TMatrixDSym& cov);
 
-void Sumw2IfNotYet(TH1* histo, bool value = true);
 };
 
 

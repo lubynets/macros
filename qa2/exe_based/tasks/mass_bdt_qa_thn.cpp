@@ -155,7 +155,7 @@ void MassBdtQaThn(const std::string& fileNameIn, int modeRun) {
           for (const auto& ptcn : pTCutNames) {
             histoNames.emplace_back(ptcn + "/" + tcn + "/hM_" + bdtScanShortCut + bdtScanDir + to_string_with_precision(bslv, 2) + "_NPlt" + to_string_with_precision(bdtNpUpper, 2));
           }
-          TH1* histoMerged = HelperMath::MergeHistograms(fileOut, histoNames);
+          TH1* histoMerged = HelperMath::MergeHistograms<TH1>(fileOut, histoNames);
           HelperGeneral::CD(fileOut, GetPtCutName(pTRanges.size()-1) + "/" + tcn);
           histoMerged->Write(("hM_" + bdtScanShortCut + bdtScanDir + to_string_with_precision(bslv, 2) + "_NPlt" + to_string_with_precision(bdtNpUpper, 2)).c_str());
         } // bdtScanValues

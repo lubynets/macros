@@ -199,35 +199,6 @@ std::pair<TH1*, TH1*> HelperMath::EvaluateEfficiencyHisto(TH1* hNum, TH1* hDen) 
   return std::make_pair(hEff, hRelErr);
 }
 
-TH1* HelperMath::MergeHistograms(const std::vector<TH1*>& histos) {
-  bool isSumw2{false};
-  for(const auto& h : histos) {
-    HelperGeneral::CheckHistogramsForXaxisIdentity(h, histos.at(0));
-    isSumw2 |= h->GetSumw2N() > 0;
-  }
-
-  TH1* hResult = dynamic_cast<TH1*>(histos.at(0)->Clone("hMerged"));
-  Sumw2IfNotYet(hResult);
-  hResult->SetDirectory(nullptr);
-  for(size_t iH=1, nHs=histos.size(); iH<nHs; ++iH) {
-    hResult->Add(histos.at(iH));
-  }
-  Sumw2IfNotYet(hResult, isSumw2);
-
-  return hResult;
-}
-
-TH1* HelperMath::MergeHistograms(TFile* fileIn, const std::vector<std::string>& histoNames) {
-  std::vector<TH1*> histos;
-  histos.reserve(histoNames.size());
-  for (const auto& hN : histoNames) {
-    histos.emplace_back(HelperGeneral::GetObjectWithNullptrCheck<TH1>(fileIn, hN));
-  }
-  TH1* hResult = MergeHistograms(histos);
-
-  return hResult;
-}
-
 double HelperMath::EvalErrorFitFunction(double x, TF1* func, const TMatrixDSym& cov) {
   const int nPars = func->GetNpar();
   TMatrixD dfdp(nPars, 1);
@@ -287,9 +258,4 @@ TH1* HelperMath::CutSubHistogram(const TH1* histoIn, double lo, double hi) {
   }
 
   return histoOut;
-}
-
-void HelperMath::Sumw2IfNotYet(TH1* histo, bool value) {
-  const bool isSumw2Already = histo->GetSumw2N() > 0;
-  if (isSumw2Already != value) histo->Sumw2(value);
 }
