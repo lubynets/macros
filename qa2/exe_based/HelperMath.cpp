@@ -8,6 +8,7 @@
 
 #include <TF1.h>
 #include <TH1.h>
+#include <TH2.h>
 #include <TMatrixD.h>
 
 #include <stdexcept>
@@ -197,6 +198,55 @@ std::pair<TH1*, TH1*> HelperMath::EvaluateEfficiencyHisto(TH1* hNum, TH1* hDen) 
   hRelErr->SetTitle("");
 
   return std::make_pair(hEff, hRelErr);
+}
+
+std::pair<TH2*, TH2*> HelperMath::EvaluateResponseMatrix(TH2* hRec, TH1* hGen) {
+  HelperGeneral::CheckHistogramsForAxisIdentity<TH2, TH2>(hRec, nullptr, "XY");
+  HelperGeneral::CheckHistogramsForXaxisIdentity(hRec, hGen);
+
+  TH2* hResp = dynamic_cast<TH2*>(hRec->Clone());
+  TH2* hRelErr = dynamic_cast<TH2*>(hRec->Clone());
+  hResp->Reset();
+  hRelErr->Reset();
+
+  auto EvalResponce = [](double num, double den) {
+    if (den == 0.) return 0.;
+    else return num / den;
+  };
+
+  auto EvalRelErrOfResponce = [](double num, double den) {
+    if (num == 0. || den == 0.) return 0.;
+    if (num > den) {
+      std::cout << "Warning! HelperMath::EvaluateResponseMatrix::EvalRelErrOfResponce() num > den (" << num << " vs " << den << ")\n";
+      return 1.;
+    }
+
+    return std::sqrt(1. / num - 1. / den);
+  };
+
+  auto EvalAbsErrOfRelErrOfResponce = [&](double num, double den) {
+    if (num == 0. || den == 0. || num > den) return 0.;
+
+    auto relErr = EvalRelErrOfResponce(num, den);
+    return 1. / 2. / relErr * std::sqrt(1. / num / num / num + 1. / den / den / den - 2. / num / den / den);
+  };
+
+  const int nBins = hRec->GetNbinsX();
+  for(int jBin=1; jBin<= nBins; ++jBin) {
+    const double den = hGen->GetBinContent(jBin);
+    for(int iBin=1; iBin<=nBins; ++iBin) {
+      const double num = hRec->GetBinContent(iBin, jBin);
+      const double resp = EvalResponce(num, den);
+      const double relErr = EvalRelErrOfResponce(num, den);
+      const double absErrOnRelErr = EvalAbsErrOfRelErrOfResponce(num, den);
+      hResp->SetBinContent(iBin, jBin, resp);
+      hResp->SetBinError(iBin, jBin, resp * relErr);
+      hRelErr->SetBinContent(iBin, jBin, relErr);
+      hRelErr->SetBinError(iBin, jBin, absErrOnRelErr);
+    } // iBin, rec
+  } // jBin, gen
+
+  return std::make_pair(hResp, hRelErr);
 }
 
 double HelperMath::EvalErrorFitFunction(double x, TF1* func, const TMatrixDSym& cov) {

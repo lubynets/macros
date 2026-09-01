@@ -8,6 +8,7 @@
 #include <TFile.h>
 #include <TGraphErrors.h>
 #include <TH1.h>
+#include <TH2.h>
 #include <TLegend.h>
 #include <TString.h>
 #include <TStyle.h>
@@ -20,6 +21,7 @@ using namespace HelperMath;
 using namespace HelperPlot;
 
 void RebinHistoToEdges(TH1*& histo, const std::vector<double>& edges);
+void RebinHistoToEdges(TH2*& histo, const std::vector<double>& edges);
 
 void efficiency_bdtcutset(const std::string& fileName) {
   LoadMacro("styles/mc_qa2.style.cc");
@@ -34,10 +36,10 @@ void efficiency_bdtcutset(const std::string& fileName) {
   const std::vector<double> lifeTimeRanges = {0.2, 0.4, 0.6, 0.8, 1.0, 1.4, 1.8};
   const std::vector<double> pTRanges = {1, 2, 3, 4, 5, 8, 12, 20};
 
-  std::vector<float> bdtScores{/*0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90*/};
-  for(int i=0; i<=99; i++) {
-    bdtScores.emplace_back(0.01 * i);
-  }
+  std::vector<float> bdtScores{0.20, 0.25/*, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90*/};
+//   for(int i=0; i<=99; i++) {
+//     bdtScores.emplace_back(0.01 * i);
+//   }
 // //   bdtScores.emplace_back(0.01);
 
   std::vector<std::pair<double, double>> pTIntervals{};
@@ -107,20 +109,30 @@ void efficiency_bdtcutset(const std::string& fileName) {
           }
           if(score == bdtScores.at(0)) std::cout << "\n";
 
-          TH1* histoRec = GetObjectWithNullptrCheck<TH1>(fileIn, "rec/" + promptness + "/" + PtRangeString(pTIntervals.at(iPt)) + "/hT_" + tarSigShortcut + "gt" + sScore + weightPresences.at(iWeightPresence));
+          const std::string histoRecName{"rec/" + promptness + "/" + PtRangeString(pTIntervals.at(iPt)) + "/hT_" + tarSigShortcut + "gt" + sScore + weightPresences.at(iWeightPresence)};
+          std::string histoRecName2D{histoRecName};
+          ReplaceSubstrInStr(histoRecName2D, "hT", "h2T");
+          TH1* histoRec = GetObjectWithNullptrCheck<TH1>(fileIn, histoRecName);
+          TH2* histoRec2D = GetObjectWithNullptrCheck<TH2>(fileIn, histoRecName2D);
           RebinHistoToEdges(histoRec, lifeTimeRanges);
+          RebinHistoToEdges(histoRec2D, lifeTimeRanges);
           histoRec->UseCurrentStyle();
+          histoRec2D->UseCurrentStyle();
 
           CD(fileOut, "yields/" + promptness + "/" + PtRangeString(pTIntervals.at(iPt)));
           histoRec->Write(("rec_" + tarSigShortcut + "gt" + sScore + weightPresences.at(iWeightPresence)).c_str());
+          histoRec2D->Write(("rec2D_" + tarSigShortcut + "gt" + sScore + weightPresences.at(iWeightPresence)).c_str()); // NOTE to start with
 
-          auto [histoEff, histoEffRelErr] = EvaluateEfficiencyHisto(histoRec, histoGen);
+          const auto [histoEff, histoEffRelErr] = EvaluateEfficiencyHisto(histoRec, histoGen);
+          const auto [histoResp, histoRespRelErr] = EvaluateResponseMatrix(histoRec2D, histoGen);
 
           CD(fileOut, "effs/" + promptness + "/" + PtRangeString(pTIntervals.at(iPt)));
           histoEff->Write(("eff_" + tarSigShortcut + "gt" + sScore + weightPresences.at(iWeightPresence)).c_str());
+          histoResp->Write(("r_" + tarSigShortcut + "gt" + sScore + weightPresences.at(iWeightPresence)).c_str());
 
           CD(fileOut, "errs/" + promptness + "/" + PtRangeString(pTIntervals.at(iPt)));
           histoEffRelErr->Write(("err_" + tarSigShortcut + "gt" + sScore + weightPresences.at(iWeightPresence)).c_str());
+          histoRespRelErr->Write(("r_err_" + tarSigShortcut + "gt" + sScore + weightPresences.at(iWeightPresence)).c_str());
 
           const std::string openOption = iPromptness + iPt + iWeightPresence == 0 ? "recreate" : "update";
           TFile* fileOutScore = TFile::Open(("Eff_times_Acc_Lc." + tarSigShortcut + "gt" + sScore + ".root").c_str(), openOption.c_str());
@@ -166,8 +178,61 @@ void efficiency_bdtcutset(const std::string& fileName) {
   fileIn->Close();
 }
 
-void RebinHistoToEdges(TH1*& histo, const std::vector<double>& edges) {
-  histo = dynamic_cast<TH1*>(histo->Rebin(edges.size() - 1,histo->GetName(),edges.data()));
+void RebinHistoToEdges(TH1*& histo, const std::vector<double>& edges) { // TODO consider mv to Helper
+  histo = dynamic_cast<TH1*>(histo->Rebin(edges.size() - 1, histo->GetName(), edges.data()));
+}
+
+void RebinHistoToEdges(TH2*& histo, const std::vector<double>& edges) { // TODO consider mv to Helper
+  const int nBins = edges.size() - 1;
+
+  // Preserve whether Sumw2 was actually enabled.
+  const bool hasSumw2 = histo->GetSumw2N() > 0;
+
+  auto* rebinned = new TH2D("", histo->GetTitle(), nBins, edges.data(), nBins, edges.data());
+  rebinned->SetDirectory(nullptr);
+  rebinned->SetName(histo->GetName());
+
+  rebinned->GetXaxis()->SetTitle(histo->GetXaxis()->GetTitle());
+  rebinned->GetYaxis()->SetTitle(histo->GetYaxis()->GetTitle());
+
+  if (hasSumw2) rebinned->Sumw2();
+
+  // Include underflow and overflow, like histogram rebinning should.
+  for (int ix = 0; ix <= histo->GetNbinsX() + 1; ++ix) {
+    const double x = histo->GetXaxis()->GetBinCenter(ix);
+
+    int jx;
+    if (ix == 0) jx = 0;
+    else if (ix == histo->GetNbinsX() + 1) jx = nBins + 1;
+    else jx = rebinned->GetXaxis()->FindBin(x);
+
+    for (int iy = 0; iy <= histo->GetNbinsY() + 1; ++iy) {
+      const double y = histo->GetYaxis()->GetBinCenter(iy);
+
+      int jy;
+      if (iy == 0) jy = 0;
+      else if (iy == histo->GetNbinsY() + 1) jy = nBins + 1;
+      else jy = rebinned->GetYaxis()->FindBin(y);
+
+      const int oldBin = histo->GetBin(ix, iy);
+      const int newBin = rebinned->GetBin(jx, jy);
+
+      rebinned->SetBinContent(newBin, rebinned->GetBinContent(newBin) + histo->GetBinContent(oldBin));
+
+      if (hasSumw2) {
+        const double oldErr = histo->GetBinError(oldBin);
+        const double newErr = rebinned->GetBinError(newBin);
+
+        rebinned->SetBinError(newBin, std::sqrt(newErr * newErr + oldErr * oldErr));
+      }
+    } // iy
+  } // ix
+
+  // Preserve number of entries.
+  rebinned->SetEntries(histo->GetEntries());
+
+  delete histo;
+  histo = rebinned;
 }
 
 int main(int argc, char* argv[]) {

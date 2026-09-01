@@ -9,6 +9,8 @@
 
 #include <TFile.h>
 #include <TGraph.h>
+#include <TH1.h>
+#include <TH2.h>
 #include <TMatrixDSym.h>
 
 namespace HelperMath {
@@ -69,6 +71,8 @@ void EvalNormDifferenceHistoFromFunction(TH1* histo, TF1* func, const std::strin
 void InvertHisto(TH1* histo);
 
 std::pair<TH1*, TH1*> EvaluateEfficiencyHisto(TH1* hNum, TH1* hDen);
+
+std::pair<TH2*, TH2*> EvaluateResponseMatrix(TH2* hRec, TH1* hGen);
 
 template<typename T>
 void Sumw2IfNotYet(T* histo, bool value = true) {

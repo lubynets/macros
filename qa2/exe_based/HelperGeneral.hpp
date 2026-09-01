@@ -69,8 +69,8 @@ void LoadMacro(const std::string& macroName);
 
 void CD(TFile* file, const std::string& dirName);
 
-template <typename T>
-void CheckHistogramsForAxisIdentity(const T* h1, const T* h2, const std::string& axis) {
+template <typename T, typename U>
+void CheckHistogramsForAxisIdentity(const T* h1, const U* h2, const std::string& axis) {
   const TAxis* a1{};
   const TAxis* a2{};
   if(axis == "X" || axis == "x") {
@@ -79,6 +79,10 @@ void CheckHistogramsForAxisIdentity(const T* h1, const T* h2, const std::string&
   } else if(axis == "Y" || axis == "y") {
     a1 = h1->GetYaxis();
     a2 = h2->GetYaxis();
+  } else if(axis == "XY" || axis == "xy") {
+    h2 = h1;
+    a1 = h1->GetXaxis();
+    a2 = h1->GetYaxis();
   } else throw std::runtime_error("HelperGeneral::CheckHistogramsForAxisIdentity(): axis must be either X or Y");
   if(a1->GetNbins() != a2->GetNbins()) {
     throw std::runtime_error("HelperGeneral::CheckHistogramsForAxisIdentity(): nBins at " + axis + " axis do not match for " + static_cast<std::string>(h1->GetName()) + " and " + h2->GetName());
@@ -91,8 +95,8 @@ void CheckHistogramsForAxisIdentity(const T* h1, const T* h2, const std::string&
   }
 }
 
-template <typename T>
-void CheckHistogramsForXaxisIdentity(const T* h1, const T* h2) {
+template <typename T, typename U>
+void CheckHistogramsForXaxisIdentity(const T* h1, const U* h2) {
   CheckHistogramsForAxisIdentity(h1, h2, "X");
 }
 
