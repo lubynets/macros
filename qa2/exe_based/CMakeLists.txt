@@ -30,6 +30,7 @@ SET(EXECUTABLES
     multifit_qa
     tpc_qa
     corrected_yield_syst_qa
+    relative_efficiency
 )
 
 SET(SOURCES
