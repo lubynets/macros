@@ -1,6 +1,6 @@
 FILE_NAME_TEMPLATE="CutVarLc"
 
-FILE_NAME_PREFIXES=("Distr_" "Eff_" "Frac_" "Unc_" "CovMatrix_" "")
+FILE_NAME_PREFIXES=("Distr_" "Eff_" "Frac_" "Unc_" "RelUnc_" "CovMatrix_" "")
 
 FROM=${1}
 TO=${2}
