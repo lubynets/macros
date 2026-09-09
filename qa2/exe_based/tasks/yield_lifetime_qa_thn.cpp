@@ -172,7 +172,7 @@ int main(int argc, char* argv[]) {
 //   for (int iB = 0; iB <= 99; iB++) {
 //     gBdtSignalLowerValues.emplace_back(0.01 * iB);
 //   }
-  gBdtSignalLowerValues = {0.20, 0.25/*, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90*/};
+  gBdtSignalLowerValues = {0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90};
 
   if(modeRun != MergeOnly) {
     FillYield(fileName, filePtWeightName, true, nCtSigmaFromPdg, pCMM, npCMM);
