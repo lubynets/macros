@@ -8,7 +8,6 @@
 #include "HelperGeneral.hpp"
 
 #include <TFile.h>
-#include <TGraph.h>
 #include <TH1.h>
 #include <TH2.h>
 #include <TMatrixDSym.h>
@@ -16,13 +15,6 @@
 namespace HelperMath {
 
 std::pair<double, double> EstimateExpoParameters(TH1* h);
-
-std::pair<double, double> DetermineWorkingRangesTH1(const TH1* histo, double leftMargin=0.0015, double rightMargin=0.0015);
-
-TGraph* EvaluateMovingAverage(const TGraph* graphIn, int radius, bool isExcludeOwnPoint=false);
-void EvaluateMovingAverage(const TGraph* graphIn, TGraph* graphOut, int radius, bool isExcludeOwnPoint=false);
-
-void DivideGraph(TGraph* num, const TGraph* den);
 
 template <typename T, size_t N>
 struct nested_vector {

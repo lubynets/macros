@@ -21,8 +21,6 @@
 namespace HelperGeneral {
 
 constexpr double massLambdaC{2.28646};
-constexpr double massLambdaCDetectorWidth{0.01}; // by order of magnitude. Needed for initializing the fit.
-
 constexpr double UndefValueDouble{-999.};
 constexpr float UndefValueFloat{-999.f};
 constexpr int UndefValueInt{-999};
@@ -48,8 +46,6 @@ std::string to_string_with_significant_figures(const T a_value, const int n=2) {
   return to_string_with_precision(reshifted_value, precision);
 }
 
-std::vector<std::pair<std::string, std::string>> FindCuts(TFile* fileIn, std::string name_start, bool printCuts=false);
-
 bool string_to_bool(const std::string& str);
 
 TFile* OpenFileWithNullptrCheck(const std::string& fileName, const std::string& option="read");
@@ -62,8 +58,6 @@ T* GetObjectWithNullptrCheck(TFile* fileIn, const std::string& objectName) {
   }
   return ptr;
 }
-
-void PrintInfoOnTF1(const TF1* f);
 
 void LoadMacro(const std::string& macroName);
 
