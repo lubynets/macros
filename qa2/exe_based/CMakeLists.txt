@@ -17,6 +17,7 @@ SET(EXECUTABLES
     tpc_qa
     corrected_yield_syst_qa
     relative_efficiency
+    ct_fit_ff
 )
 
 SET(SOURCES
