@@ -5,6 +5,4 @@
 #pragma link off all global;
 #pragma link off all typedef;
 
-// #pragma link C++ class ShapeFitter+;
-
 #endif
