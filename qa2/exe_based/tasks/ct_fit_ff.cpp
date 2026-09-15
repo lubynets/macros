@@ -3,6 +3,7 @@
 //
 #include "HelperGeneral.hpp"
 
+#include <TF1.h>
 #include <TFile.h>
 #include <TH1.h>
 #include <TH2.h>
@@ -58,14 +59,41 @@ void ct_fit_ff(const std::string& fileNameYield, const std::string& fileNameResp
   TFile* fileYield = OpenFileWithNullptrCheck(fileNameYield);
   TH1* histoYield = GetObjectWithNullptrCheck<TH1>(fileYield, "hCorrYieldsPrompt");
 
+  histoYield->SetMarkerColor(kBlue);
+  histoYield->SetLineColor(kBlue);
+  histoYield->SetMarkerStyle(kFullSquare);
+  histoYield->SetMarkerSize(1.6);
+  histoYield->GetYaxis()->SetTitle("semi-corrected yield prompt");
+
   TFile* fileRespMatrix = OpenFileWithNullptrCheck(fileNameResponseMatrix);
   TH2* histoRespMatrix = GetObjectWithNullptrCheck<TH2>(fileRespMatrix, histoNameResponseMatrix);
 
   CheckHistogramsForAxisIdentity<TH2, TH2>(histoRespMatrix, nullptr, "XY");
   CheckHistogramsForAxisIdentity(histoRespMatrix, histoYield, "X");
 
-//   TH1* histEff = histoRespMatrix->ProjectionX(); // for expo parameters estimate only
+  const double lo = histoYield->GetXaxis()->GetXmin();
+  const double hi = histoYield->GetXaxis()->GetXmax();
 
+  // ------------- expo parameters estimate --------------------------------------------
+  TH1* histEff = histoRespMatrix->ProjectionX(); // for expo parameters estimate only
+  TH1* histPreliminaryCorrectedYield = dynamic_cast<TH1*>(histoYield->Clone());
+  histPreliminaryCorrectedYield->SetDirectory(nullptr);
+  histPreliminaryCorrectedYield->Divide(histEff);
+  const double preliminaryYield = histPreliminaryCorrectedYield->Integral();
+  const double preliminaryA = preliminaryYield / LifetimeLambdaC / (std::exp(-lo / LifetimeLambdaC) - std::exp(-hi / LifetimeLambdaC));
+  // -----------------------------------------------------------------------------------
+
+  ForwardFoldedExpo ffe{};
+  ffe.SetResponseMatrix(histoRespMatrix);
+  ffe.Init();
+
+  TF1* fitFunc = new TF1("fitFunc", ffe, 0., 2., 2);
+  fitFunc->SetParameters(preliminaryA, LifetimeLambdaC);
+  fitFunc->SetNpx(1000);
+
+  histoYield->Fit(fitFunc, "", "", lo, hi);
+
+  histoYield->SaveAs("h1.root");
 
   fileRespMatrix->Close();
   fileYield->Close();

@@ -20,7 +20,8 @@
 
 namespace HelperGeneral {
 
-constexpr double massLambdaC{2.28646};
+constexpr double massLambdaC{2.28646}; // GeV/c2
+constexpr double LifetimeLambdaC{0.2026}; // ps
 constexpr double UndefValueDouble{-999.};
 constexpr float UndefValueFloat{-999.f};
 constexpr int UndefValueInt{-999};
