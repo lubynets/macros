@@ -65,6 +65,14 @@ void LoadMacro(const std::string& macroName);
 
 void CD(TFile* file, const std::string& dirName);
 
+template<typename T, typename U>
+[[nodiscard]] bool EqualFloating(T value1, U value2, double tolerance = 1.e-4) {
+  static_assert(std::is_floating_point_v<T>, "HelperGeneral::EqualFloating(): T must be a floating-point type");
+  static_assert(std::is_floating_point_v<U>, "HelperGeneral::EqualFloating(): U must be a floating-point type");
+
+  return std::fabs(value1 - value2) < tolerance;
+}
+
 template <typename T, typename U>
 void CheckHistogramsForAxisIdentity(const T* h1, const U* h2, const std::string& axis) {
   const TAxis* a1{};
@@ -85,7 +93,7 @@ void CheckHistogramsForAxisIdentity(const T* h1, const U* h2, const std::string&
   }
   const int nBins = a1->GetNbins();
   for(int iBin=1; iBin<=nBins; iBin++) {
-    if(std::abs(a1->GetBinCenter(iBin) - a2->GetBinCenter(iBin)) > 1e-6) {
+    if(EqualFloating(a1->GetBinCenter(iBin), a2->GetBinCenter(iBin), 1e-6)) {
       throw std::runtime_error("HelperGeneral::CheckHistogramsForAxisIdentity(): bins do not coincide for " + static_cast<std::string>(h1->GetName()) + " and " + h2->GetName());
     }
   }
@@ -100,7 +108,7 @@ std::map<std::string_view, int> MapTHnSparseAxesIndices(const THnSparse* histo);
 
 void CheckTAxisForRanges(const TAxis& axis, const std::vector<double>& ranges);
 
-void SetTHnSparseAxisRanges(THnSparse* histo, int axisNum, float lo= -999., float hi= -999.);
+void SetTHnSparseAxisRanges(THnSparse* histo, int axisNum, float lo= UndefValueFloat, float hi= UndefValueFloat);
 
 double InterpolateTH1SuppressWarning(const TH1* h, double value);
 
@@ -157,13 +165,6 @@ void RebinHistoToEdges(TH1*& histo, const std::vector<double>& edges);
 
 void RebinHistoToEdges(TH2*& histo, const std::vector<double>& edges);
 
-template<typename T, typename U>
-[[nodiscard]] bool EqualFloating(T value1, U value2, double tolerance = 1.e-4) {
-  static_assert(std::is_floating_point_v<T>, "HelperGeneral::EqualFloating(): T must be a floating-point type");
-  static_assert(std::is_floating_point_v<U>, "HelperGeneral::EqualFloating(): U must be a floating-point type");
-
-  return std::fabs(value1 - value2) < tolerance;
-}
 };
 
 

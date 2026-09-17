@@ -13,6 +13,8 @@
 
 #include <stdexcept>
 
+using namespace HelperGeneral;
+
 std::pair<double, double> HelperMath::EstimateExpoParameters(TH1* h) {
   int ilo{1};
   while(h->GetBinContent(ilo) == 0.) {
@@ -204,19 +206,19 @@ TH1* HelperMath::CutSubHistogram(const TH1* histoIn, double lo, double hi) {
   if(lo >= hi) throw std::runtime_error("HelperMath::CutSubHistogram(): lo >= hi");
 
   const double tolerance = 1e-6;
-  int binLoIn{-999};
+  int binLoIn{UndefValueInt};
   bool isEndReached{false};
   std::vector<double> binEdges;
   for(int iBin=1, nBins=histoIn->GetNbinsX(); iBin<=nBins+1; ++iBin) {
     const double binLowEdge = histoIn->GetBinLowEdge(iBin);
-    if(std::fabs(binLowEdge - lo) < tolerance) binLoIn = iBin;
-    if(binLoIn != -999) binEdges.emplace_back(binLowEdge);
-    if(std::fabs(binLowEdge - hi) < tolerance) {
+    if(EqualFloating(binLowEdge, lo, tolerance)) binLoIn = iBin;
+    if(binLoIn != UndefValueInt) binEdges.emplace_back(binLowEdge);
+    if(EqualFloating(binLowEdge, hi, tolerance)) {
       isEndReached = true;
       break;
     }
   } // histoIn bins
-  if(binLoIn == -999 || !isEndReached) throw std::runtime_error("HelperMath::CutSubHistogram(): either lo or hi does not match any of histoIn bin edges");
+  if(binLoIn == UndefValueInt || !isEndReached) throw std::runtime_error("HelperMath::CutSubHistogram(): either lo or hi does not match any of histoIn bin edges");
 
   TH1* histoOut = new TH1D("", "", binEdges.size()-1, binEdges.data());
   histoOut->SetDirectory(nullptr);

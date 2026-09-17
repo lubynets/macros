@@ -8,6 +8,7 @@
 #include <TH2.h>
 #include <TROOT.h>
 
+#include <algorithm>
 #include <fstream>
 #include <string>
 #include <string_view>
@@ -47,7 +48,7 @@ void HelperGeneral::CheckTAxisForRanges(const TAxis& axis, const std::vector<dou
     bool ok{false};
     for(int iBin=1; iBin<=nBins+1; ++iBin) {
       const float edge = axis.GetBinLowEdge(iBin);
-      if(std::fabs(edge - range) < 1e-4) { // TODO use EqualFloating
+      if(EqualFloating(edge, range)) {
         ok = true;
         break;
       }
@@ -59,9 +60,9 @@ void HelperGeneral::CheckTAxisForRanges(const TAxis& axis, const std::vector<dou
 }
 
 void HelperGeneral::SetTHnSparseAxisRanges(THnSparse* histo, int axisNum, float lo, float hi) {
-  constexpr double tolerance = 1e-6;
+  constexpr double tolerance{1.e-6};
 
-  if(std::fabs(lo+999)<tolerance && std::fabs(hi+999)<tolerance) { // TODO use EqualFloating TODO magic 999
+  if(EqualFloating(lo, UndefValueFloat, tolerance) && EqualFloating(hi, UndefValueFloat, tolerance)) {
     histo->GetAxis(axisNum)->SetRange();
     return;
   }
@@ -69,15 +70,15 @@ void HelperGeneral::SetTHnSparseAxisRanges(THnSparse* histo, int axisNum, float 
   if(lo >= hi) throw std::runtime_error("SetTHnSparseAxisRanges(): lo >= hi");
 
   const TAxis* axis = histo->GetAxis(axisNum);
-  int binLo{-999}, binHi{-999};
+  int binLo{UndefValueInt}, binHi{UndefValueInt};
   for(int iBin=1, nBins=axis->GetNbins(); iBin<=nBins; ++iBin) {
     const float binLowEdge = axis->GetBinLowEdge(iBin);
     const float binUpEdge = axis->GetBinUpEdge(iBin);
-    if(std::fabs(binLowEdge - lo)<tolerance) binLo = iBin; // TODO use EqualFloating
-    if(std::fabs(binUpEdge - hi)<tolerance) binHi = iBin; // TODO use EqualFloating
-    if(binLo != -999 && binHi != -999) break;
+    if(EqualFloating(binLowEdge, lo, tolerance)) binLo = iBin;
+    if(EqualFloating(binUpEdge, hi, tolerance))  binHi = iBin;
+    if(binLo != UndefValueInt && binHi != UndefValueInt) break;
   }
-  if(binLo == -999 || binHi == -999) throw std::runtime_error("SetTHnSparseAxisRanges(): binLo == -999 || binHi == -999");
+  if(binLo == UndefValueInt || binHi == UndefValueInt) throw std::runtime_error("SetTHnSparseAxisRanges(): binLo == -999 || binHi == -999");
   histo->GetAxis(axisNum)->SetRange(binLo, binHi);
 }
 
@@ -135,12 +136,14 @@ void HelperGeneral::ReplaceSubstrInStr(std::string& s, const std::string& from, 
   }
 }
 
-void HelperGeneral::RebinHistoToEdges(TH1*& histo, const std::vector<double>& edges) { // TODO check std::is_sorted
+void HelperGeneral::RebinHistoToEdges(TH1*& histo, const std::vector<double>& edges) {
+  if(!std::is_sorted(edges.begin(), edges.end())) throw std::runtime_error("HelperGeneral::RebinHistoToEdges(): the edges vector is not sorted");
   CheckTAxisForRanges(*histo->GetXaxis(), edges);
   histo = dynamic_cast<TH1*>(histo->Rebin(edges.size() - 1, histo->GetName(), edges.data()));
 }
 
 void HelperGeneral::RebinHistoToEdges(TH2*& histo, const std::vector<double>& edges) {
+  if(!std::is_sorted(edges.begin(), edges.end())) throw std::runtime_error("HelperGeneral::RebinHistoToEdges(): the edges vector is not sorted");
   const int nBins = edges.size() - 1;
 
   // Preserve whether Sumw2 was actually enabled.

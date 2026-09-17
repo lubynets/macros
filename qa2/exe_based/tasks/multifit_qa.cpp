@@ -230,7 +230,7 @@ void MultiFitQa(const std::string& strategy) {
     const int nPoints = gr->GetN();
     for(int iPoint=0; iPoint<nPoints; ++ iPoint) {
       const double grX = gr->GetPointX(iPoint);
-      if(std::fabs(grX - x) < 1e-4) return iPoint;
+      if(EqualFloating(grX, x)) return iPoint;
     }
     return -1;
   };
