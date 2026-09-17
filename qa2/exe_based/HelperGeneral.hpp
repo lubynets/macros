@@ -6,10 +6,11 @@
 #define QA2_HELPERGENERAL_HPP
 
 #include <TAxis.h>
-#include <TH1.h>
-#include <THnSparse.h>
 #include <TFile.h>
 #include <TF1.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <THnSparse.h>
 
 #include <cmath>
 #include <sstream>
@@ -151,6 +152,18 @@ std::string ReadNthLine(const std::string& fileName);
 void MkDirBash(const std::string& dirName);
 
 void ReplaceSubstrInStr(std::string& s, const std::string& from, const std::string& to);
+
+void RebinHistoToEdges(TH1*& histo, const std::vector<double>& edges);
+
+void RebinHistoToEdges(TH2*& histo, const std::vector<double>& edges);
+
+template<typename T, typename U>
+[[nodiscard]] bool EqualFloating(T value1, U value2, double tolerance = 1.e-4) {
+  static_assert(std::is_floating_point_v<T>, "HelperGeneral::EqualFloating(): T must be a floating-point type");
+  static_assert(std::is_floating_point_v<U>, "HelperGeneral::EqualFloating(): U must be a floating-point type");
+
+  return std::fabs(value1 - value2) < tolerance;
+}
 };
 
 

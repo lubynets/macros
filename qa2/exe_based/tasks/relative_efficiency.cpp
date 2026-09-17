@@ -20,6 +20,7 @@ void relative_efficiency(const std::string& fileName) {
 
   // ========================= Configuration =================================
   const std::vector<double> pTRanges = {1, 2, 3, 4, 5, 8, 12, 20};
+  const std::vector<double> lifeTimeRanges = {0.2, 0.4, 0.6, 0.8, 1.0, 1.4, 1.8};
 
   std::vector<float> bdtScores{0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90};
 //   for(int i=0; i<=99; i++) {
@@ -60,6 +61,7 @@ void relative_efficiency(const std::string& fileName) {
           TFile* fileOutScore = TFile::Open(("RelEff_Lc.NPgt" + to_string_with_precision(score, 2) + ".root").c_str(), openOption.c_str());
           TH1* hRecScore = MultResponseByGenYield(hRespScore, hGen);
           hRecScore->Divide(hRecScore, hRecRef, 1., 1., "B");
+          RebinHistoToEdges(hRecScore, lifeTimeRanges);
           CD(fileOutScore, PtRangeString(pTIntervals.at(iPt)));
           hRecScore->Write((promptness + weightPresence).c_str());
           fileOutScore->Close();

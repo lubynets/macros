@@ -5,11 +5,13 @@
 #include "HelperGeneral.hpp"
 
 #include <TH1.h>
+#include <TH2.h>
 #include <TROOT.h>
 
 #include <fstream>
 #include <string>
 #include <string_view>
+#include <vector>
 
 bool HelperGeneral::string_to_bool(const std::string& str) {
   if(str == "true") return true;
@@ -45,7 +47,7 @@ void HelperGeneral::CheckTAxisForRanges(const TAxis& axis, const std::vector<dou
     bool ok{false};
     for(int iBin=1; iBin<=nBins+1; ++iBin) {
       const float edge = axis.GetBinLowEdge(iBin);
-      if(std::fabs(edge - range) < 1e-4) {
+      if(std::fabs(edge - range) < 1e-4) { // TODO use EqualFloating
         ok = true;
         break;
       }
@@ -59,7 +61,7 @@ void HelperGeneral::CheckTAxisForRanges(const TAxis& axis, const std::vector<dou
 void HelperGeneral::SetTHnSparseAxisRanges(THnSparse* histo, int axisNum, float lo, float hi) {
   constexpr double tolerance = 1e-6;
 
-  if(std::fabs(lo+999)<tolerance && std::fabs(hi+999)<tolerance) {
+  if(std::fabs(lo+999)<tolerance && std::fabs(hi+999)<tolerance) { // TODO use EqualFloating TODO magic 999
     histo->GetAxis(axisNum)->SetRange();
     return;
   }
@@ -71,8 +73,8 @@ void HelperGeneral::SetTHnSparseAxisRanges(THnSparse* histo, int axisNum, float 
   for(int iBin=1, nBins=axis->GetNbins(); iBin<=nBins; ++iBin) {
     const float binLowEdge = axis->GetBinLowEdge(iBin);
     const float binUpEdge = axis->GetBinUpEdge(iBin);
-    if(std::fabs(binLowEdge - lo)<tolerance) binLo = iBin;
-    if(std::fabs(binUpEdge - hi)<tolerance) binHi = iBin;
+    if(std::fabs(binLowEdge - lo)<tolerance) binLo = iBin; // TODO use EqualFloating
+    if(std::fabs(binUpEdge - hi)<tolerance) binHi = iBin; // TODO use EqualFloating
     if(binLo != -999 && binHi != -999) break;
   }
   if(binLo == -999 || binHi == -999) throw std::runtime_error("SetTHnSparseAxisRanges(): binLo == -999 || binHi == -999");
@@ -131,4 +133,62 @@ void HelperGeneral::ReplaceSubstrInStr(std::string& s, const std::string& from, 
     s.replace(pos, from.size(), to);
     pos += to.size();
   }
+}
+
+void HelperGeneral::RebinHistoToEdges(TH1*& histo, const std::vector<double>& edges) { // TODO check std::is_sorted
+  CheckTAxisForRanges(*histo->GetXaxis(), edges);
+  histo = dynamic_cast<TH1*>(histo->Rebin(edges.size() - 1, histo->GetName(), edges.data()));
+}
+
+void HelperGeneral::RebinHistoToEdges(TH2*& histo, const std::vector<double>& edges) {
+  const int nBins = edges.size() - 1;
+
+  // Preserve whether Sumw2 was actually enabled.
+  const bool hasSumw2 = histo->GetSumw2N() > 0;
+
+  auto* rebinned = new TH2D("", histo->GetTitle(), nBins, edges.data(), nBins, edges.data());
+  rebinned->SetDirectory(nullptr);
+  rebinned->SetName(histo->GetName());
+
+  rebinned->GetXaxis()->SetTitle(histo->GetXaxis()->GetTitle());
+  rebinned->GetYaxis()->SetTitle(histo->GetYaxis()->GetTitle());
+
+  if (hasSumw2) rebinned->Sumw2();
+
+  // Include underflow and overflow, like histogram rebinning should.
+  for (int ix = 0; ix <= histo->GetNbinsX() + 1; ++ix) {
+    const double x = histo->GetXaxis()->GetBinCenter(ix);
+
+    int jx;
+    if (ix == 0) jx = 0;
+    else if (ix == histo->GetNbinsX() + 1) jx = nBins + 1;
+    else jx = rebinned->GetXaxis()->FindBin(x);
+
+    for (int iy = 0; iy <= histo->GetNbinsY() + 1; ++iy) {
+      const double y = histo->GetYaxis()->GetBinCenter(iy);
+
+      int jy;
+      if (iy == 0) jy = 0;
+      else if (iy == histo->GetNbinsY() + 1) jy = nBins + 1;
+      else jy = rebinned->GetYaxis()->FindBin(y);
+
+      const int oldBin = histo->GetBin(ix, iy);
+      const int newBin = rebinned->GetBin(jx, jy);
+
+      rebinned->SetBinContent(newBin, rebinned->GetBinContent(newBin) + histo->GetBinContent(oldBin));
+
+      if (hasSumw2) {
+        const double oldErr = histo->GetBinError(oldBin);
+        const double newErr = rebinned->GetBinError(newBin);
+
+        rebinned->SetBinError(newBin, std::sqrt(newErr * newErr + oldErr * oldErr));
+      }
+    } // iy
+  } // ix
+
+  // Preserve number of entries.
+  rebinned->SetEntries(histo->GetEntries());
+
+  delete histo;
+  histo = rebinned;
 }

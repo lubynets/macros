@@ -8,11 +8,16 @@
 #include <TH1.h>
 #include <TH2.h>
 
+#include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <stdexcept>
 #include <string>
+#include <vector>
 
 using namespace HelperGeneral;
+
+void ExtendHistoWithEmptyBinsLeft(TH1*& histo, const std::vector<double>& additionalBinEdges);
 
 class ForwardFoldedExpo {
 public:
@@ -40,7 +45,7 @@ double ForwardFoldedExpo::IntegrateExpo(double from, double to) {
 }
 
 double ForwardFoldedExpo::IntegrateExpo(int iBin) {
-  return IntegrateExpo(response_matrix_->GetXaxis()->GetBinLowEdge(iBin), response_matrix_->GetXaxis()->GetBinLowEdge(iBin+1));
+  return IntegrateExpo(response_matrix_->GetYaxis()->GetBinLowEdge(iBin), response_matrix_->GetYaxis()->GetBinLowEdge(iBin+1));
 }
 
 double ForwardFoldedExpo::operator()(double* x, double* par) {
@@ -58,6 +63,7 @@ double ForwardFoldedExpo::operator()(double* x, double* par) {
 void ct_fit_ff(const std::string& fileNameYield, const std::string& fileNameResponseMatrix, const std::string& histoNameResponseMatrix) {
   TFile* fileYield = OpenFileWithNullptrCheck(fileNameYield);
   TH1* histoYield = GetObjectWithNullptrCheck<TH1>(fileYield, "hCorrYieldsPrompt");
+  ExtendHistoWithEmptyBinsLeft(histoYield, {0., 0.2});
 
   histoYield->SetMarkerColor(kBlue);
   histoYield->SetLineColor(kBlue);
@@ -71,8 +77,8 @@ void ct_fit_ff(const std::string& fileNameYield, const std::string& fileNameResp
   CheckHistogramsForAxisIdentity<TH2, TH2>(histoRespMatrix, nullptr, "XY");
   CheckHistogramsForAxisIdentity(histoRespMatrix, histoYield, "X");
 
-  const double lo = histoYield->GetXaxis()->GetXmin();
-  const double hi = histoYield->GetXaxis()->GetXmax();
+  const double lo = 0.2;
+  const double hi = 1.8;
 
   // ------------- expo parameters estimate --------------------------------------------
   TH1* histEff = histoRespMatrix->ProjectionX(); // for expo parameters estimate only
@@ -97,6 +103,33 @@ void ct_fit_ff(const std::string& fileNameYield, const std::string& fileNameResp
 
   fileRespMatrix->Close();
   fileYield->Close();
+}
+
+void ExtendHistoWithEmptyBinsLeft(TH1*& histo, const std::vector<double>& additionalBinEdges) {
+  if(additionalBinEdges.size() < 2) {
+    throw std::runtime_error("ExtendHistoWithEmptyBinsLeft() - need at least 2 bin edges");
+  }
+  if(!EqualFloating(additionalBinEdges.back(), histo->GetXaxis()->GetXmin())) {
+    throw std::runtime_error("ExtendHistoWithEmptyBinsLeft() - additionalBinEdges.back() != histo->GetXaxis()->GetXmin()");
+  }
+  if(!std::is_sorted(additionalBinEdges.begin(), additionalBinEdges.end())) {
+    throw std::runtime_error("ExtendHistoWithEmptyBinsLeft() - additionalBinEdges is not sorted");
+  }
+  const int nAddBins = additionalBinEdges.size() - 1;
+  std::vector<double> newHistoEdges{additionalBinEdges};
+  for(int iBin=1, nBins=histo->GetNbinsX(); iBin<=nBins; ++iBin) {
+    newHistoEdges.push_back(histo->GetBinLowEdge(iBin+1));
+  }
+  TH1* hResult = new TH1D(histo->GetName(), histo->GetTitle(), newHistoEdges.size()-1, newHistoEdges.data());
+  hResult->GetXaxis()->SetTitle(histo->GetXaxis()->GetTitle());
+  hResult->GetYaxis()->SetTitle(histo->GetYaxis()->GetTitle());
+  const bool hasSumw2 = histo->GetSumw2N() > 0;
+  if(hasSumw2) hResult->Sumw2();
+  for(int iBin=1, nBins=histo->GetNbinsX(); iBin<=nBins; ++iBin) {
+    hResult->SetBinContent(iBin+nAddBins, histo->GetBinContent(iBin));
+    if(hasSumw2) hResult->SetBinError(iBin+nAddBins, histo->GetBinError(iBin));
+  }
+  histo = hResult;
 }
 
 int main(int argc, char* argv[]) {
