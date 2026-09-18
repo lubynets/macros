@@ -60,10 +60,19 @@ double ForwardFoldedExpo::operator()(double* x, double* par) {
   return result;
 }
 
+[[deprecated]] void zeroNonDiagonalBins(TH2* histo) {
+  const int nBins = histo->GetNbinsX();
+  for(int iBin=1; iBin<=nBins; ++iBin) {
+    for(int jBin=1; jBin<=nBins; ++jBin) {
+      if(iBin != jBin) histo->SetBinContent(iBin, jBin, 0.);
+    }
+  }
+}
+
 void ct_fit_ff(const std::string& fileNameYield, const std::string& fileNameResponseMatrix, const std::string& histoNameResponseMatrix) {
   TFile* fileYield = OpenFileWithNullptrCheck(fileNameYield);
   TH1* histoYield = GetObjectWithNullptrCheck<TH1>(fileYield, "hCorrYieldsPrompt");
-  ExtendHistoWithEmptyBinsLeft(histoYield, {0., 0.2});
+//   ExtendHistoWithEmptyBinsLeft(histoYield, {0., 0.2});
 
   histoYield->SetMarkerColor(kBlue);
   histoYield->SetLineColor(kBlue);
@@ -73,6 +82,7 @@ void ct_fit_ff(const std::string& fileNameYield, const std::string& fileNameResp
 
   TFile* fileRespMatrix = OpenFileWithNullptrCheck(fileNameResponseMatrix);
   TH2* histoRespMatrix = GetObjectWithNullptrCheck<TH2>(fileRespMatrix, histoNameResponseMatrix);
+//   zeroNonDiagonalBins(histoRespMatrix);
 
   CheckHistogramsForAxisIdentity<TH2, TH2>(histoRespMatrix, nullptr, "XY");
   CheckHistogramsForAxisIdentity(histoRespMatrix, histoYield, "X");
@@ -100,6 +110,16 @@ void ct_fit_ff(const std::string& fileNameYield, const std::string& fileNameResp
   histoYield->Fit(fitFunc, "", "", lo, hi);
 
   histoYield->SaveAs("h1.root");
+
+  //----------debug only-------------------------- TODO remove
+  TFile* fileChi2 = TFile::Open("ct_fit_ff.chi2.root", "update");
+  TH1* hChi2 = GetObjectWithNullptrCheck<TH1>(fileChi2, "hChi2");
+  std::cout << hChi2->GetEntries() << "\t";
+  hChi2->Fill(fitFunc->GetChisquare());
+  std::cout << hChi2->GetEntries() << "\n";
+  fileChi2->WriteObject(hChi2, "hChi2", "Overwrite");
+  fileChi2->Close();
+  //----------------------------------------------------------
 
   fileRespMatrix->Close();
   fileYield->Close();
