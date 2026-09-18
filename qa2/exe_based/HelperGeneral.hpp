@@ -93,7 +93,7 @@ void CheckHistogramsForAxisIdentity(const T* h1, const U* h2, const std::string&
   }
   const int nBins = a1->GetNbins();
   for(int iBin=1; iBin<=nBins; iBin++) {
-    if(EqualFloating(a1->GetBinCenter(iBin), a2->GetBinCenter(iBin), 1e-6)) {
+    if(!EqualFloating(a1->GetBinCenter(iBin), a2->GetBinCenter(iBin), 1e-6)) {
       throw std::runtime_error("HelperGeneral::CheckHistogramsForAxisIdentity(): bins do not coincide for " + static_cast<std::string>(h1->GetName()) + " and " + h2->GetName());
     }
   }
