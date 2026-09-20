@@ -53,18 +53,26 @@ void relative_efficiency(const std::string& fileName) {
         CheckHistogramsForAxisIdentity<TH2, TH2>(hRespRef, nullptr, "XY");
         CheckHistogramsForAxisIdentity(hRespRef, hGen, "X");
         TH1* hRecRef = MultResponseByGenYield(hRespRef, hGen);
+        TH1* hRecRef1D = GetObjectWithNullptrCheck<TH1>(fileIn, "effs/" + promptness + "/" + PtRangeString(pTIntervals.at(iPt)) + "/eff_NPgt" + to_string_with_precision(refBdtScore, 2) + weightPresence);
         const std::string openOption = isFirstLoopIteration ? "recreate" : "update";
         for (const auto& score : bdtScores) {
           TH2* hRespScore = GetObjectWithNullptrCheck<TH2>(fileIn, "effs/" + promptness + "/" + PtRangeString(pTIntervals.at(iPt)) + "/r_NPgt" + to_string_with_precision(score, 2) + weightPresence);
           CheckHistogramsForAxisIdentity<TH2, TH2>(hRespScore, nullptr, "XY");
           CheckHistogramsForAxisIdentity(hRespScore, hGen, "X");
-          TFile* fileOutScore = TFile::Open(("RelEff_Lc.NPgt" + to_string_with_precision(score, 2) + ".root").c_str(), openOption.c_str());
           TH1* hRecScore = MultResponseByGenYield(hRespScore, hGen);
+          TH1* hRecScore1D = GetObjectWithNullptrCheck<TH1>(fileIn, "effs/" + promptness + "/" + PtRangeString(pTIntervals.at(iPt)) + "/eff_NPgt" + to_string_with_precision(score, 2) + weightPresence);
           hRecScore->Divide(hRecScore, hRecRef, 1., 1., "B");
-          RebinHistoToEdges(hRecScore, lifeTimeRanges);
+          hRecScore1D->Divide(hRecScore1D, hRecRef1D, 1., 1., "B");
+          RebinHistoToEdges(hRecScore, lifeTimeRanges); // TODO mv before division
+          RebinHistoToEdges(hRecScore1D, lifeTimeRanges); // TODO mv before division
+          TFile* fileOutScore = TFile::Open(("RelEff_Lc.NPgt" + to_string_with_precision(score, 2) + ".root").c_str(), openOption.c_str());
           CD(fileOutScore, PtRangeString(pTIntervals.at(iPt)));
           hRecScore->Write((promptness + weightPresence).c_str());
           fileOutScore->Close();
+          TFile* fileOutScoreAlt = TFile::Open(("RelEff_Lc.alt.NPgt" + to_string_with_precision(score, 2) + ".root").c_str(), openOption.c_str());
+          CD(fileOutScoreAlt, PtRangeString(pTIntervals.at(iPt)));
+          hRecScore1D->Write((promptness + weightPresence).c_str());
+          fileOutScoreAlt->Close();
         } // bdtScores
         isFirstLoopIteration = false;
       } // pTRanges
