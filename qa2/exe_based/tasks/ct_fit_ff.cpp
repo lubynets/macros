@@ -111,15 +111,15 @@ void ct_fit_ff(const std::string& fileNameYield, const std::string& fileNameResp
 
   histoYield->SaveAs("h1.root");
 
-  //----------debug only-------------------------- TODO remove
-  TFile* fileChi2 = TFile::Open("ct_fit_ff.chi2.root", "update");
-  TH1* hChi2 = GetObjectWithNullptrCheck<TH1>(fileChi2, "hChi2");
-  std::cout << hChi2->GetEntries() << "\t";
-  hChi2->Fill(fitFunc->GetChisquare());
-  std::cout << hChi2->GetEntries() << "\n";
-  fileChi2->WriteObject(hChi2, "hChi2", "Overwrite");
-  fileChi2->Close();
-  //----------------------------------------------------------
+//   //----------debug only-------------------------- TODO remove
+//   TFile* fileChi2 = TFile::Open("ct_fit_ff.chi2.root", "update");
+//   TH1* hChi2 = GetObjectWithNullptrCheck<TH1>(fileChi2, "hChi2");
+//   std::cout << hChi2->GetEntries() << "\t";
+//   hChi2->Fill(fitFunc->GetChisquare());
+//   std::cout << hChi2->GetEntries() << "\n";
+//   fileChi2->WriteObject(hChi2, "hChi2", "Overwrite");
+//   fileChi2->Close();
+//   //----------------------------------------------------------
 
   fileRespMatrix->Close();
   fileYield->Close();
