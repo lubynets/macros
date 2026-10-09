@@ -34,7 +34,7 @@ void pid_qa(const char* inFileName) {
       if (!dirName.BeginsWith("DF_"))
         continue;
 
-      TString treePath = dirName + "/O2qapidtpc";
+      TString treePath = dirName + "/O2pidtpcdiag";
 
       chain.Add(Form("%s/%s", fileName.c_str(), treePath.Data()));
     }
