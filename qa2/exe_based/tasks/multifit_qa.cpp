@@ -33,10 +33,10 @@ void MultiFitQa(const std::string& strategy) {
   const std::string fileNameTemplate = "RawYields_Lc/RawYields_Lc";
   const int nTrials = 100;
   std::vector<double> bdtScores;
-//   for(int i=10; i<=20; i++) {
-//     bdtScores.emplace_back(0.01*i);
-//   }
-  bdtScores={0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90};
+  for(int i=1; i<=100; i++) {
+    bdtScores.emplace_back(0.01*i);
+  }
+//   bdtScores={0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90};
 
   std::vector<std::string> variables {
    "hRawYieldsSignal",
@@ -171,7 +171,7 @@ void MultiFitQa(const std::string& strategy) {
           if(IsVerbose) std::cout << iBin << " ";
           const int fitStatus = histoFitResult->GetBinContent(1, iBin);
           const int covQual = histoFitResult->GetBinContent(2, iBin);
-          if(fitStatus != 0 || covQual != 3) continue;
+//           if(fitStatus != 0 || covQual != 3) continue;
           if(iVar == 0) hGoodFits->Fill(bdtScores.at(iScore), hGoodFits->GetYaxis()->GetBinCenter(iBin));
           const double value = histoIn->GetBinContent(iBin);
           const double error = histoIn->GetBinError(iBin);
