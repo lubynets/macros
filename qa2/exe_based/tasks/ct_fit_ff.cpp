@@ -1,6 +1,8 @@
 //
 // Created by oleksii on 14.09.2026
 //
+#include "ForwardFoldedExpo.hpp"
+#include "HelperCtFit.hpp"
 #include "HelperGeneral.hpp"
 
 #include <TF1.h>
@@ -15,48 +17,13 @@
 #include <string>
 #include <vector>
 
-void ExtendHistoWithEmptyBinsLeft(TH1*& histo, const std::vector<double>& additionalBinEdges);
-
-class ForwardFoldedExpo {
-public:
-  void SetResponseMatrix(TH2* rm) { response_matrix_ = rm; }
-  void Init();
-
-  double operator()(double* x, double* par);
-
-private:
-  double IntegrateExpo(double from, double to);
-  double IntegrateExpo(int iBin);
-
-  int n_bins_{};
-  double expo_par_A_{};
-  double expo_par_tau_{};
-  TH2* response_matrix_{};
+constexpr HelperCtFit::RunModes RunMode{
+//   HelperCtFit::RunModes::MeanFitOnly
+//   HelperCtFit::RunModes::AllWoOne
+  HelperCtFit::RunModes::AllPossible
 };
 
-void ForwardFoldedExpo::Init() {
-  n_bins_ = response_matrix_->GetNbinsX();
-}
-
-double ForwardFoldedExpo::IntegrateExpo(double from, double to) {
-  return expo_par_A_ * expo_par_tau_ * (std::exp(-from/expo_par_tau_) - std::exp(-to/expo_par_tau_));
-}
-
-double ForwardFoldedExpo::IntegrateExpo(int iBin) {
-  return IntegrateExpo(response_matrix_->GetYaxis()->GetBinLowEdge(iBin), response_matrix_->GetYaxis()->GetBinLowEdge(iBin+1));
-}
-
-double ForwardFoldedExpo::operator()(double* x, double* par) {
-  expo_par_A_ = par[0];
-  expo_par_tau_ = par[1];
-  const int binContaningX = response_matrix_->GetXaxis()->FindBin(*x);
-  double result{};
-  for(int iBin=1; iBin<=n_bins_; ++iBin) {
-    result += response_matrix_->GetBinContent(binContaningX, iBin) * IntegrateExpo(iBin);
-  }
-
-  return result;
-}
+void ExtendHistoWithEmptyBinsLeft(TH1*& histo, const std::vector<double>& additionalBinEdges);
 
 [[deprecated]] void zeroNonDiagonalBins(TH2* histo) {
   const int nBins = histo->GetNbinsX();
@@ -108,16 +75,6 @@ void ct_fit_ff(const std::string& fileNameYield, const std::string& fileNameResp
   histoYield->Fit(fitFunc, "", "", lo, hi);
 
   histoYield->SaveAs("h1.root");
-
-//   //----------debug only-------------------------- TODO remove
-//   TFile* fileChi2 = TFile::Open("ct_fit_ff.chi2.root", "update");
-//   TH1* hChi2 = GetObjectWithNullptrCheck<TH1>(fileChi2, "hChi2");
-//   std::cout << hChi2->GetEntries() << "\t";
-//   hChi2->Fill(fitFunc->GetChisquare());
-//   std::cout << hChi2->GetEntries() << "\n";
-//   fileChi2->WriteObject(hChi2, "hChi2", "Overwrite");
-//   fileChi2->Close();
-//   //----------------------------------------------------------
 
   fileRespMatrix->Close();
   fileYield->Close();

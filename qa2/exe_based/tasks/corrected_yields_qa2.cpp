@@ -24,7 +24,7 @@ using namespace HelperPlot;
 
 constexpr bool IsSaveCanvasAsRoot{true};
 
-constexpr HelperCtFit::RunModes RunMode{
+constexpr HelperCtFit::RunModes RunMode {
 //   HelperCtFit::RunModes::MeanFitOnly
 //   HelperCtFit::RunModes::AllWoOne
   HelperCtFit::RunModes::AllPossible

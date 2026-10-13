@@ -21,6 +21,7 @@ SET(EXECUTABLES
 )
 
 SET(SOURCES
+    ForwardFoldedExpo.cpp
     HelperCtFit.cpp
     HelperGeneral.cpp
     HelperMath.cpp
