@@ -1,6 +1,7 @@
 //
 // Created by oleksii on 26.06.25.
 //
+#include "HelperCtFit.hpp"
 #include "HelperGeneral.hpp"
 #include "HelperMath.hpp"
 #include "HelperPlot.hpp"
@@ -23,12 +24,11 @@ using namespace HelperPlot;
 
 constexpr bool IsSaveCanvasAsRoot{true};
 
-enum RunModes {
-  MeanFitOnly = 0,
-  AllWoOne,
-  AllPossible
+constexpr HelperCtFit::RunModes RunMode{
+//   HelperCtFit::RunModes::MeanFitOnly
+//   HelperCtFit::RunModes::AllWoOne
+  HelperCtFit::RunModes::AllPossible
 };
-constexpr int RunMode{MeanFitOnly};
 
 enum UncModes {
   StatOnly = 0,
@@ -36,17 +36,6 @@ enum UncModes {
   StatAndSyst
 };
 constexpr int UncMode{StatOnly};
-
-void ExcludeBin(TH1* h, int binNumber);
-std::vector<int> EvalBinsToDrop(int dropSet);
-int EvalDropSet(const std::vector<int>& bins);
-TGraphErrors* GetSubGraph(TGraphErrors* grIn, int subGraphType, Color_t color, int nFittedPoints);
-
-enum SubGraphType {
-  MeanPoint = 0,
-  OneDrop,
-  TwoFit
-};
 
 void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& fileNameMC, const std::string& fileNameSystUnc) {
   LoadMacro("styles/mc_qa2.style.cc");
@@ -86,7 +75,7 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
   for(int iBin=1, nBins=histoStatus->GetNbinsX(); iBin<=nBins; ++iBin) {
     if(histoStatus->GetBinContent(iBin) != 1) badBins.push_back(iBin);
   }
-  const int bestDropSet = EvalDropSet(badBins);
+  const int bestDropSet = HelperCtFit::EvalDropSet(badBins);
   std::cout << "bestDropSet = " << bestDropSet << "\n";
   TNamed bestDropSetName("bestDropSet", std::to_string(bestDropSet));
 
@@ -164,7 +153,7 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
     }
 
     const int nBins = hCutVarDiff->GetNbinsX();
-    const int nDropSets = RunMode > MeanFitOnly ? 1 << nBins : 1;
+    const int nDropSets = RunMode > HelperCtFit::RunModes::MeanFitOnly ? 1 << nBins : 1;
 
     TFile* fileOut = IsSaveCanvasAsRoot ? TFile::Open("ctfit.root", "recreate") : nullptr;
     if(IsSaveCanvasAsRoot) bestDropSetName.Write();
@@ -218,7 +207,7 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
         AddOneLineText(fitResultsMC.second, {textX1, textY2 - 2*textYStep, textX2, textY2 - 1*textYStep}, "brNDC", 0.04);
       }
       histoRec->Draw("E1 same");
-      const auto binsToDrop = EvalBinsToDrop(dropSet);
+      const auto binsToDrop = HelperCtFit::EvalBinsToDrop(dropSet);
       std::string droppedBins{};
       for(const auto& binToDrop : binsToDrop) {
         droppedBins.append(std::to_string(binToDrop));
@@ -295,16 +284,16 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
     };
 
     for(int iDropSet=0; iDropSet<nDropSets; ++iDropSet) {
-      const auto binsToDrop = EvalBinsToDrop(iDropSet);
+      const auto binsToDrop = HelperCtFit::EvalBinsToDrop(iDropSet);
       const auto binsToDropSize = static_cast<int>(binsToDrop.size());
-      if(RunMode == AllPossible && binsToDropSize >= nBins-1) continue;
-      if(RunMode == AllWoOne && binsToDropSize > 1) continue;
+      if(RunMode == HelperCtFit::RunModes::AllPossible && binsToDropSize >= nBins-1) continue;
+      if(RunMode == HelperCtFit::RunModes::AllWoOne && binsToDropSize > 1) continue;
       TH1* hReco = dynamic_cast<TH1*>(hCutVarDiff->Clone());
       TH1* hMc = isMc ? dynamic_cast<TH1*>(hMcDiff->Clone()) : nullptr;
 
       for(const auto& binToDrop : binsToDrop) {
-        ExcludeBin(hReco, binToDrop);
-        if(isMc) ExcludeBin(hMc, binToDrop);
+        HelperCtFit::ExcludeBin(hReco, binToDrop);
+        if(isMc) HelperCtFit::ExcludeBin(hMc, binToDrop);
       }
 
       FitLifetimeHistos(hReco, hMc, iDropSet);
@@ -321,9 +310,9 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
       ccDrops.SetCanvasSize(1200, 800);
       graph->GetXaxis()->SetLimits(leftEdge, rightEdge);
       graph->Draw("AP");
-      TGraphErrors* grMean = GetSubGraph(graph, MeanPoint, kRed, nBins);
-      TGraphErrors* grOneDrop = GetSubGraph(graph, OneDrop, kBlue, nBins);
-      TGraphErrors* grTwoFit = GetSubGraph(graph, TwoFit, kGreen+2, nBins);
+      TGraphErrors* grMean = HelperCtFit::GetSubGraph(graph, HelperCtFit::SubGraphType::MeanPoint, kRed, nBins);
+      TGraphErrors* grOneDrop = HelperCtFit::GetSubGraph(graph, HelperCtFit::SubGraphType::OneDrop, kBlue, nBins);
+      TGraphErrors* grTwoFit = HelperCtFit::GetSubGraph(graph, HelperCtFit::SubGraphType::TwoFit, kGreen+2, nBins);
       grMean->Draw("PE same");
       grOneDrop->Draw("PE same");
       grTwoFit->Draw("PE same");
@@ -351,49 +340,6 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
     PrintCanvasDrops(&grChi2, ")");
 
   } // promptnesses
-}
-
-void ExcludeBin(TH1* h, int binNumber) {
-  h->SetBinContent(binNumber, 0.);
-  h->SetBinError(binNumber, 0.);
-}
-
-std::vector<int> EvalBinsToDrop(int dropSet) {
-  std::vector<int> result{};
-  int iBit{0};
-  while(dropSet >> iBit > 0) {
-    if((dropSet >> iBit) & 1) result.push_back(iBit+1);
-    ++iBit;
-  }
-
-  return result;
-}
-
-int EvalDropSet(const std::vector<int>& bins) {
-  int result = 0;
-
-  for(const auto& bin : bins) {
-    result |= (1 << (bin - 1));
-  }
-
-  return result;
-}
-
-TGraphErrors* GetSubGraph(TGraphErrors* grIn, int subGraphType, Color_t color, int nFittedPoints) {
-  TGraphErrors* grOut = new TGraphErrors();
-  grOut->SetName(grIn->GetName());
-  for(int iPoint=0, nPoints=grIn->GetN(); iPoint<nPoints; ++iPoint) {
-    const int dropSet = static_cast<int>(std::round(grIn->GetPointX(iPoint)));
-    if(subGraphType == MeanPoint && dropSet !=0) continue;
-    if(subGraphType == OneDrop && !((dropSet > 0) && ((dropSet & (dropSet - 1)) == 0))) continue; // dropSet is a power of 2, i.e. 1, 2, 4, 8, ...
-    if(subGraphType == TwoFit && __builtin_popcount(dropSet) != nFittedPoints-2) continue;
-    grOut->AddPoint(grIn->GetPointX(iPoint), grIn->GetPointY(iPoint));
-    grOut->SetPointError(grOut->GetN()-1, 0., grIn->GetErrorY(iPoint));
-  }
-  grOut->SetMarkerColor(color);
-  grOut->SetLineColor(color);
-
-  return grOut;
 }
 
 int main(int argc, char* argv[]) {

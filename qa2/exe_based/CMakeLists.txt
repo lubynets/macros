@@ -21,6 +21,7 @@ SET(EXECUTABLES
 )
 
 SET(SOURCES
+    HelperCtFit.cpp
     HelperGeneral.cpp
     HelperMath.cpp
     HelperPlot.cpp
