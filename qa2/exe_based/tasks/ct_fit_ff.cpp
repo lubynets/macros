@@ -72,7 +72,7 @@ double ForwardFoldedExpo::operator()(double* x, double* par) {
 void ct_fit_ff(const std::string& fileNameYield, const std::string& fileNameResponseMatrix, const std::string& histoNameResponseMatrix) {
   TFile* fileYield = OpenFileWithNullptrCheck(fileNameYield);
   TH1* histoYield = GetObjectWithNullptrCheck<TH1>(fileYield, "hCorrYieldsPrompt");
-//   ExtendHistoWithEmptyBinsLeft(histoYield, {0., 0.2});
+  ExtendHistoWithEmptyBinsLeft(histoYield, {0., 0.2});
 
   histoYield->SetMarkerColor(kBlue);
   histoYield->SetLineColor(kBlue);
