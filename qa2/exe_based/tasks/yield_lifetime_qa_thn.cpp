@@ -22,6 +22,8 @@ using namespace std::string_literals;
 bool gIsDoWeight{false};
 std::vector<double> gBdtSignalLowerValues{};
 
+constexpr bool IsFFReady{true};
+
 std::vector<double> pTRanges = {3, 4, 5, 8, 12, 20};
 const std::vector<double> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.04, 0.08}; // standard
 // const std::vector<double> bdtBgUpperValuesVsPt = {0.01, 0.01, 0.01, 0.02, 0.04}; // tight
@@ -30,7 +32,7 @@ const std::vector<double> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.04, 0.08};
 // const std::vector<double> bdtBgUpperValuesVsPt = {0.05, 0.05, 0.05, 0.08, 0.16}; // veryloose
 // const std::vector<double> bdtBgUpperValuesVsPt = {0.025, 0.025, 0.025, 0.05, 0.10}; // semiloose
 
-constexpr std::string_view LifetimeAxisTitle = /*"T_{proper} (ps)"*/"#it{t}_{proper} (ps)";
+constexpr std::string_view LifetimeAxisTitle = "T_{proper} (ps)"/*"#it{t}_{proper} (ps)"*/;
 constexpr std::string_view LifetimeGenAxisTitle = "#it{t}_{proper, gen} (ps)";
 constexpr std::string_view PtAxisTitle = "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})";
 constexpr std::string_view PtBAxisTitle = "#it{p}_{T}^{B} (GeV/#it{c})";
@@ -111,7 +113,7 @@ void FillYield(const std::string& fileName, const std::string& filePtWeightName,
           histoYield->SetDirectory(nullptr);
           CD(fileOut, dirName);
           histoYield->Write(histoName.c_str());
-          if(isRec) {
+          if(isRec && IsFFReady) {
             std::string histoName2D{histoName};
             ReplaceSubstrInStr(histoName2D, "hT", "h2T");
             TH2* histoYield2D = histoIn->Projection(axesIndices.at(LifetimeGenAxisTitle), axesIndices.at(LifetimeAxisTitle));
@@ -219,7 +221,7 @@ int main(int argc, char* argv[]) {
           TH1* histoMerged = MergeHistograms<TH1>(fileOut, histoNames);
           CD(fileOut, (isRec ? "rec/" : "gen/") + promptness.first + "/" + GetPtCutName(pTRanges.size() - 1));
           histoMerged->Write((isRec ? "hT_NPgt" + to_string_with_precision(bslv, 2) + weightPresence : "hT" + weightPresence).c_str());
-          if(isRec) {
+          if(isRec && IsFFReady) {
             for(auto& hN : histoNames) {
               ReplaceSubstrInStr(hN, "hT", "h2T");
             }

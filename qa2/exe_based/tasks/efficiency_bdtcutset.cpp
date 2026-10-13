@@ -20,6 +20,8 @@ using namespace HelperGeneral;
 using namespace HelperMath;
 using namespace HelperPlot;
 
+constexpr bool IsFFReady{true};
+
 void efficiency_bdtcutset(const std::string& fileName) {
   LoadMacro("styles/mc_qa2.style.cc");
   gStyle->SetMarkerSize(1);
@@ -110,26 +112,27 @@ void efficiency_bdtcutset(const std::string& fileName) {
           std::string histoRecName2D{histoRecName};
           ReplaceSubstrInStr(histoRecName2D, "hT", "h2T");
           TH1* histoRec = GetObjectWithNullptrCheck<TH1>(fileIn, histoRecName);
-          TH2* histoRec2D = GetObjectWithNullptrCheck<TH2>(fileIn, histoRecName2D);
+          TH2* histoRec2D{};
+          if constexpr (IsFFReady) histoRec2D = GetObjectWithNullptrCheck<TH2>(fileIn, histoRecName2D);
           RebinHistoToEdges(histoRec, lifeTimeRanges);
-          RebinHistoToEdges(histoRec2D, lifeTimeRanges);
+          if constexpr (IsFFReady) RebinHistoToEdges(histoRec2D, lifeTimeRanges);
           histoRec->UseCurrentStyle();
-          histoRec2D->UseCurrentStyle();
+          if constexpr (IsFFReady) histoRec2D->UseCurrentStyle();
 
           CD(fileOut, "yields/" + promptness + "/" + PtRangeString(pTIntervals.at(iPt)));
           histoRec->Write(("rec_" + tarSigShortcut + "gt" + sScore + weightPresences.at(iWeightPresence)).c_str());
-          histoRec2D->Write(("rec2D_" + tarSigShortcut + "gt" + sScore + weightPresences.at(iWeightPresence)).c_str()); // NOTE to start with
+          if constexpr (IsFFReady) histoRec2D->Write(("rec2D_" + tarSigShortcut + "gt" + sScore + weightPresences.at(iWeightPresence)).c_str());
 
           const auto [histoEff, histoEffRelErr] = EvaluateEfficiencyHisto(histoRec, histoGen);
-          const auto [histoResp, histoRespRelErr] = EvaluateResponseMatrix(histoRec2D, histoGen);
+          const auto [histoResp, histoRespRelErr] = IsFFReady ? EvaluateResponseMatrix(histoRec2D, histoGen) : std::pair<TH2*, TH2*>(nullptr, nullptr);
 
           CD(fileOut, "effs/" + promptness + "/" + PtRangeString(pTIntervals.at(iPt)));
           histoEff->Write(("eff_" + tarSigShortcut + "gt" + sScore + weightPresences.at(iWeightPresence)).c_str());
-          histoResp->Write(("r_" + tarSigShortcut + "gt" + sScore + weightPresences.at(iWeightPresence)).c_str());
+          if constexpr (IsFFReady) histoResp->Write(("r_" + tarSigShortcut + "gt" + sScore + weightPresences.at(iWeightPresence)).c_str());
 
           CD(fileOut, "errs/" + promptness + "/" + PtRangeString(pTIntervals.at(iPt)));
           histoEffRelErr->Write(("err_" + tarSigShortcut + "gt" + sScore + weightPresences.at(iWeightPresence)).c_str());
-          histoRespRelErr->Write(("r_err_" + tarSigShortcut + "gt" + sScore + weightPresences.at(iWeightPresence)).c_str());
+          if constexpr (IsFFReady) histoRespRelErr->Write(("r_err_" + tarSigShortcut + "gt" + sScore + weightPresences.at(iWeightPresence)).c_str());
 
           const std::string openOption = iPromptness + iPt + iWeightPresence == 0 ? "recreate" : "update";
           TFile* fileOutScore = TFile::Open(("Eff_times_Acc_Lc." + tarSigShortcut + "gt" + sScore + ".root").c_str(), openOption.c_str());
