@@ -15,8 +15,6 @@
 #include <string>
 #include <vector>
 
-using namespace HelperGeneral;
-
 void ExtendHistoWithEmptyBinsLeft(TH1*& histo, const std::vector<double>& additionalBinEdges);
 
 class ForwardFoldedExpo {
@@ -70,8 +68,8 @@ double ForwardFoldedExpo::operator()(double* x, double* par) {
 }
 
 void ct_fit_ff(const std::string& fileNameYield, const std::string& fileNameResponseMatrix, const std::string& histoNameResponseMatrix) {
-  TFile* fileYield = OpenFileWithNullptrCheck(fileNameYield);
-  TH1* histoYield = GetObjectWithNullptrCheck<TH1>(fileYield, "hCorrYieldsPrompt");
+  TFile* fileYield = HelperGeneral::OpenFileWithNullptrCheck(fileNameYield);
+  TH1* histoYield = HelperGeneral::GetObjectWithNullptrCheck<TH1>(fileYield, "hCorrYieldsPrompt");
   ExtendHistoWithEmptyBinsLeft(histoYield, {0., 0.2});
 
   histoYield->SetMarkerColor(kBlue);
@@ -80,12 +78,12 @@ void ct_fit_ff(const std::string& fileNameYield, const std::string& fileNameResp
   histoYield->SetMarkerSize(1.6);
   histoYield->GetYaxis()->SetTitle("semi-corrected yield prompt");
 
-  TFile* fileRespMatrix = OpenFileWithNullptrCheck(fileNameResponseMatrix);
-  TH2* histoRespMatrix = GetObjectWithNullptrCheck<TH2>(fileRespMatrix, histoNameResponseMatrix);
+  TFile* fileRespMatrix = HelperGeneral::OpenFileWithNullptrCheck(fileNameResponseMatrix);
+  TH2* histoRespMatrix = HelperGeneral::GetObjectWithNullptrCheck<TH2>(fileRespMatrix, histoNameResponseMatrix);
 //   zeroNonDiagonalBins(histoRespMatrix);
 
-  CheckHistogramsForAxisIdentity<TH2, TH2>(histoRespMatrix, nullptr, "XY");
-  CheckHistogramsForAxisIdentity(histoRespMatrix, histoYield, "X");
+  HelperGeneral::CheckHistogramsForAxisIdentity<TH2, TH2>(histoRespMatrix, nullptr, "XY");
+  HelperGeneral::CheckHistogramsForAxisIdentity(histoRespMatrix, histoYield, "X");
 
   const double lo = 0.2;
   const double hi = 1.8;
@@ -96,7 +94,7 @@ void ct_fit_ff(const std::string& fileNameYield, const std::string& fileNameResp
   histPreliminaryCorrectedYield->SetDirectory(nullptr);
   histPreliminaryCorrectedYield->Divide(histEff);
   const double preliminaryYield = histPreliminaryCorrectedYield->Integral();
-  const double preliminaryA = preliminaryYield / LifetimeLambdaC / (std::exp(-lo / LifetimeLambdaC) - std::exp(-hi / LifetimeLambdaC));
+  const double preliminaryA = preliminaryYield / HelperGeneral::LifetimeLambdaC / (std::exp(-lo / HelperGeneral::LifetimeLambdaC) - std::exp(-hi / HelperGeneral::LifetimeLambdaC));
   // -----------------------------------------------------------------------------------
 
   ForwardFoldedExpo ffe{};
@@ -104,7 +102,7 @@ void ct_fit_ff(const std::string& fileNameYield, const std::string& fileNameResp
   ffe.Init();
 
   TF1* fitFunc = new TF1("fitFunc", ffe, 0., 2., 2);
-  fitFunc->SetParameters(preliminaryA, LifetimeLambdaC);
+  fitFunc->SetParameters(preliminaryA, HelperGeneral::LifetimeLambdaC);
   fitFunc->SetNpx(1000);
 
   histoYield->Fit(fitFunc, "", "", lo, hi);
@@ -129,7 +127,7 @@ void ExtendHistoWithEmptyBinsLeft(TH1*& histo, const std::vector<double>& additi
   if(additionalBinEdges.size() < 2) {
     throw std::runtime_error("ExtendHistoWithEmptyBinsLeft() - need at least 2 bin edges");
   }
-  if(!EqualFloating(additionalBinEdges.back(), histo->GetXaxis()->GetXmin())) {
+  if(!HelperGeneral::EqualFloating(additionalBinEdges.back(), histo->GetXaxis()->GetXmin())) {
     throw std::runtime_error("ExtendHistoWithEmptyBinsLeft() - additionalBinEdges.back() != histo->GetXaxis()->GetXmin()");
   }
   if(!std::is_sorted(additionalBinEdges.begin(), additionalBinEdges.end())) {
