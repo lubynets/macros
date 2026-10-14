@@ -4,7 +4,9 @@
 #include "ForwardFoldedExpo.hpp"
 #include "HelperCtFit.hpp"
 #include "HelperGeneral.hpp"
+#include "HelperPlot.hpp"
 
+#include <TCanvas.h>
 #include <TF1.h>
 #include <TFile.h>
 #include <TH1.h>
@@ -15,6 +17,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 constexpr HelperCtFit::RunModes RunMode{
@@ -37,13 +40,14 @@ void ExtendHistoWithEmptyBinsLeft(TH1*& histo, const std::vector<double>& additi
 void ct_fit_ff(const std::string& fileNameYield, const std::string& fileNameResponseMatrix, const std::string& histoNameResponseMatrix) {
   TFile* fileYield = HelperGeneral::OpenFileWithNullptrCheck(fileNameYield);
   TH1* histoYield = HelperGeneral::GetObjectWithNullptrCheck<TH1>(fileYield, "hCorrYieldsPrompt");
+  histoYield->SetDirectory(nullptr);
   ExtendHistoWithEmptyBinsLeft(histoYield, {0., 0.2});
 
   histoYield->SetMarkerColor(kBlue);
   histoYield->SetLineColor(kBlue);
   histoYield->SetMarkerStyle(kFullSquare);
   histoYield->SetMarkerSize(1.6);
-  histoYield->GetYaxis()->SetTitle("semi-corrected yield prompt");
+  histoYield->GetYaxis()->SetTitle("Y_{prompt}^{ref. sel.}");
 
   TFile* fileRespMatrix = HelperGeneral::OpenFileWithNullptrCheck(fileNameResponseMatrix);
   TH2* histoRespMatrix = HelperGeneral::GetObjectWithNullptrCheck<TH2>(fileRespMatrix, histoNameResponseMatrix);
@@ -73,6 +77,40 @@ void ct_fit_ff(const std::string& fileNameYield, const std::string& fileNameResp
   fitFunc->SetNpx(1000);
 
   histoYield->Fit(fitFunc, "", "", lo, hi);
+
+  const std::pair<std::string, std::string> fitResults = HelperCtFit::FitResults(fitFunc);
+
+  constexpr float textX1 = 0.70;
+  constexpr float textX2 = 0.86;
+  constexpr float textY2 = 0.86;
+  constexpr float textYStep = 0.06;
+
+  TCanvas ccFit("ccFit", "");
+  ccFit.SetCanvasSize(1200, 800);
+//   ccFit.SetLogy();
+  histoYield->Draw("E1 same");
+//   const auto binsToDrop = HelperCtFit::EvalBinsToDrop(dropSet);
+//   std::string droppedBins{};
+//   for(const auto& binToDrop : binsToDrop) {
+//     droppedBins.append(std::to_string(binToDrop));
+//     droppedBins.append(", ");
+//   }
+//   if(dropSet != 0) {
+//     droppedBins.pop_back();
+//     droppedBins.pop_back();
+//     histoRec->SetTitle(("drop set = " + std::to_string(dropSet) + ", dropped bins: {" + droppedBins + "}").c_str());
+//   }
+  fitFunc->Draw("same");
+  HelperPlot::AddOneLineText(fitResults.first, {textX1, textY2 - 3*textYStep, textX2, textY2 - 2*textYStep}, "brNDC", 0.04);
+  HelperPlot::AddOneLineText(fitResults.second, {textX1, textY2 - 4*textYStep, textX2, textY2 - 3*textYStep}, "brNDC", 0.04);
+  HelperPlot::AddOneLineText(HelperCtFit::LifetimePdgSv, {textX1, textY2 - 6*textYStep, textX2, textY2 - 5*textYStep}, "brNDC", 0.04);
+  ccFit.Print("ctfit.pdf", "pdf");
+
+//   if(IsSaveCanvasAsRoot && dropSet == 0) {
+//     fileOut->cd();
+//     ccFit.Write();
+//   }
+
 
   histoYield->SaveAs("h1.root");
 

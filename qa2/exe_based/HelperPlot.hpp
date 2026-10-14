@@ -11,6 +11,7 @@
 #include <TPaveText.h>
 
 #include <stdexcept>
+#include <string_view>
 
 namespace HelperPlot {
 
@@ -24,7 +25,7 @@ TF1* HorizontalLine4Graph(double level, const std::vector<TGraph*>& graphs);
 
 TF1* HorizontalLine(double level, double xlo=-999, double xhi=999);
 
-TPaveText* AddOneLineText(const std::string& text, const std::array<float, 4>& xy, const std::string& option="brNDC", float size=0.03);
+TPaveText* AddOneLineText(std::string_view text, const std::array<float, 4>& xy, const std::string& option="brNDC", float size=0.03);
 
 std::vector<TPaveText*> AddMultiLineText(const std::vector<std::string>& texts, const std::array<float, 4>& xy, const std::string& option="brNDC", float size=0.03);
 

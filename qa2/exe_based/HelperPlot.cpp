@@ -8,6 +8,8 @@
 
 #include <TF1.h>
 
+#include <string_view>
+
 TF1* HelperPlot::HorizontalLine4Graph(const double level, const std::vector<TGraph*>& graphs) {
   double xlo{1e9f};
   double xhi{-1e9f};
@@ -34,14 +36,14 @@ TF1* HelperPlot::HorizontalLine(const double level, const double xlo, const doub
   return horizLine;
 }
 
-TPaveText* HelperPlot::AddOneLineText(const std::string& text, const std::array<float, 4>& xy, const std::string& option, float size) {
+TPaveText* HelperPlot::AddOneLineText(std::string_view text, const std::array<float, 4>& xy, const std::string& option, float size) {
   if(text.empty()) return nullptr;
   TPaveText* textPtr = new TPaveText(xy.at(0), xy.at(1), xy.at(2), xy.at(3), option.c_str());
   textPtr->SetBorderSize(0);
   textPtr->SetFillColor(0);
   textPtr->SetTextSize(size);
   textPtr->SetTextFont(62);
-  textPtr->AddText(text.c_str());
+  textPtr->AddText(text.data());
   textPtr->Draw("same");
   return textPtr;
 }

@@ -25,9 +25,9 @@ using namespace HelperPlot;
 constexpr bool IsSaveCanvasAsRoot{true};
 
 constexpr HelperCtFit::RunModes RunMode {
-//   HelperCtFit::RunModes::MeanFitOnly
+  HelperCtFit::RunModes::MeanFitOnly
 //   HelperCtFit::RunModes::AllWoOne
-  HelperCtFit::RunModes::AllPossible
+//   HelperCtFit::RunModes::AllPossible
 };
 
 enum UncModes {
@@ -174,23 +174,8 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
       const auto ndf = fitCutVar->GetNDF();
       if(ndf != 0) grChi2.AddPoint(dropSet, chi2 / ndf);
 
-      auto FitResults = [](const TF1* fitFunc, const std::string& text="") {
-        const std::string lifetimeFitValue = "#tau_{#Lambda_{c}} " + text + "= (" +
-                                            to_string_with_precision(fitFunc->GetParameter(1)*1000, 1) +
-                                            " #pm " +
-                                            to_string_with_precision(fitFunc->GetParError(1)*1000, 1) +
-                                            ") fs";
-        const std::string chi2Value = "#chi^{2} / ndf = " +
-                                      to_string_with_significant_figures(fitFunc->GetChisquare(), 3) +
-                                      " / " +
-                                      std::to_string(fitFunc->GetNDF());
-
-        return std::make_pair(lifetimeFitValue, chi2Value);
-      };
-
-      const std::pair<std::string, std::string> fitResultsCutVar = FitResults(fitCutVar);
-      const std::pair<std::string, std::string> fitResultsMC = isMc ? FitResults(fitMc, "[MC]") : std::pair<std::string, std::string>();
-      const std::string lifetimePdg = "#tau_{#Lambda_{c}} [PDG] = (202.6 #pm 1.0) fs";
+      const std::pair<std::string, std::string> fitResultsCutVar = HelperCtFit::FitResults(fitCutVar);
+      const std::pair<std::string, std::string> fitResultsMC = isMc ? HelperCtFit::FitResults(fitMc, "[MC]") : std::pair<std::string, std::string>();
 
       const float textX1 = 0.70;
       const float textX2 = 0.86;
@@ -221,7 +206,7 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
       fitCutVar->Draw("same");
       AddOneLineText(fitResultsCutVar.first, {textX1, textY2 - 3*textYStep, textX2, textY2 - 2*textYStep}, "brNDC", 0.04);
       AddOneLineText(fitResultsCutVar.second, {textX1, textY2 - 4*textYStep, textX2, textY2 - 3*textYStep}, "brNDC", 0.04);
-      AddOneLineText(lifetimePdg, {textX1, textY2 - 6*textYStep, textX2, textY2 - 5*textYStep}, "brNDC", 0.04);
+      AddOneLineText(HelperCtFit::LifetimePdgSv, {textX1, textY2 - 6*textYStep, textX2, textY2 - 5*textYStep}, "brNDC", 0.04);
       ccFit.Print("ctfit.pdf", "pdf");
 
       if(IsSaveCanvasAsRoot && dropSet == 0) {

@@ -3,10 +3,14 @@
 //
 
 #include "HelperCtFit.hpp"
+#include "HelperGeneral.hpp"
 
 #include <TGraphErrors.h>
+#include <TF1.h>
 #include <TH1.h>
 
+#include <string>
+#include <utility>
 #include <vector>
 
 void HelperCtFit::ExcludeBin(TH1* h, int binNumber) {
@@ -50,4 +54,18 @@ TGraphErrors* HelperCtFit::GetSubGraph(TGraphErrors* grIn, SubGraphType subGraph
   grOut->SetLineColor(color);
 
   return grOut;
+}
+
+std::pair<std::string, std::string> HelperCtFit::FitResults(const TF1* fitFunc, const std::string& text) {
+  const std::string lifetimeFitValue = "#tau_{#Lambda_{c}} " + text + "= (" +
+                                      HelperGeneral::to_string_with_precision(fitFunc->GetParameter(1)*1000, 1) +
+                                      " #pm " +
+                                      HelperGeneral::to_string_with_precision(fitFunc->GetParError(1)*1000, 1) +
+                                      ") fs";
+  const std::string chi2Value = "#chi^{2} / ndf = " +
+                                HelperGeneral::to_string_with_significant_figures(fitFunc->GetChisquare(), 3) +
+                                " / " +
+                                std::to_string(fitFunc->GetNDF());
+
+  return std::make_pair(lifetimeFitValue, chi2Value);
 }
