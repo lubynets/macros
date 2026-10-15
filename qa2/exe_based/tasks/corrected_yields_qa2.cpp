@@ -25,9 +25,9 @@ using namespace HelperPlot;
 constexpr bool IsSaveCanvasAsRoot{true};
 
 constexpr HelperCtFit::RunModes RunMode {
-  HelperCtFit::RunModes::MeanFitOnly
+//   HelperCtFit::RunModes::MeanFitOnly
 //   HelperCtFit::RunModes::AllWoOne
-//   HelperCtFit::RunModes::AllPossible
+  HelperCtFit::RunModes::AllPossible
 };
 
 enum UncModes {
@@ -287,42 +287,9 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
 
     if(IsSaveCanvasAsRoot) fileOut->Close();
 
-    const double leftEdge = -2.;
-    const double rightEdge = grTau.GetPointX(grTau.GetN()-1) + 2;
-
-    auto PrintCanvasDrops = [&](TGraphErrors* graph, const std::string& priBra) {
-      TCanvas ccDrops("ccDrops", "");
-      ccDrops.SetCanvasSize(1200, 800);
-      graph->GetXaxis()->SetLimits(leftEdge, rightEdge);
-      graph->Draw("AP");
-      TGraphErrors* grMean = HelperCtFit::GetSubGraph(graph, HelperCtFit::SubGraphType::MeanPoint, kRed, nBins);
-      TGraphErrors* grOneDrop = HelperCtFit::GetSubGraph(graph, HelperCtFit::SubGraphType::OneDrop, kBlue, nBins);
-      TGraphErrors* grTwoFit = HelperCtFit::GetSubGraph(graph, HelperCtFit::SubGraphType::TwoFit, kGreen+2, nBins);
-      grMean->Draw("PE same");
-      grOneDrop->Draw("PE same");
-      grTwoFit->Draw("PE same");
-      TLine lineMean(leftEdge, graph->GetPointY(0), rightEdge, graph->GetPointY(0));
-      TLine lineUp(leftEdge, graph->GetPointY(0)+graph->GetErrorY(0), rightEdge, graph->GetPointY(0)+graph->GetErrorY(0));
-      TLine lineDown(leftEdge, graph->GetPointY(0)-graph->GetErrorY(0), rightEdge, graph->GetPointY(0)-graph->GetErrorY(0));
-      lineUp.SetLineStyle(7);
-      lineDown.SetLineStyle(7);
-      for(const auto& line : {&lineMean, &lineUp, &lineDown}) {
-        line->SetLineWidth(2);
-        line->SetLineColor(kRed);
-        line->Draw("same");
-      }
-      TLegend leg(0.75, 0.70, 0.95, 0.90);
-      leg.AddEntry(grMean, "Fit all points", "PE");
-      leg.AddEntry(grOneDrop, "Fit w/o one point", "PE");
-      leg.AddEntry(grTwoFit, "Fit two points", "PE");
-      leg.Draw("same");
-
-      ccDrops.Print(("dropSummary.pdf" + priBra).c_str(), "pdf");
-    };
-
-    PrintCanvasDrops(&grTau, "(");
-    PrintCanvasDrops(&grA, "");
-    PrintCanvasDrops(&grChi2, ")");
+    HelperCtFit::PrintCanvasDrops(&grTau, nBins, "(");
+    HelperCtFit::PrintCanvasDrops(&grA, nBins, "");
+    HelperCtFit::PrintCanvasDrops(&grChi2, nBins, ")");
 
   } // promptnesses
 }

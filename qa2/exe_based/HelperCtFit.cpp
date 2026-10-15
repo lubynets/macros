@@ -5,9 +5,12 @@
 #include "HelperCtFit.hpp"
 #include "HelperGeneral.hpp"
 
+#include <TCanvas.h>
 #include <TGraphErrors.h>
 #include <TF1.h>
 #include <TH1.h>
+#include <TLegend.h>
+#include <TLine.h>
 
 #include <string>
 #include <utility>
@@ -68,4 +71,37 @@ std::pair<std::string, std::string> HelperCtFit::FitResults(const TF1* fitFunc, 
                                 std::to_string(fitFunc->GetNDF());
 
   return std::make_pair(lifetimeFitValue, chi2Value);
+}
+
+void HelperCtFit::PrintCanvasDrops(TGraphErrors* graph, int nBins, const std::string& priBra) {
+  const double leftEdge = -2.;
+  const double rightEdge = graph->GetPointX(graph->GetN()-1) + 2;
+
+  TCanvas ccDrops("ccDrops", "");
+  ccDrops.SetCanvasSize(1200, 800);
+  graph->GetXaxis()->SetLimits(leftEdge, rightEdge);
+  graph->Draw("AP");
+  TGraphErrors* grMean = GetSubGraph(graph, SubGraphType::MeanPoint, kRed, nBins);
+  TGraphErrors* grOneDrop = GetSubGraph(graph, SubGraphType::OneDrop, kBlue, nBins);
+  TGraphErrors* grTwoFit = GetSubGraph(graph, SubGraphType::TwoFit, kGreen+2, nBins);
+  grMean->Draw("PE same");
+  grOneDrop->Draw("PE same");
+  grTwoFit->Draw("PE same");
+  TLine lineMean(leftEdge, graph->GetPointY(0), rightEdge, graph->GetPointY(0));
+  TLine lineUp(leftEdge, graph->GetPointY(0)+graph->GetErrorY(0), rightEdge, graph->GetPointY(0)+graph->GetErrorY(0));
+  TLine lineDown(leftEdge, graph->GetPointY(0)-graph->GetErrorY(0), rightEdge, graph->GetPointY(0)-graph->GetErrorY(0));
+  lineUp.SetLineStyle(7);
+  lineDown.SetLineStyle(7);
+  for(const auto& line : {&lineMean, &lineUp, &lineDown}) {
+    line->SetLineWidth(2);
+    line->SetLineColor(kRed);
+    line->Draw("same");
+  }
+  TLegend leg(0.75, 0.70, 0.95, 0.90);
+  leg.AddEntry(grMean, "Fit all points", "PE");
+  leg.AddEntry(grOneDrop, "Fit w/o one point", "PE");
+  leg.AddEntry(grTwoFit, "Fit two points", "PE");
+  leg.Draw("same");
+
+  ccDrops.Print(("dropSummary.pdf" + priBra).c_str(), "pdf");
 }

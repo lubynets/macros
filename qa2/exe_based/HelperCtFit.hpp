@@ -38,6 +38,8 @@ TGraphErrors* GetSubGraph(TGraphErrors* grIn, SubGraphType subGraphType, Color_t
 
 std::pair<std::string, std::string> FitResults(const TF1* fitFunc, const std::string& text="");
 
+void PrintCanvasDrops(TGraphErrors* graph, int nBins, const std::string& priBra);
+
 constexpr std::string_view LifetimePdgSv = "#tau_{#Lambda_{c}} [PDG] = (202.6 #pm 1.0) fs";
 }
 

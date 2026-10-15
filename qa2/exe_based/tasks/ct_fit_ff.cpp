@@ -10,6 +10,7 @@
 #include <TCanvas.h>
 #include <TF1.h>
 #include <TFile.h>
+#include <TGraphErrors.h>
 #include <TH1.h>
 #include <TH2.h>
 
@@ -29,6 +30,10 @@ constexpr HelperCtFit::RunModes RunMode{
   HelperCtFit::RunModes::AllPossible
 };
 
+const std::vector<double> additionalBinEdges{0., 0.2};
+constexpr double lo = 0.2;
+constexpr double hi = 1.8;
+
 TH1* ExtendHistoWithEmptyBinsLeft(TH1* histo, const std::vector<double>& additionalBinEdges);
 
 [[deprecated]] void zeroNonDiagonalBins(TH2* histo) {
@@ -47,27 +52,25 @@ void ct_fit_ff(const std::string& fileNameYield, const std::string& fileNameResp
   TH1* histoYield = HelperGeneral::GetObjectWithNullptrCheck<TH1>(fileYield, "hCorrYieldsPrompt");
   histoYield->SetDirectory(nullptr);
   histoYield->UseCurrentStyle();
-  histoYield = ExtendHistoWithEmptyBinsLeft(histoYield, {0., 0.2});
+  TH1* histoYieldExt{histoYield};
+  if(!additionalBinEdges.empty()) histoYieldExt = ExtendHistoWithEmptyBinsLeft(histoYield, additionalBinEdges);
 
-  histoYield->SetMarkerColor(kBlue);
-  histoYield->SetLineColor(kBlue);
-  histoYield->SetMarkerStyle(kFullSquare);
-  histoYield->SetMarkerSize(1.6);
-  histoYield->GetYaxis()->SetTitle("Y_{prompt}^{ref. sel.}");
+  histoYieldExt->SetMarkerColor(kBlue);
+  histoYieldExt->SetLineColor(kBlue);
+  histoYieldExt->SetMarkerStyle(kFullSquare);
+  histoYieldExt->SetMarkerSize(1.6);
+  histoYieldExt->GetYaxis()->SetTitle("Y_{prompt}^{ref. sel.}");
 
   TFile* fileRespMatrix = HelperGeneral::OpenFileWithNullptrCheck(fileNameResponseMatrix);
   TH2* histoRespMatrix = HelperGeneral::GetObjectWithNullptrCheck<TH2>(fileRespMatrix, histoNameResponseMatrix);
 //   zeroNonDiagonalBins(histoRespMatrix);
 
   HelperGeneral::CheckHistogramsForAxisIdentity<TH2, TH2>(histoRespMatrix, nullptr, "XY");
-  HelperGeneral::CheckHistogramsForAxisIdentity(histoRespMatrix, histoYield, "X");
-
-  const double lo = 0.2;
-  const double hi = 1.8;
+  HelperGeneral::CheckHistogramsForAxisIdentity(histoRespMatrix, histoYieldExt, "X");
 
   // ------------- expo parameters estimate --------------------------------------------
   TH1* histEff = histoRespMatrix->ProjectionX(); // for expo parameters estimate only
-  TH1* histPreliminaryCorrectedYield = dynamic_cast<TH1*>(histoYield->Clone());
+  TH1* histPreliminaryCorrectedYield = dynamic_cast<TH1*>(histoYieldExt->Clone());
   histPreliminaryCorrectedYield->SetDirectory(nullptr);
   histPreliminaryCorrectedYield->Divide(histEff);
   const double preliminaryYield = histPreliminaryCorrectedYield->Integral();
@@ -78,71 +81,133 @@ void ct_fit_ff(const std::string& fileNameYield, const std::string& fileNameResp
   ffe.SetResponseMatrix(histoRespMatrix);
   ffe.Init();
 
-  TF1* fitFunc = new TF1("fitFunc", ffe, lo, hi, 2);
-  fitFunc->SetParameters(preliminaryA, HelperGeneral::LifetimeLambdaC);
-  fitFunc->SetNpx(1000);
+  TGraphErrors grTau;
+  TGraphErrors grA;
+  TGraphErrors grChi2;
+  grTau.SetName("grTau");
+  grTau.GetYaxis()->SetTitle("#tau (fs)");
+  grA.SetName("grA");
+  grA.GetYaxis()->SetTitle("A");
+  grChi2.SetName("grChi2");
+  grChi2.GetYaxis()->SetTitle("#chi^{2} / ndf");
 
-  histoYield->Fit(fitFunc, "", "", lo, hi);
-
-  const std::pair<std::string, std::string> fitResults = HelperCtFit::FitResults(fitFunc);
-
-  constexpr float textX1 = 0.70;
-  constexpr float textX2 = 0.86;
-  constexpr float textY2 = 0.86;
-  constexpr float textYStep = 0.06;
-
-  TCanvas ccFit("ccFit", "");
-  ccFit.SetCanvasSize(1200, 800);
-  histoYield->Draw("E1 same");
-  fitFunc->Draw("same");
-  HelperPlot::AddOneLineText(fitResults.first, {textX1, textY2 - 3*textYStep, textX2, textY2 - 2*textYStep}, "brNDC", 0.04);
-  HelperPlot::AddOneLineText(fitResults.second, {textX1, textY2 - 4*textYStep, textX2, textY2 - 3*textYStep}, "brNDC", 0.04);
-  HelperPlot::AddOneLineText(HelperCtFit::LifetimePdgSv, {textX1, textY2 - 6*textYStep, textX2, textY2 - 5*textYStep}, "brNDC", 0.04);
-  ccFit.Print("ctfit.pdf(", "pdf");
-
-  TH1* hRatio = dynamic_cast<TH1*>(histoYield->Clone());
-  HelperPlot::ScalePlotVertically(hRatio, histoYield, 2);
-  hRatio->GetYaxis()->SetTitle("Data / Fit");
-  HelperMath::DivideHistoByFunction(hRatio, fitFunc, "I");
-  hRatio->SetBinContent(1, hRatio->GetBinContent(2)); // To exclude the left-most bin from CustomizeHistogramsYRange
-  HelperPlot::CustomizeHistogramsYRange({hRatio}, false, -1e9, 1e9, 0.7);
-  hRatio->SetBinContent(1, 0.); // revert 2 lines above workaround
-  TCanvas ccRatio("ccRatio", "");
-  HelperPlot::ScaleCanvasVertically(&ccRatio, &ccFit, 2);
-  TF1 oneline("oneline", "[0]", histoYield->GetXaxis()->GetXmin(), histoYield->GetXaxis()->GetXmax());
-  oneline.SetParameter(0, 1);
-  oneline.SetLineColor(kBlack);
-  oneline.SetLineStyle(7);
-  hRatio->Draw("HIST PE same");
-  oneline.Draw("same");
-  ccRatio.Print("ctfit.pdf", "pdf");
-
-  TH1* hResidual = dynamic_cast<TH1*>(histoYield->Clone());
-  HelperPlot::ScalePlotVertically(hResidual, histoYield, 2);
-  hResidual->GetYaxis()->SetTitle("(Data - Fit) / #sigma_{Data}");
-  HelperMath::EvalNormDifferenceHistoFromFunction(hResidual, fitFunc, "I");
-  hResidual->SetBinContent(1, hResidual->GetBinContent(2)); // To exclude the left-most bin from CustomizeHistogramsYRange
-  HelperPlot::CustomizeHistogramsYRange({hResidual}, false, -1e9, 1e9, 0.7);
-  hResidual->SetBinContent(1, 0.); // revert 2 lines above workaround
-  TCanvas ccResidual("ccResidual", "");
-  HelperPlot::ScaleCanvasVertically(&ccResidual, &ccFit, 2);
-  TF1 zeroline("oneline", "[0]", 0, 2);
-  zeroline.SetParameter(0, 0);
-  zeroline.SetLineColor(kBlack);
-  zeroline.SetLineStyle(7);
-  hResidual->Draw("HIST PE same");
-  zeroline.Draw("same");
-  ccResidual.Print("ctfit.pdf)", "pdf");
-
-  TFile* fileOut{};
-  if constexpr (IsSaveCanvasAsRoot) {
-    fileOut = TFile::Open("ctfit.root", "recreate");
-    fitFunc->Write();
-    ccFit.Write();
-    ccRatio.Write();
-    ccResidual.Write();
-    fileOut->Close();
+  for(const auto& gr : {&grTau, &grA, &grChi2}) {
+    gr->GetXaxis()->SetTitle("drop set");
   }
+
+  const int nBins = histoYield->GetNbinsX();
+  const int nDropSets = RunMode > HelperCtFit::RunModes::MeanFitOnly ? 1 << nBins : 1;
+
+  auto FitLifetime = [&](TH1* histoRec, int dropSet) {
+    TF1* fitFunc = new TF1("fitFunc", ffe, lo, hi, 2);
+    fitFunc->SetParameters(preliminaryA, HelperGeneral::LifetimeLambdaC);
+    fitFunc->SetNpx(1000);
+
+    histoRec->Fit(fitFunc, "", "", lo, hi);
+
+    grA.AddPoint(dropSet, fitFunc->GetParameter(0)*1000);
+    grA.SetPointError(grA.GetN()-1, 0., fitFunc->GetParError(0)*1000);
+    grTau.AddPoint(dropSet, fitFunc->GetParameter(1)*1000);
+    grTau.SetPointError(grTau.GetN()-1, 0., fitFunc->GetParError(1)*1000);
+
+    const auto chi2 = fitFunc->GetChisquare();
+    const auto ndf = fitFunc->GetNDF();
+    if(ndf != 0) grChi2.AddPoint(dropSet, chi2 / ndf);
+
+    const std::pair<std::string, std::string> fitResults = HelperCtFit::FitResults(fitFunc);
+
+    constexpr float textX1 = 0.70;
+    constexpr float textX2 = 0.86;
+    constexpr float textY2 = 0.86;
+    constexpr float textYStep = 0.06;
+
+    TCanvas ccFit("ccFit", "");
+    ccFit.SetCanvasSize(1200, 800);
+    histoRec->Draw("E1 same");
+    const auto binsToDrop = HelperCtFit::EvalBinsToDrop(dropSet);
+    std::string droppedBins{};
+    for(const auto& binToDrop : binsToDrop) {
+      droppedBins.append(std::to_string(binToDrop));
+      droppedBins.append(", ");
+    }
+    if(dropSet != 0) {
+      droppedBins.pop_back();
+      droppedBins.pop_back();
+      histoRec->SetTitle(("drop set = " + std::to_string(dropSet) + ", dropped bins: {" + droppedBins + "}").c_str());
+    }
+    fitFunc->Draw("same");
+    HelperPlot::AddOneLineText(fitResults.first, {textX1, textY2 - 3*textYStep, textX2, textY2 - 2*textYStep}, "brNDC", 0.04);
+    HelperPlot::AddOneLineText(fitResults.second, {textX1, textY2 - 4*textYStep, textX2, textY2 - 3*textYStep}, "brNDC", 0.04);
+    HelperPlot::AddOneLineText(HelperCtFit::LifetimePdgSv, {textX1, textY2 - 6*textYStep, textX2, textY2 - 5*textYStep}, "brNDC", 0.04);
+    ccFit.Print("ctfit.pdf", "pdf");
+
+    TH1* hRatio = dynamic_cast<TH1*>(histoRec->Clone());
+    HelperPlot::ScalePlotVertically(hRatio, histoRec, 2);
+    hRatio->GetYaxis()->SetTitle("Data / Fit");
+    HelperMath::DivideHistoByFunction(hRatio, fitFunc, "I");
+    hRatio->SetBinContent(1, hRatio->GetBinContent(2)); // To exclude the left-most bin from CustomizeHistogramsYRange
+    HelperPlot::CustomizeHistogramsYRange({hRatio}, false, -1e9, 1e9, 0.7);
+    hRatio->SetBinContent(1, 0.); // revert 2 lines above workaround
+    TCanvas ccRatio("ccRatio", "");
+    HelperPlot::ScaleCanvasVertically(&ccRatio, &ccFit, 2);
+    TF1 oneline("oneline", "[0]", histoRec->GetXaxis()->GetXmin(), histoRec->GetXaxis()->GetXmax());
+    oneline.SetParameter(0, 1);
+    oneline.SetLineColor(kBlack);
+    oneline.SetLineStyle(7);
+    hRatio->Draw("HIST PE same");
+    oneline.Draw("same");
+    ccRatio.Print("ctfit.pdf", "pdf");
+
+    TH1* hResidual = dynamic_cast<TH1*>(histoRec->Clone());
+    HelperPlot::ScalePlotVertically(hResidual, histoRec, 2);
+    hResidual->GetYaxis()->SetTitle("(Data - Fit) / #sigma_{Data}");
+    HelperMath::EvalNormDifferenceHistoFromFunction(hResidual, fitFunc, "I");
+    hResidual->SetBinContent(1, hResidual->GetBinContent(2)); // To exclude the left-most bin from CustomizeHistogramsYRange
+    HelperPlot::CustomizeHistogramsYRange({hResidual}, false, -1e9, 1e9, 0.7);
+    hResidual->SetBinContent(1, 0.); // revert 2 lines above workaround
+    TCanvas ccResidual("ccResidual", "");
+    HelperPlot::ScaleCanvasVertically(&ccResidual, &ccFit, 2);
+    TF1 zeroline("oneline", "[0]", 0, 2);
+    zeroline.SetParameter(0, 0);
+    zeroline.SetLineColor(kBlack);
+    zeroline.SetLineStyle(7);
+    hResidual->Draw("HIST PE same");
+    zeroline.Draw("same");
+    ccResidual.Print("ctfit.pdf", "pdf");
+
+    TFile* fileOut{};
+    if constexpr (IsSaveCanvasAsRoot) {
+      fileOut = TFile::Open("ctfit.root", "recreate");
+      fitFunc->Write();
+      ccFit.Write();
+      ccRatio.Write();
+      ccResidual.Write();
+      fileOut->Close();
+    }
+  };
+
+  TCanvas emptycanvas("emptycanvas", "", 1200, 800);
+  emptycanvas.Print("ctfit.pdf[", "pdf");
+
+  for(int iDropSet=0; iDropSet<nDropSets; ++iDropSet) {
+    const auto binsToDrop = HelperCtFit::EvalBinsToDrop(iDropSet);
+    const auto binsToDropSize = static_cast<int>(binsToDrop.size());
+    if(RunMode == HelperCtFit::RunModes::AllPossible && binsToDropSize >= nBins-1) continue;
+    if(RunMode == HelperCtFit::RunModes::AllWoOne && binsToDropSize > 1) continue;
+    TH1* hReco = dynamic_cast<TH1*>(histoYieldExt->Clone());
+
+    for(const auto& binToDrop : binsToDrop) {
+      HelperCtFit::ExcludeBin(hReco, binToDrop+1); // +1 because of additionalBinEdges
+    }
+
+    FitLifetime(hReco, iDropSet);
+  } // nDropSets
+
+  emptycanvas.Print("ctfit.pdf]", "pdf");
+
+  HelperCtFit::PrintCanvasDrops(&grTau, nBins, "(");
+  HelperCtFit::PrintCanvasDrops(&grA, nBins, "");
+  HelperCtFit::PrintCanvasDrops(&grChi2, nBins, ")");
 
   fileRespMatrix->Close();
   fileYield->Close();
