@@ -84,21 +84,27 @@ void ct_fit_ff(const std::string& fileNameYield, const std::string& fileNameResp
   TGraphErrors grTau;
   TGraphErrors grA;
   TGraphErrors grChi2;
+  TGraphErrors grEta;
   grTau.SetName("grTau");
-  grTau.GetYaxis()->SetTitle("#tau (fs)");
   grA.SetName("grA");
-  grA.GetYaxis()->SetTitle("A");
   grChi2.SetName("grChi2");
+  grEta.SetName("grEta");
+  grTau.GetYaxis()->SetTitle("#tau (fs)");
+  grA.GetYaxis()->SetTitle("A");
   grChi2.GetYaxis()->SetTitle("#chi^{2} / ndf");
+  grEta.GetYaxis()->SetTitle("#eta, %");
 
-  for(const auto& gr : {&grTau, &grA, &grChi2}) {
+  for(const auto& gr : {&grTau, &grA, &grChi2, &grEta}) {
     gr->GetXaxis()->SetTitle("drop set");
   }
 
   const int nBins = histoYield->GetNbinsX();
   const int nDropSets = RunMode > HelperCtFit::RunModes::MeanFitOnly ? 1 << nBins : 1;
+  double referenceSigmaTau{HelperGeneral::UndefValueDouble};
 
   auto FitLifetime = [&](TH1* histoRec, int dropSet) {
+    const auto binsToDrop = HelperCtFit::EvalBinsToDrop(dropSet);
+
     TF1* fitFunc = new TF1("fitFunc", ffe, lo, hi, 2);
     fitFunc->SetParameters(preliminaryA, HelperGeneral::LifetimeLambdaC);
     fitFunc->SetNpx(1000);
@@ -114,6 +120,13 @@ void ct_fit_ff(const std::string& fileNameYield, const std::string& fileNameResp
     const auto ndf = fitFunc->GetNDF();
     if(ndf != 0) grChi2.AddPoint(dropSet, chi2 / ndf);
 
+    if (dropSet == 0) referenceSigmaTau = fitFunc->GetParError(1);
+    if(binsToDrop.size() < 2) {
+      const double currentSigmaTau = fitFunc->GetParError(1);
+      const double eta = (currentSigmaTau / referenceSigmaTau - 1.) * 100.;
+      grEta.AddPoint(dropSet, eta);
+    }
+
     const std::pair<std::string, std::string> fitResults = HelperCtFit::FitResults(fitFunc);
 
     constexpr float textX1 = 0.70;
@@ -124,7 +137,6 @@ void ct_fit_ff(const std::string& fileNameYield, const std::string& fileNameResp
     TCanvas ccFit("ccFit", "");
     ccFit.SetCanvasSize(1200, 800);
     histoRec->Draw("E1 same");
-    const auto binsToDrop = HelperCtFit::EvalBinsToDrop(dropSet);
     std::string droppedBins{};
     for(const auto& binToDrop : binsToDrop) {
       droppedBins.append(std::to_string(binToDrop));
@@ -207,7 +219,8 @@ void ct_fit_ff(const std::string& fileNameYield, const std::string& fileNameResp
 
   HelperCtFit::PrintCanvasDrops(&grTau, nBins, "(");
   HelperCtFit::PrintCanvasDrops(&grA, nBins, "");
-  HelperCtFit::PrintCanvasDrops(&grChi2, nBins, ")");
+  HelperCtFit::PrintCanvasDrops(&grChi2, nBins, "");
+  HelperCtFit::PrintCanvasDrops(&grEta, nBins, ")");
 
   fileRespMatrix->Close();
   fileYield->Close();

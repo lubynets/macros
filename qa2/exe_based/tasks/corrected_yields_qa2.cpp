@@ -140,20 +140,23 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
     TGraphErrors grTau;
     TGraphErrors grA;
     TGraphErrors grChi2;
-
+    TGraphErrors grEta;
     grTau.SetName("grTau");
-    grTau.GetYaxis()->SetTitle("#tau (fs)");
     grA.SetName("grA");
-    grA.GetYaxis()->SetTitle("A");
     grChi2.SetName("grChi2");
+    grEta.SetName("grEta");
+    grTau.GetYaxis()->SetTitle("#tau (fs)");
+    grA.GetYaxis()->SetTitle("A");
     grChi2.GetYaxis()->SetTitle("#chi^{2} / ndf");
+    grEta.GetYaxis()->SetTitle("#eta, %");
 
-    for(const auto& gr : {&grTau, &grA, &grChi2}) {
+    for(const auto& gr : {&grTau, &grA, &grChi2, &grEta}) {
       gr->GetXaxis()->SetTitle("drop set");
     }
 
     const int nBins = hCutVarDiff->GetNbinsX();
     const int nDropSets = RunMode > HelperCtFit::RunModes::MeanFitOnly ? 1 << nBins : 1;
+    double referenceSigmaTau{HelperGeneral::UndefValueDouble};
 
     TFile* fileOut = IsSaveCanvasAsRoot ? TFile::Open("ctfit.root", "recreate") : nullptr;
     if(IsSaveCanvasAsRoot) bestDropSetName.Write();
@@ -162,6 +165,8 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
     emptycanvas.Print("ctfit.pdf[", "pdf");
 
     auto FitLifetimeHistos = [&](TH1* histoRec, TH1* histoMc, int dropSet) {
+      const auto binsToDrop = HelperCtFit::EvalBinsToDrop(dropSet);
+
       TF1* fitCutVar = FitLifetimeHisto(histoRec, integralOption);
       TF1* fitMc = isMc ? FitLifetimeHisto(histoMc, integralOption) : nullptr;
 
@@ -173,6 +178,13 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
       const auto chi2 = fitCutVar->GetChisquare();
       const auto ndf = fitCutVar->GetNDF();
       if(ndf != 0) grChi2.AddPoint(dropSet, chi2 / ndf);
+
+      if (dropSet == 0) referenceSigmaTau = fitCutVar->GetParError(1);
+      if(binsToDrop.size() < 2) {
+        const double currentSigmaTau = fitCutVar->GetParError(1);
+        const double eta = (currentSigmaTau / referenceSigmaTau - 1.) * 100.;
+        grEta.AddPoint(dropSet, eta);
+      }
 
       const std::pair<std::string, std::string> fitResultsCutVar = HelperCtFit::FitResults(fitCutVar);
       const std::pair<std::string, std::string> fitResultsMC = isMc ? HelperCtFit::FitResults(fitMc, "[MC]") : std::pair<std::string, std::string>();
@@ -192,7 +204,7 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
         AddOneLineText(fitResultsMC.second, {textX1, textY2 - 2*textYStep, textX2, textY2 - 1*textYStep}, "brNDC", 0.04);
       }
       histoRec->Draw("E1 same");
-      const auto binsToDrop = HelperCtFit::EvalBinsToDrop(dropSet);
+
       std::string droppedBins{};
       for(const auto& binToDrop : binsToDrop) {
         droppedBins.append(std::to_string(binToDrop));
@@ -289,7 +301,8 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
 
     HelperCtFit::PrintCanvasDrops(&grTau, nBins, "(");
     HelperCtFit::PrintCanvasDrops(&grA, nBins, "");
-    HelperCtFit::PrintCanvasDrops(&grChi2, nBins, ")");
+    HelperCtFit::PrintCanvasDrops(&grChi2, nBins, "");
+    HelperCtFit::PrintCanvasDrops(&grEta, nBins, ")");
 
   } // promptnesses
 }
