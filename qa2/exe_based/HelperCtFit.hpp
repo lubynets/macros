@@ -9,6 +9,7 @@
 #include <TF1.h>
 #include <TH1.h>
 
+#include <array>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -28,6 +29,14 @@ enum class SubGraphType {
   TwoFit
 };
 
+enum class GraphQaType {
+  Tau = 0,
+  Integral,
+  Chi2,
+  Eta,
+  NGraphQas
+};
+
 void ExcludeBin(TH1* h, int binNumber);
 
 std::vector<int> EvalBinsToDrop(int dropSet);
@@ -38,7 +47,11 @@ TGraphErrors* GetSubGraph(TGraphErrors* grIn, SubGraphType subGraphType, Color_t
 
 std::pair<std::string, std::string> FitResults(const TF1* fitFunc, const std::string& text="");
 
-void PrintCanvasDrops(TGraphErrors* graph, int nBins, const std::string& priBra);
+void PrintCanvasDrops(TGraphErrors* graph, int nBins);
+
+std::array<TGraphErrors*, static_cast<int>(GraphQaType::NGraphQas)> CreateQaGraphs();
+
+void FillQaGraphs(std::array<TGraphErrors*, static_cast<int>(GraphQaType::NGraphQas)>& graphs, const TF1* func, int dropSet, double referenceSigmaTau);
 
 constexpr std::string_view LifetimePdgSv = "#tau_{#Lambda_{c}} [PDG] = (202.6 #pm 1.0) fs";
 }

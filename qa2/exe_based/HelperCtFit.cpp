@@ -12,6 +12,7 @@
 #include <TLegend.h>
 #include <TLine.h>
 
+#include <array>
 #include <string>
 #include <utility>
 #include <vector>
@@ -59,21 +60,21 @@ TGraphErrors* HelperCtFit::GetSubGraph(TGraphErrors* grIn, SubGraphType subGraph
   return grOut;
 }
 
-std::pair<std::string, std::string> HelperCtFit::FitResults(const TF1* fitFunc, const std::string& text) {
+std::pair<std::string, std::string> HelperCtFit::FitResults(const TF1* func, const std::string& text) {
   const std::string lifetimeFitValue = "#tau_{#Lambda_{c}} " + text + "= (" +
-                                      HelperGeneral::to_string_with_precision(fitFunc->GetParameter(1)*1000, 1) +
+                                      HelperGeneral::to_string_with_precision(func->GetParameter(1)*1000, 1) +
                                       " #pm " +
-                                      HelperGeneral::to_string_with_precision(fitFunc->GetParError(1)*1000, 1) +
+                                      HelperGeneral::to_string_with_precision(func->GetParError(1)*1000, 1) +
                                       ") fs";
   const std::string chi2Value = "#chi^{2} / ndf = " +
-                                HelperGeneral::to_string_with_significant_figures(fitFunc->GetChisquare(), 3) +
+                                HelperGeneral::to_string_with_significant_figures(func->GetChisquare(), 3) +
                                 " / " +
-                                std::to_string(fitFunc->GetNDF());
+                                std::to_string(func->GetNDF());
 
   return std::make_pair(lifetimeFitValue, chi2Value);
 }
 
-void HelperCtFit::PrintCanvasDrops(TGraphErrors* graph, int nBins, const std::string& priBra) {
+void HelperCtFit::PrintCanvasDrops(TGraphErrors* graph, int nBins) {
   const double leftEdge = -2.;
   const double rightEdge = graph->GetPointX(graph->GetN()-1) + 2;
 
@@ -103,5 +104,43 @@ void HelperCtFit::PrintCanvasDrops(TGraphErrors* graph, int nBins, const std::st
   leg.AddEntry(grTwoFit, "Fit two points", "PE");
   leg.Draw("same");
 
-  ccDrops.Print(("dropSummary.pdf" + priBra).c_str(), "pdf");
+  ccDrops.Print("dropSummary.pdf", "pdf");
+}
+
+std::array<TGraphErrors*, static_cast<int>(HelperCtFit::GraphQaType::NGraphQas)> HelperCtFit::CreateQaGraphs() {
+  std::array<TGraphErrors*, static_cast<int>(GraphQaType::NGraphQas)> graphs;
+  for(auto& gr : graphs) {
+    gr = new TGraphErrors();
+    gr->GetXaxis()->SetTitle("drop set");
+  }
+  graphs.at(static_cast<int>(GraphQaType::Tau))->SetName("grTau");
+  graphs.at(static_cast<int>(GraphQaType::Integral))->SetName("grA");
+  graphs.at(static_cast<int>(GraphQaType::Chi2))->SetName("grChi2");
+  graphs.at(static_cast<int>(GraphQaType::Eta))->SetName("grEta");
+  graphs.at(static_cast<int>(GraphQaType::Tau))->GetYaxis()->SetTitle("#tau (fs)");
+  graphs.at(static_cast<int>(GraphQaType::Integral))->GetYaxis()->SetTitle("A");
+  graphs.at(static_cast<int>(GraphQaType::Chi2))->GetYaxis()->SetTitle("#chi^{2} / ndf");
+  graphs.at(static_cast<int>(GraphQaType::Eta))->GetYaxis()->SetTitle("#eta, %");
+
+  return graphs;
+}
+
+void HelperCtFit::FillQaGraphs(std::array<TGraphErrors*, static_cast<int>(GraphQaType::NGraphQas)>& graphs, const TF1* func, int dropSet, double referenceSigmaTau) {
+  const auto binsToDrop = EvalBinsToDrop(dropSet);
+
+  graphs.at(static_cast<int>(GraphQaType::Integral))->AddPoint(dropSet, func->GetParameter(0)*1000);
+  graphs.at(static_cast<int>(GraphQaType::Integral))->SetPointError(graphs.at(static_cast<int>(GraphQaType::Integral))->GetN()-1, 0., func->GetParError(0)*1000);
+  graphs.at(static_cast<int>(GraphQaType::Tau))->AddPoint(dropSet, func->GetParameter(1)*1000);
+  graphs.at(static_cast<int>(GraphQaType::Tau))->SetPointError(graphs.at(static_cast<int>(GraphQaType::Tau))->GetN()-1, 0., func->GetParError(1)*1000);
+
+  const auto chi2 = func->GetChisquare();
+  const auto ndf = func->GetNDF();
+  if(ndf != 0) graphs.at(static_cast<int>(GraphQaType::Chi2))->AddPoint(dropSet, chi2 / ndf);
+
+  if (dropSet == 0) referenceSigmaTau = func->GetParError(1);
+  if(binsToDrop.size() < 2) {
+    const double currentSigmaTau = func->GetParError(1);
+    const double eta = (currentSigmaTau / referenceSigmaTau - 1.) * 100.;
+    graphs.at(static_cast<int>(GraphQaType::Eta))->AddPoint(dropSet, eta);
+  }
 }

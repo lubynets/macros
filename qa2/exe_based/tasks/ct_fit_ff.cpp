@@ -15,6 +15,7 @@
 #include <TH2.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <iostream>
 #include <stdexcept>
@@ -81,22 +82,7 @@ void ct_fit_ff(const std::string& fileNameYield, const std::string& fileNameResp
   ffe.SetResponseMatrix(histoRespMatrix);
   ffe.Init();
 
-  TGraphErrors grTau;
-  TGraphErrors grA;
-  TGraphErrors grChi2;
-  TGraphErrors grEta;
-  grTau.SetName("grTau");
-  grA.SetName("grA");
-  grChi2.SetName("grChi2");
-  grEta.SetName("grEta");
-  grTau.GetYaxis()->SetTitle("#tau (fs)");
-  grA.GetYaxis()->SetTitle("A");
-  grChi2.GetYaxis()->SetTitle("#chi^{2} / ndf");
-  grEta.GetYaxis()->SetTitle("#eta, %");
-
-  for(const auto& gr : {&grTau, &grA, &grChi2, &grEta}) {
-    gr->GetXaxis()->SetTitle("drop set");
-  }
+  auto graphsQa = HelperCtFit::CreateQaGraphs();
 
   const int nBins = histoYield->GetNbinsX();
   const int nDropSets = RunMode > HelperCtFit::RunModes::MeanFitOnly ? 1 << nBins : 1;
@@ -111,21 +97,8 @@ void ct_fit_ff(const std::string& fileNameYield, const std::string& fileNameResp
 
     histoRec->Fit(fitFunc, "", "", lo, hi);
 
-    grA.AddPoint(dropSet, fitFunc->GetParameter(0)*1000);
-    grA.SetPointError(grA.GetN()-1, 0., fitFunc->GetParError(0)*1000);
-    grTau.AddPoint(dropSet, fitFunc->GetParameter(1)*1000);
-    grTau.SetPointError(grTau.GetN()-1, 0., fitFunc->GetParError(1)*1000);
-
-    const auto chi2 = fitFunc->GetChisquare();
-    const auto ndf = fitFunc->GetNDF();
-    if(ndf != 0) grChi2.AddPoint(dropSet, chi2 / ndf);
-
-    if (dropSet == 0) referenceSigmaTau = fitFunc->GetParError(1);
-    if(binsToDrop.size() < 2) {
-      const double currentSigmaTau = fitFunc->GetParError(1);
-      const double eta = (currentSigmaTau / referenceSigmaTau - 1.) * 100.;
-      grEta.AddPoint(dropSet, eta);
-    }
+    if(dropSet == 0) referenceSigmaTau = fitFunc->GetParError(1);
+    HelperCtFit::FillQaGraphs(graphsQa, fitFunc, dropSet, referenceSigmaTau);
 
     const std::pair<std::string, std::string> fitResults = HelperCtFit::FitResults(fitFunc);
 
@@ -214,13 +187,13 @@ void ct_fit_ff(const std::string& fileNameYield, const std::string& fileNameResp
 
     FitLifetime(hReco, iDropSet);
   } // nDropSets
-
   emptycanvas.Print("ctfit.pdf]", "pdf");
 
-  HelperCtFit::PrintCanvasDrops(&grTau, nBins, "(");
-  HelperCtFit::PrintCanvasDrops(&grA, nBins, "");
-  HelperCtFit::PrintCanvasDrops(&grChi2, nBins, "");
-  HelperCtFit::PrintCanvasDrops(&grEta, nBins, ")");
+  emptycanvas.Print("dropSummary.pdf[", "pdf");
+  for(const auto& gr : graphsQa) {
+    HelperCtFit::PrintCanvasDrops(gr, nBins);
+  }
+  emptycanvas.Print("dropSummary.pdf]", "pdf");
 
   fileRespMatrix->Close();
   fileYield->Close();
