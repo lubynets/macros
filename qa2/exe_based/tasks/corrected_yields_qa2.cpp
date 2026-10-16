@@ -26,8 +26,8 @@ constexpr bool IsSaveCanvasAsRoot{true};
 
 constexpr HelperCtFit::RunModes RunMode {
 //   HelperCtFit::RunModes::MeanFitOnly
-//   HelperCtFit::RunModes::AllWoOne
-  HelperCtFit::RunModes::AllPossible
+  HelperCtFit::RunModes::AllWoOne
+//   HelperCtFit::RunModes::AllPossible
 };
 
 enum UncModes {

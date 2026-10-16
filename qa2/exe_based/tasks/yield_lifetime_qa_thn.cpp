@@ -32,7 +32,7 @@ const std::vector<double> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.04, 0.08};
 // const std::vector<double> bdtBgUpperValuesVsPt = {0.05, 0.05, 0.05, 0.08, 0.16}; // veryloose
 // const std::vector<double> bdtBgUpperValuesVsPt = {0.025, 0.025, 0.025, 0.05, 0.10}; // semiloose
 
-constexpr std::string_view LifetimeAxisTitle = "T_{proper} (ps)"/*"#it{t}_{proper} (ps)"*/;
+constexpr std::string_view LifetimeAxisTitle = /*"T_{proper} (ps)"*/"#it{t}_{proper} (ps)";
 constexpr std::string_view LifetimeGenAxisTitle = "#it{t}_{proper, gen} (ps)";
 constexpr std::string_view PtAxisTitle = "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})";
 constexpr std::string_view PtBAxisTitle = "#it{p}_{T}^{B} (GeV/#it{c})";
