@@ -17,7 +17,7 @@
 using namespace HelperGeneral;
 
 const std::vector<double> lifetimeRanges = {0.2, 0.4, 0.6, 0.8, 1.0, 1.4, 1.8};
-const std::string lifetimeAxisTitle = "T_{proper} (ps)";
+const std::string lifetimeAxisTitle = "#it{t}_{proper} (ps)";
 
 std::vector<double> pTRanges = {3, 4, 5, 8, 12, 20};
 const std::string pTAxisTitle = "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})";
@@ -39,7 +39,7 @@ const std::string bdtScanDir = "gt";
 // const std::string bdtScanAxisTitle = bgAxisTitle;
 // const std::string bdtScanDir = "lt";
 
-constexpr int Verobsity{0};
+constexpr int Verobsity{3};
 
 std::string GetPtCutName(size_t iPt);
 
@@ -72,13 +72,13 @@ void MassBdtQaThn(const std::string& fileNameIn, int modeRun) {
   if(bdtBgUpperValuesVsPt.size() != pTRanges.size() - 1) throw std::runtime_error("bdtUpperValuesVsPt.size() != pTRanges.size() - 1");
   if(bdtScanDir != "gt" && bdtScanDir != "lt") throw std::runtime_error("bdtScanDir != \"gt\" && bdtScanDir != \"lt\"");
 
-  std::vector<double> bdtScanValues{0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90};
-//   std::vector<double> bdtScanValues{};
-//   for (int iB = 0; iB <= 99; iB++) {
-//     bdtScanValues.emplace_back(0.01 * iB);
-//   }
+//   std::vector<double> bdtScanValues{0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90};
+  std::vector<double> bdtScanValues{};
+  for (int iB = 0; iB <= 99; iB++) {
+    bdtScanValues.emplace_back(0.01 * iB);
+  }
 
-  std::vector<double> bdtNpUpperValues{1.00, 0.95, 0.90, 0.85, 0.80, 0.75, 0.70, 0.65, 0.60};
+  std::vector<double> bdtNpUpperValues{1.00/*, 0.95, 0.90, 0.85, 0.80, 0.75, 0.70, 0.65, 0.60*/};
 
   if(modeRun != MergeOnly) {
     CheckTAxisForRanges(*histoIn->GetAxis(axesIndices.at(pTAxisTitle)), pTRanges);
