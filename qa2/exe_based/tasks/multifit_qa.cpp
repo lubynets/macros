@@ -33,7 +33,7 @@ void MultiFitQa(const std::string& strategy) {
   const std::string fileNameTemplate = "RawYields_Lc/RawYields_Lc";
   const int nTrials = 100;
   std::vector<double> bdtScores;
-  for(int i=1; i<=100; i++) {
+  for(int i=1; i<=99; i++) {
     bdtScores.emplace_back(0.01*i);
   }
 //   bdtScores={0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90};
@@ -43,14 +43,14 @@ void MultiFitQa(const std::string& strategy) {
    "hRawYieldsSignalCounted",
    "hRawYieldsSigma",
    "hRawYieldsMean",
-//    "hRawYieldsSignificance",
-//    "hRawYieldsSgnOverBkg",
-//    "hRawYieldsBkg",
-//    "hRawYieldsChiSquareBkg",
-//    "hRawYieldsDscbAlphaL",
-//    "hRawYieldsDscbAlphaR",
-//    "hRawYieldsDscbNL",
-//    "hRawYieldsDscbNR"
+   "hRawYieldsSignificance",
+   "hRawYieldsSgnOverBkg",
+   "hRawYieldsBkg",
+   "hRawYieldsChiSquareBkg",
+   "hRawYieldsDscbAlphaL",
+   "hRawYieldsDscbAlphaR",
+   "hRawYieldsDscbNL",
+   "hRawYieldsDscbNR",
    "hRawYieldsChiSquareTotal"
   };
 
