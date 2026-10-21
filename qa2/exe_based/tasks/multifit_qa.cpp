@@ -43,14 +43,14 @@ void MultiFitQa(const std::string& strategy) {
    "hRawYieldsSignalCounted",
    "hRawYieldsSigma",
    "hRawYieldsMean",
-   "hRawYieldsSignificance",
-   "hRawYieldsSgnOverBkg",
-   "hRawYieldsBkg",
-   "hRawYieldsChiSquareBkg",
-   "hRawYieldsDscbAlphaL",
-   "hRawYieldsDscbAlphaR",
-   "hRawYieldsDscbNL",
-   "hRawYieldsDscbNR",
+//    "hRawYieldsSignificance",
+//    "hRawYieldsSgnOverBkg",
+//    "hRawYieldsBkg",
+//    "hRawYieldsChiSquareBkg",
+//    "hRawYieldsDscbAlphaL",
+//    "hRawYieldsDscbAlphaR",
+//    "hRawYieldsDscbNL",
+//    "hRawYieldsDscbNR",
    "hRawYieldsChiSquareTotal"
   };
 
