@@ -64,8 +64,11 @@ std::string GetPtCutName(size_t iPt);
 void FillYield(const std::string& fileName, const std::string& filePtWeightName, const bool isRec, const double nCtSigmaFromPdg, const std::string& pCMM, const std::string& npCMM) {
   const double tauTarget = tauPdg + nCtSigmaFromPdg*sigmaPdg;
 
-  TF1* ctWeight = new TF1("ctWeight", "std::exp(-[0]*x)", 0., 2.);
-  ctWeight->SetParameter(0, (tauPythia - tauTarget)/tauTarget/tauPythia);
+  TF1* ctWeight{};
+  if (nCtSigmaFromPdg != UndefValueDouble) {
+    ctWeight = new TF1("ctWeight", "std::exp(-[0]*x)", 0., 2.);
+    ctWeight->SetParameter(0, (tauPythia - tauTarget)/tauTarget/tauPythia);
+  }
 
   if(IsVerbose) std::cout << "FillYield() started\n";
   TFile* fileIn = OpenFileWithNullptrCheck(fileName);
@@ -171,10 +174,10 @@ int main(int argc, char* argv[]) {
 
   const std::string& fileName = modeRun != MergeOnly ? ReadNthLine(fileNameIn) : fileNameIn;
 
-//   for (int iB = 0; iB <= 99; iB++) {
-//     gBdtSignalLowerValues.emplace_back(0.01 * iB);
-//   }
-  gBdtSignalLowerValues = {0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90};
+  for (int iB = 0; iB <= 99; iB++) {
+    gBdtSignalLowerValues.emplace_back(0.01 * iB);
+  }
+//   gBdtSignalLowerValues = {0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90};
 
   if(modeRun != MergeOnly) {
     FillYield(fileName, filePtWeightName, true, nCtSigmaFromPdg, pCMM, npCMM);
