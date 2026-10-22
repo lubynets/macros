@@ -68,14 +68,18 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
     histoSystUnc = dynamic_cast<TH1D*>(histoSystUnc->Rebin(lifetimeRanges.size() - 1, histoSystUnc->GetName(), lifetimeRanges.data()));
   }
 
-  TH1* histoStatus = GetObjectWithNullptrCheck<TH1>(fileCutVar, "hMinimizationStatus");
-  CheckTAxisForRanges(*histoStatus->GetXaxis(), lifetimeRanges);
-  histoStatus = dynamic_cast<TH1D*>(histoStatus->Rebin(lifetimeRanges.size() - 1, histoStatus->GetName(), lifetimeRanges.data()));
-  std::vector<int> badBins{};
-  for(int iBin=1, nBins=histoStatus->GetNbinsX(); iBin<=nBins; ++iBin) {
-    if(histoStatus->GetBinContent(iBin) != 1) badBins.push_back(iBin);
+  TH1* histoStatus{};
+  histoStatus = fileCutVar->Get<TH1>("hMinimizationStatus");
+  int bestDropSet{HelperGeneral::UndefValueInt};
+  if (histoStatus != nullptr) {
+    CheckTAxisForRanges(*histoStatus->GetXaxis(), lifetimeRanges);
+    histoStatus = dynamic_cast<TH1D*>(histoStatus->Rebin(lifetimeRanges.size() - 1, histoStatus->GetName(), lifetimeRanges.data()));
+    std::vector<int> badBins{};
+    for(int iBin=1, nBins=histoStatus->GetNbinsX(); iBin<=nBins; ++iBin) {
+      if(histoStatus->GetBinContent(iBin) != 1) badBins.push_back(iBin);
+    }
+    bestDropSet = HelperCtFit::EvalDropSet(badBins);
   }
-  const int bestDropSet = HelperCtFit::EvalDropSet(badBins);
   std::cout << "bestDropSet = " << bestDropSet << "\n";
   TNamed bestDropSetName("bestDropSet", std::to_string(bestDropSet));
 
