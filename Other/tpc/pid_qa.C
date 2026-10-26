@@ -1,9 +1,24 @@
 void pid_qa(const char* inFileName) {
 
-  std::ifstream inputList(inFileName);
+  std::string inputName(inFileName);
+  int selectedLine = 0;  // 0 means process all lines
+
+  auto colonPos = inputName.rfind(':');
+
+  if (colonPos != std::string::npos) {
+    std::string lineStr = inputName.substr(colonPos + 1);
+
+    if (!lineStr.empty() &&
+        std::all_of(lineStr.begin(), lineStr.end(), ::isdigit)) {
+      selectedLine = std::stoi(lineStr);
+      inputName = inputName.substr(0, colonPos);
+    }
+  }
+
+  std::ifstream inputList(inputName);
 
   if (!inputList.is_open()) {
-    Error("pid_qa", "Cannot open input list %s", inFileName);
+    Error("pid_qa", "Cannot open input list %s", inputName.c_str());
     return;
   }
 
@@ -11,10 +26,17 @@ void pid_qa(const char* inFileName) {
 
   std::string fileName;
 
+  int iFile{0};
   while (std::getline(inputList, fileName)) {
+  ++iFile;
 
-    if (fileName.empty())
-      continue;
+  if (selectedLine > 0 && iFile != selectedLine)
+    continue;
+
+  std::cout << "Capturing file no. " << iFile << std::endl;
+
+  if (fileName.empty())
+    continue;
 
     TFile input(fileName.c_str());
 
