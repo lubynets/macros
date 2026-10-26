@@ -5,6 +5,8 @@
 #   AO2Ds are supposed to be stored                                                                      #
 ##########################################################################################################
 
+START_TIME=$SECONDS
+
 HYPERLOOP_OUTPUT_DIRECTORIES="$1"
 COPY_SELECTION="${2:-2}"
 
@@ -121,3 +123,8 @@ find ./ -name "AO2D.root" -exec readlink -f {} \; > localAO2DList.txt
 
 echo "creating new AnalysisResults list"
 find ./ -name "AnalysisResults.root" -exec readlink -f {} \; > localAnalysisResultsList.txt
+
+FINISH_TIME=$SECONDS
+
+echo
+echo "elapsed time " $(($(($FINISH_TIME-$START_TIME))/60)) "m " $(($(($FINISH_TIME-$START_TIME))%60)) "s"
