@@ -62,7 +62,22 @@ void pid_qa(const char* inFileName) {
     }
   }
 
-  ROOT::RDataFrame df(chain);
+  // ============================================================
+  const double cutY = 70.;
+  const double cutX = 0.4;
+  const double leftEdgeX = 0.1;
+
+  ROOT::RDataFrame df0(chain);
+
+  auto df = df0.Filter(
+    [cutX, cutY, leftEdgeX](float p, float sigma) {
+      return p > 0. &&
+            sigma < cutY *
+            std::log10(cutX / p) / std::log10(cutX / leftEdgeX);
+    },
+    {"fTPCInnerParam", "fExpSigma"}
+  );
+  // ============================================================
 
   struct Species {
     int pid;
@@ -71,13 +86,13 @@ void pid_qa(const char* inFileName) {
   };
 
   const std::vector<Species> species = {
-    {0, "El", "e"},
-    {2, "Pi", "#pi"},
-    {3, "Ka", "K"},
+//     {0, "El", "e"},
+//     {2, "Pi", "#pi"},
+//     {3, "Ka", "K"},
     {4, "Pr", "p"}
   };
 
-  struct HistDef {
+  struct Hist2DDef {
     const char* branch;
     const char* directory;
     int nBinsY;
@@ -86,7 +101,7 @@ void pid_qa(const char* inFileName) {
     const char* title;
   };
 
-  const std::vector<HistDef> histDefs = {
+  const std::vector<Hist2DDef> hist2DDefs = {
     {
       "fNSigmaTpc",
       "nsigma",
@@ -113,8 +128,28 @@ void pid_qa(const char* inFileName) {
     }
   };
 
-  const int nBinsP = 3000;
-  const double pMin = 0.01;
+  struct Hist1DDef {
+    const char* branch;
+    int nBins;
+    double xMin;
+    double xMax;
+  };
+
+  const std::vector<Hist1DDef> hist1DDefs = {
+    {"fFt0Occ", 200, 0., 100000.},
+    {"fHadronicRate", 200, 15., 25.},
+    {"fNormMultTPC", 200, 0., 2.},
+    {"fNormNClustersTPC", 200, 0., 2.},
+    {"fPhi", 200, 0., 2*3.1415926},
+    {"fTgl", 200, -1.5, 1.5},
+    {"fSigned1Pt", 200, -10., 10.},
+    {"fY", 200, -1.2, 1.2},
+    {"fP", 200, 0., 100.},
+    {"fTPCInnerParam", 200, 0., 100.}
+  };
+
+  const int nBinsP = 2000;
+  const double pMin = 0.1;
   const double pMax = 20.;
 
   std::vector<double> pBins(nBinsP + 1);
@@ -128,7 +163,27 @@ void pid_qa(const char* inFileName) {
 
   std::map<std::string, ROOT::RDF::RResultPtr<TH1>> histos;
 
-  for (const auto& hd : histDefs) {
+  std::map<std::string, ROOT::RDF::RResultPtr<TH1D>> histos1D;
+
+  for (const auto& hd : hist1DDefs) {
+
+    auto h = df.Histo1D(
+      {
+        hd.branch,
+        hd.branch,
+        hd.nBins,
+        hd.xMin,
+        hd.xMax
+      },
+      hd.branch
+    );
+
+    h->GetXaxis()->SetTitle(hd.branch);
+
+    histos1D[hd.branch] = h;
+  }
+
+  for (const auto& hd : hist2DDefs) {
 
     for (const auto& s : species) {
 
@@ -156,7 +211,7 @@ void pid_qa(const char* inFileName) {
 
   TFile output("pid_qa.root", "recreate");
 
-  for (const auto& hd : histDefs) {
+  for (const auto& hd : hist2DDefs) {
 
     output.mkdir(hd.directory);
     output.cd(hd.directory);
@@ -167,6 +222,15 @@ void pid_qa(const char* inFileName) {
 
     output.cd();
   }
+
+  output.mkdir("trainingVars");
+  output.cd("trainingVars");
+
+  for (const auto& hd : hist1DDefs) {
+    histos1D[hd.branch]->Write();
+  }
+
+  output.cd();
 
   output.Close();
 }
