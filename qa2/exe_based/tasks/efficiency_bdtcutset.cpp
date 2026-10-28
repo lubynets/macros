@@ -20,7 +20,8 @@ using namespace HelperGeneral;
 using namespace HelperMath;
 using namespace HelperPlot;
 
-constexpr bool IsFFReady{true};
+// constexpr bool IsFFReady{true};
+constexpr bool IsFFReady{false};
 
 void efficiency_bdtcutset(const std::string& fileName) {
   LoadMacro("styles/mc_qa2.style.cc");
@@ -32,12 +33,12 @@ void efficiency_bdtcutset(const std::string& fileName) {
   const std::string fileOutName = "efficiency_summary";
 
   // ========================= Configuration =================================
-  const std::vector<double> lifeTimeRanges = {/*0.0, */0.2, 0.4, 0.6, 0.8, 1.0, 1.4, 1.8};
+  const std::vector<double> lifeTimeRanges = IsFFReady ? std::vector<double>{0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.4, 1.8} : std::vector<double>{0.2, 0.4, 0.6, 0.8, 1.0, 1.4, 1.8}; // why need r.h.s. std::vector<> when ternary operator?
   const std::vector<double> pTRanges = {1, 2, 3, 4, 5, 8, 12, 20};
 
 //   std::vector<float> bdtScores{0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90};
   std::vector<float> bdtScores{};
-  for(int i=0; i<=0; i++) {
+  for(int i=0; i<=99; i++) {
     bdtScores.emplace_back(0.01 * i);
   }
 // //   bdtScores.emplace_back(0.01);

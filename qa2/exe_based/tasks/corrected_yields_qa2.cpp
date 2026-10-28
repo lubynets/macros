@@ -102,7 +102,7 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
       }
     }
 
-    TH1* hMC = isMc ? GetObjectWithNullptrCheck<TH1>(fileMC, "gen/" + promptness + "/hT") : nullptr;
+    TH1* hMC = isMc ? GetObjectWithNullptrCheck<TH1>(fileMC, "gen/" + promptness + "/pT_3_20/hT") : nullptr;
     if (isMc) {
       CheckTAxisForRanges(*hMC->GetXaxis(), lifetimeRanges);
       hMC->UseCurrentStyle();
