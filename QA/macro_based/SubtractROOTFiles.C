@@ -214,7 +214,8 @@ void ValidateTrees(TTree* t1, TTree* t2)
 void SubtractTrees(
     TTree* t1,
     TTree* t2,
-    TDirectory* outputDir)
+    TDirectory* outputDir,
+    TDirectory* relativeOutputDir)
 {
     ValidateTrees(t1, t2);
 
@@ -228,11 +229,20 @@ void SubtractTrees(
         t1->GetTitle()
     );
 
+    relativeOutputDir->cd();
+
+    auto relativeTree = std::make_unique<TTree>(
+        t1->GetName(),
+        t1->GetTitle()
+    );
+
     // Each output branch stores a Double_t.
     //
     // std::map keeps addresses of stored values stable.
 
     std::map<std::string, Double_t> outputValues;
+
+    std::map<std::string, Double_t> relativeValues;
 
     for (const auto& item : leaves1) {
 
@@ -242,12 +252,20 @@ void SubtractTrees(
 
         outputValues[branchName] = 0.0;
 
+        relativeValues[branchName] = 0.0;
+
         std::string leafList =
             std::string(leaf->GetName()) + "/D";
 
         outputTree->Branch(
             branchName.c_str(),
             &outputValues.at(branchName),
+            leafList.c_str()
+        );
+
+        relativeTree->Branch(
+            branchName.c_str(),
+            &relativeValues.at(branchName),
             leafList.c_str()
         );
     }
@@ -284,12 +302,31 @@ void SubtractTrees(
             const Double_t v2 = l2->GetValue();
 
             outputValues.at(name) = v1 - v2;
+
+            const Double_t scale = std::max(std::abs(v1), std::abs(v2));
+
+            if (scale == 0.0) {
+                relativeValues.at(name) = 0.0;
+            } else {
+                const Double_t a = v1 / scale;
+                const Double_t b = v2 / scale;
+
+                relativeValues.at(name) =
+                    2.0 * std::abs(a - b) /
+                    (std::abs(a) + std::abs(b));
+            }
+
         }
 
         outputTree->Fill();
+        relativeTree->Fill();
     }
 
+    outputDir->cd();
     outputTree->Write();
+
+    relativeOutputDir->cd();
+    relativeTree->Write();
 }
 
 // ------------------------------------------------------------
@@ -299,7 +336,8 @@ void SubtractTrees(
 void SubtractROOTFiles(
     const char* filename1,
     const char* filename2,
-    const char* outputFilename = "differences.root")
+    const char* outputFilename = "differences.root",
+    const char* relativeOutputFilename = "relative_differences.root")
 {
     try {
 
@@ -390,6 +428,13 @@ void SubtractROOTFiles(
         if (!output || output->IsZombie())
             Fail("Cannot create output ROOT file");
 
+        std::unique_ptr<TFile> relativeOutput(
+            TFile::Open(relativeOutputFilename, "RECREATE")
+        );
+
+        if (!relativeOutput || relativeOutput->IsZombie())
+            Fail("Cannot create relative output ROOT file");
+
         // ----------------------------------------------------
         // Process directories
         // ----------------------------------------------------
@@ -408,6 +453,12 @@ void SubtractROOTFiles(
             if (!outDir)
                 Fail("Cannot create output directory " + dirName);
 
+            TDirectory* relativeOutDir =
+                relativeOutput->mkdir(dirName.c_str());
+
+            if (!relativeOutDir)
+                Fail("Cannot create relative output directory " + dirName);
+
             auto treeNames = GetObjectNames(
                 d1, TTree::Class()
             );
@@ -417,7 +468,7 @@ void SubtractROOTFiles(
                 auto* t1 = d1->Get<TTree>(treeName.c_str());
                 auto* t2 = d2->Get<TTree>(treeName.c_str());
 
-                SubtractTrees(t1, t2, outDir);
+                SubtractTrees(t1, t2, outDir, relativeOutDir);
             }
         }
 
@@ -428,10 +479,18 @@ void SubtractROOTFiles(
         output->Write();
         output->Close();
 
+        relativeOutput->Write();
+        relativeOutput->Close();
+
         std::cout
             << "\nSuccessfully created: "
             << outputFilename
             << std::endl;
+
+        std::cout
+          << "Successfully created: "
+          << relativeOutputFilename
+          << std::endl;
     }
     catch (const std::exception& e) {
 
