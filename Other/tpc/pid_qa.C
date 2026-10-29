@@ -72,11 +72,13 @@ void pid_qa(const char* inFileName) {
   auto df = df0.Filter(
     [cutX, cutY, leftEdgeX](float p, float sigma) {
       return p > 0. && p < cutX &&
-            sigma > cutY *
+            sigma < cutY *
             std::log10(cutX / p) / std::log10(cutX / leftEdgeX);
     },
     {"fTPCInnerParam", "fExpSigma"}
   );
+
+  // ============================================================
 
   constexpr double TpcSectorSize = 2. * TMath::Pi() / 18.;
 
@@ -88,7 +90,14 @@ void pid_qa(const char* inFileName) {
     },
     {"fPhi"}
   );
-  // ============================================================
+
+  auto dfFinal = dfLocal.Define(
+    "fNClustersTPC",
+    [](float v) {
+      return v > 0.f ? static_cast<int>(std::lround(152. / (v * v))) : -1;
+    },
+    {"fNormNClustersTPC"}
+  );
 
   struct Species {
     int pid;
@@ -150,17 +159,18 @@ void pid_qa(const char* inFileName) {
     {"fFt0Occ", 200, 0., 100000.},
     {"fHadronicRate", 200, 15., 25.},
     {"fNormMultTPC", 200, 0., 2.},
-    {"fNormNClustersTPC", 200, 0.8, 1.6},
+    {"fNClustersTPC", 200, 0., 200.},
     {"fNormNClustersTPCPID", 200, 0., 200.},
     {"fPhiLocal", 200, 0., TpcSectorSize},
     {"fTgl", 200, -1.5, 1.5},
     {"fSigned1Pt", 200, -10., 10.},
-    {"fY", 200, -1.2, 1.2}
+    {"fY", 200, -1.2, 1.2},
+    {"fIsGoodRct", 4, -1, 3}
   };
 
-  const int nBinsP = 2000;
+  const int nBinsP = 1000;
   const double pMin = 0.1;
-  const double pMax = 20.;
+  const double pMax = 1.;
 
   std::vector<double> pBins(nBinsP + 1);
 
@@ -177,7 +187,7 @@ void pid_qa(const char* inFileName) {
 
   for (const auto& hd : hist1DDefs) {
 
-    auto h = dfLocal.Histo1D(
+    auto h = dfFinal.Histo1D(
       {
         hd.branch,
         hd.branch,
