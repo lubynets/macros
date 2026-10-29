@@ -71,11 +71,22 @@ void pid_qa(const char* inFileName) {
 
   auto df = df0.Filter(
     [cutX, cutY, leftEdgeX](float p, float sigma) {
-      return p > 0. &&
-            sigma < cutY *
+      return p > 0. && p < cutX &&
+            sigma > cutY *
             std::log10(cutX / p) / std::log10(cutX / leftEdgeX);
     },
     {"fTPCInnerParam", "fExpSigma"}
+  );
+
+  constexpr double TpcSectorSize = 2. * TMath::Pi() / 18.;
+
+  auto dfLocal = df.Define(
+    "fPhiLocal",
+    [TpcSectorSize](float phi) {
+      double localPhi = std::fmod(phi, TpcSectorSize);
+      return localPhi < 0. ? localPhi + TpcSectorSize : localPhi;
+    },
+    {"fPhi"}
   );
   // ============================================================
 
@@ -139,13 +150,12 @@ void pid_qa(const char* inFileName) {
     {"fFt0Occ", 200, 0., 100000.},
     {"fHadronicRate", 200, 15., 25.},
     {"fNormMultTPC", 200, 0., 2.},
-    {"fNormNClustersTPC", 200, 0., 2.},
-    {"fPhi", 200, 0., 2*3.1415926},
+    {"fNormNClustersTPC", 200, 0.8, 1.6},
+    {"fNormNClustersTPCPID", 200, 0., 200.},
+    {"fPhiLocal", 200, 0., TpcSectorSize},
     {"fTgl", 200, -1.5, 1.5},
     {"fSigned1Pt", 200, -10., 10.},
-    {"fY", 200, -1.2, 1.2},
-    {"fP", 200, 0., 100.},
-    {"fTPCInnerParam", 200, 0., 100.}
+    {"fY", 200, -1.2, 1.2}
   };
 
   const int nBinsP = 2000;
@@ -167,7 +177,7 @@ void pid_qa(const char* inFileName) {
 
   for (const auto& hd : hist1DDefs) {
 
-    auto h = df.Histo1D(
+    auto h = dfLocal.Histo1D(
       {
         hd.branch,
         hd.branch,
