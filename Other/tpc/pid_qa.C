@@ -72,7 +72,7 @@ void pid_qa(const char* inFileName) {
   auto df = df0.Filter(
     [cutX, cutY, leftEdgeX](float p, float sigma) {
       return p > 0. && p < cutX &&
-            sigma < cutY *
+            sigma > cutY *
             std::log10(cutX / p) / std::log10(cutX / leftEdgeX);
     },
     {"fTPCInnerParam", "fExpSigma"}
@@ -165,6 +165,8 @@ void pid_qa(const char* inFileName) {
     {"fTgl", 200, -1.5, 1.5},
     {"fSigned1Pt", 200, -10., 10.},
     {"fY", 200, -1.2, 1.2},
+    {"fP", 200, 0., 1.},
+    {"fTPCInnerParam", 200, 0., 1.},
     {"fIsGoodRct", 4, -1, 3}
   };
 
