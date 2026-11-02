@@ -163,6 +163,7 @@ void MassBdtQaThn(const std::string& fileNameIn, int modeRun) {
     } // TCuts
   } // modeRun != RunOnly
 
+  EmbedSourceCode(fileOut, "mass_bdt_qa_thn.cpp");
   fileOut->Close();
   if(modeRun != MergeOnly) fileIn->Close();
 }

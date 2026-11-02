@@ -4,11 +4,14 @@
 
 #include "HelperGeneral.hpp"
 
+#include <TFile.h>
 #include <TH1.h>
 #include <TH2.h>
+#include <TMacro.h>
 #include <TROOT.h>
 
 #include <algorithm>
+#include <filesystem>
 #include <fstream>
 #include <string>
 #include <string_view>
@@ -194,4 +197,14 @@ void HelperGeneral::RebinHistoToEdges(TH2*& histo, const std::vector<double>& ed
 
   delete histo;
   histo = rebinned;
+}
+
+void HelperGeneral::EmbedSourceCode(TFile* output, const std::string& srcName) {
+  const std::filesystem::path executable = std::filesystem::canonical("/proc/self/exe");
+
+  const std::filesystem::path sourcePath = executable.parent_path() / "../share" / srcName;
+
+  const TMacro source(sourcePath.string().c_str());
+
+  output->WriteObject(&source, "myTask.cpp");
 }

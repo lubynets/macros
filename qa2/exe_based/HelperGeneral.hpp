@@ -165,6 +165,8 @@ void RebinHistoToEdges(TH1*& histo, const std::vector<double>& edges);
 
 void RebinHistoToEdges(TH2*& histo, const std::vector<double>& edges);
 
+void EmbedSourceCode(TFile* output, const std::string& srcName);
+
 };
 
 
