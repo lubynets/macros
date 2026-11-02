@@ -199,12 +199,30 @@ void HelperGeneral::RebinHistoToEdges(TH2*& histo, const std::vector<double>& ed
   histo = rebinned;
 }
 
-void HelperGeneral::EmbedSourceCode(TFile* output, const std::string& srcName) {
+const TMacro* HelperGeneral::CaptureSharedFile(const std::string& fileName) {
   const std::filesystem::path executable = std::filesystem::canonical("/proc/self/exe");
+  const std::filesystem::path sourcePath = executable.parent_path() / "../share" / fileName;
 
-  const std::filesystem::path sourcePath = executable.parent_path() / "../share" / srcName;
+  const TMacro* fileMacro = new TMacro(sourcePath.string().c_str());
 
-  const TMacro source(sourcePath.string().c_str());
-
-  output->WriteObject(&source, "myTask.cpp");
+  return fileMacro;
 }
+
+void HelperGeneral::EmbedMetaData(TFile* fileOut, const std::string& exeName, const std::string& cmdArgs) {
+  const TMacro* srcFile = CaptureSharedFile(exeName.c_str());
+  const TMacro* versionFile = CaptureSharedFile("qa2Version.txt");
+  const TMacro* diffFile = CaptureSharedFile("qa2Diff.patch");
+  CD(fileOut, "metaData");
+  srcFile->Write("src");
+  versionFile->Write("version");
+  diffFile->Write("diff");
+  if (!cmdArgs.empty()) {
+    TNamed cml("cmd args", cmdArgs);
+    cml.Write();
+  }
+  delete srcFile;
+  delete versionFile;
+  delete diffFile;
+}
+
+// void EmbedMetaData(TFile* fileOut, const std::string& exeName)

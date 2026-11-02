@@ -22,6 +22,8 @@ const std::string lifetimeAxisTitle = "#it{t}_{proper} (ps)";
 std::vector<double> pTRanges = {3, 4, 5, 8, 12, 20};
 const std::string pTAxisTitle = "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})";
 
+std::string gCmdArgs{};
+
 const std::vector<double> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.04, 0.08}; // standard
 // const std::vector<double> bdtBgUpperValuesVsPt = {0.01, 0.01, 0.01, 0.02, 0.04}; // tight
 // const std::vector<double> bdtBgUpperValuesVsPt = {0.03, 0.03, 0.03, 0.06, 0.12}; // loose
@@ -163,7 +165,7 @@ void MassBdtQaThn(const std::string& fileNameIn, int modeRun) {
     } // TCuts
   } // modeRun != RunOnly
 
-  EmbedSourceCode(fileOut, "mass_bdt_qa_thn.cpp");
+  HelperGeneral::EmbedMetaData(fileOut, "mass_bdt_qa_thn.cpp", gCmdArgs);
   fileOut->Close();
   if(modeRun != MergeOnly) fileIn->Close();
 }
@@ -178,6 +180,11 @@ int main(int argc, char* argv[]) {
     std::cout << "Error! Please use " << std::endl;
     std::cout << " ./mass_bdt_qa_thn fileNameIn (modeRun=RunOnly=0 [RunAndMerge=1, MergeOnly=2])" << std::endl;
     exit(EXIT_FAILURE);
+  }
+
+  for(int iArg=1; iArg<argc; ++iArg) {
+    gCmdArgs += argv[iArg];
+    gCmdArgs += " ";
   }
 
   const std::string fileNameIn = argv[1];

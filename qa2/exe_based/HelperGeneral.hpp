@@ -11,6 +11,7 @@
 #include <TH1.h>
 #include <TH2.h>
 #include <THnSparse.h>
+#include <TMacro.h>
 
 #include <cmath>
 #include <sstream>
@@ -165,8 +166,9 @@ void RebinHistoToEdges(TH1*& histo, const std::vector<double>& edges);
 
 void RebinHistoToEdges(TH2*& histo, const std::vector<double>& edges);
 
-void EmbedSourceCode(TFile* output, const std::string& srcName);
+const TMacro* CaptureSharedFile(const std::string& fileName);
 
+void EmbedMetaData(TFile* fileOut, const std::string& exeName, const std::string& cmdArgs="");
 };
 
 
