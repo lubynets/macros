@@ -9,6 +9,8 @@
 #include <THnSparse.h>
 #include <TH1.h>
 
+#include <boost/program_options.hpp>
+
 #include <iostream>
 #include <string>
 #include <string_view>
@@ -23,6 +25,7 @@ std::vector<double> pTRanges = {3, 4, 5, 8, 12, 20};
 const std::string pTAxisTitle = "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})";
 
 std::string gCmdArgs{};
+bool gIsSaveMeta{false};
 
 const std::vector<double> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.04, 0.08}; // standard
 // const std::vector<double> bdtBgUpperValuesVsPt = {0.01, 0.01, 0.01, 0.02, 0.04}; // tight
@@ -165,7 +168,7 @@ void MassBdtQaThn(const std::string& fileNameIn, int modeRun) {
     } // TCuts
   } // modeRun != RunOnly
 
-  HelperGeneral::EmbedMetaData(fileOut, "mass_bdt_qa_thn.cpp", gCmdArgs);
+  if (gIsSaveMeta) HelperGeneral::EmbedMetaData(fileOut, "mass_bdt_qa_thn.cpp", gCmdArgs);
   fileOut->Close();
   if(modeRun != MergeOnly) fileIn->Close();
 }
@@ -176,19 +179,33 @@ std::string GetPtCutName(size_t iPt) {
 }
 
 int main(int argc, char* argv[]) {
-  if (argc < 2) {
-    std::cout << "Error! Please use " << std::endl;
-    std::cout << " ./mass_bdt_qa_thn fileNameIn (modeRun=RunOnly=0 [RunAndMerge=1, MergeOnly=2])" << std::endl;
-    exit(EXIT_FAILURE);
+  using namespace boost::program_options;
+  options_description desc ("Allowed options");
+  desc.add_options()
+    ("help,h", "Print usage message")
+    ("input-file,i", value<std::string>()->required(), "file with cut variation output")
+    ("run-mode,r", value<int>()->default_value(0), "RunOnly=0, RunAndMerge=1, MergeOnly=2")
+    ("save-meta,m", value<bool>()->implicit_value(true)->default_value(false), "save meta data")
+  ;
+
+  variables_map args;
+  store(parse_command_line(argc, argv, desc), args);
+
+  if (args.count("help") || argc < 2) {
+    std::cout << desc << "\n";
+    return 0;
   }
+  notify (args);
 
   for(int iArg=1; iArg<argc; ++iArg) {
     gCmdArgs += argv[iArg];
     gCmdArgs += " ";
   }
 
-  const std::string fileNameIn = argv[1];
-  const int modeRun = argc > 2 ? std::stoi(argv[2]) : RunOnly;
+  const std::string fileNameIn = args["input-file"].as<std::string>();
+  const int modeRun = args["run-mode"].as<int>();
+  gIsSaveMeta = args["save-meta"].as<bool>();
+
   if(modeRun < 0 || modeRun >= NModeRuns) throw std::runtime_error("modeRun < 0 || modeRun >= NModeRuns");
 
   MassBdtQaThn(fileNameIn, modeRun);
