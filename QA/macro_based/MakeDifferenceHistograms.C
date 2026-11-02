@@ -31,15 +31,33 @@ void ProcessDifferenceTree(
 
             const std::string leafName = leaf->GetName();
 
-            // The first macro produces scalar Double_t leaves.
-            if (std::string(leaf->GetTypeName()) != "Double_t" ||
+            const std::string type = leaf->GetTypeName();
+
+            static const std::set<std::string> numericTypes = {
+                "Char_t",
+                "UChar_t",
+                "Short_t",
+                "UShort_t",
+                "Int_t",
+                "UInt_t",
+                "Long_t",
+                "ULong_t",
+                "Long64_t",
+                "ULong64_t",
+                "Float_t",
+                "Double_t",
+                "Float16_t",
+                "Double32_t"
+            };
+
+            if (numericTypes.count(type) == 0 ||
                 leaf->GetLenStatic() != 1 ||
                 leaf->GetLeafCount() != nullptr) {
 
                 throw std::runtime_error(
-                    "Expected scalar Double_t leaf: " +
+                    "Expected scalar numeric leaf: " +
                     std::string(tree->GetName()) + "/" +
-                    leafName
+                    leafName + " (type: " + type + ")"
                 );
             }
 
