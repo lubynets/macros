@@ -70,6 +70,12 @@ target_link_libraries(Qa2 PRIVATE ${ROOT_LIBRARIES} ROOT::EG ROOT::RooFit ROOT::
 
 configure_file(qa2Config.sh.in ${CMAKE_BINARY_DIR}/qa2Config.sh)
 
+add_custom_target(HashWriteTarget ALL) # Silent call of target. I don't know how to avoid it, sorry :)
+add_custom_command(TARGET HashWriteTarget
+                   POST_BUILD
+                   COMMAND /bin/sh ${CMAKE_CURRENT_SOURCE_DIR}/qa2VersionWriter.sh ${CMAKE_CURRENT_SOURCE_DIR}
+                   )
+
 install(TARGETS Qa2 EXPORT Qa2Targets
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
@@ -101,6 +107,23 @@ install(FILES
         bin
         COMPONENT
         Devel
+        )
+
+install(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/qa2Version.txt
+        DESTINATION
+        share
+        COMPONENT
+        Devel
+        )
+
+install(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/qa2Diff.patch
+        DESTINATION
+        share
+        COMPONENT
+        Devel
+        OPTIONAL
         )
 
 foreach(EXE ${EXECUTABLES})
