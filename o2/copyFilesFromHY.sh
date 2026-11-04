@@ -5,6 +5,8 @@
 #   AO2Ds are supposed to be stored                                                                      #
 ##########################################################################################################
 
+START_TIME=$SECONDS
+
 HYPERLOOP_OUTPUT_DIRECTORIES="$1"
 COPY_SELECTION="${2:-2}"
 
@@ -47,17 +49,21 @@ else
   exit 1
 fi
 
+N_HY_DIRS=$(sed 's/,/\n/g' "$HYPERLOOP_OUTPUT_DIRECTORIES" | wc -l)
+
 for i in `seq $start $end`; do
    echo "Processing ${file_name[i]}s"
-   echo
 
    patterns_aod="AOD/[0-9]*/"${file_name[i]}
    patterns_numerated="[0-9]*/"${file_name[i]}
    patterns_single_file=${file_name[i]}
 
+   CURRENT_DIR=1
    for path in `sed 's/,/\n/g' ${HYPERLOOP_OUTPUT_DIRECTORIES}`; do
+      echo
       date
-      echo "Processing $path"
+      echo "Processing $path [$CURRENT_DIR/$N_HY_DIRS]"
+      ((CURRENT_DIR++))
       if [[ $path == *"/AOD" ]]; then
          path="${path%"/AOD"}"
       fi
@@ -98,7 +104,6 @@ for i in `seq $start $end`; do
          echo "Copying $fname from $remote"
          alien_cp $remote file:./$fname
       fi
-      echo
       done <<< "$remote_files"
    done
 done
@@ -118,3 +123,8 @@ find ./ -name "AO2D.root" -exec readlink -f {} \; > localAO2DList.txt
 
 echo "creating new AnalysisResults list"
 find ./ -name "AnalysisResults.root" -exec readlink -f {} \; > localAnalysisResultsList.txt
+
+FINISH_TIME=$SECONDS
+
+echo
+echo "elapsed time " $(($(($FINISH_TIME-$START_TIME))/60)) "m " $(($(($FINISH_TIME-$START_TIME))%60)) "s"

@@ -6,10 +6,12 @@
 #define QA2_HELPERGENERAL_HPP
 
 #include <TAxis.h>
-#include <TH1.h>
-#include <THnSparse.h>
 #include <TFile.h>
 #include <TF1.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <THnSparse.h>
+#include <TMacro.h>
 
 #include <cmath>
 #include <sstream>
@@ -20,9 +22,8 @@
 
 namespace HelperGeneral {
 
-constexpr double massLambdaC{2.28646};
-constexpr double massLambdaCDetectorWidth{0.01}; // by order of magnitude. Needed for initializing the fit.
-
+constexpr double massLambdaC{2.28646}; // GeV/c2
+constexpr double LifetimeLambdaC{0.2026}; // ps
 constexpr double UndefValueDouble{-999.};
 constexpr float UndefValueFloat{-999.f};
 constexpr int UndefValueInt{-999};
@@ -48,8 +49,6 @@ std::string to_string_with_significant_figures(const T a_value, const int n=2) {
   return to_string_with_precision(reshifted_value, precision);
 }
 
-std::vector<std::pair<std::string, std::string>> FindCuts(TFile* fileIn, std::string name_start, bool printCuts=false);
-
 bool string_to_bool(const std::string& str);
 
 TFile* OpenFileWithNullptrCheck(const std::string& fileName, const std::string& option="read");
@@ -63,19 +62,54 @@ T* GetObjectWithNullptrCheck(TFile* fileIn, const std::string& objectName) {
   return ptr;
 }
 
-void PrintInfoOnTF1(const TF1* f);
-
 void LoadMacro(const std::string& macroName);
 
 void CD(TFile* file, const std::string& dirName);
 
-void CheckHistogramsForXaxisIdentity(const TH1* h1, const TH1* h2);
+template<typename T, typename U>
+[[nodiscard]] bool EqualFloating(T value1, U value2, double tolerance = 1.e-4) {
+  static_assert(std::is_floating_point_v<T>, "HelperGeneral::EqualFloating(): T must be a floating-point type");
+  static_assert(std::is_floating_point_v<U>, "HelperGeneral::EqualFloating(): U must be a floating-point type");
+
+  return std::fabs(value1 - value2) < tolerance;
+}
+
+template <typename T, typename U>
+void CheckHistogramsForAxisIdentity(const T* h1, const U* h2, const std::string& axis) {
+  const TAxis* a1{};
+  const TAxis* a2{};
+  if(axis == "X" || axis == "x") {
+    a1 = h1->GetXaxis();
+    a2 = h2->GetXaxis();
+  } else if(axis == "Y" || axis == "y") {
+    a1 = h1->GetYaxis();
+    a2 = h2->GetYaxis();
+  } else if(axis == "XY" || axis == "xy") {
+    h2 = h1;
+    a1 = h1->GetXaxis();
+    a2 = h1->GetYaxis();
+  } else throw std::runtime_error("HelperGeneral::CheckHistogramsForAxisIdentity(): axis must be either X or Y");
+  if(a1->GetNbins() != a2->GetNbins()) {
+    throw std::runtime_error("HelperGeneral::CheckHistogramsForAxisIdentity(): nBins at " + axis + " axis do not match for " + static_cast<std::string>(h1->GetName()) + " and " + h2->GetName());
+  }
+  const int nBins = a1->GetNbins();
+  for(int iBin=1; iBin<=nBins; iBin++) {
+    if(!EqualFloating(a1->GetBinCenter(iBin), a2->GetBinCenter(iBin), 1e-6)) {
+      throw std::runtime_error("HelperGeneral::CheckHistogramsForAxisIdentity(): bins do not coincide for " + static_cast<std::string>(h1->GetName()) + " and " + h2->GetName());
+    }
+  }
+}
+
+template <typename T, typename U>
+void CheckHistogramsForXaxisIdentity(const T* h1, const U* h2) {
+  CheckHistogramsForAxisIdentity(h1, h2, "X");
+}
 
 std::map<std::string_view, int> MapTHnSparseAxesIndices(const THnSparse* histo);
 
 void CheckTAxisForRanges(const TAxis& axis, const std::vector<double>& ranges);
 
-void SetTHnSparseAxisRanges(THnSparse* histo, int axisNum, float lo= -999., float hi= -999.);
+void SetTHnSparseAxisRanges(THnSparse* histo, int axisNum, float lo= UndefValueFloat, float hi= UndefValueFloat);
 
 double InterpolateTH1SuppressWarning(const TH1* h, double value);
 
@@ -125,6 +159,16 @@ void ScaleTHnSparseWithWeight(THnSparse* histoIn, int nDim, const HOF* histoWeig
 std::string ReadNthLine(const std::string& fileName);
 
 void MkDirBash(const std::string& dirName);
+
+void ReplaceSubstrInStr(std::string& s, const std::string& from, const std::string& to);
+
+void RebinHistoToEdges(TH1*& histo, const std::vector<double>& edges);
+
+void RebinHistoToEdges(TH2*& histo, const std::vector<double>& edges);
+
+const TMacro* CaptureSharedFile(const std::string& fileName);
+
+void EmbedMetaData(TFile* fileOut, const std::string& exeName, const std::string& cmdArgs="");
 };
 
 

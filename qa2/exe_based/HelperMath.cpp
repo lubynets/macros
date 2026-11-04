@@ -8,9 +8,12 @@
 
 #include <TF1.h>
 #include <TH1.h>
+#include <TH2.h>
 #include <TMatrixD.h>
 
 #include <stdexcept>
+
+using namespace HelperGeneral;
 
 std::pair<double, double> HelperMath::EstimateExpoParameters(TH1* h) {
   int ilo{1};
@@ -28,72 +31,6 @@ std::pair<double, double> HelperMath::EstimateExpoParameters(TH1* h) {
   const double tau = (hi-lo)/std::log(flo/fhi);
   const double A = flo / std::exp(-lo/tau);
   return std::make_pair(A, tau);
-}
-
-std::pair<double, double> HelperMath::DetermineWorkingRangesTH1(const TH1* histo, double leftMargin, double rightMargin) {
-  double left{-999.};
-  double right = {-999.};
-  double leftTail = 0.;
-  double rightTail = 0.;
-
-  const double integral = histo->Integral(0, histo->GetNbinsX()+1);
-  const int nBins = histo->GetNbinsX();
-
-  for(int iBin=0; iBin<=nBins+1; iBin++) {
-    leftTail += histo->GetBinContent(iBin);
-    if(leftTail > integral*leftMargin) {
-      left = iBin == 0 ? -std::numeric_limits<double>::infinity() : histo->GetBinLowEdge(iBin);
-      break;
-    }
-  }
-
-  for(int iBin=nBins+1; iBin>=0; iBin--) {
-    rightTail += histo->GetBinContent(iBin);
-    if(rightTail > integral*rightMargin) {
-      right = iBin == nBins+1 ? std::numeric_limits<double>::infinity() : histo->GetBinLowEdge(iBin+1);
-      break;
-    }
-  }
-
-  return std::make_pair(left, right);
-}
-
-TGraph* HelperMath::EvaluateMovingAverage(const TGraph* graphIn, int aveLength, bool excludeOwnPoint) {
-  TGraph* graphOut = new TGraph();
-  EvaluateMovingAverage(graphIn, graphOut, aveLength);
-
-  return graphOut;
-}
-
-void HelperMath::EvaluateMovingAverage(const TGraph* graphIn, TGraph* graphOut, int radius, bool isExcludeOwnPoint) {
-  if(graphIn == nullptr || graphOut == nullptr) throw std::runtime_error("HelperMath::EvaluateMovingAverage(): graphIn == nullptr || graphOut == nullptr");
-
-  const int nPoints = graphIn->GetN();
-  for(int iPoint=0; iPoint<nPoints; ++iPoint) {
-    int nLocalPoints{0};
-    double value{0.};
-    const int localRadius = std::min(radius, std::min(iPoint, nPoints-1-iPoint));
-    for(int iLocalPoint=iPoint-localRadius; iLocalPoint<=iPoint+localRadius; ++iLocalPoint) {
-      if(isExcludeOwnPoint && iLocalPoint == iPoint && localRadius!=0) continue;
-      value += graphIn->GetPointY(iLocalPoint);
-      ++nLocalPoints;
-    }
-    graphOut->SetPoint(iPoint, graphIn->GetPointX(iPoint), value/nLocalPoints);
-  } // nPoints
-}
-
-void HelperMath::DivideGraph(TGraph* num, const TGraph* den) {
-  if(num == nullptr || den == nullptr) throw std::runtime_error("HelperMath::DivideGraph(): num == nullptr || den == nullptr");
-  const int nPoints = num->GetN();
-  if(den->GetN() != nPoints) throw std::runtime_error("HelperMath::DivideGraph(): den->GetN() != nPoints");
-  for(int iPoint=0; iPoint<nPoints; ++iPoint) {
-    const double xNum = num->GetPointX(iPoint);
-    const double xDen = den->GetPointX(iPoint);
-    const double yNum = num->GetPointY(iPoint);
-    const double yDen = den->GetPointY(iPoint);
-    if(std::fabs(xNum - xDen)>1e-4) throw std::runtime_error("HelperMath::DivideGraph(): num and den points X coordinates do not match");
-    num->SetPointY(iPoint, yNum/yDen);
-  }
 }
 
 TF1* HelperMath::FitLifetimeHisto(TH1* histo, const std::string& option) {
@@ -199,33 +136,53 @@ std::pair<TH1*, TH1*> HelperMath::EvaluateEfficiencyHisto(TH1* hNum, TH1* hDen) 
   return std::make_pair(hEff, hRelErr);
 }
 
-TH1* HelperMath::MergeHistograms(const std::vector<TH1*>& histos) {
-  bool isSumw2{false};
-  for(const auto& h : histos) {
-    HelperGeneral::CheckHistogramsForXaxisIdentity(h, histos.at(0));
-    isSumw2 |= h->GetSumw2N() > 0;
-  }
+std::pair<TH2*, TH2*> HelperMath::EvaluateResponseMatrix(TH2* hRec, TH1* hGen) {
+  HelperGeneral::CheckHistogramsForAxisIdentity<TH2, TH2>(hRec, nullptr, "XY");
+  HelperGeneral::CheckHistogramsForXaxisIdentity(hRec, hGen);
 
-  TH1* hResult = dynamic_cast<TH1*>(histos.at(0)->Clone("hMerged"));
-  Sumw2IfNotYet(hResult);
-  hResult->SetDirectory(nullptr);
-  for(size_t iH=1, nHs=histos.size(); iH<nHs; ++iH) {
-    hResult->Add(histos.at(iH));
-  }
-  Sumw2IfNotYet(hResult, isSumw2);
+  TH2* hResp = dynamic_cast<TH2*>(hRec->Clone());
+  TH2* hRelErr = dynamic_cast<TH2*>(hRec->Clone());
+  hResp->Reset();
+  hRelErr->Reset();
 
-  return hResult;
-}
+  auto EvalResponce = [](double num, double den) {
+    if (den == 0.) return 0.;
+    else return num / den;
+  };
 
-TH1* HelperMath::MergeHistograms(TFile* fileIn, const std::vector<std::string>& histoNames) {
-  std::vector<TH1*> histos;
-  histos.reserve(histoNames.size());
-  for (const auto& hN : histoNames) {
-    histos.emplace_back(HelperGeneral::GetObjectWithNullptrCheck<TH1>(fileIn, hN));
-  }
-  TH1* hResult = MergeHistograms(histos);
+  auto EvalRelErrOfResponce = [](double num, double den) {
+    if (num == 0. || den == 0.) return 0.;
+    if (num > den) {
+      std::cout << "Warning! HelperMath::EvaluateResponseMatrix::EvalRelErrOfResponce() num > den (" << num << " vs " << den << ")\n";
+      return 1.;
+    }
 
-  return hResult;
+    return std::sqrt(1. / num - 1. / den);
+  };
+
+  auto EvalAbsErrOfRelErrOfResponce = [&](double num, double den) {
+    if (num == 0. || den == 0. || num > den) return 0.;
+
+    auto relErr = EvalRelErrOfResponce(num, den);
+    return 1. / 2. / relErr * std::sqrt(1. / num / num / num + 1. / den / den / den - 2. / num / den / den);
+  };
+
+  const int nBins = hRec->GetNbinsX();
+  for(int jBin=1; jBin<= nBins; ++jBin) {
+    const double den = hGen->GetBinContent(jBin);
+    for(int iBin=1; iBin<=nBins; ++iBin) {
+      const double num = hRec->GetBinContent(iBin, jBin);
+      const double resp = EvalResponce(num, den);
+      const double relErr = EvalRelErrOfResponce(num, den);
+      const double absErrOnRelErr = EvalAbsErrOfRelErrOfResponce(num, den);
+      hResp->SetBinContent(iBin, jBin, resp);
+      hResp->SetBinError(iBin, jBin, resp * relErr);
+      hRelErr->SetBinContent(iBin, jBin, relErr);
+      hRelErr->SetBinError(iBin, jBin, absErrOnRelErr);
+    } // iBin, rec
+  } // jBin, gen
+
+  return std::make_pair(hResp, hRelErr);
 }
 
 double HelperMath::EvalErrorFitFunction(double x, TF1* func, const TMatrixDSym& cov) {
@@ -249,19 +206,19 @@ TH1* HelperMath::CutSubHistogram(const TH1* histoIn, double lo, double hi) {
   if(lo >= hi) throw std::runtime_error("HelperMath::CutSubHistogram(): lo >= hi");
 
   const double tolerance = 1e-6;
-  int binLoIn{-999};
+  int binLoIn{UndefValueInt};
   bool isEndReached{false};
   std::vector<double> binEdges;
   for(int iBin=1, nBins=histoIn->GetNbinsX(); iBin<=nBins+1; ++iBin) {
     const double binLowEdge = histoIn->GetBinLowEdge(iBin);
-    if(std::fabs(binLowEdge - lo) < tolerance) binLoIn = iBin;
-    if(binLoIn != -999) binEdges.emplace_back(binLowEdge);
-    if(std::fabs(binLowEdge - hi) < tolerance) {
+    if(EqualFloating(binLowEdge, lo, tolerance)) binLoIn = iBin;
+    if(binLoIn != UndefValueInt) binEdges.emplace_back(binLowEdge);
+    if(EqualFloating(binLowEdge, hi, tolerance)) {
       isEndReached = true;
       break;
     }
   } // histoIn bins
-  if(binLoIn == -999 || !isEndReached) throw std::runtime_error("HelperMath::CutSubHistogram(): either lo or hi does not match any of histoIn bin edges");
+  if(binLoIn == UndefValueInt || !isEndReached) throw std::runtime_error("HelperMath::CutSubHistogram(): either lo or hi does not match any of histoIn bin edges");
 
   TH1* histoOut = new TH1D("", "", binEdges.size()-1, binEdges.data());
   histoOut->SetDirectory(nullptr);
@@ -287,9 +244,4 @@ TH1* HelperMath::CutSubHistogram(const TH1* histoIn, double lo, double hi) {
   }
 
   return histoOut;
-}
-
-void HelperMath::Sumw2IfNotYet(TH1* histo, bool value) {
-  const bool isSumw2Already = histo->GetSumw2N() > 0;
-  if (isSumw2Already != value) histo->Sumw2(value);
 }

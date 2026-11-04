@@ -4,89 +4,23 @@
 
 #include "HelperGeneral.hpp"
 
+#include <TFile.h>
 #include <TH1.h>
+#include <TH2.h>
+#include <TMacro.h>
 #include <TROOT.h>
 
+#include <algorithm>
+#include <filesystem>
 #include <fstream>
-#include <iostream>
 #include <string>
 #include <string_view>
-
-std::vector<std::pair<std::string, std::string>> HelperGeneral::FindCuts(TFile* fileIn, std::string name_start, bool printCuts) {
-  if (name_start.back() != '_') name_start.push_back('_');
-  std::vector<std::pair<std::string, std::string>> result;
-
-  auto getSubstringBeforeLastSlash = [](const std::string& input) {
-      size_t pos = input.rfind('/');  // Find the last occurrence of the slash
-
-      if (pos == std::string::npos) {
-        return std::string();  // No slash found, return an empty string
-      }
-
-      return input.substr(0, pos);  // Return the substring before the last slash
-  };
-
-  const std::string name_start_before_slash = getSubstringBeforeLastSlash(name_start);
-  auto lok = fileIn->GetDirectory(name_start_before_slash.c_str())->GetListOfKeys();
-  const int nDirs = lok->GetEntries();
-  for (int iDir = 0; iDir < nDirs; iDir++) {
-    const std::string dirName = lok->At(iDir)->GetName();
-    const std::string fullDirName = !name_start_before_slash.empty() ? name_start_before_slash + "/" + dirName : dirName;
-    if (fullDirName.substr(0, name_start.size()) != name_start) continue;
-    std::pair<std::string, std::string> cutPair;
-    bool isFirstCutRead{false};
-    bool isGoodCut{true};
-    for (int iChar = name_start.size(); iChar < fullDirName.size(); iChar++) {
-      char letter = fullDirName.at(iChar);
-      if(!(std::isdigit(letter) || letter == '.' || letter == '_')) {
-        isGoodCut = false;
-        break;
-      }
-      if (letter != '_') {
-        if (!isFirstCutRead) cutPair.first.push_back(letter);
-        else cutPair.second.push_back(letter);
-      } else {
-        isFirstCutRead = true;
-      }
-    }
-    if(isGoodCut) result.emplace_back(cutPair);
-  }
-
-  auto stofCompare = [](const std::pair<std::string, std::string>& a, const std::pair<std::string, std::string>& b) {
-      return atof(a.first.c_str()) < atof(b.first.c_str());
-  };
-
-  std::sort(result.begin(), result.end(), stofCompare);
-
-  if (result.empty()) {
-    throw std::runtime_error("FindCuts(): " + name_start + " cuts are not present");
-  }
-
-  if(printCuts) {
-    std::cout << "Slice cuts are:\n";
-    for(auto& r : result) std::cout << r.first << "\t" << r.second << "\n";
-  }
-
-  return result;
-}
+#include <vector>
 
 bool HelperGeneral::string_to_bool(const std::string& str) {
   if(str == "true") return true;
   else if(str == "false") return false;
   else throw std::runtime_error("string_to_bool(): argument must be either true or false");
-}
-
-void HelperGeneral::PrintInfoOnTF1(const TF1* f) {
-  std::cout << "Name = " << f->GetName() << "\n";
-  std::cout << "Title = " << f->GetTitle() << "\n";
-  const int nPar = f->GetNpar();
-  std::cout << "NPar = " << nPar << "\n";
-  std::cout << "NFreePar = " << f->GetNumberFreeParameters() << "\n";
-  for(int iPar = 0; iPar<nPar; iPar++) {
-    double min, max;
-    f->GetParLimits(iPar, min, max);
-    std::cout << f->GetParName(iPar) << "\t" << f->GetParameter(iPar) << " +- " << f->GetParError(iPar) << "\t(" << min << "; " << max << ")\n";
-  }
 }
 
 void HelperGeneral::LoadMacro(const std::string& macroName) {
@@ -100,18 +34,6 @@ void HelperGeneral::CD(TFile* file, const std::string& dirName) {
 
   if(file->GetDirectory(dirName.c_str()) == nullptr) file->mkdir(dirName.c_str());
   file->cd(dirName.c_str());
-}
-
-void HelperGeneral::CheckHistogramsForXaxisIdentity(const TH1* h1, const TH1* h2) {
-  if(h1->GetNbinsX() != h2->GetNbinsX()) {
-    throw std::runtime_error("HelperGeneral::CheckHistogramsForXaxisIdentity(): nBinsX do not match for " + static_cast<std::string>(h1->GetName()) + " and " + h2->GetName());
-  }
-  const int nBins = h1->GetNbinsX();
-  for(int iBin=1; iBin<=nBins; iBin++) {
-    if(std::abs(h1->GetBinCenter(iBin) - h2->GetBinCenter(iBin)) > 1e-6) {
-      throw std::runtime_error("HelperGeneral::CheckHistogramsForXaxisIdentity(): bins do not coincide for " + static_cast<std::string>(h1->GetName()) + " and " + h2->GetName());
-    }
-  }
 }
 
 std::map<std::string_view, int> HelperGeneral::MapTHnSparseAxesIndices(const THnSparse* histo) {
@@ -129,7 +51,7 @@ void HelperGeneral::CheckTAxisForRanges(const TAxis& axis, const std::vector<dou
     bool ok{false};
     for(int iBin=1; iBin<=nBins+1; ++iBin) {
       const float edge = axis.GetBinLowEdge(iBin);
-      if(std::fabs(edge - range) < 1e-4) {
+      if(EqualFloating(edge, range)) {
         ok = true;
         break;
       }
@@ -141,9 +63,9 @@ void HelperGeneral::CheckTAxisForRanges(const TAxis& axis, const std::vector<dou
 }
 
 void HelperGeneral::SetTHnSparseAxisRanges(THnSparse* histo, int axisNum, float lo, float hi) {
-  constexpr double tolerance = 1e-6;
+  constexpr double tolerance{1.e-6};
 
-  if(std::fabs(lo+999)<tolerance && std::fabs(hi+999)<tolerance) {
+  if(EqualFloating(lo, UndefValueFloat, tolerance) && EqualFloating(hi, UndefValueFloat, tolerance)) {
     histo->GetAxis(axisNum)->SetRange();
     return;
   }
@@ -151,15 +73,15 @@ void HelperGeneral::SetTHnSparseAxisRanges(THnSparse* histo, int axisNum, float 
   if(lo >= hi) throw std::runtime_error("SetTHnSparseAxisRanges(): lo >= hi");
 
   const TAxis* axis = histo->GetAxis(axisNum);
-  int binLo{-999}, binHi{-999};
+  int binLo{UndefValueInt}, binHi{UndefValueInt};
   for(int iBin=1, nBins=axis->GetNbins(); iBin<=nBins; ++iBin) {
     const float binLowEdge = axis->GetBinLowEdge(iBin);
     const float binUpEdge = axis->GetBinUpEdge(iBin);
-    if(std::fabs(binLowEdge - lo)<tolerance) binLo = iBin;
-    if(std::fabs(binUpEdge - hi)<tolerance) binHi = iBin;
-    if(binLo != -999 && binHi != -999) break;
+    if(EqualFloating(binLowEdge, lo, tolerance)) binLo = iBin;
+    if(EqualFloating(binUpEdge, hi, tolerance))  binHi = iBin;
+    if(binLo != UndefValueInt && binHi != UndefValueInt) break;
   }
-  if(binLo == -999 || binHi == -999) throw std::runtime_error("SetTHnSparseAxisRanges(): binLo == -999 || binHi == -999");
+  if(binLo == UndefValueInt || binHi == UndefValueInt) throw std::runtime_error("SetTHnSparseAxisRanges(): binLo == -999 || binHi == -999");
   histo->GetAxis(axisNum)->SetRange(binLo, binHi);
 }
 
@@ -204,3 +126,107 @@ TFile* HelperGeneral::OpenFileWithNullptrCheck(const std::string& fileName, cons
   }
   return file;
 }
+
+void HelperGeneral::ReplaceSubstrInStr(std::string& s, const std::string& from, const std::string& to) {
+  if (from.empty())
+    return;
+
+  std::size_t pos = 0;
+
+  while ((pos = s.find(from, pos)) != std::string::npos) {
+    s.replace(pos, from.size(), to);
+    pos += to.size();
+  }
+}
+
+void HelperGeneral::RebinHistoToEdges(TH1*& histo, const std::vector<double>& edges) {
+  if(!std::is_sorted(edges.begin(), edges.end())) throw std::runtime_error("HelperGeneral::RebinHistoToEdges(): the edges vector is not sorted");
+  CheckTAxisForRanges(*histo->GetXaxis(), edges);
+  histo = dynamic_cast<TH1*>(histo->Rebin(edges.size() - 1, histo->GetName(), edges.data()));
+}
+
+void HelperGeneral::RebinHistoToEdges(TH2*& histo, const std::vector<double>& edges) {
+  if(!std::is_sorted(edges.begin(), edges.end())) throw std::runtime_error("HelperGeneral::RebinHistoToEdges(): the edges vector is not sorted");
+  const int nBins = edges.size() - 1;
+
+  // Preserve whether Sumw2 was actually enabled.
+  const bool hasSumw2 = histo->GetSumw2N() > 0;
+
+  auto* rebinned = new TH2D("", histo->GetTitle(), nBins, edges.data(), nBins, edges.data());
+  rebinned->SetDirectory(nullptr);
+  rebinned->SetName(histo->GetName());
+
+  rebinned->GetXaxis()->SetTitle(histo->GetXaxis()->GetTitle());
+  rebinned->GetYaxis()->SetTitle(histo->GetYaxis()->GetTitle());
+
+  if (hasSumw2) rebinned->Sumw2();
+
+  // Include underflow and overflow, like histogram rebinning should.
+  for (int ix = 0; ix <= histo->GetNbinsX() + 1; ++ix) {
+    const double x = histo->GetXaxis()->GetBinCenter(ix);
+
+    int jx;
+    if (ix == 0) jx = 0;
+    else if (ix == histo->GetNbinsX() + 1) jx = nBins + 1;
+    else jx = rebinned->GetXaxis()->FindBin(x);
+
+    for (int iy = 0; iy <= histo->GetNbinsY() + 1; ++iy) {
+      const double y = histo->GetYaxis()->GetBinCenter(iy);
+
+      int jy;
+      if (iy == 0) jy = 0;
+      else if (iy == histo->GetNbinsY() + 1) jy = nBins + 1;
+      else jy = rebinned->GetYaxis()->FindBin(y);
+
+      const int oldBin = histo->GetBin(ix, iy);
+      const int newBin = rebinned->GetBin(jx, jy);
+
+      rebinned->SetBinContent(newBin, rebinned->GetBinContent(newBin) + histo->GetBinContent(oldBin));
+
+      if (hasSumw2) {
+        const double oldErr = histo->GetBinError(oldBin);
+        const double newErr = rebinned->GetBinError(newBin);
+
+        rebinned->SetBinError(newBin, std::sqrt(newErr * newErr + oldErr * oldErr));
+      }
+    } // iy
+  } // ix
+
+  // Preserve number of entries.
+  rebinned->SetEntries(histo->GetEntries());
+
+  delete histo;
+  histo = rebinned;
+}
+
+const TMacro* HelperGeneral::CaptureSharedFile(const std::string& fileName) {
+  const std::filesystem::path executable = std::filesystem::canonical("/proc/self/exe");
+  const std::filesystem::path sourcePath = executable.parent_path() / "../share" / fileName;
+
+  const TMacro* fileMacro = new TMacro(sourcePath.string().c_str());
+
+  return fileMacro;
+}
+
+void HelperGeneral::EmbedMetaData(TFile* fileOut, const std::string& exeName, const std::string& cmdArgs) {
+  const TMacro* srcFile = CaptureSharedFile(exeName.c_str());
+  const TMacro* versionFile = CaptureSharedFile("qa2Version.txt");
+  const TMacro* diffFile = CaptureSharedFile("qa2Diff.patch");
+  if (fileOut->GetDirectory("metaData") == nullptr) {
+    CD(fileOut, "metaData");
+  } else {
+    CD(fileOut, "metaData_1");
+  }
+  srcFile->Write("src");
+  versionFile->Write("version");
+  diffFile->Write("diff");
+  if (!cmdArgs.empty()) {
+    TNamed cml("cmd args", cmdArgs);
+    cml.Write();
+  }
+  delete srcFile;
+  delete versionFile;
+  delete diffFile;
+}
+
+// void EmbedMetaData(TFile* fileOut, const std::string& exeName)

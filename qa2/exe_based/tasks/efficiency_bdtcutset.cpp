@@ -8,6 +8,7 @@
 #include <TFile.h>
 #include <TGraphErrors.h>
 #include <TH1.h>
+#include <TH2.h>
 #include <TLegend.h>
 #include <TString.h>
 #include <TStyle.h>
@@ -19,7 +20,8 @@ using namespace HelperGeneral;
 using namespace HelperMath;
 using namespace HelperPlot;
 
-void RebinHistoToEdges(TH1*& histo, const std::vector<double>& edges);
+// constexpr bool IsFFReady{true};
+constexpr bool IsFFReady{false};
 
 void efficiency_bdtcutset(const std::string& fileName) {
   LoadMacro("styles/mc_qa2.style.cc");
@@ -31,10 +33,11 @@ void efficiency_bdtcutset(const std::string& fileName) {
   const std::string fileOutName = "efficiency_summary";
 
   // ========================= Configuration =================================
-  const std::vector<double> lifeTimeRanges = {0.2, 0.4, 0.6, 0.8, 1.0, 1.4, 1.8};
+  const std::vector<double> lifeTimeRanges = IsFFReady ? std::vector<double>{0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.4, 1.8} : std::vector<double>{0.2, 0.4, 0.6, 0.8, 1.0, 1.4, 1.8}; // why need r.h.s. std::vector<> when ternary operator?
   const std::vector<double> pTRanges = {1, 2, 3, 4, 5, 8, 12, 20};
 
-  std::vector<float> bdtScores{/*0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90*/};
+//   std::vector<float> bdtScores{0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90};
+  std::vector<float> bdtScores{};
   for(int i=0; i<=99; i++) {
     bdtScores.emplace_back(0.01 * i);
   }
@@ -107,20 +110,31 @@ void efficiency_bdtcutset(const std::string& fileName) {
           }
           if(score == bdtScores.at(0)) std::cout << "\n";
 
-          TH1* histoRec = GetObjectWithNullptrCheck<TH1>(fileIn, "rec/" + promptness + "/" + PtRangeString(pTIntervals.at(iPt)) + "/hT_" + tarSigShortcut + "gt" + sScore + weightPresences.at(iWeightPresence));
+          const std::string histoRecName{"rec/" + promptness + "/" + PtRangeString(pTIntervals.at(iPt)) + "/hT_" + tarSigShortcut + "gt" + sScore + weightPresences.at(iWeightPresence)};
+          std::string histoRecName2D{histoRecName};
+          ReplaceSubstrInStr(histoRecName2D, "hT", "h2T");
+          TH1* histoRec = GetObjectWithNullptrCheck<TH1>(fileIn, histoRecName);
+          TH2* histoRec2D{};
+          if constexpr (IsFFReady) histoRec2D = GetObjectWithNullptrCheck<TH2>(fileIn, histoRecName2D);
           RebinHistoToEdges(histoRec, lifeTimeRanges);
+          if constexpr (IsFFReady) RebinHistoToEdges(histoRec2D, lifeTimeRanges);
           histoRec->UseCurrentStyle();
+          if constexpr (IsFFReady) histoRec2D->UseCurrentStyle();
 
           CD(fileOut, "yields/" + promptness + "/" + PtRangeString(pTIntervals.at(iPt)));
           histoRec->Write(("rec_" + tarSigShortcut + "gt" + sScore + weightPresences.at(iWeightPresence)).c_str());
+          if constexpr (IsFFReady) histoRec2D->Write(("rec2D_" + tarSigShortcut + "gt" + sScore + weightPresences.at(iWeightPresence)).c_str());
 
-          auto [histoEff, histoEffRelErr] = EvaluateEfficiencyHisto(histoRec, histoGen);
+          const auto [histoEff, histoEffRelErr] = EvaluateEfficiencyHisto(histoRec, histoGen);
+          const auto [histoResp, histoRespRelErr] = IsFFReady ? EvaluateResponseMatrix(histoRec2D, histoGen) : std::pair<TH2*, TH2*>(nullptr, nullptr);
 
           CD(fileOut, "effs/" + promptness + "/" + PtRangeString(pTIntervals.at(iPt)));
           histoEff->Write(("eff_" + tarSigShortcut + "gt" + sScore + weightPresences.at(iWeightPresence)).c_str());
+          if constexpr (IsFFReady) histoResp->Write(("r_" + tarSigShortcut + "gt" + sScore + weightPresences.at(iWeightPresence)).c_str());
 
           CD(fileOut, "errs/" + promptness + "/" + PtRangeString(pTIntervals.at(iPt)));
           histoEffRelErr->Write(("err_" + tarSigShortcut + "gt" + sScore + weightPresences.at(iWeightPresence)).c_str());
+          if constexpr (IsFFReady) histoRespRelErr->Write(("r_err_" + tarSigShortcut + "gt" + sScore + weightPresences.at(iWeightPresence)).c_str());
 
           const std::string openOption = iPromptness + iPt + iWeightPresence == 0 ? "recreate" : "update";
           TFile* fileOutScore = TFile::Open(("Eff_times_Acc_Lc." + tarSigShortcut + "gt" + sScore + ".root").c_str(), openOption.c_str());
@@ -164,10 +178,6 @@ void efficiency_bdtcutset(const std::string& fileName) {
   } // pTRanges
   fileOut->Close();
   fileIn->Close();
-}
-
-void RebinHistoToEdges(TH1*& histo, const std::vector<double>& edges) {
-  histo = dynamic_cast<TH1*>(histo->Rebin(edges.size() - 1,histo->GetName(),edges.data()));
 }
 
 int main(int argc, char* argv[]) {

@@ -4,23 +4,9 @@ cmake_minimum_required(VERSION 3.10)
 project(qa2)
 
 SET(EXECUTABLES
-    mc_qa2diff
-    treeKF_qa2
-    mc_qa2
-    treeKF_qa2diff
-    pid_qa
-    graph_qa3
-    efficiency
     ct_mcfit
-    mass_fit
-    mass_fit2
     ct_fit
-    varCorr_qa2
-    dwrth1
-    bdt_efficiency
-    mass_bdt_qa
     efficiency_bdtcutset
-    raw_yield_vs_bdt_pdfer
     corrected_yields_qa2
     complex_vs_bdt_pdfer
     tsallis_fit_pt
@@ -30,17 +16,19 @@ SET(EXECUTABLES
     multifit_qa
     tpc_qa
     corrected_yield_syst_qa
+    relative_efficiency
+    ct_fit_ff
 )
 
 SET(SOURCES
+    ForwardFoldedExpo.cpp
+    HelperCtFit.cpp
     HelperGeneral.cpp
     HelperMath.cpp
     HelperPlot.cpp
-    ShapeFitter.cpp
 )
 
 string(REPLACE ".cpp" ".hpp" HEADERS "${SOURCES}")
-list(APPEND HEADERS "BdtEfficiencyCalculator.hpp" "Shapes.hpp")
 
 # Specify the C++ standard
 set(CMAKE_CXX_STANDARD 17)
@@ -56,7 +44,7 @@ if(CMAKE_BUILD_TYPE MATCHES DEBUG)
 endif()
 
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -ggdb -g -Wall -Wextra")
-set(CMAKE_CXX_FLAGS_RELEASE "-O2 -ftree-vectorize -ffast-math")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2 -ftree-vectorize")
 
 set(QA_RAPIDJSON_INCLUDE_DIRS "" CACHE STRING "Location of rapidjson include directories")
 
@@ -81,6 +69,12 @@ add_library(Qa2 SHARED ${SOURCES} G__Qa2.cxx)
 target_link_libraries(Qa2 PRIVATE ${ROOT_LIBRARIES} ROOT::EG ROOT::RooFit ROOT::RooFitCore)
 
 configure_file(qa2Config.sh.in ${CMAKE_BINARY_DIR}/qa2Config.sh)
+
+add_custom_target(HashWriteTarget ALL) # Silent call of target. I don't know how to avoid it, sorry :)
+add_custom_command(TARGET HashWriteTarget
+                   POST_BUILD
+                   COMMAND /bin/sh ${CMAKE_CURRENT_SOURCE_DIR}/qa2VersionWriter.sh ${CMAKE_CURRENT_SOURCE_DIR}
+                   )
 
 install(TARGETS Qa2 EXPORT Qa2Targets
         LIBRARY DESTINATION lib
@@ -115,6 +109,23 @@ install(FILES
         Devel
         )
 
+install(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/qa2Version.txt
+        DESTINATION
+        share
+        COMPONENT
+        Devel
+        )
+
+install(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/qa2Diff.patch
+        DESTINATION
+        share
+        COMPONENT
+        Devel
+        OPTIONAL
+        )
+
 foreach(EXE ${EXECUTABLES})
     # Add the executable
     add_executable(qa2-${EXE} tasks/${EXE}.cpp)
@@ -131,45 +142,45 @@ foreach(EXE ${EXECUTABLES})
     )
 endforeach()
 
-# ==================================================================
-set(PCM_FILE_NAME libHFInvMassFitterLib)
-ROOT_GENERATE_DICTIONARY(G__HFInvMassFitterLib "HFInvMassFitter.h"
-        LINKDEF HFInvMassFitterLinkDef.h
-        OPTIONS -I ${CMAKE_SOURCE_DIR}
-)
+## ==================================================================
+#set(PCM_FILE_NAME libHFInvMassFitterLib)
+#ROOT_GENERATE_DICTIONARY(G__HFInvMassFitterLib "HFInvMassFitter.h"
+        #LINKDEF HFInvMassFitterLinkDef.h
+        #OPTIONS -I ${CMAKE_SOURCE_DIR}
+#)
 
-# Define the new library for HFInvMassFitter
-add_library(HFInvMassFitterLib SHARED HFInvMassFitter.cxx G__HFInvMassFitterLib)
-target_include_directories(HFInvMassFitterLib PRIVATE ${CMAKE_SOURCE_DIR})
-target_link_libraries(HFInvMassFitterLib PRIVATE ${ROOT_LIBRARIES} ROOT::EG ROOT::RooFit ROOT::RooFitCore)
+## Define the new library for HFInvMassFitter
+#add_library(HFInvMassFitterLib SHARED HFInvMassFitter.cxx G__HFInvMassFitterLib)
+#target_include_directories(HFInvMassFitterLib PRIVATE ${CMAKE_SOURCE_DIR})
+#target_link_libraries(HFInvMassFitterLib PRIVATE ${ROOT_LIBRARIES} ROOT::EG ROOT::RooFit ROOT::RooFitCore)
 
-# Installation for HFInvMassFitterLib
-install(TARGETS HFInvMassFitterLib EXPORT HFInvMassFitterLibTargets
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib
-        RUNTIME DESTINATION bin
-        INCLUDES DESTINATION include)
+## Installation for HFInvMassFitterLib
+#install(TARGETS HFInvMassFitterLib EXPORT HFInvMassFitterLibTargets
+        #LIBRARY DESTINATION lib
+        #ARCHIVE DESTINATION lib
+        #RUNTIME DESTINATION bin
+        #INCLUDES DESTINATION include)
 
-install(FILES
-        "HFInvMassFitter.h"
-        DESTINATION
-        include
-        COMPONENT
-        Devel)
+#install(FILES
+        #"HFInvMassFitter.h"
+        #DESTINATION
+        #include
+        #COMPONENT
+        #Devel)
 
-install(FILES
-        "${CMAKE_CURRENT_BINARY_DIR}/${PCM_FILE_NAME}_rdict.pcm"
-        DESTINATION
-        lib
-        OPTIONAL)
+#install(FILES
+        #"${CMAKE_CURRENT_BINARY_DIR}/${PCM_FILE_NAME}_rdict.pcm"
+        #DESTINATION
+        #lib
+        #OPTIONAL)
 
-install(FILES
-        "${CMAKE_CURRENT_BINARY_DIR}/${PCM_FILE_NAME}.rootmap"
-        DESTINATION
-        lib
-        OPTIONAL)
+#install(FILES
+        #"${CMAKE_CURRENT_BINARY_DIR}/${PCM_FILE_NAME}.rootmap"
+        #DESTINATION
+        #lib
+        #OPTIONAL)
 
-add_executable(runMassFitter tasks/runMassFitter.C)
-target_link_libraries(runMassFitter PRIVATE HFInvMassFitterLib ${ROOT_LIBRARIES} ROOT::EG)
-install(TARGETS runMassFitter RUNTIME DESTINATION bin)
-# ==================================================================
+#add_executable(runMassFitter tasks/runMassFitter.C)
+#target_link_libraries(runMassFitter PRIVATE HFInvMassFitterLib ${ROOT_LIBRARIES} ROOT::EG)
+#install(TARGETS runMassFitter RUNTIME DESTINATION bin)
+## ==================================================================

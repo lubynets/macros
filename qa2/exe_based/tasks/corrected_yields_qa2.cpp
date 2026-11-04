@@ -1,6 +1,7 @@
 //
 // Created by oleksii on 26.06.25.
 //
+#include "HelperCtFit.hpp"
 #include "HelperGeneral.hpp"
 #include "HelperMath.hpp"
 #include "HelperPlot.hpp"
@@ -23,12 +24,11 @@ using namespace HelperPlot;
 
 constexpr bool IsSaveCanvasAsRoot{true};
 
-enum RunModes {
-  MeanFitOnly = 0,
-  AllWoOne,
-  AllPossible
+constexpr HelperCtFit::RunModes RunMode {
+//   HelperCtFit::RunModes::MeanFitOnly
+  HelperCtFit::RunModes::AllWoOne
+//   HelperCtFit::RunModes::AllPossible
 };
-constexpr int RunMode{MeanFitOnly};
 
 enum UncModes {
   StatOnly = 0,
@@ -36,17 +36,6 @@ enum UncModes {
   StatAndSyst
 };
 constexpr int UncMode{StatOnly};
-
-void ExcludeBin(TH1* h, int binNumber);
-std::vector<int> EvalBinsToDrop(int dropSet);
-int EvalDropSet(const std::vector<int>& bins);
-TGraphErrors* GetSubGraph(TGraphErrors* grIn, int subGraphType, Color_t color, int nFittedPoints);
-
-enum SubGraphType {
-  MeanPoint = 0,
-  OneDrop,
-  TwoFit
-};
 
 void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& fileNameMC, const std::string& fileNameSystUnc) {
   LoadMacro("styles/mc_qa2.style.cc");
@@ -56,7 +45,7 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
 
   if(isSystUnc && fileNameSystUnc.empty()) throw std::runtime_error("corrected_yields_qa2() systematic uncertainties file is not provided");
 
-  const std::vector<double> lifetimeRanges = {/*0.2, */0.4, 0.6, 0.8, 1.0, 1.4/*, 1.8*/};
+  const std::vector<double> lifetimeRanges = {0.2, 0.4, 0.6, 0.8, 1.0, 1.4, 1.8};
   const std::string integralOption = "I";
 
   struct Promptness {
@@ -79,14 +68,18 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
     histoSystUnc = dynamic_cast<TH1D*>(histoSystUnc->Rebin(lifetimeRanges.size() - 1, histoSystUnc->GetName(), lifetimeRanges.data()));
   }
 
-  TH1* histoStatus = GetObjectWithNullptrCheck<TH1>(fileCutVar, "hMinimizationStatus");
-  CheckTAxisForRanges(*histoStatus->GetXaxis(), lifetimeRanges);
-  histoStatus = dynamic_cast<TH1D*>(histoStatus->Rebin(lifetimeRanges.size() - 1, histoStatus->GetName(), lifetimeRanges.data()));
-  std::vector<int> badBins{};
-  for(int iBin=1, nBins=histoStatus->GetNbinsX(); iBin<=nBins; ++iBin) {
-    if(histoStatus->GetBinContent(iBin) != 1) badBins.push_back(iBin);
+  TH1* histoStatus{};
+  histoStatus = fileCutVar->Get<TH1>("hMinimizationStatus");
+  int bestDropSet{HelperGeneral::UndefValueInt};
+  if (histoStatus != nullptr) {
+    CheckTAxisForRanges(*histoStatus->GetXaxis(), lifetimeRanges);
+    histoStatus = dynamic_cast<TH1D*>(histoStatus->Rebin(lifetimeRanges.size() - 1, histoStatus->GetName(), lifetimeRanges.data()));
+    std::vector<int> badBins{};
+    for(int iBin=1, nBins=histoStatus->GetNbinsX(); iBin<=nBins; ++iBin) {
+      if(histoStatus->GetBinContent(iBin) != 1) badBins.push_back(iBin);
+    }
+    bestDropSet = HelperCtFit::EvalDropSet(badBins);
   }
-  const int bestDropSet = EvalDropSet(badBins);
   std::cout << "bestDropSet = " << bestDropSet << "\n";
   TNamed bestDropSetName("bestDropSet", std::to_string(bestDropSet));
 
@@ -109,7 +102,7 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
       }
     }
 
-    TH1* hMC = isMc ? GetObjectWithNullptrCheck<TH1>(fileMC, "gen/" + promptness + "/hT") : nullptr;
+    TH1* hMC = isMc ? GetObjectWithNullptrCheck<TH1>(fileMC, "gen/" + promptness + "/pT_3_20/hT") : nullptr;
     if (isMc) {
       CheckTAxisForRanges(*hMC->GetXaxis(), lifetimeRanges);
       hMC->UseCurrentStyle();
@@ -148,23 +141,11 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
       h->GetYaxis()->SetTitle("d#it{N}/d#it{t} (ps^{-1})");
     }
 
-    TGraphErrors grTau;
-    TGraphErrors grA;
-    TGraphErrors grChi2;
-
-    grTau.SetName("grTau");
-    grTau.GetYaxis()->SetTitle("#tau (fs)");
-    grA.SetName("grA");
-    grA.GetYaxis()->SetTitle("A");
-    grChi2.SetName("grChi2");
-    grChi2.GetYaxis()->SetTitle("#chi^{2} / ndf");
-
-    for(const auto& gr : {&grTau, &grA, &grChi2}) {
-      gr->GetXaxis()->SetTitle("drop set");
-    }
+    auto graphsQa = HelperCtFit::CreateQaGraphs();
 
     const int nBins = hCutVarDiff->GetNbinsX();
-    const int nDropSets = RunMode > MeanFitOnly ? 1 << nBins : 1;
+    const int nDropSets = RunMode > HelperCtFit::RunModes::MeanFitOnly ? 1 << nBins : 1;
+    double referenceSigmaTau{HelperGeneral::UndefValueDouble};
 
     TFile* fileOut = IsSaveCanvasAsRoot ? TFile::Open("ctfit.root", "recreate") : nullptr;
     if(IsSaveCanvasAsRoot) bestDropSetName.Write();
@@ -173,35 +154,16 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
     emptycanvas.Print("ctfit.pdf[", "pdf");
 
     auto FitLifetimeHistos = [&](TH1* histoRec, TH1* histoMc, int dropSet) {
+      const auto binsToDrop = HelperCtFit::EvalBinsToDrop(dropSet);
+
       TF1* fitCutVar = FitLifetimeHisto(histoRec, integralOption);
       TF1* fitMc = isMc ? FitLifetimeHisto(histoMc, integralOption) : nullptr;
 
-      grA.AddPoint(dropSet, fitCutVar->GetParameter(0)*1000);
-      grA.SetPointError(grA.GetN()-1, 0., fitCutVar->GetParError(0)*1000);
-      grTau.AddPoint(dropSet, fitCutVar->GetParameter(1)*1000);
-      grTau.SetPointError(grTau.GetN()-1, 0., fitCutVar->GetParError(1)*1000);
+      if(dropSet == 0) referenceSigmaTau = fitCutVar->GetParError(1);
+      HelperCtFit::FillQaGraphs(graphsQa, fitCutVar, dropSet, referenceSigmaTau);
 
-      const auto chi2 = fitCutVar->GetChisquare();
-      const auto ndf = fitCutVar->GetNDF();
-      if(ndf != 0) grChi2.AddPoint(dropSet, chi2 / ndf);
-
-      auto FitResults = [](const TF1* fitFunc, const std::string& text="") {
-        const std::string lifetimeFitValue = "#tau_{#Lambda_{c}} " + text + "= (" +
-                                            to_string_with_precision(fitFunc->GetParameter(1)*1000, 1) +
-                                            " #pm " +
-                                            to_string_with_precision(fitFunc->GetParError(1)*1000, 1) +
-                                            ") fs";
-        const std::string chi2Value = "#chi^{2} / ndf = " +
-                                      to_string_with_significant_figures(fitFunc->GetChisquare(), 3) +
-                                      " / " +
-                                      std::to_string(fitFunc->GetNDF());
-
-        return std::make_pair(lifetimeFitValue, chi2Value);
-      };
-
-      const std::pair<std::string, std::string> fitResultsCutVar = FitResults(fitCutVar);
-      const std::pair<std::string, std::string> fitResultsMC = isMc ? FitResults(fitMc, "[MC]") : std::pair<std::string, std::string>();
-      const std::string lifetimePdg = "#tau_{#Lambda_{c}} [PDG] = (202.6 #pm 1.0) fs";
+      const std::pair<std::string, std::string> fitResultsCutVar = HelperCtFit::FitResults(fitCutVar);
+      const std::pair<std::string, std::string> fitResultsMC = isMc ? HelperCtFit::FitResults(fitMc, "[MC]") : std::pair<std::string, std::string>();
 
       const float textX1 = 0.70;
       const float textX2 = 0.86;
@@ -218,7 +180,7 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
         AddOneLineText(fitResultsMC.second, {textX1, textY2 - 2*textYStep, textX2, textY2 - 1*textYStep}, "brNDC", 0.04);
       }
       histoRec->Draw("E1 same");
-      const auto binsToDrop = EvalBinsToDrop(dropSet);
+
       std::string droppedBins{};
       for(const auto& binToDrop : binsToDrop) {
         droppedBins.append(std::to_string(binToDrop));
@@ -232,7 +194,7 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
       fitCutVar->Draw("same");
       AddOneLineText(fitResultsCutVar.first, {textX1, textY2 - 3*textYStep, textX2, textY2 - 2*textYStep}, "brNDC", 0.04);
       AddOneLineText(fitResultsCutVar.second, {textX1, textY2 - 4*textYStep, textX2, textY2 - 3*textYStep}, "brNDC", 0.04);
-      AddOneLineText(lifetimePdg, {textX1, textY2 - 6*textYStep, textX2, textY2 - 5*textYStep}, "brNDC", 0.04);
+      AddOneLineText(HelperCtFit::LifetimePdgSv, {textX1, textY2 - 6*textYStep, textX2, textY2 - 5*textYStep}, "brNDC", 0.04);
       ccFit.Print("ctfit.pdf", "pdf");
 
       if(IsSaveCanvasAsRoot && dropSet == 0) {
@@ -295,16 +257,16 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
     };
 
     for(int iDropSet=0; iDropSet<nDropSets; ++iDropSet) {
-      const auto binsToDrop = EvalBinsToDrop(iDropSet);
+      const auto binsToDrop = HelperCtFit::EvalBinsToDrop(iDropSet);
       const auto binsToDropSize = static_cast<int>(binsToDrop.size());
-      if(RunMode == AllPossible && binsToDropSize >= nBins-1) continue;
-      if(RunMode == AllWoOne && binsToDropSize > 1) continue;
+      if(RunMode == HelperCtFit::RunModes::AllPossible && binsToDropSize >= nBins-1) continue;
+      if(RunMode == HelperCtFit::RunModes::AllWoOne && binsToDropSize > 1) continue;
       TH1* hReco = dynamic_cast<TH1*>(hCutVarDiff->Clone());
       TH1* hMc = isMc ? dynamic_cast<TH1*>(hMcDiff->Clone()) : nullptr;
 
       for(const auto& binToDrop : binsToDrop) {
-        ExcludeBin(hReco, binToDrop);
-        if(isMc) ExcludeBin(hMc, binToDrop);
+        HelperCtFit::ExcludeBin(hReco, binToDrop);
+        if(isMc) HelperCtFit::ExcludeBin(hMc, binToDrop);
       }
 
       FitLifetimeHistos(hReco, hMc, iDropSet);
@@ -313,87 +275,13 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
 
     if(IsSaveCanvasAsRoot) fileOut->Close();
 
-    const double leftEdge = -2.;
-    const double rightEdge = grTau.GetPointX(grTau.GetN()-1) + 2;
-
-    auto PrintCanvasDrops = [&](TGraphErrors* graph, const std::string& priBra) {
-      TCanvas ccDrops("ccDrops", "");
-      ccDrops.SetCanvasSize(1200, 800);
-      graph->GetXaxis()->SetLimits(leftEdge, rightEdge);
-      graph->Draw("AP");
-      TGraphErrors* grMean = GetSubGraph(graph, MeanPoint, kRed, nBins);
-      TGraphErrors* grOneDrop = GetSubGraph(graph, OneDrop, kBlue, nBins);
-      TGraphErrors* grTwoFit = GetSubGraph(graph, TwoFit, kGreen+2, nBins);
-      grMean->Draw("PE same");
-      grOneDrop->Draw("PE same");
-      grTwoFit->Draw("PE same");
-      TLine lineMean(leftEdge, graph->GetPointY(0), rightEdge, graph->GetPointY(0));
-      TLine lineUp(leftEdge, graph->GetPointY(0)+graph->GetErrorY(0), rightEdge, graph->GetPointY(0)+graph->GetErrorY(0));
-      TLine lineDown(leftEdge, graph->GetPointY(0)-graph->GetErrorY(0), rightEdge, graph->GetPointY(0)-graph->GetErrorY(0));
-      lineUp.SetLineStyle(7);
-      lineDown.SetLineStyle(7);
-      for(const auto& line : {&lineMean, &lineUp, &lineDown}) {
-        line->SetLineWidth(2);
-        line->SetLineColor(kRed);
-        line->Draw("same");
-      }
-      TLegend leg(0.75, 0.70, 0.95, 0.90);
-      leg.AddEntry(grMean, "Fit all points", "PE");
-      leg.AddEntry(grOneDrop, "Fit w/o one point", "PE");
-      leg.AddEntry(grTwoFit, "Fit two points", "PE");
-      leg.Draw("same");
-
-      ccDrops.Print(("dropSummary.pdf" + priBra).c_str(), "pdf");
-    };
-
-    PrintCanvasDrops(&grTau, "(");
-    PrintCanvasDrops(&grA, "");
-    PrintCanvasDrops(&grChi2, ")");
+    emptycanvas.Print("dropSummary.pdf[", "pdf");
+    for(const auto& gr : graphsQa) {
+      HelperCtFit::PrintCanvasDrops(gr, nBins);
+    }
+    emptycanvas.Print("dropSummary.pdf]", "pdf");
 
   } // promptnesses
-}
-
-void ExcludeBin(TH1* h, int binNumber) {
-  h->SetBinContent(binNumber, 0.);
-  h->SetBinError(binNumber, 0.);
-}
-
-std::vector<int> EvalBinsToDrop(int dropSet) {
-  std::vector<int> result{};
-  int iBit{0};
-  while(dropSet >> iBit > 0) {
-    if((dropSet >> iBit) & 1) result.push_back(iBit+1);
-    ++iBit;
-  }
-
-  return result;
-}
-
-int EvalDropSet(const std::vector<int>& bins) {
-  int result = 0;
-
-  for(const auto& bin : bins) {
-    result |= (1 << (bin - 1));
-  }
-
-  return result;
-}
-
-TGraphErrors* GetSubGraph(TGraphErrors* grIn, int subGraphType, Color_t color, int nFittedPoints) {
-  TGraphErrors* grOut = new TGraphErrors();
-  grOut->SetName(grIn->GetName());
-  for(int iPoint=0, nPoints=grIn->GetN(); iPoint<nPoints; ++iPoint) {
-    const int dropSet = static_cast<int>(std::round(grIn->GetPointX(iPoint)));
-    if(subGraphType == MeanPoint && dropSet !=0) continue;
-    if(subGraphType == OneDrop && !((dropSet > 0) && ((dropSet & (dropSet - 1)) == 0))) continue; // dropSet is a power of 2, i.e. 1, 2, 4, 8, ...
-    if(subGraphType == TwoFit && __builtin_popcount(dropSet) != nFittedPoints-2) continue;
-    grOut->AddPoint(grIn->GetPointX(iPoint), grIn->GetPointY(iPoint));
-    grOut->SetPointError(grOut->GetN()-1, 0., grIn->GetErrorY(iPoint));
-  }
-  grOut->SetMarkerColor(color);
-  grOut->SetLineColor(color);
-
-  return grOut;
 }
 
 int main(int argc, char* argv[]) {

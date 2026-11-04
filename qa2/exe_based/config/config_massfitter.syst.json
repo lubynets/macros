@@ -1,0 +1,101 @@
+{
+  "IsMC": false,
+  "InFileName": "/lustre/alice/users/lubynets/QA/outputs/mass_bdt_qa_thn/HL/data/HF_LHC23_pass4_Thin_2P3PDstar/778891/ctbin2/mass_bdt_qa_thn.HL.data.HF_LHC23_pass4_Thin_2P3PDstar.778891.ctbin2.root",
+  "OutFileName": "fileOut.root",
+  "InputHistoName": [
+    "pT_3_20/T_0.20_0.40/hM_NPgtBDT_SCORE_TO_BE_REPLACED_NPlt1.00",
+    "pT_3_20/T_0.40_0.60/hM_NPgtBDT_SCORE_TO_BE_REPLACED_NPlt1.00",
+    "pT_3_20/T_0.60_0.80/hM_NPgtBDT_SCORE_TO_BE_REPLACED_NPlt1.00",
+    "pT_3_20/T_0.80_1.00/hM_NPgtBDT_SCORE_TO_BE_REPLACED_NPlt1.00",
+    "pT_3_20/T_1.00_1.40/hM_NPgtBDT_SCORE_TO_BE_REPLACED_NPlt1.00",
+    "pT_3_20/T_1.40_1.80/hM_NPgtBDT_SCORE_TO_BE_REPLACED_NPlt1.00"
+  ],
+  "Particle": "LcToPKPi",
+  "_Particles": [
+    "Dplus",
+    "Ds",
+    "LcToPKPi",
+    "LcToPK0s",
+    "Dstar"
+  ],
+  "EnableRefl": false,
+  "FixSigma": true,
+  "SigmaFile": "/lustre/alice/users/lubynets/runMassFit/input/RawYields_Lc.NP_fix.HF_LHC23_pass4_Thin_2P3PDstar.778891.pol3.root",
+  "_SigmaFile": "fix sigma from file",
+  "FixSigmaManual": [],
+  "_FixSigmaManual": "fix sigma manually",
+  "FixMean": true,
+  "MeanFile": "/lustre/alice/users/lubynets/runMassFit/input/RawYields_Lc.NP_fix.HF_LHC23_pass4_Thin_2P3PDstar.778891.pol3.root",
+  "_MeanFile": "fix mean from file",
+  "FixMeanManual": [],
+  "_FixMeanManual": "fix mean mannually",
+  "FixSecondSigma": false,
+  "SecondSigmaFile": "",
+  "_SecondSigmaFile": "fix second sigma for double gauss from file",
+  "FixSecondSigmaManual": [],
+  "_FixSecondSigmaManual": "fix second sigma for double gauss manually",
+  "FixDscbTailParams": true,
+  "DscbParametersFile": "/lustre/alice/users/lubynets/runMassFit/input/dscbParameters.HF_LHC24h1d_All.780931.ctbin2.preFit.smooth/RawYields_Lc.NP_fix.root",
+  "DscbAlphaLInitialHisto": "hRawYieldsDscbAlphaL",
+  "DscbAlphaRInitialHisto": "hRawYieldsDscbAlphaR",
+  "DscbNLInitialHisto": "hRawYieldsDscbNL",
+  "DscbNRInitialHisto": "hRawYieldsDscbNR",
+  "SliceVarName": "T",
+  "SliceVarUnit": "ps",
+  "SliceVarMin": [
+    0.2,
+    0.4,
+    0.6,
+    0.8,
+    1.0,
+    1.4
+  ],
+  "SliceVarMax": [
+    0.4,
+    0.6,
+    0.8,
+    1.0,
+    1.4,
+    1.8
+  ],
+  "MassMin": LEFT_RANGE_TO_BE_REPLACED,
+  "MassMax": RIGHT_RANGE_TO_BE_REPLACED,
+  "Rebin": REBIN_FACTOR_TO_BE_REPLACED,
+  "InclSecPeak": false,
+  "UseLikelihood": true,
+  "_UseLikelihood": [
+    "true: likelihood fit",
+    "false: chi2 fit"
+  ],
+  "BkgFunc": BG_FUNCTION_TO_BE_REPLACED,
+  "_BkgFunc": [
+    5,
+    5,
+    5,
+    5,
+    5,
+    5
+  ],
+  "_BkgFuncs": [
+    "0 for Expo",
+    "1 for Poly1",
+    "2 for Poly2",
+    "3 for Pow",
+    "4 for PowEx",
+    "5 for Poly3",
+    "6 for NoBkg"
+  ],
+  "SgnFunc": 4,
+  "_SgnFuncs": [
+    "0 for SingleGaus",
+    "1 for DoubleGaus",
+    "2 for DoubleGausSigmaRatioPar",
+    "3 for GausSec",
+    "4 for DoubleSidedCrystalBall",
+    "5 for Voigtian"
+  ],
+  "DrawBgPrefit": true,
+  "HighlightPeakRegion": true,
+  "NSigmaForSideband": 6.0,
+  "RandomSeed": RANDOM_SEED_TO_BE_REPLACED
+}
