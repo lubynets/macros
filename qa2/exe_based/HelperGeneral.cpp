@@ -212,7 +212,11 @@ void HelperGeneral::EmbedMetaData(TFile* fileOut, const std::string& exeName, co
   const TMacro* srcFile = CaptureSharedFile(exeName.c_str());
   const TMacro* versionFile = CaptureSharedFile("qa2Version.txt");
   const TMacro* diffFile = CaptureSharedFile("qa2Diff.patch");
-  CD(fileOut, "metaData");
+  if (fileOut->GetDirectory("metaData") == nullptr) {
+    CD(fileOut, "metaData");
+  } else {
+    CD(fileOut, "metaData_1");
+  }
   srcFile->Write("src");
   versionFile->Write("version");
   diffFile->Write("diff");
