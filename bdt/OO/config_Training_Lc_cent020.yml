@@ -1,0 +1,177 @@
+input:
+  data:
+    file: "/lustre/alice/users/lubynets/CSTlc/outputs/HL/data/HF_LHC25ae_OO_pass2_small_2P3PDstar/796843/AO2D.parquet"
+    treename: null
+    #chunksize: 1000
+    variables:
+      - fImpactParameter0
+      - fImpactParameter1
+      - fImpactParameter2
+      - fChi2PCA
+      - fCpa
+      - fCpaXY
+      - fDecayLengthXY
+      - fDecayLength
+      - fNSigTpcTofPr0
+      - fNSigTpcTofPi0
+      - fNSigTpcTofKa1
+      - fNSigTpcTofPi2
+      - fNSigTpcTofPr2
+      - fM
+
+  prompt:
+    file: "/lustre/alice/users/lubynets/CSTlc/outputs/HL/mc/HF_LHC25j10_1st_All/796866/AO2D.part1.parquet"
+    treename: null
+    #chunksize: 1000
+    variables:
+      - fImpactParameter0
+      - fImpactParameter1
+      - fImpactParameter2
+      - fChi2PCA
+      - fCpa
+      - fCpaXY
+      - fDecayLengthXY
+      - fDecayLength
+      - fNSigTpcTofPr0
+      - fNSigTpcTofPi0
+      - fNSigTpcTofKa1
+      - fNSigTpcTofPi2
+      - fNSigTpcTofPr2
+      - fM
+    cuts: "fOriginMcRec == 1"
+
+  FD:
+    file: "/lustre/alice/users/lubynets/CSTlc/outputs/HL/mc/HF_LHC25j10_1st_All/796866/AO2D.part1.parquet"
+    treename: null
+    #chunksize: 1000
+    variables:
+      - fImpactParameter0
+      - fImpactParameter1
+      - fImpactParameter2
+      - fChi2PCA
+      - fCpa
+      - fCpaXY
+      - fDecayLengthXY
+      - fDecayLength
+      - fNSigTpcTofPr0
+      - fNSigTpcTofPi0
+      - fNSigTpcTofKa1
+      - fNSigTpcTofPi2
+      - fNSigTpcTofPr2
+      - fM
+    cuts: "fOriginMcRec == 2"
+
+output:
+  dir: "/lustre/alice/users/lubynets/bdtoo/models_0_100"
+  leg_labels:
+    Bkg: Background
+    Prompt: "Prompt $\\Lambda_c$"
+    FD: "Feed-down $\\Lambda_c$"
+  out_labels:
+    Bkg: Bkg
+    Prompt: Prompt
+    FD: FD
+
+pt_ranges:
+  min: [1, 2, 3, 4, 6, 8, 12]
+  max: [2, 3, 4, 6, 8, 12, 24]
+
+data_prep:
+  filt_bkg_mass: "fM < 2.2 or fM > 2.34"
+  filt_prompt:    "fOriginMcRec == 1"
+  filt_FD:        "fOriginMcRec == 2"
+  dataset_opt: max_signal
+  bkg_mult:  [10, 5, 5, 2, 1, 1, 1]
+  seed_split: 42
+  test_fraction: 0.3
+
+ml:
+  raw_output: False
+  roc_auc_average: macro
+  roc_auc_approach: ovo
+
+  training_columns:
+    - fImpactParameter0
+    - fImpactParameter1
+    - fImpactParameter2
+    - fChi2PCA
+    - fCpa
+    - fCpaXY
+    - fDecayLengthXY
+    - fDecayLength
+    - fNSigTpcTofPr0
+    - fNSigTpcTofPi0
+    - fNSigTpcTofKa1
+    - fNSigTpcTofPi2
+    - fNSigTpcTofPr2
+
+  hyper_par:
+    - {max_depth: 4, learning_rate: 0.07, n_estimators: 600, min_child_weight: 5, subsample: 0.6, colsample_bytree: 0.75, gamma: 1.3, reg_lambda: 10, reg_alpha: 2}
+    - {max_depth: 3, learning_rate: 0.06, n_estimators: 900, min_child_weight: 3, subsample: 0.65, colsample_bytree: 0.76, gamma: 1.1, reg_lambda: 5, reg_alpha: 8}
+    - {max_depth: 5, learning_rate: 0.05, n_estimators: 800, min_child_weight: 7, subsample: 0.61, colsample_bytree: 0.69, gamma: 0.86, reg_lambda: 6, reg_alpha: 1}
+    - {max_depth: 4, learning_rate: 0.08, n_estimators: 700, min_child_weight: 4, subsample: 0.63, colsample_bytree: 0.72, gamma: 1.0, reg_lambda: 7, reg_alpha: 3}
+    - {max_depth: 6, learning_rate: 0.04, n_estimators: 1000, min_child_weight: 6, subsample: 0.58, colsample_bytree: 0.74, gamma: 1.2, reg_lambda: 9, reg_alpha: 4}
+    - {max_depth: 3, learning_rate: 0.09, n_estimators: 500, min_child_weight: 2, subsample: 0.67, colsample_bytree: 0.70, gamma: 0.9, reg_lambda: 4, reg_alpha: 6}
+    - {max_depth: 3, learning_rate: 0.09, n_estimators: 500, min_child_weight: 2, subsample: 0.67, colsample_bytree: 0.70, gamma: 0.9, reg_lambda: 4, reg_alpha: 6}
+
+  hyper_pars_opt:
+    do_hyp_opt: True
+    hyper_pars_ranges:
+      max_depth: [2, 4]
+      learning_rate: [0.01, 0.15]
+      n_estimators: [300, 800]
+      min_child_weight: [1, 10]
+      subsample: [0.5, 0.9]
+      colsample_bytree: [0.5, 0.9]
+      gamma: [0, 2]
+      reg_lambda: [1, 15]
+      reg_alpha: [0, 10]
+    njobs: 1
+    ntrials: 5
+    timeout: 3000
+    niter: 20
+
+  saved_models:
+    - /lustre/alice/users/lubynets/bdtoo/models_0_100/pt1_2/ModelHandler_pT_1_2.pickle
+    - /lustre/alice/users/lubynets/bdtoo/models_0_100/pt2_3/ModelHandler_pT_2_3.pickle
+    - /lustre/alice/users/lubynets/bdtoo/models_0_100/pt3_4/ModelHandler_pT_3_4.pickle
+    - /lustre/alice/users/lubynets/bdtoo/models_0_100/pt4_6/ModelHandler_pT_4_6.pickle
+    - /lustre/alice/users/lubynets/bdtoo/models_0_100/pt6_8/ModelHandler_pT_6_8.pickle
+    - /lustre/alice/users/lubynets/bdtoo/models_0_100/pt8_12/ModelHandler_pT_8_12.pickle
+    - /lustre/alice/users/lubynets/bdtoo/models_0_100/pt12_24/ModelHandler_pT_12_24.pickle
+
+plots:
+  plotting_columns:
+    - fImpactParameter0
+    - fImpactParameter1
+    - fImpactParameter2
+    - fChi2PCA
+    - fCpa
+    - fCpaXY
+    - fDecayLengthXY
+    - fDecayLength
+    - fNSigTpcTofPr0
+    - fNSigTpcTofPi0
+    - fNSigTpcTofKa1
+    - fNSigTpcTofPi2
+    - fNSigTpcTofPr2
+    - fM
+
+  train_test_log: True
+
+appl:
+  column_to_save_list:
+    - fM
+    - fPt
+
+standalone_appl:
+  treename: "DF_2423890612266752/O2hfcandlclite"
+  inputs:
+    - "/lustre/alice/users/grusso/alice/AO2D.data.HF_LHC25ae_OO_pass2_small_2P3PDstar.693963.root"
+    - "/lustre/alice/users/grusso/alice/AO2D.mc.HF_LHC25j10_1st_All.706564_cent020.root"
+  output_names:
+    - Data
+    - Prompt
+    - FD
+  output_dir: "/lustre/alice/users/lubynets/bdtoo/models_0_100"
+  savedistrs: True
