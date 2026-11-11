@@ -16,6 +16,16 @@ import sys
 sys.path.append('utils')
 import utils as utils
 
+def ct_weight_function(x):
+    tauPythia = 0.2005
+    tauPdg = 0.2026
+    sigmaPdg = 0.001
+    nCtSigmaFromPdg = 3
+    tauTarget = tauPdg + nCtSigmaFromPdg*sigmaPdg
+    p0 = (tauPythia - tauTarget) / (tauTarget * tauPythia)
+    ctToC = 0.03
+    return np.exp(-p0/ctToC * x)
+
 start_time = time.time()
 
 ## Define labels
@@ -205,10 +215,18 @@ print('Combining prompt and background data frame...')
 nBkg = min((nPrompt + nNonPrompt)*2, len(BkgDf)) # BG twice as signal ?
 CombDf = pd.concat([BkgDf[:nBkg], PromptDf, NonPromptDf], sort=True) # take not all the BG but only part of it. sort=True sorts columns alphabetically  -why need it?
 LabelsArray = [0 for iCand in range(nBkg)] + [1 for iCand in range(nPrompt)] + [2 for iCand in range(nNonPrompt)] # assign 0 to BGs, 1 for prompts, 2 for nonprompts
+WeightsArray = (
+    [1 for _ in range(nBkg)]
+    + CombDf["fLiteCt"]
+        .iloc[nBkg:nBkg+nPrompt]
+        .apply(ct_weight_function)
+        .tolist()
+    + [1 for _ in range(nNonPrompt)]
+)
 print('Combining prompt and background data frame: Done.')
 
 ## Split Data frame into random training set and testing set
-TrainSet, TestSet, yTrain, yTest = train_test_split(CombDf, LabelsArray, test_size=0.4, random_state=42)
+TrainSet, TestSet, yTrain, yTest, wTrain, wTest = train_test_split(CombDf, LabelsArray, WeightsArray, test_size=0.4, random_state=42)
 ## random_state: Controls the shuffling applied to the data before applying the split. Pass an int for reproducible output across multiple function calls.
 TrainTestData = [TrainSet, yTrain, TestSet, yTest]
 
@@ -262,6 +280,7 @@ model_hdl.optimize_params_optuna(TrainTestData, HypeRanges, cross_val_scoring="r
 rawoutput = False # Indicates that the model should return probabilities rather than raw untransformed margin values during prediction
 rocaucAverage = 'macro' # 'macro' or 'weighted' # Specifies that the macro-average should be used when calculating the ROC AUC score, treating all classes equally without considering class imbalance
 multiClassOpt = 'ovr' # 'ovo' or 'ovr' # Sets the multi-class strategy to one-vs-rest (OvR), where the model trains one classifier per class, distinguishing each class from all others
+#model_hdl.train_test_model(TrainTestData, False, rawoutput, average=rocaucAverage, multi_class_opt=multiClassOpt, sample_weight=wTrain)
 model_hdl.train_test_model(TrainTestData, False, rawoutput, average=rocaucAverage, multi_class_opt=multiClassOpt)
 # False Indicates that model predictions on the test set should not be returned after evaluation
 # rawoutput: Controls whether the model outputs raw margin values or probabilities; set to False to return probabilities
@@ -355,12 +374,12 @@ FeatImp = plot_utils.plot_feature_imp(TrainTestData[0], TrainTestData[1], model_
 for (shap, label) in zip(FeatImp[:-1], OutputLabels):
     shap.text(0.01, 0.99, f'{int(slice_var_min)} < {slice_var_name} < {int(slice_var_max)} {slice_var_unit}')
     shap.tight_layout()
-    shap.savefig(f'{output_directory}/shap_{label}_{slice_var_name}{int(slice_var_min)}_{int(slice_var_max)}.png', dpi=300, bbox_inches='tight')
+    shap.savefig(f'{output_directory}/shap_{label}_{slice_var_name}_{int(slice_var_min)}_{int(slice_var_max)}.png', dpi=300, bbox_inches='tight')
 ## shap summary plot
 shapSummary = FeatImp[-1]
 shapSummary.text(0.01, 0.99, f'{int(slice_var_min)} < {slice_var_name} < {int(slice_var_max)} {slice_var_unit}')
 shapSummary.tight_layout()
-shapSummary.savefig(f'{output_directory}/shapSummary_{slice_var_name}{int(slice_var_min)}_{int(slice_var_max)}.png', dpi=300, bbox_inches='tight')
+shapSummary.savefig(f'{output_directory}/shapSummary_{slice_var_name}_{int(slice_var_min)}_{int(slice_var_max)}.png', dpi=300, bbox_inches='tight')
 print('Plotting feature importance: Done.')
 
 # --------------- Plot variable distributions ----------------
