@@ -116,7 +116,7 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
 
     auto PrintYields = [&](const std::string& ccName, TH1* hCutVar, TH1* hMc, const std::string& promptness, const std::string& priBra) {
       TCanvas cc("cc", "");
-      cc.SetLogy();
+      if (promptness == "prompt") cc.SetLogy();
       cc.SetCanvasSize(1200, 800);
       if (isMc) hMc->Draw("E1");
       hCutVar->Draw("E1 same");
