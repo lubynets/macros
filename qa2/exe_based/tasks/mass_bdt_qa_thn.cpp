@@ -183,7 +183,7 @@ int main(int argc, char* argv[]) {
   options_description desc ("Allowed options");
   desc.add_options()
     ("help,h", "Print usage message")
-    ("input-file,i", value<std::string>()->required(), "file with cut variation output")
+    ("input-file,i", value<std::string>()->required(), "file with O2Physics::taskLc output (AnalysisResults.root)")
     ("run-mode,r", value<int>()->default_value(0), "RunOnly=0, RunAndMerge=1, MergeOnly=2")
     ("save-meta,m", value<bool>()->implicit_value(true)->default_value(false), "save meta data")
   ;

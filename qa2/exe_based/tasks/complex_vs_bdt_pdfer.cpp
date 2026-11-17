@@ -28,7 +28,7 @@ void complex_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::string
   gStyle->SetPadGridX(true);
   //=================================================================
   std::vector<double> bdtScores{/*0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90*/};
-  for(int i=1; i<=99; i++) {
+  for(int i=1; i<=20; i++) {
     bdtScores.emplace_back(0.01*i);
   }
   //=================================================================
