@@ -84,7 +84,7 @@ def data_prep(inputCfg, iBin, PtBin, OutPutDirPt, PromptDf, FDDf, BkgDf): #pylin
             print((f'Remaining FD candidates ({nFD - nCandToKeep}) will be used for the '
                    'efficiency together with test set'))
 
-        TotDf = pd.concat([BkgDf.iloc[:nCandToKeep], PromptDf.iloc[:nCandToKeep], FDDf.iloc[:nCandToKeep]], sort=True)
+        TotDf = pd.concat([BkgDf.sample(n=nCandToKeep, random_state=seed_split), PromptDf.iloc[:nCandToKeep], FDDf.iloc[:nCandToKeep]], sort=True)
         if FDDf.empty:
             LabelsArray = np.array([0]*nCandToKeep + [1]*nCandToKeep)
         else:
@@ -99,11 +99,11 @@ def data_prep(inputCfg, iBin, PtBin, OutPutDirPt, PromptDf, FDDf, BkgDf): #pylin
             yTest = LabelsArray.copy()
 
         TrainTestData = [TrainSet, yTrain, TestSet, yTest]
-        PromptDfSelForEff = pd.concat([PromptDf.iloc[nCandToKeep:], TestSet[TestSet.index.isin(np.where(yTest == 1)[0])]], sort=False)
+        PromptDfSelForEff = pd.concat([PromptDf.iloc[nCandToKeep:], TestSet.iloc[np.where(yTest == 1)[0]].copy()], sort=False)
         if FDDf.empty:
             FDDfSelForEff = pd.DataFrame()
         else:
-            FDDfSelForEff = pd.concat([FDDf.iloc[nCandToKeep:], TestSet[TestSet.index.isin(np.where(yTest == 2)[0])]], sort=False)
+            FDDfSelForEff = pd.concat([FDDf.iloc[nCandToKeep:], TestSet.iloc[np.where(yTest == 2)[0]].copy()], sort=False)
         del TotDf
 
     elif dataset_opt == 'max_signal':
@@ -116,7 +116,7 @@ def data_prep(inputCfg, iBin, PtBin, OutPutDirPt, PromptDf, FDDf, BkgDf): #pylin
             print('\033[93mWARNING: using all bkg available, not good!\033[0m')
         print(f'Fraction of real data candidates used for ML: {nCandBkg/nBkg:.5f}')
 
-        TotDf = pd.concat([BkgDf.iloc[:nCandBkg], PromptDf, FDDf], sort=True)
+        TotDf = pd.concat([BkgDf.sample(n=nCandBkg, random_state=seed_split), PromptDf, FDDf], sort=True)
         if FDDf.empty:
             LabelsArray = np.array([0]*nCandBkg + [1]*nPrompt)
         else:
@@ -131,8 +131,8 @@ def data_prep(inputCfg, iBin, PtBin, OutPutDirPt, PromptDf, FDDf, BkgDf): #pylin
             yTest = LabelsArray.copy()
 
         TrainTestData = [TrainSet, yTrain, TestSet, yTest]
-        PromptDfSelForEff = TestSet[TestSet.index.isin(np.where(yTest == 1)[0])]
-        FDDfSelForEff = pd.DataFrame() if FDDf.empty else TestSet[TestSet.index.isin(np.where(yTest == 2)[0])]
+        PromptDfSelForEff = TestSet.iloc[np.where(yTest == 1)[0]].copy()
+        FDDfSelForEff = pd.DataFrame() if FDDf.empty else TestSet.iloc[np.where(yTest == 2)[0]].copy()
         del TotDf
 
     else:
@@ -166,10 +166,91 @@ def data_prep(inputCfg, iBin, PtBin, OutPutDirPt, PromptDf, FDDf, BkgDf): #pylin
     return TrainTestData, PromptDfSelForEff, FDDfSelForEff
 
 
+
+def data_prep_explicit(inputCfg, iBin, PtBin, OutPutDirPt,
+                       PromptTrainDf, PromptTestDf, FDTrainDf, FDTestDf, BkgDf):
+    """Use disjoint MC train/test files; split only real-data sideband background."""
+    cfg = inputCfg['data_prep']
+    seed = cfg['seed_split']
+    fraction = cfg['test_fraction']
+    if not 0 < fraction < 1:
+        raise ValueError('Explicit mode requires 0 < test_fraction < 1 for background splitting')
+    if cfg['dataset_opt'] != 'max_signal':
+        raise ValueError('Explicit mode currently supports dataset_opt: max_signal only')
+
+    mc_frames = (PromptTrainDf, PromptTestDf, FDTrainDf, FDTestDf)
+    if any(df.empty for df in mc_frames):
+        raise ValueError(f'Empty prompt or FD MC sample in pT bin {PtBin}; check input statistics')
+    n_signal = sum(len(df) for df in mc_frames)
+    n_bkg = min(round(cfg['bkg_mult'][iBin] * n_signal), len(BkgDf))
+    if n_bkg < 2:
+        raise ValueError(f'Insufficient background in pT bin {PtBin}')
+    if n_bkg == len(BkgDf):
+        print('WARNING: using all available sideband background candidates')
+    bkg_selected = BkgDf.sample(n=n_bkg, random_state=seed)
+    bkg_train, bkg_test = train_test_split(
+        bkg_selected, test_size=fraction, random_state=seed, shuffle=True)
+
+    train_parts = [bkg_train, PromptTrainDf, FDTrainDf]
+    test_parts = [bkg_test, PromptTestDf, FDTestDf]
+    TrainSet = pd.concat(train_parts, ignore_index=True, sort=False)
+    TestSet = pd.concat(test_parts, ignore_index=True, sort=False)
+    yTrain = np.concatenate([np.full(len(df), label, dtype=int)
+                             for label, df in enumerate(train_parts)])
+    yTest = np.concatenate([np.full(len(df), label, dtype=int)
+                            for label, df in enumerate(test_parts)])
+    rng = np.random.default_rng(seed)
+    perm_train = rng.permutation(len(TrainSet))
+    perm_test = rng.permutation(len(TestSet))
+    TrainSet = TrainSet.iloc[perm_train].reset_index(drop=True)
+    TestSet = TestSet.iloc[perm_test].reset_index(drop=True)
+    yTrain = yTrain[perm_train]
+    yTest = yTest[perm_test]
+    TrainTestData = [TrainSet, yTrain, TestSet, yTest]
+    print(f'Explicit MC split for pT {PtBin[0]}-{PtBin[1]} GeV/c')
+    print('  Training (Bkg, Prompt, FD):', np.bincount(yTrain, minlength=3).tolist())
+    print('  Testing  (Bkg, Prompt, FD):', np.bincount(yTest, minlength=3).tolist())
+
+    # Diagnostic distributions and correlation matrices (same as random mode).
+    VarsToDraw = inputCfg['plots']['plotting_columns']
+    labels = [inputCfg['output']['leg_labels'][key] for key in ('Bkg', 'Prompt', 'FD')]
+    out_labels = [inputCfg['output']['out_labels'][key] for key in ('Bkg', 'Prompt', 'FD')]
+    list_df = [bkg_selected,
+               pd.concat([PromptTrainDf, PromptTestDf], ignore_index=True),
+               pd.concat([FDTrainDf, FDTestDf], ignore_index=True)]
+    plot_utils.plot_distr(list_df, VarsToDraw, 100, labels,
+                          figsize=(12, 7), alpha=0.3, log=True, grid=False, density=True)
+    plt.subplots_adjust(left=0.06, bottom=0.06, right=0.99, top=0.96,
+                        hspace=0.55, wspace=0.55)
+    plt.savefig(f'{OutPutDirPt}/DistributionsAll_pT_{PtBin[0]}_{PtBin[1]}.pdf')
+    plt.close('all')
+    corr_figs = plot_utils.plot_corr(list_df, VarsToDraw, labels)
+    for fig, lab in zip(corr_figs, out_labels):
+        fig.subplots_adjust(left=0.2, bottom=0.25, right=0.95, top=0.9)
+        fig.savefig(f'{OutPutDirPt}/CorrMatrix{lab}_pT_{PtBin[0]}_{PtBin[1]}.pdf')
+    plt.close('all')
+    return TrainTestData, PromptTestDf.copy(), FDTestDf.copy()
+
+
+def save_class_counts(TrainTestData, OutPutDirPt):
+    """Persist class counts for reproducibility and sanity checks."""
+    _, y_train, _, y_test = TrainTestData
+    labels = ['Bkg', 'Prompt', 'FD']
+    counts = pd.DataFrame({
+        'class': labels,
+        'train': np.bincount(y_train, minlength=3),
+        'test': np.bincount(y_test, minlength=3),
+    })
+    counts.to_csv(os.path.join(OutPutDirPt, 'DatasetClassCounts.csv'), index=False)
+    print(counts.to_string(index=False))
+
+
 def train_test(inputCfg, PtBin, OutPutDirPt, TrainTestData, iBin): #pylint: disable=too-many-statements, too-many-branches
     '''
     function for model training and testing
     '''
+    if set(np.unique(TrainTestData[1])) != set(np.unique(TrainTestData[3])):
+        raise ValueError('Train and test datasets have different class labels')
     n_classes = len(np.unique(TrainTestData[3]))
     modelClf = xgb.XGBClassifier()  # removed deprecated use_label_encoder=False
     TrainCols = inputCfg['ml']['training_columns']
@@ -333,6 +414,7 @@ def appl(inputCfg, PtBin, OutPutDirPt, ModelHandl, DataDfPtSel, PromptDfPtSelFor
     print('Applying ML model to data dataframe: ...', end='\r')
     yPredData = ModelHandl.predict(DataDfPtSel, inputCfg['ml']['raw_output'])
     df_column_to_save_list_data = df_column_to_save_list
+    df_column_to_save_list_data = df_column_to_save_list.copy()
     if 'pt_B' in df_column_to_save_list_data:
         df_column_to_save_list_data.remove('pt_B') # only in MC
     DataDfPtSel = DataDfPtSel.loc[:, df_column_to_save_list_data]
@@ -388,20 +470,35 @@ def main(): #pylint: disable=too-many-statements
     data_cfg   = input_section.get('data')
     fd_cfg     = input_section.get('FD')
 
-    PromptHandler = make_handler('prompt', prompt_cfg, required=True)
-    DataHandler   = make_handler('data',   data_cfg,   required=True)
-    FDHandler     = make_handler('FD',     fd_cfg,     required=False)
+    split_mode = inputCfg['data_prep'].get('split_mode', 'random')
+    DataHandler = make_handler('data', data_cfg, required=True)
+    if split_mode == 'explicit':
+        if fd_cfg is None:
+            raise ValueError('Explicit mode requires FD train/test input configuration')
+        PromptTrainHandler = make_handler('prompt_train', prompt_cfg['train'])
+        PromptTestHandler = make_handler('prompt_test', prompt_cfg['test'])
+        FDTrainHandler = make_handler('FD_train', fd_cfg['train'])
+        FDTestHandler = make_handler('FD_test', fd_cfg['test'])
+        mc_handlers = [PromptTrainHandler, PromptTestHandler,
+                       FDTrainHandler, FDTestHandler]
+    elif split_mode == 'random':
+        PromptHandler = make_handler('prompt', prompt_cfg, required=True)
+        FDHandler = make_handler('FD', fd_cfg, required=False)
+        mc_handlers = [PromptHandler] + ([] if FDHandler is None else [FDHandler])
+    else:
+        raise ValueError(f'Unknown split_mode: {split_mode}')
 
     if inputCfg['data_prep']['filt_bkg_mass']:
-        BkgHandler = DataHandler.get_subset(inputCfg['data_prep']['filt_bkg_mass'], frac=1.,
-                                            rndm_state=inputCfg['data_prep']['seed_split'])
+        BkgHandler = DataHandler.get_subset(
+            inputCfg['data_prep']['filt_bkg_mass'], frac=1.,
+            rndm_state=inputCfg['data_prep']['seed_split'])
     else:
         BkgHandler = DataHandler
 
-    PtBins = [[a, b] for a, b in zip(inputCfg['pt_ranges']['min'], inputCfg['pt_ranges']['max'])]
-    PromptHandler.slice_data_frame('fPt', PtBins, True)
-    if FDHandler is not None:
-        FDHandler.slice_data_frame('fPt', PtBins, True)
+    PtBins = [[a, b] for a, b in zip(inputCfg['pt_ranges']['min'],
+                                      inputCfg['pt_ranges']['max'])]
+    for handler in mc_handlers:
+        handler.slice_data_frame('fPt', PtBins, True)
     DataHandler.slice_data_frame('fPt', PtBins, True)
     BkgHandler.slice_data_frame('fPt', PtBins, True)
     print('Loading and preparing data files: Done!')
@@ -418,12 +515,21 @@ def main(): #pylint: disable=too-many-statements
 
         # data preparation
         #_____________________________________________
-        FDDfPt = pd.DataFrame() if FDHandler is None else FDHandler.get_slice(iBin)
-        TrainTestData, PromptDfSelForEff, FDDfSelForEff = data_prep(inputCfg, iBin, PtBin, OutPutDirPt,
-                                                                    PromptHandler.get_slice(iBin), FDDfPt,
-                                                                    BkgHandler.get_slice(iBin))
-        if args.apply and inputCfg['data_prep']['test_fraction'] < 1.:
-            print('\033[93mWARNING: Using only a fraction of the MC for the application! Are you sure?\033[0m')
+        if split_mode == 'explicit':
+            TrainTestData, PromptDfSelForEff, FDDfSelForEff = data_prep_explicit(
+                inputCfg, iBin, PtBin, OutPutDirPt,
+                PromptTrainHandler.get_slice(iBin), PromptTestHandler.get_slice(iBin),
+                FDTrainHandler.get_slice(iBin), FDTestHandler.get_slice(iBin),
+                BkgHandler.get_slice(iBin))
+        else:
+            FDDfPt = pd.DataFrame() if FDHandler is None else FDHandler.get_slice(iBin)
+            TrainTestData, PromptDfSelForEff, FDDfSelForEff = data_prep(
+                inputCfg, iBin, PtBin, OutPutDirPt,
+                PromptHandler.get_slice(iBin), FDDfPt,
+                BkgHandler.get_slice(iBin))
+            if args.apply and inputCfg['data_prep']['test_fraction'] < 1.:
+                print('WARNING: Using only a fraction of MC for application')
+        save_class_counts(TrainTestData, OutPutDirPt)
 
         # training, testing
         #_____________________________________________
