@@ -18,6 +18,7 @@ SET(EXECUTABLES
     corrected_yield_syst_qa
     relative_efficiency
     ct_fit_ff
+    mass_bdt_qa_thn_pt
 )
 
 SET(SOURCES
