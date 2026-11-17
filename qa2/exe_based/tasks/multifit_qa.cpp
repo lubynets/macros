@@ -25,15 +25,14 @@ using namespace HelperPlot;
 constexpr bool IsVerbose{false};
 constexpr bool IsDrawErrors{false};
 
-void MultiFitQa(const std::string& strategy) {
+void MultiFitQa(const int nTrials, const std::string& strategy) {
   if(strategy != "median" && strategy != "chi2" && strategy != "medianSmart") throw std::runtime_error("MultiFitQa(): strategy must be 'median', 'chi2' or 'medianSmart'");
 
   LoadMacro("styles/mc_qa2.style.cc");
   gStyle->SetMarkerSize(1);
   const std::string fileNameTemplate = "RawYields_Lc/RawYields_Lc";
-  const int nTrials = 100;
   std::vector<double> bdtScores;
-  for(int i=1; i<=99; i++) {
+  for(int i=1; i<=20; i++) {
     bdtScores.emplace_back(0.01*i);
   }
 //   bdtScores={0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90};
@@ -206,7 +205,7 @@ void MultiFitQa(const std::string& strategy) {
   auto FindBadTrials = [](const std::map<double, size_t>& map) {
     const size_t mapSize = map.size();
     auto it = map.begin();
-    std::advance(it, mapSize/5);
+    std::advance(it, mapSize/2);
     const double criticalChi2 = it->first;
 
     std::vector<int> badTrials{};
@@ -217,7 +216,7 @@ void MultiFitQa(const std::string& strategy) {
     return std::pair<std::vector<int>, double>{badTrials, criticalChi2};
   };
 
-  auto RemoveBadTrials = [](std::map<double, size_t>& map, const std::vector<int> badTrials) {
+  auto RemoveBadTrials = [](std::map<double, size_t>& map, const std::vector<int>& badTrials) {
     std::unordered_set<int> badTrialsSet(badTrials.begin(), badTrials.end());
 
     for(auto it = map.begin(); it != map.end(); ) {
@@ -335,7 +334,8 @@ void MultiFitQa(const std::string& strategy) {
 
 int main(int argc, char* argv[]) {
 
-  const std::string strategy = argc > 1 ? argv[1] : "median";
+  const int nTrials = argc > 1 ? std::atoi(argv[1]) : 100;
+  const std::string strategy = argc > 2 ? argv[2] : "median";
 
-  MultiFitQa(strategy);
+  MultiFitQa(nTrials, strategy);
 }

@@ -18,7 +18,8 @@
 
 using namespace HelperGeneral;
 
-const std::vector<double> lifetimeRanges = {0.2, 0.4, 0.6, 0.8, 1.0, 1.4, 1.8};
+// const std::vector<double> lifetimeRanges = {0.2, 0.4, 0.6, 0.8, 1.0, 1.4, 1.8};
+const std::vector<double> lifetimeRanges = {0.4, 0.5, 0.7, 0.9, 1.1, 1.4};
 const std::string lifetimeAxisTitle = "#it{t}_{proper} (ps)";
 
 std::vector<double> pTRanges = {3, 4, 5, 8, 12, 20};
