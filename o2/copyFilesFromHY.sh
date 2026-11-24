@@ -104,6 +104,9 @@ for i in `seq $start $end`; do
          echo "Copying $fname from $remote"
          alien_cp $remote file:./$fname
       fi
+      fname="${fname/"${file_name[i]}"/metrics_summary.json}"
+      remote="${remote/"${file_name[i]}"/metrics_summary.json}"
+      alien_cp "$remote" "file:./$fname"
       done <<< "$remote_files"
    done
 done
