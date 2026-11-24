@@ -62,23 +62,25 @@ void pid_qa(const char* inFileName) {
     }
   }
 
-  // ============================================================
-  const double cutY = 70.;
-  const double cutX = 0.4;
-  const double leftEdgeX = 0.1;
-
   ROOT::RDataFrame df0(chain);
+
+  // ============================================================
+  const double cutY = 40.;
+  const double cutX = 0.3;
+  const double leftEdgeX = 0.1;
 
   auto df = df0.Filter(
     [cutX, cutY, leftEdgeX](float p, float sigma) {
       return p > 0. && p < cutX &&
             sigma > cutY *
-            std::log10(cutX / p) / std::log10(cutX / leftEdgeX);
+            std::log10(cutX / p) / std::log10(cutX / leftEdgeX) &&
+            sigma > 34.;
     },
     {"fTPCInnerParam", "fExpSigma"}
   );
 
   // ============================================================
+//   auto df = df0;
 
   constexpr double TpcSectorSize = 2. * TMath::Pi() / 18.;
 
@@ -108,8 +110,8 @@ void pid_qa(const char* inFileName) {
   const std::vector<Species> species = {
 //     {0, "El", "e"},
 //     {2, "Pi", "#pi"},
-//     {3, "Ka", "K"},
-    {4, "Pr", "p"}
+    {3, "Ka", "K"},
+//     {4, "Pr", "p"}
   };
 
   struct Hist2DDef {
@@ -157,7 +159,7 @@ void pid_qa(const char* inFileName) {
 
   const std::vector<Hist1DDef> hist1DDefs = {
     {"fFt0Occ", 200, 0., 100000.},
-    {"fHadronicRate", 200, 15., 25.},
+    {"fHadronicRate", 300, 0., 30.},
     {"fNormMultTPC", 200, 0., 2.},
     {"fNClustersTPC", 200, 0., 200.},
     {"fNormNClustersTPCPID", 200, 0., 200.},
