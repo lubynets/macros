@@ -19,6 +19,8 @@ SET(EXECUTABLES
     relative_efficiency
     ct_fit_ff
     mass_bdt_qa_thn_pt
+#    yield_pt_qa_tree
+    yield_pt_qa_thn
 )
 
 SET(SOURCES

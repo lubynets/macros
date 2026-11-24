@@ -32,7 +32,7 @@ void MultiFitQa(const int nTrials, const std::string& strategy) {
   gStyle->SetMarkerSize(1);
   const std::string fileNameTemplate = "RawYields_Lc/RawYields_Lc";
   std::vector<double> bdtScores;
-  for(int i=1; i<=20; i++) {
+  for(int i=1; i<=99; i++) {
     bdtScores.emplace_back(0.01*i);
   }
 //   bdtScores={0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90};

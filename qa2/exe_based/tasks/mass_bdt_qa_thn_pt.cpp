@@ -10,6 +10,7 @@
 
 #include <boost/program_options.hpp>
 
+#include <array>
 #include <iostream>
 #include <string>
 #include <string_view>
@@ -17,20 +18,20 @@
 
 using namespace HelperGeneral;
 
-const std::vector<double> pTRanges = {3, 4, 5, 8, 12, 20};
+constexpr std::array pTRanges = {1., 2., 3., 4., 6., 8., 12., 20.};
 const std::string pTAxisTitle = "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})";
 
 std::string gCmdArgs{};
 bool gIsSaveMeta{false};
 
-const std::vector<double> bdtBgUpperValuesVsPt = {0.02, 0.02, 0.02, 0.04, 0.08}; // standard
+constexpr std::array bdtBgUpperValuesVsPt = {0.02, 0.07, 0.03, 0.03, 0.03, 0.03, 0.03}; // standard
 // const std::vector<double> bdtBgUpperValuesVsPt = {0.01, 0.01, 0.01, 0.02, 0.04}; // tight
 // const std::vector<double> bdtBgUpperValuesVsPt = {0.03, 0.03, 0.03, 0.06, 0.12}; // loose
 // const std::vector<double> bdtBgUpperValuesVsPt = {0.015, 0.015, 0.015, 0.03, 0.06}; // semitight
 // const std::vector<double> bdtBgUpperValuesVsPt = {0.05, 0.05, 0.05, 0.08, 0.16}; // veryloose
 // const std::vector<double> bdtBgUpperValuesVsPt = {0.025, 0.025, 0.025, 0.05, 0.10}; // semiloose
 
-const std::vector<double> bdtNpUpperValuesVsPt = {1.00, 1.00, 1.00, 1.00, 1.00}; // set pT-dependent upper cuts here
+constexpr std::array bdtNpUpperValuesVsPt = {0.80, 0.80, 0.80, 0.80, 0.80, 0.80, 0.80}; // set pT-dependent upper cuts here
 
 const std::string bgAxisTitle = "BDT bkg score (Lc)";
 const std::string npAxisTitle = "BDT non-prompt score (Lc)";
@@ -51,18 +52,18 @@ void MassBdtQaThn(const std::string& fileNameIn) {
 
   const std::map<std::string_view, int> axesIndices = MapTHnSparseAxesIndices(histoIn);
 
-  if(bdtBgUpperValuesVsPt.size() != pTRanges.size() - 1) throw std::runtime_error("bdtBgUpperValuesVsPt.size() != pTRanges.size() - 1");
-  if(bdtNpUpperValuesVsPt.size() != pTRanges.size() - 1) throw std::runtime_error("bdtNpUpperValuesVsPt.size() != pTRanges.size() - 1");
+  static_assert(bdtBgUpperValuesVsPt.size() == pTRanges.size() - 1, "bdtBgUpperValuesVsPt.size() != pTRanges.size() - 1");
+  static_assert(bdtNpUpperValuesVsPt.size() == pTRanges.size() - 1, "bdtNpUpperValuesVsPt.size() != pTRanges.size() - 1");
 
   std::vector<double> bdtScanValues{};
-  for (int iB = 0; iB <= 9; iB++) {
-    bdtScanValues.emplace_back(0.1 * iB);
+  for (int iB = 0; iB <= 99; iB++) {
+    bdtScanValues.emplace_back(0.01 * iB);
   }
 
-  CheckTAxisForRanges(*histoIn->GetAxis(axesIndices.at(pTAxisTitle)), pTRanges);
-  CheckTAxisForRanges(*histoIn->GetAxis(axesIndices.at(bgAxisTitle)), bdtBgUpperValuesVsPt);
+  CheckTAxisForRanges(*histoIn->GetAxis(axesIndices.at(pTAxisTitle)), std::vector<double>(pTRanges.begin(), pTRanges.end())); // TODO vector -> array in CheckTAxisForRanges or templatize, or std::span (need c++20)
+  CheckTAxisForRanges(*histoIn->GetAxis(axesIndices.at(bgAxisTitle)), std::vector<double>(bdtBgUpperValuesVsPt.begin(), bdtBgUpperValuesVsPt.end()));
   CheckTAxisForRanges(*histoIn->GetAxis(axesIndices.at(npAxisTitle)), bdtScanValues);
-  CheckTAxisForRanges(*histoIn->GetAxis(axesIndices.at(npAxisTitle)), bdtNpUpperValuesVsPt);
+  CheckTAxisForRanges(*histoIn->GetAxis(axesIndices.at(npAxisTitle)), std::vector<double>(bdtNpUpperValuesVsPt.begin(), bdtNpUpperValuesVsPt.end()));
 
   std::vector<std::string> pTCutNames;
   for(size_t iPt=0, nPts=pTRanges.size()-1; iPt<nPts; ++iPt) {
