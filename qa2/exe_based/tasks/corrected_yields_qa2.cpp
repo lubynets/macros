@@ -45,7 +45,7 @@ void corrected_yields_qa2(const std::string& fileNameCutVar, const std::string& 
 
   if(isSystUnc && fileNameSystUnc.empty()) throw std::runtime_error("corrected_yields_qa2() systematic uncertainties file is not provided");
 
-  const std::vector<double> lifetimeRanges = {0.2, 0.4, 0.6, 0.8, 1.0, 1.4, 1.8};
+  const std::vector<double> lifetimeRanges = {0.4, 0.5, 0.7, 0.9, 1.1, 1.4};
   const std::string integralOption = "I";
 
   struct Promptness {

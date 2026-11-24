@@ -23,6 +23,9 @@ using namespace HelperPlot;
 // constexpr bool IsFFReady{true};
 constexpr bool IsFFReady{false};
 
+std::string gCmdArgs{};
+bool gIsSaveMeta{true};
+
 void efficiency_bdtcutset(const std::string& fileName) {
   LoadMacro("styles/mc_qa2.style.cc");
   gStyle->SetMarkerSize(1);
@@ -33,12 +36,12 @@ void efficiency_bdtcutset(const std::string& fileName) {
   const std::string fileOutName = "efficiency_summary";
 
   // ========================= Configuration =================================
-  const std::vector<double> lifeTimeRanges = IsFFReady ? std::vector<double>{0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.4, 1.8} : std::vector<double>{0.2, 0.4, 0.6, 0.8, 1.0, 1.4, 1.8}; // why need r.h.s. std::vector<> when ternary operator?
+  const std::vector<double> lifeTimeRanges = IsFFReady ? std::vector<double>{0.0, 0.4, 0.5, 0.7, 0.9, 1.1, 1.4} : std::vector<double>{0.4, 0.5, 0.7, 0.9, 1.1, 1.4}; // why need r.h.s. std::vector<> when ternary operator?
   const std::vector<double> pTRanges = {1, 2, 3, 4, 5, 8, 12, 20};
 
 //   std::vector<float> bdtScores{0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90};
   std::vector<float> bdtScores{};
-  for(int i=0; i<=99; i++) {
+  for(int i=1; i<=99; i++) {
     bdtScores.emplace_back(0.01 * i);
   }
 // //   bdtScores.emplace_back(0.01);
@@ -145,6 +148,7 @@ void efficiency_bdtcutset(const std::string& fileName) {
             gr->SetPoint(gr->GetN(), score, histoEff->GetBinContent(iLifeTimeRange + 1));
             gr->SetPointError(gr->GetN() - 1, 0, histoEff->GetBinError(iLifeTimeRange + 1));
           }
+          if (gIsSaveMeta && openOption == "recreate") HelperGeneral::EmbedMetaData(fileOutScore, "efficiency_bdtcutset.cpp", gCmdArgs);
           fileOutScore->Close();
         } // bdtSignalLowerValues
       } // pTRanges
@@ -176,6 +180,7 @@ void efficiency_bdtcutset(const std::string& fileName) {
       cc.Print(("grEff_vs_" + tarSigShortcut + "_" + PtRangeString(pTIntervals.at(iPt)) + ".pdf" + priBra).c_str());
     } // lifeTimeRanges
   } // pTRanges
+  if (gIsSaveMeta) HelperGeneral::EmbedMetaData(fileOut, "efficiency_bdtcutset.cpp", gCmdArgs);
   fileOut->Close();
   fileIn->Close();
 }
@@ -188,6 +193,11 @@ int main(int argc, char* argv[]) {
   }
 
   const std::string fileName = argv[1];
+
+  for(int iArg=1; iArg<argc; ++iArg) {
+    gCmdArgs += argv[iArg];
+    gCmdArgs += " ";
+  }
 
   efficiency_bdtcutset(fileName);
 
