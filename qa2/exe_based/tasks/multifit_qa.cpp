@@ -25,6 +25,9 @@ using namespace HelperPlot;
 constexpr bool IsVerbose{false};
 constexpr bool IsDrawErrors{false};
 
+const std::string sliceVarName{"pT"}; const std::string sliceVarUnit{"GeV/c"};
+// const std::string sliceVarName{"t"}; const std::string sliceVarUnit{"ps"};
+
 void MultiFitQa(const int nTrials, const std::string& strategy) {
   if(strategy != "median" && strategy != "chi2" && strategy != "medianSmart") throw std::runtime_error("MultiFitQa(): strategy must be 'median', 'chi2' or 'medianSmart'");
 
@@ -32,7 +35,7 @@ void MultiFitQa(const int nTrials, const std::string& strategy) {
   gStyle->SetMarkerSize(1);
   const std::string fileNameTemplate = "RawYields_Lc/RawYields_Lc";
   std::vector<double> bdtScores;
-  for(int i=1; i<=99; i++) {
+  for(int i=1; i<=79; i++) {
     bdtScores.emplace_back(0.01*i);
   }
 //   bdtScores={0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90};
@@ -96,7 +99,7 @@ void MultiFitQa(const int nTrials, const std::string& strategy) {
 
   TH2* hGoodFits = new TH2F("hGoodFits", "", nBdtScores, hGoodFitsXaxisBinEdges.data(), nLifetimeRanges, hGoodFitsYaxisBinEdges.data());
   hGoodFits->GetXaxis()->SetTitle("bdt score");
-  hGoodFits->GetYaxis()->SetTitle("#it{t} (ps)");
+  hGoodFits->GetYaxis()->SetTitle(("" + sliceVarName + " (" + sliceVarUnit + ")").c_str());
   hGoodFits->GetZaxis()->SetTitle("Successful trials rate");
 
   const auto itChi2 = std::find(variables.begin(), variables.end(), "hRawYieldsChiSquareTotal");
@@ -114,7 +117,7 @@ void MultiFitQa(const int nTrials, const std::string& strategy) {
       for (size_t iScore = 0; iScore < nBdtScores; ++iScore) {
         auto& gr = graph.at(iVar).at(iT).at(iScore);
         gr = new TGraphErrors();
-        const std::string grName = "T" + std::to_string(iT) + "_NPgt" + to_string_with_precision(bdtScores.at(iScore), 2);
+        const std::string grName = sliceVarName + std::to_string(iT) + "_NPgt" + to_string_with_precision(bdtScores.at(iScore), 2);
         gr->SetName((variables.at(iVar) + "_" + grName).c_str());
         gr->SetTitle(grName.c_str());
         gr->GetXaxis()->SetTitle("Trial #");
@@ -129,7 +132,7 @@ void MultiFitQa(const int nTrials, const std::string& strategy) {
 
         auto& grErr = graphErr.at(iVar).at(iT).at(iScore);
         grErr = new TGraphErrors();
-        const std::string grErrName = "T" + std::to_string(iT) + "_NPgt" + to_string_with_precision(bdtScores.at(iScore), 2);
+        const std::string grErrName = sliceVarName + std::to_string(iT) + "_NPgt" + to_string_with_precision(bdtScores.at(iScore), 2);
         grErr->SetName((variables.at(iVar) + "_" + grName).c_str());
         grErr->SetTitle(grName.c_str());
         grErr->GetXaxis()->SetTitle("Trial #");
@@ -315,10 +318,10 @@ void MultiFitQa(const int nTrials, const std::string& strategy) {
         MkDirBash("hTrials/" + variables.at(iVar) + "VsChi2");
         MkDirBash("hTrials/err." + variables.at(iVar));
         MkDirBash("hTrials/err." + variables.at(iVar) + "VsChi2");
-        cc.Print(("hTrials/" + variables.at(iVar) + "/" + variables.at(iVar) + "_T_" + std::to_string(iT+1) + ".pdf" + priBra).c_str(), "pdf");
-        ccVsChi2.Print(("hTrials/" + variables.at(iVar) + "VsChi2" + "/" + variables.at(iVar) + "VsChi2" + "_T_" + std::to_string(iT+1) + ".pdf" + priBra).c_str(), "pdf");
-        ccErr.Print(("hTrials/err." + variables.at(iVar) + "/" + variables.at(iVar) + "_T_" + std::to_string(iT+1) + ".pdf" + priBra).c_str(), "pdf");
-        ccErrVsChi2.Print(("hTrials/err." + variables.at(iVar) + "VsChi2" + "/" + variables.at(iVar) + "VsChi2" + "_T_" + std::to_string(iT+1) + ".pdf" + priBra).c_str(), "pdf");
+        cc.Print(("hTrials/" + variables.at(iVar) + "/" + variables.at(iVar) + "_" + sliceVarName + "_" + std::to_string(iT+1) + ".pdf" + priBra).c_str(), "pdf");
+        ccVsChi2.Print(("hTrials/" + variables.at(iVar) + "VsChi2" + "/" + variables.at(iVar) + "VsChi2" + "_" + sliceVarName + "_" + std::to_string(iT+1) + ".pdf" + priBra).c_str(), "pdf");
+        ccErr.Print(("hTrials/err." + variables.at(iVar) + "/" + variables.at(iVar) + "_" + sliceVarName + "_" + std::to_string(iT+1) + ".pdf" + priBra).c_str(), "pdf");
+        ccErrVsChi2.Print(("hTrials/err." + variables.at(iVar) + "VsChi2" + "/" + variables.at(iVar) + "VsChi2" + "_" + sliceVarName + "_" + std::to_string(iT+1) + ".pdf" + priBra).c_str(), "pdf");
       } // nLifetimeRanges
       fileSmooth->cd();
       histoSmooth->Write();
