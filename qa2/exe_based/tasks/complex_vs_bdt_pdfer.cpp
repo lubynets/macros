@@ -20,6 +20,9 @@ using namespace HelperPlot;
 std::pair<double, double> EvaluateAverageExcludingOutliers(const std::vector<double>& values, const std::vector<double>& errors, double chi2Max = 1.);
 std::pair<double, double> EvaluateAverageExcludingOutliers(const TGraphErrors* graph, double from=-1e9, double to=1e9, double chi2Max=1.);
 
+const std::string sliceVarName{"pT"}; const std::string sliceVarUnit{"GeV/c"};
+// const std::string sliceVarName{"t"}; const std::string sliceVarUnit{"ps"};
+
 void complex_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::string& targetSignal, const std::string& wise){
   LoadMacro("styles/mc_qa2.style.cc");
   gStyle->SetMarkerSize(0.6);
@@ -28,7 +31,7 @@ void complex_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::string
   gStyle->SetPadGridX(true);
   //=================================================================
   std::vector<double> bdtScores{/*0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90*/};
-  for(int i=1; i<=99; i++) {
+  for(int i=1; i<=79; i++) {
     bdtScores.emplace_back(0.01*i);
   }
   //=================================================================
@@ -69,15 +72,15 @@ void complex_vs_bdt_pdfer(const std::string& fileNameTemplate, const std::string
     for(int iT=0, nTs=lifeTimeRanges.size()-1; iT<nTs; ++iT) {
       auto& gra = graphVar.at(iExistingVar).at(iT);
       gra = new TGraphErrors();
-      gra->SetName(("gr" + variables.at(iExistingVar) + "_" + + "_T" + std::to_string(iT)).c_str());
-      gra->SetTitle(("bin #" + std::to_string(iT+1) + "#; T#in (" + to_string_with_precision(lifeTimeRanges.at(iT), 2) + "#; " + to_string_with_precision(lifeTimeRanges.at(iT+1), 2) + ") ps").c_str());
+      gra->SetName(("gr" + variables.at(iExistingVar) + "_" + + "_" + sliceVarName + std::to_string(iT)).c_str());
+      gra->SetTitle(("bin #" + std::to_string(iT+1) + "#; " + sliceVarName + "#in (" + to_string_with_precision(lifeTimeRanges.at(iT), 2) + "#; " + to_string_with_precision(lifeTimeRanges.at(iT+1), 2) + ") " + sliceVarUnit).c_str());
       gra->GetXaxis()->SetTitle(("bdt score " + targetSignal).c_str());
       gra->GetYaxis()->SetTitle(yAxisTitle.c_str());
 
       auto& gre = graphErr.at(iExistingVar).at(iT);
       gre = new TGraphErrors();
       gre->SetName(("grErr" + variables.at(iExistingVar) + "_" + + "_T" + std::to_string(iT)).c_str());
-      gre->SetTitle(("bin #" + std::to_string(iT+1) + "#; T#in (" + to_string_with_precision(lifeTimeRanges.at(iT), 2) + "#; " + to_string_with_precision(lifeTimeRanges.at(iT+1), 2) + ") ps").c_str());
+      gre->SetTitle(("bin #" + std::to_string(iT+1) + "#; " + sliceVarName + "#in (" + to_string_with_precision(lifeTimeRanges.at(iT), 2) + "#; " + to_string_with_precision(lifeTimeRanges.at(iT+1), 2) + ") " + sliceVarUnit).c_str());
       gre->GetXaxis()->SetTitle(("bdt score " + targetSignal).c_str());
       gre->GetYaxis()->SetTitle((yAxisTitle + " error").c_str());
     } // lifeTimeRanges
@@ -200,7 +203,7 @@ int main(int argc, char* argv[]) {
   const std::string targetSignal = argc > 2 ? argv[2] : "NP";
   const std::string wise = argc > 3 ? argv[3] : "var";
   if(targetSignal != "P" && targetSignal != "NP") throw std::runtime_error("main(): targetSignal must be either 'P' or 'NP'");
-  if(wise != "var" && wise != "T") throw std::runtime_error("main(): wise must be either 'var' or 'T'");
+  if(wise != "var" && wise != sliceVarName) throw std::runtime_error("main(): wise must be either 'var' or 'T'");
 
   complex_vs_bdt_pdfer(fileNameTemplate, targetSignal, wise);
 
