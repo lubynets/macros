@@ -34,7 +34,9 @@ SET(SOURCES
 string(REPLACE ".cpp" ".hpp" HEADERS "${SOURCES}")
 
 # Specify the C++ standard
-set(CMAKE_CXX_STANDARD 17)
+if(NOT DEFINED CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 17)
+endif()
 
 # by default build optimized code
 if(NOT CMAKE_BUILD_TYPE)
